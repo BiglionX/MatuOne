@@ -1,10 +1,16 @@
 import { generateBindCode, isAcceptableBindCode, normalizeBindCode } from '../supabase/functions/_shared/bindCode'
+import { normalizeTypingScore } from '../supabase/functions/_shared/typingScore'
 import { validateCoursePackage } from '../supabase/functions/_shared/coursePackage'
-import { levelOrderOf, seatLimit, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
+import { toCurriculumPosition, type CurriculumPositionRow } from '../supabase/functions/_shared/curriculumPosition'
+import { seatLimit, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
 import { generateInitialPassword, hashPassword, verifyPassword } from '../supabase/functions/_shared/password'
 import { planStudentImport } from '../supabase/functions/_shared/studentImport'
 import { dbMessage, one, q } from './db'
 import { decideStudentLevel } from './enter'
+import { readProgressMarks, resolveStoredLevel } from './curriculum'
+import { buildPlayableLevel } from '../src/lib/lessonMaterial'
+import { presentLearningHome, projectUnit, type AccessContext } from '../src/lib/curriculumState'
+import { curriculumUnitById } from '../src/data/fullCurriculum'
 import { issueSession, readSession, type SessionRole } from './session'
 
 export interface ApiResult {
@@ -21,6 +27,63 @@ export interface ApiRequest {
 
 const ok = (body: unknown, status = 200): ApiResult => ({ status, body })
 const fail = (status: number, message: string): ApiResult => ({ status, body: { message } })
+
+function missingRelation(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('does not exist')
+}
+
+async function readLevelProgress(studentId: string): Promise<{ level_id: string; completed: boolean; stars: number }[]> {
+  try {
+    return await q('select level_id, completed, stars from public.learning_record where student_id = $1', [studentId])
+  } catch (error) {
+    if (!missingRelation(error)) throw error
+    return await q('select level_id, completed, stars from public.level_progress where student_id = $1', [studentId])
+  }
+}
+
+async function writeLevelProgress(studentId: string, levelId: string, stars: number, taps: number): Promise<void> {
+  try {
+    await q(
+      `insert into public.learning_record (student_id, level_id, completed, stars, change_done, error_taps, runs)
+       values ($1, $2, true, $3, true, $4, 1)
+       on conflict (student_id, level_id) do update set
+         completed = true,
+         stars = excluded.stars,
+         change_done = true,
+         error_taps = excluded.error_taps,
+         runs = public.learning_record.runs + 1,
+         updated_at = now()`,
+      [studentId, levelId, stars, taps],
+    )
+  } catch (error) {
+    if (!missingRelation(error)) throw error
+    const existing = await one<{ id: string; runs: number }>('select id, runs from public.level_progress where student_id = $1 and level_id = $2', [
+      studentId,
+      levelId,
+    ])
+    if (existing) {
+      await q(
+        'update public.level_progress set completed = true, stars = $2, change_done = true, error_taps = $3, runs = $4, updated_at = now() where id = $1',
+        [existing.id, stars, taps, existing.runs + 1],
+      )
+    } else {
+      await q(
+        'insert into public.level_progress (student_id, level_id, completed, stars, change_done, error_taps, runs) values ($1, $2, true, $3, true, $4, 1)',
+        [studentId, levelId, stars, taps],
+      )
+    }
+  }
+}
+
+async function loadCurriculumPosition(studentId: string) {
+  try {
+    const row = await one<CurriculumPositionRow & Record<string, unknown>>('select * from public.student_curriculum_position($1)', [studentId])
+    return row?.level_id ? toCurriculumPosition(row) : null
+  } catch {
+    return null
+  }
+}
 
 function isOrgStatus(value: unknown): value is OrgStatus {
   return value === 'trial' || value === 'active' || value === 'expired' || value === 'disabled'
@@ -459,7 +522,10 @@ async function orgDashboard(req: ApiRequest): Promise<ApiResult> {
   const countRow = await one<{ n: number }>('select count(*)::int as n from public.course_level where published = true')
   const ids = students.map((student) => student.id)
   const progress = ids.length
-    ? await q<{ student_id: string }>('select student_id from public.level_progress where completed = true and student_id = any($1::uuid[])', [ids])
+    ? await q<{ student_id: string }>('select student_id from public.learning_record where completed = true and student_id = any($1::uuid[])', [ids]).catch(async (error: unknown) => {
+        if (!missingRelation(error)) throw error
+        return q<{ student_id: string }>('select student_id from public.level_progress where completed = true and student_id = any($1::uuid[])', [ids])
+      })
     : []
   const typing = ids.length
     ? await q<{ student_id: string; wpm: number; accuracy: number; created_at: string }>(
@@ -571,14 +637,13 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
     const raw = req.body.practiceType === 'baseline_keys' ? 'home_row' : req.body.practiceType
     if (raw !== 'home_row' && raw !== 'keywords' && raw !== 'lesson_embedded') return fail(400, '练习类型不正确')
-    const wpm = Number(req.body.wpm)
-    const accuracy = Number(req.body.accuracy)
-    if (!Number.isFinite(wpm) || !Number.isFinite(accuracy)) return fail(400, '打字记录不完整')
+    const score = normalizeTypingScore(req.body.wpm, req.body.accuracy)
+    if (!score) return fail(400, '打字记录无效')
     await q('insert into public.typing_record (student_id, practiced_on, practice_type, wpm, accuracy) values ($1, current_date, $2, $3, $4)', [
       student.id,
       raw,
-      wpm,
-      accuracy,
+      score.wpm,
+      score.accuracy,
     ])
     return ok({ ok: true })
   }
@@ -600,29 +665,15 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
   if (action === 'complete') {
     const decision = await decideStudentLevel(student.id, requestedLevelId)
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
-    const order = levelOrderOf(decision.levelId)
+    const stored = await resolveStoredLevel(decision.levelId)
     const stars = Number(req.body.stars)
     const errorTaps = Number(req.body.errorTaps ?? 0)
-    if (!order || !Number.isInteger(stars) || stars < 0 || stars > 3) return fail(400, '完成记录不完整')
+    if (!stored || !Number.isInteger(stars) || stars < 0 || stars > 3) return fail(400, '完成记录不完整')
     await q('update public.study_session set ended_at = now() where student_id = $1 and ended_at is null', [student.id])
-    const existing = await one<{ id: string; runs: number }>('select id, runs from public.level_progress where student_id = $1 and level_id = $2', [
-      student.id,
-      decision.levelId,
-    ])
     const taps = Number.isFinite(errorTaps) ? errorTaps : 0
-    if (existing) {
-      await q(
-        'update public.level_progress set completed = true, stars = $2, change_done = true, error_taps = $3, runs = $4, updated_at = now() where id = $1',
-        [existing.id, stars, taps, existing.runs + 1],
-      )
-    } else {
-      await q(
-        'insert into public.level_progress (student_id, level_id, completed, stars, change_done, error_taps, runs) values ($1, $2, true, $3, true, $4, 1)',
-        [student.id, decision.levelId, stars, taps],
-      )
-    }
-    if (order + 1 > student.current_level_order) {
-      await q('update public.student set current_level_order = $2, last_active_at = now() where id = $1', [student.id, order + 1])
+    await writeLevelProgress(student.id, stored.levelId, stars, taps)
+    if (stored.order + 1 > student.current_level_order) {
+      await q('update public.student set current_level_order = $2, last_active_at = now() where id = $1', [student.id, stored.order + 1])
     } else {
       await q('update public.student set last_active_at = now() where id = $1', [student.id])
     }
@@ -631,15 +682,72 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
   if (action === 'level') {
     const decision = await decideStudentLevel(student.id, requestedLevelId)
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
-    const found = await one<{ body: unknown }>('select body from public.course_level where level_id = $1 and published = true', [decision.levelId])
-    if (!found) return fail(404, '没有找到这一关')
+    const playable = buildPlayableLevel(decision.levelId)
+    if (!playable) return fail(404, '没有找到这一关')
     const hints = await q('select pattern, friendly_message from public.error_hint')
-    return ok({ level: found.body, hints })
+    return ok({ level: playable, hints })
   }
 
-  const levels = await q<{ level_id: string; sort_order: number; title: string; goal: string; body: { is_review?: boolean } | null }>(
-    'select level_id, sort_order, title, goal, body from public.course_level where published = true order by sort_order asc',
+  const access = await loadStudentAccess(student)
+  const marks = await readProgressMarks(student.id)
+  if (action === 'unit') {
+    const unitId = typeof req.body.unitId === 'string' ? req.body.unitId.trim() : ''
+    const unit = curriculumUnitById(unitId)
+    const levels = unit ? projectUnit(unitId, marks, access) : null
+    if (!unit || !levels) return fail(404, '没有这个单元')
+    return ok({ unitId: unit.unitId, title: unit.title, levels })
+  }
+
+  const home = presentLearningHome(marks, access)
+  const hints = await q('select pattern, friendly_message from public.error_hint')
+  const group = await one<{ name: string }>('select name from public.student_group where id = $1', [student.group_id])
+  const entries = home.entries.map((level) => ({
+    levelId: level.levelId,
+    order: level.order,
+    title: level.title,
+    goal: level.goal,
+    isReview: false,
+    completed: level.completed,
+    stars: level.stars,
+    unlocked: level.unlocked,
+    current: level.current,
+  }))
+  const typingRows = await q<{ practiced_on: string; wpm: number; accuracy: number; created_at: string }>(
+    'select practiced_on, wpm, accuracy, created_at from public.typing_record where student_id = $1',
+    [student.id],
   )
+  const latest = [...typingRows].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0]
+  return ok({
+    orgName: access.orgName,
+    groupName: group?.name ?? '未分组',
+    student: {
+      id: student.id,
+      orgId: student.org_id,
+      groupId: student.group_id,
+      name: student.name,
+      account: student.account,
+      status: 'active',
+      currentLevelOrder: student.current_level_order,
+      lastActiveAt: student.last_active_at ?? '',
+      bindCode: student.bind_code ?? '',
+    },
+    heading: home.heading,
+    stageLevel: home.stageLevel,
+    stageTitle: home.stageTitle,
+    stageSubtitle: home.stageSubtitle,
+    units: home.units,
+    currentUnitId: home.currentUnitId,
+    entries,
+    completedCount: home.completedCount,
+    currentOrder: home.currentOrder,
+    position: await loadCurriculumPosition(student.id),
+    hints,
+    typingSeries: bucketTyping(typingRows),
+    latestTyping: latest ? { wpm: Number(latest.wpm), accuracy: Number(latest.accuracy) } : null,
+  })
+}
+
+async function loadStudentAccess(student: { id: string; org_id: string; group_id: string }): Promise<AccessContext & { orgName: string }> {
   const org = await one<{ id: string; status: string; trial_expire_at: string | null; service_end_at: string | null; name: string }>(
     'select id, status, trial_expire_at, service_end_at, name from public.org where id = $1',
     [student.org_id],
@@ -655,73 +763,21 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
   }>('select org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at from public.level_entitlement where org_id = $1', [
     student.org_id,
   ])
-  const progressRows = await q<{ level_id: string; completed: boolean; stars: number }>('select level_id, completed, stars from public.level_progress where student_id = $1', [
-    student.id,
-  ])
-  const hints = await q('select pattern, friendly_message from public.error_hint')
-  const group = await one<{ name: string }>('select name from public.student_group where id = $1', [student.group_id])
-  const progress = new Map(progressRows.map((row) => [row.level_id, row]))
-  const { isLevelEntitled } = await import('../supabase/functions/_shared/orgStatus')
   const open = entitlements.filter((row) => !row.expires_at || new Date(row.expires_at).getTime() > Date.now())
-  const spans = open.map((row) => ({
-    orgId: row.org_id,
-    subjectType: row.subject_type,
-    subjectId: row.subject_id,
-    levelOrderMin: row.level_order_min,
-    levelOrderMax: row.level_order_max,
-  }))
-  let seenIncomplete = false
-  const entries = levels.map((level) => {
-    const order = level.sort_order
-    const row = progress.get(level.level_id)
-    const completed = Boolean(row?.completed)
-    const entitled = isLevelEntitled(spans, student.org_id, student.group_id, student.id, order)
-    const openStatus = status === 'trial' || status === 'active'
-    const trialOk = status !== 'trial' || order <= 3
-    const unlocked = entitled && openStatus && trialOk && (completed || !seenIncomplete)
-    if (!completed) seenIncomplete = true
-    const current =
-      unlocked &&
-      !completed &&
-      !levels.some((other) => other.sort_order < order && !progress.get(other.level_id)?.completed)
-    return {
-      levelId: level.level_id,
-      order,
-      title: level.title,
-      goal: level.goal,
-      isReview: Boolean(level.body?.is_review),
-      completed,
-      stars: (row?.stars ?? 0) as 0 | 1 | 2 | 3,
-      unlocked,
-      current,
-    }
-  })
-  const typingRows = await q<{ practiced_on: string; wpm: number; accuracy: number; created_at: string }>(
-    'select practiced_on, wpm, accuracy, created_at from public.typing_record where student_id = $1',
-    [student.id],
-  )
-  const latest = [...typingRows].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0]
-  return ok({
+  return {
+    status: status ?? 'disabled',
+    orgId: student.org_id,
+    groupId: student.group_id,
+    studentId: student.id,
     orgName: org?.name ?? '',
-    groupName: group?.name ?? '未分组',
-    student: {
-      id: student.id,
-      orgId: student.org_id,
-      groupId: student.group_id,
-      name: student.name,
-      account: student.account,
-      status: 'active',
-      currentLevelOrder: student.current_level_order,
-      lastActiveAt: student.last_active_at ?? '',
-      bindCode: student.bind_code ?? '',
-    },
-    entries,
-    completedCount: entries.filter((entry) => entry.completed).length,
-    currentOrder: entries.find((entry) => entry.current)?.order ?? entries.filter((entry) => entry.completed).length,
-    hints,
-    typingSeries: bucketTyping(typingRows),
-    latestTyping: latest ? { wpm: Number(latest.wpm), accuracy: Number(latest.accuracy) } : null,
-  })
+    spans: open.map((row) => ({
+      orgId: row.org_id,
+      subjectType: row.subject_type,
+      subjectId: row.subject_id,
+      levelOrderMin: row.level_order_min,
+      levelOrderMax: row.level_order_max,
+    })),
+  }
 }
 
 async function studentEnter(req: ApiRequest): Promise<ApiResult> {
@@ -819,7 +875,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       continue
     }
     const group = await one<{ name: string }>('select name from public.student_group where id = $1', [student.group_id])
-    const progress = await q('select level_id from public.level_progress where student_id = $1 and completed = true', [student.id])
+    const progress = await readLevelProgress(student.id).then((rows) => rows.filter((row) => row.completed))
     const countRow = await one<{ n: number }>('select count(*)::int as n from public.course_level where published = true')
     const sessions = await q<{ started_at: string; ended_at: string | null }>('select started_at, ended_at from public.study_session where student_id = $1', [
       student.id,
@@ -855,6 +911,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       currentLevelOrder: order,
       totalLevels: totalLevels || 12,
       completedCount: progress.length,
+      position: await loadCurriculumPosition(student.id),
       weekly: {
         weekStart: start.toISOString().slice(0, 10),
         sessions: weeklySessions.length,
@@ -1670,14 +1727,58 @@ async function courseCatalog(req: ApiRequest): Promise<ApiResult> {
   const action = typeof req.body.action === 'string' ? req.body.action : 'list'
   if (action === 'validate' || action === 'import') {
     const text = typeof req.body.text === 'string' ? req.body.text : ''
-    const { report, levels } = validateCoursePackage(text)
+    const { report, levels, placement } = validateCoursePackage(text)
     if (action === 'import' && report.ok) {
+      if (placement) {
+        await q(
+          `insert into public.curriculum_unit (unit_id, semester_id, title, sort_order, stage_level)
+           values ($1, $2, $3, $4, $5)
+           on conflict (unit_id) do update set
+             semester_id = excluded.semester_id,
+             title = excluded.title,
+             sort_order = excluded.sort_order,
+             stage_level = excluded.stage_level`,
+          [placement.unit.unit_id, placement.legacySemesterId, placement.unit.title, placement.unit.sort_order, placement.stageLevel],
+        )
+      }
       for (const level of levels) {
         await q(
-          `insert into public.course_level (level_id, sort_order, title, goal, body, published, updated_at)
-           values ($1, $2, $3, $4, $5::jsonb, true, now())
-           on conflict (level_id) do update set sort_order = excluded.sort_order, title = excluded.title, goal = excluded.goal, body = excluded.body, published = true, updated_at = now()`,
-          [level.level_id, level.order, level.title, level.goal, JSON.stringify(level)],
+          `insert into public.course_level (
+             level_id, sort_order, title, goal, body, published, updated_at,
+             unit_id, knowledge_tags, level_type, milestone_badge
+           ) values (
+             $1, $2, $3, $4, $5::jsonb, true, now(),
+             coalesce($6, 'G5-spring-inbox'),
+             coalesce($7::text[], '{}'),
+             coalesce($8, 'new'),
+             $9
+           )
+           on conflict (level_id) do update set
+             sort_order = excluded.sort_order,
+             title = excluded.title,
+             goal = excluded.goal,
+             body = excluded.body,
+             published = true,
+             updated_at = now(),
+             unit_id = case when $10::boolean then excluded.unit_id else public.course_level.unit_id end,
+             knowledge_tags = case when $11::boolean then excluded.knowledge_tags else public.course_level.knowledge_tags end,
+             level_type = case when $12::boolean then excluded.level_type else public.course_level.level_type end,
+             milestone_badge = case when $13::boolean then excluded.milestone_badge else public.course_level.milestone_badge end`,
+          [
+            level.level_id,
+            level.order,
+            level.title,
+            level.goal,
+            JSON.stringify(level),
+            level.unit_id ?? null,
+            level.knowledge_tags ?? null,
+            level.pedagogy ?? null,
+            level.milestone_badge ?? null,
+            Boolean(level.unit_id),
+            level.knowledge_tags !== undefined,
+            Boolean(level.pedagogy),
+            level.milestone_badge !== undefined,
+          ],
         )
       }
     }

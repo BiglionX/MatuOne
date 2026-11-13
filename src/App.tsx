@@ -18,7 +18,7 @@ import { AdminGate, AdminLayout } from '@/pages/admin/AdminLayout'
  * 营销站首屏不必把所有业务端代码一起下载。
  */
 const StudentLogin = lazy(() => import('@/pages/student/StudentLogin').then((m) => ({ default: m.StudentLogin })))
-const CourseMap = lazy(() => import('@/pages/student/CourseMap').then((m) => ({ default: m.CourseMap })))
+const CourseMap = lazy(() => import('@/pages/student/Map').then((m) => ({ default: m.Map })))
 const Lesson = lazy(() => import('@/pages/student/Lesson').then((m) => ({ default: m.Lesson })))
 const TypingWarmup = lazy(() => import('@/pages/student/TypingWarmup').then((m) => ({ default: m.TypingWarmup })))
 const StudentProfile = lazy(() => import('@/pages/student/StudentProfile').then((m) => ({ default: m.StudentProfile })))

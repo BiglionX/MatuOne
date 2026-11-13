@@ -55,10 +55,35 @@ export interface ChallengeParam {
 }
 
 export interface ErrorMapping {
-  /** 匹配模式的标识（由 runner 生成：paren / cjk / indent / name） */
+  /** 匹配模式的标识（由 runner 生成：paren / cjk / indent / name，或诊断原文） */
   pattern: string
+  /**
+   * 对诊断原文做正则匹配。命中后优先用本条人话，
+   * 例如 IndentationError、expected ':'、= vs ==。
+   */
+  match?: string
   /** 命中后展示的人话提示 */
   friendlyMessage: string
+}
+
+/** 关卡怎么练：全抄、挖空、或找茬。缺省按全抄。 */
+export type LevelType = 'normal' | 'fill_blank' | 'debug'
+
+/** 某一行里要学生自己填的片段 */
+export interface LineBlank {
+  /** 在该行字符串中的起始下标（含） */
+  start: number
+  /** 结束下标（不含） */
+  end: number
+  /** 填对后的文本，例如变量名或数字 */
+  answer: string
+}
+
+/** 哪些行被挖空，以及空出的是哪几个词 */
+export interface BlankLine {
+  /** 0 起的行号，对应 teach_code_lines */
+  line: number
+  blanks: LineBlank[]
 }
 
 export interface LevelQuiz {
@@ -73,11 +98,19 @@ export interface Level {
   order: number
   title: string
   goal: string
-  grade_range: string
   demo_code: string
   expected_output: string
   preview_kind: 'text' | 'turtle'
+  /** 缺省 normal：B 回合逐行全抄 */
+  level_type?: LevelType
   teach_code_lines: string[]
+  /** fill_blank 时，哪些行的变量名或数值留空 */
+  blank_lines?: BlankLine[]
+  /**
+   * 折叠前的重复写法。第 6 关用它展示「8 行如何收成 for」，
+   * B 回合不要求学生从零把循环敲出来。
+   */
+  unfolded_lines?: string[]
   /** 与 teach_code_lines 一一对应的“这一行在做什么”，给第一次见代码的孩子看 */
   line_notes?: string[]
   keywords: string[]
@@ -86,6 +119,8 @@ export interface Level {
   quiz: LevelQuiz
   estimated_minutes: number
   is_review?: boolean
+  /** 课文还在制作。地图和课时页用它提示「内容制作中」。 */
+  is_placeholder?: boolean
 }
 
 /* ---------------------------- 运行 ---------------------------- */
@@ -225,6 +260,16 @@ export interface WeeklySummary {
   lastStudyDate: string | null
 }
 
+export interface ParentCurriculumProgress {
+  stageLabel: string
+  unitLabel: string
+  unitCompleted: number
+  unitTotal: number
+  badges: { id: string; title: string }[]
+  /** 当前进度已经走过全部已写好的课，后面都是占位。 */
+  beyondAuthored: boolean
+}
+
 export interface ParentChildView {
   student: Student
   groupName: string
@@ -233,6 +278,8 @@ export interface ParentChildView {
   currentLevelOrder: number
   totalLevels: number
   completedCount: number
+  /** 家长看到的是当前 Level 里的单元进度，不是全课程总关数。 */
+  curriculum: ParentCurriculumProgress
   weekly: WeeklySummary
   typingSeries: { weekStart: string; label: string; wpm: number | null; accuracy: number | null }[]
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import type { TypingStats } from '@/types'
 import { addTypingRecord, loadTypingSeries } from '@/api/learning'
+import { normalizeTypingScore, typingFeedback } from '@/lib/typingStats'
 import { getCurrentStudent } from '@/api/studentAuth'
 import { TypingTrainer } from '@/components/TypingTrainer'
 import { WpmChart } from '@/components/WpmChart'
@@ -82,8 +83,10 @@ export function TypingWarmup() {
           </div>
 
           {stats ? (
-            <div className="mt-6 rounded-card bg-success-soft px-6 py-8 text-center">
-              <p className="text-lg font-semibold text-success">这一组打完了</p>
+            <div className={`mt-6 rounded-card px-6 py-8 text-center ${stats.accuracy >= 60 ? 'bg-success-soft' : 'bg-danger-soft'}`}>
+              <p className={`text-lg font-semibold ${stats.accuracy >= 60 ? 'text-success' : 'text-danger'}`}>
+                {typingFeedback(stats.accuracy)}
+              </p>
               <div className="mt-4 flex justify-center gap-10">
                 <div>
                   <div className="text-3xl font-bold text-ink">{stats.wpm.toFixed(1)}</div>
@@ -112,11 +115,13 @@ export function TypingWarmup() {
                 hint={practice.hint}
                 onComplete={(result) => {
                   setStats(result)
+                  const score = normalizeTypingScore(result.wpm, result.accuracy)
+                  if (!score) return
                   void addTypingRecord({
                     practiceType: mode,
-                    wpm: result.wpm,
-                    accuracy: result.accuracy,
-                  })
+                    wpm: score.wpm,
+                    accuracy: score.accuracy,
+                  }).catch(() => undefined)
                 }}
               />
             </div>

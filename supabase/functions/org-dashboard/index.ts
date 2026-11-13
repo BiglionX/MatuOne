@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const ids = (students ?? []).map((student) => student.id)
     const [{ data: progress }, { data: typing }] = await Promise.all([
       ids.length
-        ? ctx.db.from('level_progress').select('student_id, completed').in('student_id', ids).eq('completed', true)
+        ? ctx.db.from('learning_record').select('student_id, completed').in('student_id', ids).eq('completed', true)
         : Promise.resolve({ data: [] as { student_id: string }[] }),
       ids.length
         ? ctx.db.from('typing_record').select('student_id, wpm, accuracy, created_at').in('student_id', ids)

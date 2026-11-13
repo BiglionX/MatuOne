@@ -21,10 +21,20 @@ Deno.serve(async (req) => {
 
   if (action === 'validate' || action === 'import') {
     const text = typeof body.text === 'string' ? body.text : ''
-    const { report, levels } = validateCoursePackage(text)
+    const { report, levels, placement } = validateCoursePackage(text)
     if (action === 'import' && report.ok) {
+      if (placement) {
+        const unit = await auth.db.from('curriculum_unit').upsert({
+          unit_id: placement.unit.unit_id,
+          semester_id: placement.legacySemesterId,
+          title: placement.unit.title,
+          sort_order: placement.unit.sort_order,
+          stage_level: placement.stageLevel,
+        })
+        if (unit.error) return json(500, { message: '导入失败' })
+      }
       for (const level of levels) {
-        const { error } = await auth.db.from('course_level').upsert({
+        const row: Record<string, unknown> = {
           level_id: level.level_id,
           sort_order: level.order,
           title: level.title,
@@ -32,7 +42,12 @@ Deno.serve(async (req) => {
           body: level,
           published: true,
           updated_at: new Date().toISOString(),
-        })
+        }
+        if (level.unit_id) row.unit_id = level.unit_id
+        if (level.pedagogy) row.level_type = level.pedagogy
+        if (level.knowledge_tags) row.knowledge_tags = level.knowledge_tags
+        if (level.milestone_badge !== undefined) row.milestone_badge = level.milestone_badge
+        const { error } = await auth.db.from('course_level').upsert(row)
         if (error) return json(500, { message: '导入失败' })
       }
     }

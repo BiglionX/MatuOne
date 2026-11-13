@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { bindChild, getParentSession, loadParentHome, logoutParent, lookupChild, unbindChild } from '@/api/parent'
 import { WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
+import { LEARNING_ROADMAP } from '@/data/learningRoadmap'
 import { formatDay } from '@/lib/format'
 import type { ParentChildView, ParentStoppedChild } from '@/types'
 import { ApiError } from '@/lib/apiError'
@@ -20,6 +21,7 @@ export function ParentHome() {
   const [stopped, setStopped] = useState<ParentStoppedChild[]>([])
   const [feedback, setFeedback] = useState('')
   const [ready, setReady] = useState(false)
+  const [roadmapOpen, setRoadmapOpen] = useState(false)
 
   const refresh = () =>
     loadParentHome()
@@ -221,24 +223,50 @@ export function ParentHome() {
             </section>
             <section className="card p-5">
               <h2 className="text-lg font-semibold text-ink">课程进度</h2>
-              <p className="mt-3 text-ink">
-                现在在学：<span className="font-semibold">{view.currentLevelTitle}</span>
+              <p className="mt-4 text-ink">
+                当前学段：<span className="font-semibold">{view.curriculum.stageLabel}</span>
               </p>
-              <div className="mt-4">
-                <div className="mb-2 flex justify-between text-sm text-ink-soft">
-                  <span>
-                    第 {view.currentLevelOrder} 关 / 共 {view.totalLevels} 关
-                  </span>
-                  <span>{view.totalLevels ? Math.round((view.completedCount / view.totalLevels) * 100) : 0}%</span>
-                </div>
-                <div className="h-3 overflow-hidden rounded-full bg-brand-soft">
-                  <div
-                    className="h-full rounded-full bg-brand"
-                    style={{ width: `${view.totalLevels ? (view.completedCount / view.totalLevels) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
-              <p className="mt-3 text-sm text-ink-soft">已完成 {view.completedCount} 关，剩下的一关一关来。</p>
+              <p className="mt-2 text-ink">
+                当前单元：<span className="font-semibold">{view.curriculum.unitLabel}</span>
+              </p>
+              {view.curriculum.beyondAuthored ? (
+                <p className="mt-4 text-ink">当前阶段的基础内容已学完，进阶课程即将上线</p>
+              ) : (
+                <>
+                  <p className="mt-2 text-ink">
+                    本单元进度：
+                    <span className="font-semibold">
+                      {view.curriculum.unitCompleted}/{view.curriculum.unitTotal} 节
+                    </span>
+                  </p>
+                  <div className="mt-4 h-3 overflow-hidden rounded-full bg-brand-soft">
+                    <div
+                      className="h-full rounded-full bg-brand"
+                      style={{
+                        width: `${view.curriculum.unitTotal ? (view.curriculum.unitCompleted / view.curriculum.unitTotal) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                  <p className="mt-3 text-sm text-ink-soft">正在学的是「{view.currentLevelTitle}」。这一单元学完，就可以先歇一歇。</p>
+                </>
+              )}
+            </section>
+            <section className="card p-5">
+              <h2 className="text-lg font-semibold text-ink">里程碑</h2>
+              {view.curriculum.badges.length > 0 ? (
+                <ul className="mt-4 flex flex-wrap gap-2">
+                  {view.curriculum.badges.map((badge) => (
+                    <li key={badge.id} className="chip bg-brand-soft text-brand-strong">
+                      {badge.title}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm text-ink-soft">还没有徽章。学完带里程碑的那一节，比如「初识海龟」，会出现在这里。</p>
+              )}
+              <button type="button" className="btn-secondary mt-4 w-full" onClick={() => setRoadmapOpen(true)}>
+                查看完整学习路线
+              </button>
             </section>
             <section className="card p-5">
               {confirmUnbind ? (
@@ -289,6 +317,40 @@ export function ParentHome() {
         {!binding && feedback && <p className="mt-3 text-sm text-ink-soft">{feedback}</p>}
         <p className="mt-6 text-center text-xs text-ink-soft">只显示自己孩子的记录，不做任何排名与对比。</p>
       </div>
+      {roadmapOpen && (
+        <div className="fixed inset-0 z-30 flex items-end justify-center bg-ink/40 px-4 py-6 sm:items-center" role="presentation" onClick={() => setRoadmapOpen(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="roadmap-title"
+            className="h5-shell max-h-[85vh] overflow-y-auto rounded-card bg-white p-5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 id="roadmap-title" className="text-lg font-semibold text-ink">
+                  完整学习路线
+                </h2>
+                <p className="mt-1 text-sm text-ink-soft">一共 8 个 Level。不必一次学完，每一级停下都有能带走的东西。</p>
+              </div>
+              <button type="button" className="btn-ghost px-3" onClick={() => setRoadmapOpen(false)}>
+                关闭
+              </button>
+            </div>
+            <ol className="mt-4 space-y-3">
+              {LEARNING_ROADMAP.map((stage, index) => (
+                <li key={stage.id} className="rounded-card border border-line px-4 py-4">
+                  <p className="text-sm text-brand-strong">
+                    {stage.level}
+                  </p>
+                  <p className="mt-1 font-semibold text-ink">{stage.title}</p>
+                  <p className="mt-2 text-sm text-ink-soft">{stage.detail}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

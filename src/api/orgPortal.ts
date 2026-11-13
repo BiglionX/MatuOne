@@ -92,7 +92,7 @@ export async function importOrgStudents(csv: string): Promise<{ rows: ImportRowR
 }
 
 export function importTemplate(groups: Group[]): string {
-  const name = groups[0]?.name ?? '二年级 A 班'
+  const name = groups[0]?.name ?? '萌芽班'
   return `姓名,账号,分组\n示例学生,student01,${name}\n`
 }
 

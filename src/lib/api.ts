@@ -1,20 +1,27 @@
 import type {
+  BlankLine,
   CourseActivation,
   ImportIssue,
   ImportReport,
   ImportRowResult,
   Level,
   LevelProgress,
+  LevelType,
   ParentChildView,
   PracticeType,
   Student,
   TypingRecord,
 } from '@/types'
+import type { StudentStanding } from '@/types/curriculum'
 import { LEVELS, getLevelById } from '@/mock/levels'
 import { LINE_NOTES } from '@/mock/lineNotes'
 import { ACTIVATION_SEED, GROUPS, ORG, PARENT_SEED, STUDENTS, TYPING_SEED, WEEKLY_SEED } from '@/mock/org'
 import { readOrgStudentById, readStudentSession } from './orgStore'
+import { presentParentProgress } from './parentProgress'
+import { resolveStudentStanding } from './standing'
 import { readJSON, writeJSON } from './storage'
+
+export type { StudentStanding } from '@/types/curriculum'
 
 /**
  * 页面使用的数据访问层。页面只从这里取数据，不直接 import src/mock/*，
@@ -148,35 +155,19 @@ export function getCourseMap(studentId: string): { entries: MapEntry[]; complete
 
 /* ----------------------------- 机构 / 家长共用的进度口径 ----------------------------- */
 
-export interface StudentStanding {
-  completedCount: number
-  currentOrder: number
-  /** progress：以本机真实进度为准；mock：本地还没学过，回落到演示数据 */
-  source: 'progress' | 'mock'
-}
-
 /**
- * 机构端、家长端的关卡口径要和学生端地图一致：
- * 只要本机有该生的学习记录，就以记录为准；完全没有记录时才回落到 mock 的 currentLevelOrder。
+ * 机构端、家长端的位置要和学生端地图一致。
+ * 学习记录只按 studentId 取，不看 orgId：换机构或在家登录，同一学生的地图照原样回来。
+ * 只要本机有该生的学习记录，就以记录为准；完全没有记录时才回落到 currentLevelOrder。
+ * 返回的是 Level、单元和当前课时，currentOrder 只是这条链上的线性序号。
  */
 export function getStudentStanding(studentId: string, student?: Student): StudentStanding {
   const s = student ?? listStudents().find((x) => x.id === studentId) ?? STUDENTS[0]
   const map = getProgressMap(studentId)
-  const hasRecord = Object.keys(map).length > 0
-  if (hasRecord) {
-    const completedCount = LEVELS.filter((l) => map[l.level_id]?.completed).length
-    const firstUnfinished = LEVELS.find((l) => !map[l.level_id]?.completed)
-    return {
-      completedCount,
-      currentOrder: firstUnfinished?.order ?? LEVELS.length,
-      source: 'progress',
-    }
-  }
-  return {
-    completedCount: Math.max(0, s.currentLevelOrder - 1),
-    currentOrder: Math.min(LEVELS.length, Math.max(1, s.currentLevelOrder)),
-    source: 'mock',
-  }
+  return resolveStudentStanding({
+    records: Object.values(map).map((row) => ({ levelId: row.levelId, completed: row.completed })),
+    fallbackOrder: s.currentLevelOrder,
+  })
 }
 
 /* ----------------------------- 打字 ----------------------------- */
@@ -273,7 +264,7 @@ export function groupName(groupId: string): string {
   return GROUPS.find((g) => g.id === groupId)?.name ?? '未分组'
 }
 
-const CSV_TEMPLATE = '姓名,账号,分组\n张小明,zhangxiaoming,二年级 A 班\n李小红,lixiaohong,三年级 B 班\n'
+const CSV_TEMPLATE = '姓名,账号,分组\n张小明,zhangxiaoming,萌芽班\n李小红,lixiaohong,探索班\n'
 
 export function getImportTemplate(): string {
   return CSV_TEMPLATE
@@ -478,6 +469,7 @@ export function getChildView(studentId: string): ParentChildView {
     currentLevelOrder: currentOrder,
     totalLevels: LEVELS.length,
     completedCount,
+    curriculum: presentParentProgress(currentOrder),
     weekly: {
       weekStart: new Date().toISOString().slice(0, 10),
       sessions: weekly.sessions,
@@ -505,6 +497,24 @@ function asArray(pkg: unknown): PackageLevel[] {
     return (pkg as { levels: PackageLevel[] }).levels
   }
   return []
+}
+
+function readBlankLines(value: unknown): BlankLine[] {
+  if (!Array.isArray(value)) return []
+  const groups: BlankLine[] = []
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue
+    const row = item as { line?: unknown; blanks?: unknown }
+    if (typeof row.line !== 'number' || !Array.isArray(row.blanks)) continue
+    const blanks = row.blanks.flatMap((blank) => {
+      if (!blank || typeof blank !== 'object') return []
+      const span = blank as { start?: unknown; end?: unknown; answer?: unknown }
+      if (typeof span.start !== 'number' || typeof span.end !== 'number' || typeof span.answer !== 'string') return []
+      return [{ start: span.start, end: span.end, answer: span.answer }]
+    })
+    if (blanks.length) groups.push({ line: row.line, blanks })
+  }
+  return groups
 }
 
 /** 校验课程 JSON 包，返回逐字段问题清单 */
@@ -565,12 +575,18 @@ export function validateCoursePackage(text: string): { report: ImportReport; lev
     if (raw.error_mappings !== undefined && !Array.isArray(raw.error_mappings))
       push('error_mappings', 'error_mappings 需要是数组')
     if (typeof raw.estimated_minutes !== 'number') push('estimated_minutes', '缺少 estimated_minutes（数字）')
+    const levelType: LevelType =
+      raw.level_type === 'fill_blank' || raw.level_type === 'debug' ? raw.level_type : 'normal'
+    const blankLines = readBlankLines(raw.blank_lines)
+    if (levelType === 'fill_blank' && blankLines.length === 0) {
+      push('blank_lines', 'fill_blank 关卡需要 blank_lines，写明哪几行要填空')
+    }
 
     if (Array.isArray(raw.teach_code_lines) && raw.teach_code_lines.length > 15) {
       issues.push({
         levelId: label,
         field: 'teach_code_lines',
-        message: '代码行数超过 15 行，超出 1.0 年级上限，建议拆节。',
+        message: '代码行数超过 15 行，超出 1.0 的行数上限，建议拆节。',
         severity: 'warning',
       })
     }
@@ -584,11 +600,16 @@ export function validateCoursePackage(text: string): { report: ImportReport; lev
         order: raw.order!,
         title: raw.title!,
         goal: raw.goal!,
-        grade_range: raw.grade_range ?? '2-5',
         demo_code: raw.demo_code!,
         expected_output: raw.expected_output ?? '',
         preview_kind: raw.preview_kind === 'text' ? 'text' : 'turtle',
+        level_type: levelType,
         teach_code_lines: raw.teach_code_lines!,
+        blank_lines: blankLines.length ? blankLines : undefined,
+        unfolded_lines: Array.isArray(raw.unfolded_lines)
+          ? raw.unfolded_lines.filter((line): line is string => typeof line === 'string')
+          : undefined,
+        line_notes: Array.isArray(raw.line_notes) ? (raw.line_notes as string[]) : undefined,
         keywords: raw.keywords!,
         challenge_params: (raw.challenge_params as Level['challenge_params']) ?? [],
         error_mappings: (raw.error_mappings as Level['error_mappings']) ?? [],
@@ -600,6 +621,7 @@ export function validateCoursePackage(text: string): { report: ImportReport; lev
             explain: '运行一次就能看到结果。',
           },
         estimated_minutes: raw.estimated_minutes!,
+        is_review: Boolean(raw.is_review),
       })
     }
   })

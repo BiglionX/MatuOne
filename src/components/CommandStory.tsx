@@ -196,8 +196,18 @@ export function CommandStory({ level, onClose }: Props) {
       kind: 'ready',
       kicker: '看完了',
       title: '接下来，先猜一猜',
-      text: '猜完再运行，然后一行一行把代码抄出来。',
-      speak: '看完了。接下来先猜一猜结果，再一行一行把代码抄出来。',
+      text:
+        level.level_type === 'fill_blank'
+          ? '猜完再运行，然后把空出来的词填上。'
+          : level.unfolded_lines?.length
+            ? '猜完再运行，然后看重复的代码怎么收成循环。'
+            : '猜完再运行，然后一行一行把代码抄出来。',
+      speak:
+        level.level_type === 'fill_blank'
+          ? '看完了。接下来先猜一猜结果，再把空出来的词填上。'
+          : level.unfolded_lines?.length
+            ? '看完了。接下来先猜一猜结果，再看重复的代码怎么收成循环。'
+            : '看完了。接下来先猜一猜结果，再一行一行把代码抄出来。',
     })
 
     return list

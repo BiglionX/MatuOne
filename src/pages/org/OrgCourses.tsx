@@ -66,7 +66,7 @@ export function OrgCourses() {
             <span className="chip bg-brand-soft text-brand-strong">Python 编程课外课</span>
             <h2 className="mt-3 text-2xl font-bold text-ink">代码闯关 · 1.0</h2>
             <p className="mt-2 text-ink-soft">
-              {levelCount} 关 · 每节约 20 分钟 · 适合小学 2—5 年级 · 纯浏览器运行，无需硬件
+              {levelCount} 关 · 每节约 20 分钟 · 从 Level 1 开始 · 纯浏览器运行，无需硬件
             </p>
           </div>
           <div className="rounded-card bg-canvas px-5 py-4 text-center">

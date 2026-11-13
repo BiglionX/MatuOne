@@ -14,6 +14,7 @@ await build({
   format: 'esm',
   target: 'node20',
   legalComments: 'none',
+  alias: { '@': join(root, 'src') },
   banner: { js: '/* Generated from server/vercelHandler.ts. Do not edit. */' },
 })
 

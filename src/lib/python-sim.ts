@@ -109,15 +109,19 @@ export function parseCode(rawCode: string): { nodes: Node[] } {
       throw new SimError(lineNo, 'paren', '这一行的括号没有配对')
     }
 
+    if (/^(for|if|elif|else|while|def|class)\b/.test(text) && !text.endsWith(':')) {
+      throw new SimError(lineNo, 'syntax', "expected ':'")
+    }
+
     if (indent > 0 && lastNode) {
       if (indent > lastNode.indent) {
         // 缩进只允许出现在冒号结尾的行之后，且只能深一层（4 空格）
         if (!lastNode.text.endsWith(':') || indent !== lastNode.indent + 4) {
-          throw new SimError(lineNo, 'indent', '这一行的缩进位置不对')
+          throw new SimError(lineNo, 'indent', 'IndentationError')
         }
       }
     } else if (indent > 0) {
-      throw new SimError(lineNo, 'indent', '第一行不用缩进')
+      throw new SimError(lineNo, 'indent', 'IndentationError')
     }
 
     const node: Node = { line: lineNo, indent, text, children: [] }
@@ -129,7 +133,7 @@ export function parseCode(rawCode: string): { nodes: Node[] } {
     } else if (indent === 0) {
       nodes.push(node)
     } else {
-      throw new SimError(lineNo, 'indent', '这一行缩进的位置不对')
+      throw new SimError(lineNo, 'indent', 'IndentationError')
     }
     stack.push(node)
     lastNode = node
@@ -142,7 +146,7 @@ export function parseCode(rawCode: string): { nodes: Node[] } {
         let nextIndent = 0
         for (const ch of nextRaw.match(/^[ \t]*/)![0]) nextIndent += ch === '\t' ? 4 : 1
         if (nextIndent < indent + 4) {
-          throw new SimError(next + 1, 'indent', '冒号后面的那一行要缩进')
+          throw new SimError(next + 1, 'indent', 'IndentationError')
         }
       }
     }
@@ -458,6 +462,9 @@ function execBlock(nodes: Node[], turtle: Turtle, env: Record<string, number>) {
     if (text.startsWith('if ')) {
       const match = text.match(/^if\s+(.+)\s*:$/)
       if (!match) throw new SimError(node.line, 'syntax', 'if 这一行写得不太对')
+      if (/(?<![<>!=])=(?!=)/.test(match[1])) {
+        throw new SimError(node.line, 'syntax', '= vs ==')
+      }
       const ok = evalCond(match[1], env, node.line)
       const next = nodes[i + 1]
       const hasElse = !!next && next.indent === node.indent && next.text.startsWith('else')
@@ -465,6 +472,10 @@ function execBlock(nodes: Node[], turtle: Turtle, env: Record<string, number>) {
       else if (hasElse) execBlock(next.children, turtle, env)
       if (hasElse) i++
       continue
+    }
+
+    if (/^[a-zA-Z_][a-zA-Z0-9_]*\s*==/.test(text)) {
+      throw new SimError(node.line, 'syntax', '= vs ==')
     }
 
     const assign = text.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=(?!=)\s*(.+)$/)

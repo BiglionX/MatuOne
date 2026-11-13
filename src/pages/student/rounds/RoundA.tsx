@@ -10,7 +10,12 @@ interface Props {
   onNext: () => void
 }
 
-/** A 回合：先看效果、猜一猜，再运行给定代码验证 */
+function missedGuessHint(answer: string): string {
+  const name = answer === '一个三角形' ? '三角形' : answer
+  return `猜错了没关系，看看图形和你想的一样吗？其实这是${name}哦`
+}
+
+/** A 回合：先看效果、猜一猜，再运行给定代码验证。猜错也能跑通。 */
 export function RoundA({ level, targetResult, onNext }: Props) {
   const [choice, setChoice] = useState<number | null>(null)
   const [result, setResult] = useState<RunResult | null>(null)
@@ -19,12 +24,14 @@ export function RoundA({ level, targetResult, onNext }: Props) {
 
   const answered = choice !== null
   const correct = choice === level.quiz.answerIndex
-  const notes = getLineNotes(level)
+  const notes = level.unfolded_lines?.length ? [] : getLineNotes(level)
+  const previewLines = level.unfolded_lines?.length ? level.unfolded_lines : level.teach_code_lines
 
   const run = async () => {
     if (running) return
     setRunning(true)
-    const res = await runCode(buildDemoCode(level), level.level_id)
+    const source = level.unfolded_lines?.length ? level.unfolded_lines.join('\n') : buildDemoCode(level)
+    const res = await runCode(source, level.level_id)
     setResult(res)
     setRunning(false)
     if (res.ok) {
@@ -40,9 +47,14 @@ export function RoundA({ level, targetResult, onNext }: Props) {
         <div className="min-h-[360px] flex-1">
           <RunPreview result={result ?? targetResult} flash={flash && !!result?.ok} />
         </div>
-        {result?.ok && (
+        {result?.ok && correct && (
           <p className="rounded-field bg-success-soft px-4 py-3 text-success">
             跑通了！和刚才看到的图案一样，代码就是这样指挥电脑的。
+          </p>
+        )}
+        {result?.ok && !correct && (
+          <p className="rounded-field bg-warning-soft px-4 py-3 text-ink">
+            {missedGuessHint(level.quiz.options[level.quiz.answerIndex] ?? '')}
           </p>
         )}
       </div>
@@ -96,7 +108,7 @@ export function RoundA({ level, targetResult, onNext }: Props) {
           <div className="mb-4 rounded-field border border-line bg-code-bg px-4 py-3">
             <p className="mb-2 text-xs text-ink-soft">要运行的代码 · 每一行在做什么</p>
             <div className="max-h-64 space-y-2.5 overflow-auto pr-1">
-              {level.teach_code_lines.map((line, i) => (
+              {previewLines.map((line, i) => (
                 <div key={`${i}-${line}`}>
                   <pre className="code-font text-sm text-ink">{line || ' '}</pre>
                   {notes[i] && <p className="mt-0.5 text-sm leading-snug text-ink-soft">{notes[i]}</p>}

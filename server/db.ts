@@ -57,6 +57,14 @@ function coerce(value: unknown, dataTypeID: number): unknown {
     const number = typeof value === 'number' ? value : Number(value)
     return Number.isFinite(number) ? number : value
   }
+  // Neon 的原始文本模式把 json/jsonb 当成字符串返回。不解析的话，关卡正文到了页面就是一串文本，读不到课文。
+  if ((dataTypeID === 114 || dataTypeID === 3802) && typeof value === 'string') {
+    try {
+      return JSON.parse(value) as unknown
+    } catch {
+      return value
+    }
+  }
   return value
 }
 

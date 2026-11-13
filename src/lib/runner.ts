@@ -1,4 +1,5 @@
 import type { ChallengeParam, Level, RunResult } from '@/types'
+import { resolveFriendly } from './errorHint'
 import { hintFor, resolveLevel } from './levelCatalog'
 import { SimError, simulate } from './python-sim'
 
@@ -45,7 +46,8 @@ export async function runCode(code: string, levelId: string): Promise<RunResult>
   } catch (err) {
     const simError = err instanceof SimError ? err : null
     const pattern = simError?.pattern ?? 'syntax'
-    const mapping = level.error_mappings.find((item) => item.pattern === pattern)
+    const diagnostic = `${simError?.message ?? ''} ${pattern}`
+    const mapped = resolveFriendly(level.error_mappings, pattern, diagnostic)
     const fallback: Record<string, string> = {
       syntax: '这一行和标准答案对不上，仔细看看是不是少打了个符号。',
       cjk: '这里的括号或逗号是中文的，换成英文输入法再打一次。',
@@ -64,7 +66,8 @@ export async function runCode(code: string, levelId: string): Promise<RunResult>
         line: simError?.line ?? 1,
         pattern,
         // 用课程配置里的话术优先，保证提示和本节内容贴合
-        message: hintFor(pattern) ?? mapping?.friendlyMessage ?? fallback[pattern] ?? fallback.syntax,
+        // 关卡自己的 error_mappings 优先，全局 hint 只作兜底
+        message: mapped ?? hintFor(pattern) ?? fallback[pattern] ?? fallback.syntax,
       },
     }
   }

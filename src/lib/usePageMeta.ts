@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { SITE } from '@/config/site'
 
 const DEFAULT_TITLE = `${SITE.productName} · ${SITE.tagline}`
-const DEFAULT_DESC = '面向小学 2—5 年级的 Python 编程课外课：学生自己抄代码、逐行校验、跑出图形。'
+const DEFAULT_DESC = '面向儿童的 Python 编程课外课：学生自己抄代码、逐行校验、跑出图形。'
 const DEFAULT_IMAGE = '/og-cover.png'
 
 function setMeta(name: string, content: string, attr: 'name' | 'property' = 'name') {

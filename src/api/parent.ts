@@ -1,4 +1,5 @@
 import type { ParentChildView, ParentHomeData, ParentSession, ParentStoppedChild, Student } from '@/types'
+import { presentParentProgress } from '@/lib/parentProgress'
 import { callFunction, clearAuth, establishSession } from '@/lib/backend'
 
 const PROFILE = 'cdg.session.parent'
@@ -77,6 +78,7 @@ export async function loadParentHome(): Promise<ParentHomeData> {
   return {
     children: result.children.map((child) => ({
       ...child,
+      curriculum: child.curriculum ?? presentParentProgress(child.currentLevelOrder),
       student: {
         ...(child.student as Omit<Student, 'password' | 'account' | 'bindCode'>),
         account: '',

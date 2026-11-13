@@ -2,7 +2,15 @@ import type { RunResult } from '@/types'
 import { TurtleCanvas } from './TurtleCanvas'
 
 /** 运行结果的统一展示：成功出图 / print 文本 / 失败的人话面板 */
-export function RunPreview({ result, flash = false }: { result: RunResult | null; flash?: boolean }) {
+export function RunPreview({
+  result,
+  flash = false,
+  frame,
+}: {
+  result: RunResult | null
+  flash?: boolean
+  frame?: { minX: number; minY: number; maxX: number; maxY: number }
+}) {
   if (!result) {
     return (
       <div className="flex h-full items-center justify-center rounded-card border-2 border-dashed border-line text-ink-soft">
@@ -33,6 +41,7 @@ export function RunPreview({ result, flash = false }: { result: RunResult | null
   return (
     <TurtleCanvas
       art={result.art}
+      frame={frame}
       flash={flash}
       className="h-full"
       placeholder="这条代码还没有画出线来"

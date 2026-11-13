@@ -19,9 +19,11 @@ export function StudentProfile() {
   if (!student) return <Navigate to="/student/login" replace />
 
   const entries = home?.entries ?? []
-  const completedCount = home?.completedCount ?? 0
+  const currentUnit = home?.units.find((unit) => unit.unitId === home.currentUnitId) ?? home?.units[0]
+  const completedCount = currentUnit?.completedCount ?? 0
+  const unitTotal = currentUnit?.total ?? entries.length
   const totalStars = entries.reduce((sum, item) => sum + item.stars, 0)
-  const currentLevel = entries.find((item) => item.current)
+  const currentLevel = entries.find((item) => item.current) ?? entries.find((item) => !item.completed)
   const typing = home?.typingSeries ?? []
   const lastTyping = [...typing].reverse().find((point) => point.wpm !== null)
   const lastActive = (() => {
@@ -92,13 +94,13 @@ export function StudentProfile() {
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold text-ink">我的进度</h2>
               <span className="text-sm text-ink-soft">
-                {completedCount} / {entries.length} 关
+                本单元 {completedCount} / {unitTotal} 节
               </span>
             </div>
             <div className="mt-4 h-3 overflow-hidden rounded-full bg-brand-soft">
               <div
                 className="h-full rounded-full bg-brand transition-all"
-                style={{ width: `${entries.length ? (completedCount / entries.length) * 100 : 0}%` }}
+                style={{ width: `${unitTotal ? (completedCount / unitTotal) * 100 : 0}%` }}
               />
             </div>
             <div className="mt-4 flex items-center justify-between text-sm">
@@ -109,7 +111,7 @@ export function StudentProfile() {
               </span>
             </div>
             <p className="mt-4 rounded-field bg-canvas px-4 py-3 text-sm text-ink">
-              {currentLevel ? `现在在学：第 ${currentLevel.order} 关 · ${currentLevel.title}` : '已经学过的关卡都跑通了，可以回头挑一关再改一改。'}
+              {`现在在学：${home?.heading ?? '课程'} · ${currentUnit?.title ?? '本单元'} · ${currentLevel?.title ?? '下一节'}`}
             </p>
           </div>
 
@@ -128,7 +130,7 @@ export function StudentProfile() {
         <section className="card p-6">
           <div className="flex items-baseline justify-between">
             <h2 className="text-lg font-semibold text-ink">关卡记录</h2>
-            <span className="text-sm text-ink-soft">共 {entries.length} 关</span>
+            <span className="text-sm text-ink-soft">本单元 {entries.length} 节</span>
           </div>
           <div className="mt-4 divide-y divide-line">
             {entries.map((item) => (

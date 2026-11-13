@@ -9,7 +9,7 @@ const CARDS = [
 ]
 
 export function HomePage() {
-  usePageMeta(undefined, '面向小学 2—5 年级的 Python 编程课外课：学生自己抄代码、逐行校验、跑出图形。机构零师资、零硬件开课，14 天试用。')
+  usePageMeta(undefined, '面向儿童的 Python 编程课外课：学生自己抄代码、逐行校验、跑出图形。机构零师资、零硬件开课，14 天试用。')
   return (
     <main>
       <section className="mx-auto max-w-5xl px-5 py-16">

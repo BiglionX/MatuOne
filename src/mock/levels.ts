@@ -1,4 +1,4 @@
-import type { ErrorMapping, Level } from '@/types'
+import type { ErrorMapping, Level } from '../types'
 
 /** 四类报错的人话提示（1.0 覆盖：括号 / 中英文符号 / 缩进 / 拼写） */
 const baseMappings: ErrorMapping[] = [
@@ -20,7 +20,27 @@ const baseMappings: ErrorMapping[] = [
   },
 ]
 
+/** 第 4–12 关补上的三类诊断。match 是对报错原文的正则。 */
+const syntaxMappings: ErrorMapping[] = [
+  {
+    pattern: 'IndentationError',
+    match: 'IndentationError',
+    friendlyMessage: 'Python 很看重缩进，循环里面的代码要往右退一格哦。',
+  },
+  {
+    pattern: "expected ':'",
+    match: "expected ':'",
+    friendlyMessage: "这行代码最后少了一个英文冒号 ':'，加上它试试。",
+  },
+  {
+    pattern: '= vs ==',
+    match: '= vs ==',
+    friendlyMessage: "判断是否相等要用两个等号 '==' 哦，一个等号是赋值。",
+  },
+]
+
 const m = (extra: ErrorMapping[] = []) => [...baseMappings, ...extra]
+const teach = (extra: ErrorMapping[] = []) => [...syntaxMappings, ...extra, ...baseMappings]
 
 export const LEVELS: Level[] = [
   {
@@ -28,7 +48,7 @@ export const LEVELS: Level[] = [
     order: 1,
     title: '让电脑开口说话',
     goal: '用 print 把一句话打印出来',
-    grade_range: '2-5',
+    level_type: 'normal',
     demo_code: 'print("  *  ")\nprint(" *** ")\nprint("*****")',
     expected_output: '一个用星号拼出来的三角形',
     preview_kind: 'text',
@@ -64,7 +84,7 @@ export const LEVELS: Level[] = [
     order: 2,
     title: '海龟画第一条线',
     goal: '让海龟往前走、再拐个弯',
-    grade_range: '2-5',
+    level_type: 'normal',
     demo_code: 't.forward(200)\nt.right(90)\nt.forward(120)\nt.done()',
     expected_output: '一条横线加一条竖线，像一个小拐角',
     preview_kind: 'turtle',
@@ -110,7 +130,7 @@ export const LEVELS: Level[] = [
     order: 3,
     title: '画一个正方形',
     goal: '重复「走一段、转个弯」把正方形画出来',
-    grade_range: '2-5',
+    level_type: 'normal',
     demo_code:
       't.forward(120)\nt.right(90)\nt.forward(120)\nt.right(90)\nt.forward(120)\nt.right(90)\nt.forward(120)\nt.right(90)',
     expected_output: '一个正方形',
@@ -166,7 +186,7 @@ export const LEVELS: Level[] = [
     order: 4,
     title: '用一个变量控制边长',
     goal: '把边长装进变量，改一处就全改',
-    grade_range: '3-5',
+    level_type: 'normal',
     demo_code:
       'size = 100\nt.forward(size)\nt.right(90)\nt.forward(size)\nt.right(90)\nt.forward(size)\nt.right(90)\nt.forward(size)\nt.right(90)',
     expected_output: '一个边长可以调大调小的正方形',
@@ -190,7 +210,7 @@ export const LEVELS: Level[] = [
         type: 'number',
         min: 50,
         max: 200,
-        step: 10,
+        step: 50,
         default: 100,
         apply: { kind: 'assign', variable: 'size' },
         hint: '变量就像一个小盒子，里面装着正方形现在的大小。',
@@ -209,7 +229,7 @@ export const LEVELS: Level[] = [
         hint: '90 度才是正方形，改成别的角就不方了。',
       },
     ],
-    error_mappings: m(),
+    error_mappings: teach(),
     quiz: {
       question: '把 size 改成 150，正方形会怎样？',
       options: ['变大了', '变小了', '没有变化'],
@@ -223,7 +243,7 @@ export const LEVELS: Level[] = [
     order: 5,
     title: '综合：画一个可调三角形',
     goal: '变量 + 转角，拼出一个能改大小的三角形',
-    grade_range: '3-5',
+    level_type: 'fill_blank',
     demo_code:
       'size = 120\nangle = 120\nt.forward(size)\nt.right(angle)\nt.forward(size)\nt.right(angle)\nt.forward(size)\nt.right(angle)',
     expected_output: '一个等边三角形',
@@ -238,17 +258,26 @@ export const LEVELS: Level[] = [
       't.forward(size)',
       't.right(angle)',
     ],
+    blank_lines: [
+      { line: 0, blanks: [{ start: 7, end: 10, answer: '120' }] },
+      { line: 1, blanks: [{ start: 8, end: 11, answer: '120' }] },
+      { line: 4, blanks: [{ start: 10, end: 14, answer: 'size' }] },
+      { line: 5, blanks: [{ start: 8, end: 13, answer: 'angle' }] },
+      { line: 6, blanks: [{ start: 10, end: 14, answer: 'size' }] },
+      { line: 7, blanks: [{ start: 8, end: 13, answer: 'angle' }] },
+    ],
     keywords: ['size', 'angle', 't.right(angle)'],
     challenge_params: [
       {
         name: 'size',
         label: '三角形边长',
         type: 'number',
-        min: 60,
-        max: 180,
-        step: 20,
+        min: 40,
+        max: 200,
+        step: 40,
         default: 120,
         apply: { kind: 'assign', variable: 'size' },
+        hint: '拖到两头，三角形会明显变大或变小。',
       },
       {
         name: 'angle',
@@ -263,7 +292,7 @@ export const LEVELS: Level[] = [
         apply: { kind: 'assign', variable: 'angle' },
       },
     ],
-    error_mappings: m(),
+    error_mappings: teach(),
     quiz: {
       question: '三角形三个角一样大，每次应该转多少度？',
       options: ['60 度', '90 度', '120 度'],
@@ -276,14 +305,25 @@ export const LEVELS: Level[] = [
   {
     level_id: 'L06',
     order: 6,
-    title: '用 for 循环，8 行变 4 行',
-    goal: '把重复的动作交给 for 循环',
-    grade_range: '3-5',
-    demo_code: 'size = 120\nfor i in range(4):\n    t.forward(size)\n    t.right(90)',
-    expected_output: '和上一关一样的正方形，代码更短',
+    title: '用 for 循环，8 行收成循环',
+    goal: '看见重复的 8 行怎样收成 for',
+    level_type: 'normal',
+    demo_code:
+      't.forward(120)\nt.right(90)\nt.forward(120)\nt.right(90)\nt.forward(120)\nt.right(90)\nt.forward(120)\nt.right(90)',
+    expected_output: '一个正方形。8 行重复和后面的循环画出的是同一个图形',
     preview_kind: 'turtle',
-    teach_code_lines: ['size = 120', 'for i in range(4):', '    t.forward(size)', '    t.right(90)'],
-    keywords: ['for', 'in range(4)', 't.right(90)'],
+    unfolded_lines: [
+      't.forward(120)',
+      't.right(90)',
+      't.forward(120)',
+      't.right(90)',
+      't.forward(120)',
+      't.right(90)',
+      't.forward(120)',
+      't.right(90)',
+    ],
+    teach_code_lines: ['for i in range(4):', '    t.forward(120)', '    t.right(90)'],
+    keywords: ['for', 'in range(4)', 't.forward(120)', 't.right(90)'],
     challenge_params: [
       {
         name: 'repeat',
@@ -291,23 +331,23 @@ export const LEVELS: Level[] = [
         type: 'select',
         default: '4',
         options: [
-          { value: '2', label: '2 次' },
-          { value: '4', label: '4 次' },
-          { value: '6', label: '6 次' },
+          { value: '2', label: '2 次（一个拐角）' },
+          { value: '3', label: '3 次（还缺一条边）' },
+          { value: '4', label: '4 次（正方形）' },
         ],
         apply: { kind: 'arg', func: 'range', argIndex: 0 },
-        hint: '转的次数变了，图形也会跟着变。',
+        hint: '2 次是拐角，3 次还敞着口，4 次才围上。',
       },
       {
-        name: 'size',
-        label: '边长也改一改',
+        name: 'edge',
+        label: '每条边多长？',
         type: 'number',
-        min: 60,
-        max: 180,
-        step: 20,
+        min: 40,
+        max: 200,
+        step: 40,
         default: 120,
-        apply: { kind: 'assign', variable: 'size' },
-        hint: '边长和次数一起变，才能看出循环的本事。',
+        apply: { kind: 'arg', func: 'forward', argIndex: 0 },
+        hint: '数字差得越大，正方形差得越明显。',
       },
       {
         name: 'corner',
@@ -320,20 +360,20 @@ export const LEVELS: Level[] = [
           { value: '120', label: '120 度' },
         ],
         apply: { kind: 'arg', func: 'right', argIndex: 0 },
-        hint: '90 度画出来才是正方形。',
+        hint: '角度一变，就不再是正方形。',
       },
     ],
-    error_mappings: m([
+    error_mappings: teach([
       {
         pattern: 'indent',
         friendlyMessage: 'for 下面的两行要缩进 4 个空格，不然循环里什么都没有。',
       },
     ]),
     quiz: {
-      question: 'for i in range(4) 会把下面缩进的两行重复几次？',
-      options: ['1 次', '4 次', '无数次'],
+      question: '这 8 行里，「走一段、转 90 度」重复了几次？',
+      options: ['2 次', '4 次', '8 次'],
       answerIndex: 1,
-      explain: 'range(4) 数出来 0、1、2、3 四个数，所以重复 4 次。',
+      explain: '每两行是一次，一共 4 次。下一回合把这 4 次收成 for。',
     },
     estimated_minutes: 20,
   },
@@ -342,7 +382,7 @@ export const LEVELS: Level[] = [
     order: 7,
     title: 'for + range 画多边形',
     goal: '改一个数字就能画三角形、五边形、八边形',
-    grade_range: '3-5',
+    level_type: 'normal',
     demo_code: 'sides = 5\nfor i in range(sides):\n    t.forward(80)\n    t.right(360 / sides)',
     expected_output: '一个正五边形',
     preview_kind: 'turtle',
@@ -367,15 +407,15 @@ export const LEVELS: Level[] = [
         name: 'edge',
         label: '每条边多长？',
         type: 'number',
-        min: 60,
-        max: 140,
-        step: 20,
+        min: 40,
+        max: 160,
+        step: 40,
         default: 80,
         apply: { kind: 'arg', func: 'forward', argIndex: 0 },
         hint: '边越长，多边形越大，形状不变。',
       },
     ],
-    error_mappings: m(),
+    error_mappings: teach(),
     quiz: {
       question: '为什么转角是 360 / sides？',
       options: ['转一整圈正好 360 度，要平均分给每条边', '因为 360 是个吉利数字', '海龟最多只能转 360 度'],
@@ -389,7 +429,7 @@ export const LEVELS: Level[] = [
     order: 8,
     title: 'if 判断，让海龟自己选颜色',
     goal: '用 if / else 让电脑做一个选择',
-    grade_range: '4-5',
+    level_type: 'normal',
     demo_code:
       'sides = 6\nif sides > 5:\n    t.color("teal")\nelse:\n    t.color("orange")\nfor i in range(sides):\n    t.forward(80)\n    t.right(360 / sides)',
     expected_output: '六边形，并且是青色的',
@@ -422,15 +462,15 @@ export const LEVELS: Level[] = [
         name: 'edge',
         label: '每条边多长？',
         type: 'number',
-        min: 60,
-        max: 140,
-        step: 20,
+        min: 40,
+        max: 180,
+        step: 40,
         default: 80,
         apply: { kind: 'arg', func: 'forward', argIndex: 0 },
-        hint: '边长只管大小，if 判断管的是颜色。',
+        hint: '边长只管大小，拖到两头，图形会明显变大或变小。',
       },
     ],
-    error_mappings: m([
+    error_mappings: teach([
       {
         pattern: 'indent',
         friendlyMessage: 'if 和 else 下面的颜色那一行都要缩进 4 个空格。',
@@ -449,7 +489,7 @@ export const LEVELS: Level[] = [
     order: 9,
     title: '综合：循环里的 if，画双色多边形',
     goal: '把循环和判断叠在一起，画出两种颜色',
-    grade_range: '4-5',
+    level_type: 'normal',
     demo_code:
       'sides = 5\nfor i in range(sides):\n    if i < 2:\n        t.color("teal")\n    else:\n        t.color("orange")\n    t.forward(90)\n    t.right(360 / sides)',
     expected_output: '前两条边青色、后面橙色的五边形',
@@ -482,15 +522,15 @@ export const LEVELS: Level[] = [
         name: 'edge',
         label: '每条边多长？',
         type: 'number',
-        min: 60,
-        max: 140,
-        step: 10,
+        min: 40,
+        max: 160,
+        step: 40,
         default: 90,
         apply: { kind: 'arg', func: 'forward', argIndex: 0 },
         hint: '边长变了，两个颜色照样一段一段排着。',
       },
     ],
-    error_mappings: m([
+    error_mappings: teach([
       {
         pattern: 'indent',
         friendlyMessage: '这里有两层缩进：if 在循环里要多缩一次，颜色那一行还要再缩一次。',
@@ -510,7 +550,7 @@ export const LEVELS: Level[] = [
     order: 10,
     title: '变量加一加，越画越大',
     goal: '每循环一次，把长度加上 20',
-    grade_range: '4-5',
+    level_type: 'normal',
     demo_code: 'step = 40\nfor i in range(8):\n    t.forward(step)\n    step = step + 20\n    t.right(45)',
     expected_output: '一圈比一圈长的螺旋',
     preview_kind: 'turtle',
@@ -522,8 +562,8 @@ export const LEVELS: Level[] = [
         label: '第一步走多长？',
         type: 'number',
         min: 20,
-        max: 80,
-        step: 10,
+        max: 100,
+        step: 40,
         default: 40,
         apply: { kind: 'assign', variable: 'step' },
         hint: '起点越长，整朵花越大。',
@@ -542,7 +582,7 @@ export const LEVELS: Level[] = [
         hint: '角度越小，线条挤得越紧。',
       },
     ],
-    error_mappings: m(),
+    error_mappings: teach(),
     quiz: {
       question: '这 8 条线会一样长吗？',
       options: ['一样长', '一条比一条长', '一条比一条短'],
@@ -556,7 +596,7 @@ export const LEVELS: Level[] = [
     order: 11,
     title: '变量组合，画一片花边',
     goal: '把长度和角度一起用起来',
-    grade_range: '4-5',
+    level_type: 'normal',
     demo_code: 'length = 60\nfor i in range(6):\n    t.forward(length)\n    t.right(60)\n    length = length + 25',
     expected_output: '一片逐渐张开的花边',
     preview_kind: 'turtle',
@@ -567,9 +607,9 @@ export const LEVELS: Level[] = [
         name: 'length',
         label: '起始长度',
         type: 'number',
-        min: 40,
-        max: 90,
-        step: 10,
+        min: 30,
+        max: 120,
+        step: 30,
         default: 60,
         apply: { kind: 'assign', variable: 'length' },
       },
@@ -587,7 +627,7 @@ export const LEVELS: Level[] = [
         hint: '角度决定花边张开的样子。',
       },
     ],
-    error_mappings: m(),
+    error_mappings: teach(),
     quiz: {
       question: '第一次循环结束时，length 变成多少？',
       options: ['60', '85', '25'],
@@ -601,7 +641,7 @@ export const LEVELS: Level[] = [
     order: 12,
     title: '阶段收束：画一朵小星花',
     goal: '把学过的循环、颜色、变量拼成一件作品',
-    grade_range: '4-5',
+    level_type: 'normal',
     demo_code:
       'petals = 6\nsize = 90\nfor i in range(petals):\n    t.color("teal")\n    for j in range(4):\n        t.forward(size)\n        t.right(90)\n    t.right(360 / petals)',
     expected_output: '一朵六瓣的青色小花',
@@ -634,14 +674,14 @@ export const LEVELS: Level[] = [
         name: 'size',
         label: '每片花瓣多大？',
         type: 'number',
-        min: 60,
-        max: 120,
-        step: 10,
+        min: 40,
+        max: 140,
+        step: 50,
         default: 90,
         apply: { kind: 'assign', variable: 'size' },
       },
     ],
-    error_mappings: m([
+    error_mappings: teach([
       {
         pattern: 'indent',
         friendlyMessage: '外层循环缩进 4 格，里层循环里的两行还要再缩 4 格。',

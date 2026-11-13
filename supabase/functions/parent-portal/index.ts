@@ -1,6 +1,7 @@
 // 家长端。家长身份从登录会话解析，忽略请求体里的家长 id。绑定码只用来确认孩子。
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { isAcceptableBindCode, normalizeBindCode } from '../_shared/bindCode.ts'
+import { toCurriculumPosition, type CurriculumPositionRow } from '../_shared/curriculumPosition.ts'
 import { empty, json } from '../_shared/http.ts'
 import { parentOrgAccess } from '../_shared/parentOrgAccess.ts'
 import { serviceDb } from '../_shared/staff.ts'
@@ -199,7 +200,7 @@ Deno.serve(async (req) => {
     const [{ data: org }, { data: group }, { data: progress }, { count }, { data: sessions }, { data: typing }] = await Promise.all([
       db.from('org').select('name').eq('id', student.org_id).maybeSingle(),
       db.from('student_group').select('name').eq('id', student.group_id).maybeSingle(),
-      db.from('level_progress').select('level_id, completed').eq('student_id', student.id).eq('completed', true),
+      db.from('learning_record').select('level_id, completed').eq('student_id', student.id).eq('completed', true),
       db.from('course_level').select('level_id', { count: 'exact', head: true }).eq('published', true),
       db.from('study_session').select('started_at, ended_at').eq('student_id', student.id),
       db.from('typing_record').select('practiced_on, wpm, accuracy').eq('student_id', student.id),
@@ -239,11 +240,19 @@ Deno.serve(async (req) => {
         lastStudyDate: last ? String(last.started_at).slice(0, 10) : null,
       },
       typingSeries: bucket(typing ?? []),
+      position: await curriculumPosition(db, student.id as string),
     })
   }
   if (!children.length && stopped.length) return json(403, { message: '机构服务已停止' })
   return json(200, { children, stopped })
 })
+
+async function curriculumPosition(db: SupabaseClient, studentId: string) {
+  const { data } = await db.rpc('student_curriculum_position', { p_student_id: studentId })
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row || typeof row !== 'object') return null
+  return toCurriculumPosition(row as CurriculumPositionRow)
+}
 
 function bucket(rows: { practiced_on: string; wpm: number; accuracy: number }[]) {
   const thisWeek = weekStart(new Date())

@@ -2,6 +2,8 @@ import type { TurtleArt } from '@/types'
 
 interface Props {
   art?: TurtleArt
+  /** 锁定的坐标系。传入后不再按当前图形自适应，改边长才能看出来。 */
+  frame?: { minX: number; minY: number; maxX: number; maxY: number }
   /** 运行成功后画布边框闪绿 */
   flash?: boolean
   className?: string
@@ -9,9 +11,9 @@ interface Props {
 }
 
 /** Turtle 画布：把执行结果画成 SVG（不引入图表库） */
-export function TurtleCanvas({ art, flash = false, className = '', placeholder = '画布还空着' }: Props) {
+export function TurtleCanvas({ art, frame, flash = false, className = '', placeholder = '画布还空着' }: Props) {
   const strokes = art?.strokes ?? []
-  const bounds = art?.bounds ?? { minX: 0, minY: 0, maxX: 1, maxY: 1 }
+  const bounds = frame ?? art?.bounds ?? { minX: 0, minY: 0, maxX: 1, maxY: 1 }
 
   const width = Math.max(1, bounds.maxX - bounds.minX)
   const height = Math.max(1, bounds.maxY - bounds.minY)

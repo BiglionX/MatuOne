@@ -9,6 +9,8 @@
 import { LEVELS } from '../src/mock/levels'
 import { SimError, simulate } from '../src/lib/python-sim'
 import { applyParam } from '../src/lib/runner'
+import { checkTypedLine } from '../src/lib/lineCheck'
+import { frameForLevel } from '../src/lib/canvasFrame'
 
 let failed = 0
 
@@ -124,6 +126,77 @@ for (const item of errorCases) {
     } else {
       bad(`${item.label}：期望 ${item.expect}，实际 ${err instanceof SimError ? err.pattern : String(err)}`)
     }
+  }
+}
+
+console.log('\n[4] 第 5 关填空、第 6 关折叠、第 4–12 关报错映射')
+{
+  const l05 = LEVELS.find((level) => level.level_id === 'L05')
+  if (!l05 || l05.level_type !== 'fill_blank' || !l05.blank_lines?.length) {
+    bad('L05 应该是 fill_blank，并且带 blank_lines')
+  } else {
+    const rebuilt = l05.teach_code_lines.map((line, index) => {
+      const group = l05.blank_lines?.find((item) => item.line === index)
+      if (!group) return line
+      let out = ''
+      let cursor = 0
+      for (const blank of group.blanks) {
+        if (line.slice(blank.start, blank.end) !== blank.answer) {
+          bad(`L05 第 ${index + 1} 行挖空「${line.slice(blank.start, blank.end)}」和答案「${blank.answer}」不一致`)
+        }
+        out += line.slice(cursor, blank.start) + blank.answer
+        cursor = blank.end
+      }
+      return out + line.slice(cursor)
+    })
+    if (rebuilt.join('\n') === l05.teach_code_lines.join('\n')) ok('L05 填空拼回去就是标准代码')
+    else bad('L05 填空拼不回标准代码')
+  }
+
+  const l06 = LEVELS.find((level) => level.level_id === 'L06')
+  if (!l06 || l06.unfolded_lines?.length !== 8) bad('L06 应该有 8 行折叠前代码')
+  else {
+    const longArt = simulate(l06.unfolded_lines.join('\n'))
+    const shortArt = simulate(l06.teach_code_lines.join('\n'))
+    const span = (art: { bounds: { minX: number; maxX: number; minY: number; maxY: number } }) =>
+      `${art.bounds.maxX - art.bounds.minX}x${art.bounds.maxY - art.bounds.minY}`
+    if (span(longArt) === span(shortArt) && shortArt.strokes.length > 0) ok(`L06 8 行和 for 画出同样大小：${span(shortArt)}`)
+    else bad(`L06 折叠前后图形不一致：${span(longArt)} vs ${span(shortArt)}`)
+    const twice = applyParam(l06.teach_code_lines.join('\n'), l06.challenge_params[0], '2')
+    const twiceArt = simulate(twice)
+    const points = (art: { strokes: { points: unknown[] }[] }) => art.strokes.reduce((sum, stroke) => sum + stroke.points.length, 0)
+    if (points(twiceArt) < points(shortArt)) ok('L06 循环 2 次比 4 次少画一段')
+    else bad('L06 改循环次数后笔迹没有变短')
+  }
+
+  for (const level of LEVELS.filter((item) => item.order >= 4)) {
+    const patterns = level.error_mappings.map((item) => item.pattern)
+    for (const name of ['IndentationError', "expected ':'", '= vs ==']) {
+      if (!patterns.includes(name)) bad(`${level.level_id} 缺少报错映射 ${name}`)
+    }
+  }
+  const sample = LEVELS.find((level) => level.level_id === 'L08')
+  if (sample) {
+    const indent = checkTypedLine('t.forward(80)', '    t.forward(80)', sample.error_mappings)
+    const colon = checkTypedLine('if sides > 5', 'if sides > 5:', sample.error_mappings)
+    const compare = checkTypedLine('if sides = 5:', 'if sides > 5:', sample.error_mappings)
+    if (indent.message.includes('缩进') && indent.pattern === 'indent') ok('缩进错误走到 IndentationError 人话')
+    else bad(`缩进提示不对：${indent.message}`)
+    if (colon.message.includes('冒号')) ok('漏写冒号有人话')
+    else bad(`冒号提示不对：${colon.message}`)
+    if (compare.message.includes('==')) ok('等号混用有人话')
+    else bad(`等号提示不对：${compare.message}`)
+  }
+
+  const framed = LEVELS.find((level) => level.level_id === 'L04')
+  if (framed) {
+    const frame = frameForLevel(framed)
+    const small = simulate(applyParam(framed.teach_code_lines.join('\n'), framed.challenge_params[0], 50))
+    const large = simulate(applyParam(framed.teach_code_lines.join('\n'), framed.challenge_params[0], 200))
+    const width = (art: { bounds: { minX: number; maxX: number } }) => art.bounds.maxX - art.bounds.minX
+    if (frame && width(large) > width(small) * 2 && frame.maxX - frame.minX >= width(large)) {
+      ok('L04 画布框按最大边长锁死，50 和 200 差一倍以上')
+    } else bad('L04 画布框没有罩住变大的正方形')
   }
 }
 

@@ -20,9 +20,9 @@ export const ORG: Org = {
 }
 
 export const GROUPS: Group[] = [
-  { id: 'G-A', name: '二年级 A 班' },
-  { id: 'G-B', name: '三年级 B 班' },
-  { id: 'G-C', name: '四五年级提高班' },
+  { id: 'G-A', name: '萌芽班' },
+  { id: 'G-B', name: '探索班' },
+  { id: 'G-C', name: '提高班' },
 ]
 
 export const STUDENTS: Student[] = [

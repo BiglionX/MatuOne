@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { completeLevel, loadLevel, touchLevel } from '@/api/learning'
+import { curriculumLevelById, isPlaceholderLevel, nextLevelId } from '@/data/fullCurriculum'
 import { enterLevel, type EnterLevelReason } from '@/api/studentLevel'
 import { getCurrentStudent } from '@/api/studentAuth'
 import type { Level, RunResult } from '@/types'
@@ -11,6 +12,8 @@ import { BrandMark } from '@/components/BrandMark'
 import { RoundA } from './rounds/RoundA'
 import { RoundB } from './rounds/RoundB'
 import { RoundC } from './rounds/RoundC'
+import { FillBlank } from './rounds/FillBlank'
+import { LoopFold } from './rounds/LoopFold'
 
 type Round = 'A' | 'B' | 'C'
 
@@ -28,6 +31,15 @@ const ENTER_COPY: Record<EnterLevelReason, string> = {
   trial_locked: '试用期间只能学习前 3 关',
   not_entitled: '老师还没有为你开通这一关',
   not_found: '没有找到这一关',
+}
+
+function PlaceholderBanner({ show }: { show: boolean }) {
+  if (!show) return null
+  return (
+    <p className="bg-warning-soft px-8 py-3 text-center text-sm text-ink">
+      教研老师正在努力制作这节课的动画，你可以先体验基础的代码运行。
+    </p>
+  )
 }
 
 const ENCOURAGE = [
@@ -93,6 +105,9 @@ export function Lesson() {
 
   if (!student) return <Navigate to="/student/login" replace />
 
+  const catalogLevel = levelId ? curriculumLevelById(levelId) : undefined
+  const placeholderLesson = isPlaceholderLevel(catalogLevel ?? level ?? { title: '' })
+
   if (missing || (gate && !gate.allowed && gate.reason === 'not_found')) {
     return (
       <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas">
@@ -106,11 +121,14 @@ export function Lesson() {
 
   if (gate && !gate.allowed) {
     return (
-      <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
-        <p className="text-xl text-ink">{ENTER_COPY[gate.reason]}</p>
-        <Link to="/student" className="btn-primary">
-          回到课程地图
-        </Link>
+      <div className="student-shell min-h-screen bg-canvas">
+        <PlaceholderBanner show={placeholderLesson} />
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+          <p className="text-xl text-ink">{ENTER_COPY[gate.reason]}</p>
+          <Link to="/student" className="btn-primary">
+            回到课程地图
+          </Link>
+        </div>
       </div>
     )
   }
@@ -124,7 +142,7 @@ export function Lesson() {
   }
 
   const stars: 0 | 1 | 2 | 3 = errorTaps <= 2 ? 3 : errorTaps <= 5 ? 2 : 1
-  const nextId = `L${String(level.order + 1).padStart(2, '0')}`
+  const nextId = nextLevelId(level.order)
 
   const finish = () => {
     void completeLevel(level.level_id, stars, errorTaps).finally(() => setFinished(true))
@@ -148,13 +166,11 @@ export function Lesson() {
             <Link to="/student" className="btn-secondary">
               回到课程地图
             </Link>
-            <button
-              type="button"
-              className="btn-primary px-8"
-              onClick={() => navigate(`/student/lesson/${nextId}`)}
-            >
-              下一关
-            </button>
+            {nextId && (
+              <button type="button" className="btn-primary px-8" onClick={() => navigate(`/student/lesson/${nextId}`)}>
+                下一关
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -163,6 +179,7 @@ export function Lesson() {
 
   return (
     <div className="student-shell flex min-h-screen min-w-[1024px] flex-col bg-canvas">
+      <PlaceholderBanner show={level.is_placeholder || placeholderLesson} />
       <div className="sticky top-0 z-20 border-b border-line bg-white">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-8 py-3.5">
           <Link to="/student" className="btn-ghost px-2" aria-label="返回课程地图">
@@ -202,7 +219,13 @@ export function Lesson() {
         {round === 'A' && (
           <RoundA level={level} targetResult={targetResult} onNext={() => setBreakOverlay({ next: 'B', line: ENCOURAGE[0] })} />
         )}
-        {round === 'B' && (
+        {round === 'B' && level.level_type === 'fill_blank' && (
+          <FillBlank level={level} onNext={() => setBreakOverlay({ next: 'C', line: ENCOURAGE[1] })} />
+        )}
+        {round === 'B' && level.level_type !== 'fill_blank' && !!level.unfolded_lines?.length && (
+          <LoopFold level={level} onNext={() => setBreakOverlay({ next: 'C', line: ENCOURAGE[1] })} />
+        )}
+        {round === 'B' && level.level_type !== 'fill_blank' && !level.unfolded_lines?.length && (
           <RoundB
             level={level}
             onErrorTap={() => setErrorTaps((n) => n + 1)}
@@ -219,7 +242,13 @@ export function Lesson() {
           <div className="fade-up max-w-xl">
             <p className="text-2xl font-semibold text-ink">{breakOverlay.line}</p>
             <p className="mt-4 text-ink-soft">
-              {breakOverlay.next === 'B' ? '接下来，一行一行把代码抄下来。' : '最后一步：改一个数字，看看图形怎么变。'}
+              {breakOverlay.next === 'C'
+                ? '最后一步：改一个数字，看看图形怎么变。'
+                : level.level_type === 'fill_blank'
+                  ? '接下来，把空出来的词填上。'
+                  : level.unfolded_lines?.length
+                    ? '接下来，看这 8 行怎么收成一个循环。'
+                    : '接下来，一行一行把代码抄下来。'}
             </p>
             <button
               type="button"

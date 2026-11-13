@@ -10,7 +10,6 @@ const SAMPLE = JSON.stringify(
       order: 13,
       title: '画一个小房子',
       goal: '用已学的循环和变量拼出一个房子',
-      grade_range: '3-5',
       demo_code: 'size = 100\nfor i in range(4):\n    t.forward(size)\n    t.right(90)',
       expected_output: '一个方形房身',
       preview_kind: 'turtle',

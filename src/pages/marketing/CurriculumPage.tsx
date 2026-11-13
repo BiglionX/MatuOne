@@ -60,7 +60,7 @@ export function CurriculumPage() {
       <section className="mt-10">
         <h2 className="text-2xl font-bold text-ink">四年大约 850–920 个学习单元</h2>
         <p className="mt-3 max-w-2xl text-ink-soft">
-          二年级到五年级，每年大约 60–80 节核心新课，其余是练习、复习和打字。1.0 只交付上面这 12 节，用来验证学生能不能自己学完。
+          从 Level 1 到 Level 8，每一级大约 60–80 节核心新课，其余是练习、复习和打字。1.0 先交付已经写好的课，用来验证学生能不能自己学完。
         </p>
       </section>
     </main>
