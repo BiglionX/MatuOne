@@ -35,6 +35,14 @@ async function effectiveStatus(org: { status: string; trial_expire_at: string | 
   return isOrgStatus(row?.status) ? row.status : null
 }
 
+function publicError(error: unknown): string {
+  const line = dbMessage(error).split('\n')[0]?.replace(/^ERROR:\s*/, '') ?? ''
+  if (line.includes('missing DATABASE_URL')) return '服务未配置'
+  const redacted = line.replace(/postgres(?:ql)?:\/\/\S+/gi, '').replace(/\s+/g, ' ').trim()
+  if (!redacted) return '请求失败'
+  return redacted.length > 160 ? `${redacted.slice(0, 160)}…` : redacted
+}
+
 function friendly(error: unknown, known: string[], fallback: string): ApiResult {
   const line = dbMessage(error).split('\n')[0]?.replace(/^ERROR:\s*/, '') ?? ''
   if (known.some((item) => line.includes(item))) return fail(400, line)
@@ -84,9 +92,9 @@ export async function dispatch(req: ApiRequest): Promise<ApiResult> {
         return fail(404, '没有这个接口')
     }
   } catch (error) {
-    if (dbMessage(error).includes('missing DATABASE_URL')) return fail(500, '服务未配置')
+    const message = publicError(error)
     console.error('api failed', req.name, dbMessage(error))
-    return fail(500, '请求失败')
+    return fail(500, message)
   }
 }
 

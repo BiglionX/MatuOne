@@ -1,45 +1,56 @@
 import { readFileSync } from 'node:fs'
-import pg from 'pg'
+import { join } from 'node:path'
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 
-let pool: pg.Pool | null = null
+let sql: NeonQueryFunction<false, false> | null = null
 let ready: Promise<void> | null = null
 
+function unquote(value: string): string {
+  const trimmed = value.trim()
+  const first = trimmed.charCodeAt(0)
+  const last = trimmed.charCodeAt(trimmed.length - 1)
+  if (trimmed.length >= 2 && first === last && (first === 34 || first === 39)) return trimmed.slice(1, -1)
+  return trimmed
+}
+
 function loadDatabaseUrl(): string {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL
+  const fromEnv = unquote(process.env.DATABASE_URL ?? '')
+  if (fromEnv) return normalize(fromEnv)
   try {
-    const raw = readFileSync(new URL('../.env', import.meta.url), 'utf8')
+    const raw = readFileSync(join(process.cwd(), '.env'), 'utf8')
     const matched = raw.match(/DATABASE_URL="([^"]+)"/) ?? raw.match(/DATABASE_URL=(\S+)/)
-    if (matched?.[1]) {
-      process.env.DATABASE_URL = matched[1]
-      return matched[1]
-    }
+    if (matched?.[1]) return normalize(matched[1])
   } catch {
     // Vercel 上由环境变量提供，本地没有 .env 时走下面的错误。
   }
   throw new Error('missing DATABASE_URL')
 }
 
-export function getPool(): pg.Pool {
-  if (!pool) {
-    pool = new pg.Pool({ connectionString: loadDatabaseUrl(), max: 1 })
-  }
-  return pool
+function normalize(connectionString: string): string {
+  const url = new URL(connectionString)
+  url.searchParams.delete('channel_binding')
+  return url.toString()
 }
 
-export async function q<T extends pg.QueryResultRow>(text: string, params: unknown[] = []): Promise<T[]> {
+function getSql(): NeonQueryFunction<false, false> {
+  if (!sql) sql = neon(loadDatabaseUrl())
+  return sql
+}
+
+export async function q<T extends Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T[]> {
   await ensureSessionTable()
-  const result = await getPool().query<T>(text, params)
-  return result.rows
+  const rows = await getSql().query(text, params)
+  return rows as T[]
 }
 
-export async function one<T extends pg.QueryResultRow>(text: string, params: unknown[] = []): Promise<T | null> {
+export async function one<T extends Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T | null> {
   const rows = await q<T>(text, params)
   return rows[0] ?? null
 }
 
 export async function ensureSessionTable(): Promise<void> {
   if (!ready) {
-    ready = getPool()
+    ready = getSql()
       .query(
         `create table if not exists public.app_session (
           token_hash text primary key,

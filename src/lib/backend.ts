@@ -32,7 +32,16 @@ export async function callFunction<T>(
     body: JSON.stringify(body ?? {}),
   })
   if (response.status === 204) return {} as T
-  const payload = (await response.json().catch(() => ({}))) as { message?: string }
+  const raw = await response.text()
+  let payload: { message?: string } = {}
+  if (raw) {
+    try {
+      payload = JSON.parse(raw) as { message?: string }
+    } catch {
+      payload = { message: raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140) }
+    }
+  }
   if (!response.ok) throw new ApiError(response.status, payload.message || '请求失败')
+  if (!raw.startsWith('{') && !raw.startsWith('[')) throw new ApiError(response.status, payload.message || '请求失败')
   return payload as T
 }
