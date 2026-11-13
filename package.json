@@ -1,0 +1,32 @@
+{
+  "name": "code-daguan",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "代码闯关 —— Python 编程课外课 1.0 原型",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "smoke": "tsx scripts/smoke-sim.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "tsx": "^4.23.15",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
+  }
+}

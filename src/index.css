@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: var(--bg);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+@layer components {
+  /* 学生端字号整体放大 20%—30% */
+  .student-shell {
+    font-size: var(--student-font);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-field bg-brand px-6 text-white font-semibold transition
+      hover:bg-brand-strong active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed;
+    min-height: 44px;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-field border border-line bg-white px-5 font-medium
+      text-ink transition hover:border-brand hover:text-brand-strong;
+    min-height: 44px;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-field px-4 text-ink-soft transition hover:text-brand-strong;
+    min-height: 44px;
+  }
+
+  .card {
+    @apply rounded-card border border-line bg-white shadow-card;
+  }
+
+  .field {
+    @apply w-full rounded-field border border-line bg-white px-4 py-3 text-ink outline-none transition
+      focus:border-brand focus:ring-2 focus:ring-brand/20;
+    min-height: 44px;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-sm font-medium;
+  }
+}
+
+@keyframes flashGreen {
+  0% {
+    box-shadow: 0 0 0 0 rgba(30, 166, 114, 0);
+    border-color: var(--success);
+  }
+  40% {
+    box-shadow: 0 0 0 6px rgba(30, 166, 114, 0.22);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(30, 166, 114, 0);
+    border-color: var(--success);
+  }
+}
+.flash-green {
+  animation: flashGreen 700ms ease-out 2;
+}
+
+/* 改一改：被改动的那一小段代码闪三下，把注意力拉过去 */
+@keyframes codeFlash {
+  0%,
+  100% {
+    background-color: rgb(var(--brand-rgb) / 0.1);
+  }
+  50% {
+    background-color: rgb(var(--brand-rgb) / 0.5);
+  }
+}
+.code-flash {
+  border-radius: 4px;
+  background-color: rgb(var(--brand-rgb) / 0.1);
+  animation: codeFlash 900ms ease-in-out 3;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fadeUp 260ms ease-out;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.toast-in {
+  animation: toastIn 200ms ease-out;
+}
+
+/* 代码输入：等宽 16—18px、行高 1.8 */
+.code-font {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+}
+
+/* 家长端 H5 移动容器 */
+.h5-shell {
+  max-width: 520px;
+  margin: 0 auto;
+}

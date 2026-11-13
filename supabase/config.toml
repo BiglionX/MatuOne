@@ -1,0 +1,54 @@
+# 本地与托管网关都读这份配置。改 verify_jwt 后必须重新部署函数才生效，见 DEPLOY.md。
+project_id = "matuone"
+
+# 调用时还没有 Supabase 会话，账号密码在函数体内校验。
+[functions.org-login]
+verify_jwt = false
+
+# 调用时还没有 Supabase 会话，账号密码在函数体内校验。
+[functions.student-login]
+verify_jwt = false
+
+# 调用时还没有 Supabase 会话，账号密码在函数体内校验。
+[functions.platform-login]
+verify_jwt = false
+
+# 定价和试用申请对匿名访客开放，函数内不读会话。
+[functions.public-site]
+verify_jwt = false
+
+# lookup / bind / home 都不使用 Supabase 会话。绑定靠绑定码，回家靠 x-parent-token，函数内自行校验。
+[functions.parent-portal]
+verify_jwt = false
+
+# 机构管理员会话，withOrgScope 从 JWT 取 orgId。
+[functions.org-students]
+verify_jwt = true
+
+# 机构管理员会话，withOrgScope 从 JWT 取 orgId。
+[functions.org-course]
+verify_jwt = true
+
+# 机构管理员会话，withOrgScope 从 JWT 取 orgId。
+[functions.org-dashboard]
+verify_jwt = true
+
+# 学生会话，从 JWT 解析学生后再进关卡。
+[functions.student-enter-level]
+verify_jwt = true
+
+# 学生会话，从 JWT 解析学生后再读写学习记录。
+[functions.student-learning]
+verify_jwt = true
+
+# 平台运营会话，requireOps 从 JWT 取 platform_staff。
+[functions.admin-provision-org]
+verify_jwt = true
+
+# 平台运营或财务会话，requireStaff 从 JWT 取 platform_staff。
+[functions.admin-ops]
+verify_jwt = true
+
+# 平台运营会话，requireOps 从 JWT 取 platform_staff。
+[functions.course-catalog]
+verify_jwt = true

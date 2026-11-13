@@ -1,0 +1,56 @@
+/* ============================================================
+   设计 token 唯一来源（产品名「代码闯关」，主色 #2BB3A3）
+   - 色值只在这里出现一次
+   - 同时提供 rgb 三元组，供 Tailwind 的 /透明度 修饰使用
+   ============================================================ */
+:root {
+  --brand-rgb: 43 179 163; /* #2BB3A3 */
+  --brand-strong-rgb: 28 141 128; /* #1C8D80 */
+  --brand-soft-rgb: 228 246 242; /* #E4F6F2 */
+
+  --success-rgb: 30 166 114; /* #1EA672 */
+  --success-soft-rgb: 230 247 239;
+  --danger-rgb: 225 75 75; /* #E14B4B */
+  --danger-soft-rgb: 253 236 237;
+  --warning-rgb: 231 154 36; /* #E79A24 */
+  --warning-soft-rgb: 253 244 227;
+
+  /* 画笔的补充色（海龟 color() 用到的名字） */
+  --art-blue: #3a7bd5;
+  --art-purple: #8a63d2;
+  --art-yellow: #e7c224;
+  --art-white: #ffffff;
+
+  --bg-rgb: 244 247 248;
+  --ink-rgb: 30 42 46;
+  --ink-soft-rgb: 92 107 114;
+  --line-rgb: 226 232 234;
+  --code-bg-rgb: 251 252 253;
+
+  /* 直接用的实色（SVG、内联样式等） */
+  --brand: rgb(var(--brand-rgb));
+  --brand-strong: rgb(var(--brand-strong-rgb));
+  --brand-soft: rgb(var(--brand-soft-rgb));
+  --success: rgb(var(--success-rgb));
+  --success-soft: rgb(var(--success-soft-rgb));
+  --danger: rgb(var(--danger-rgb));
+  --danger-soft: rgb(var(--danger-soft-rgb));
+  --warning: rgb(var(--warning-rgb));
+  --warning-soft: rgb(var(--warning-soft-rgb));
+  --bg: rgb(var(--bg-rgb));
+  --ink: rgb(var(--ink-rgb));
+  --ink-soft: rgb(var(--ink-soft-rgb));
+  --line: rgb(var(--line-rgb));
+  --code-bg: rgb(var(--code-bg-rgb));
+
+  --radius-card: 16px;
+  --radius-field: 12px;
+  --shadow-card: 0 1px 2px rgba(30, 42, 46, 0.04), 0 8px 24px rgba(30, 42, 46, 0.06);
+  --shadow-pop: 0 8px 30px rgba(30, 42, 46, 0.14);
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'Cascadia Code', Consolas, 'SFMono-Regular', monospace;
+
+  /* 学生端字号整体放大 20%—30%（基准 16px → 19px） */
+  --student-font: 19px;
+}
