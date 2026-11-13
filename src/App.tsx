@@ -11,7 +11,7 @@ import { FaqPage } from '@/pages/marketing/FaqPage'
 import { PrivacyPage } from '@/pages/legal/PrivacyPage'
 import { TermsPage } from '@/pages/legal/TermsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { AdminGate } from '@/pages/admin/AdminNav'
+import { AdminGate, AdminLayout } from '@/pages/admin/AdminLayout'
 
 /**
  * 学生端 / 机构端 / 家长端 / 平台后台按路由懒加载：
@@ -35,8 +35,11 @@ const ParentHome = lazy(() => import('@/pages/parent/ParentHome').then((m) => ({
 const AdminLogin = lazy(() => import('@/pages/admin/AdminLogin').then((m) => ({ default: m.AdminLogin })))
 const AdminOrgs = lazy(() => import('@/pages/admin/AdminOrgs').then((m) => ({ default: m.AdminOrgs })))
 const AdminLeads = lazy(() => import('@/pages/admin/AdminLeads').then((m) => ({ default: m.AdminLeads })))
-const AdminBilling = lazy(() => import('@/pages/admin/AdminBilling').then((m) => ({ default: m.AdminBilling })))
+const AdminOrgDetail = lazy(() => import('@/pages/admin/AdminOrgDetail').then((m) => ({ default: m.AdminOrgDetail })))
 const AdminCourseImport = lazy(() => import('@/pages/admin/AdminCourseImport').then((m) => ({ default: m.AdminCourseImport })))
+const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents').then((m) => ({ default: m.AdminStudents })))
+const AdminParents = lazy(() => import('@/pages/admin/AdminParents').then((m) => ({ default: m.AdminParents })))
+const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })))
 
 function RouteFallback() {
   return <div className="grid min-h-[60vh] place-items-center text-sm text-ink-soft">正在加载…</div>
@@ -76,10 +79,17 @@ export default function App() {
           <Route path="/parent/login" element={<ParentLogin />} />
           <Route path="/parent" element={<ParentHome />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/orgs" element={<AdminGate><AdminOrgs /></AdminGate>} />
-          <Route path="/admin/orgs/:orgId" element={<AdminGate><AdminBilling /></AdminGate>} />
-          <Route path="/admin/leads" element={<AdminGate><AdminLeads /></AdminGate>} />
-          <Route path="/admin/courses" element={<AdminGate><AdminCourseImport /></AdminGate>} />
+          <Route path="/admin" element={<AdminGate><AdminLayout /></AdminGate>}>
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="orgs" element={<AdminOrgs />} />
+            <Route path="orgs/:orgId" element={<AdminOrgDetail />} />
+            <Route path="leads" element={<AdminLeads />} />
+            <Route path="students" element={<AdminStudents />} />
+            <Route path="parents" element={<AdminParents />} />
+            <Route path="levels" element={<AdminCourseImport />} />
+            <Route path="courses" element={<Navigate to="/admin/levels" replace />} />
+          </Route>
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

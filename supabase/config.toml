@@ -54,5 +54,21 @@ verify_jwt = true
 verify_jwt = true
 
 # 平台运营会话，requireOps 从 JWT 取 platform_staff。
+[functions.admin-students]
+verify_jwt = true
+
+# 平台运营会话，requireOps 从 JWT 取 platform_staff。
+[functions.admin-parents]
+verify_jwt = true
+
+# 平台运营会话，requireOps 从 JWT 取 platform_staff。
+[functions.admin-users]
+verify_jwt = true
+
+# 平台运营或财务会话，requireStaff 从 JWT 取 platform_staff。
+[functions.admin-dashboard]
+verify_jwt = true
+
+# 平台运营会话，requireOps 从 JWT 取 platform_staff。
 [functions.course-catalog]
 verify_jwt = true

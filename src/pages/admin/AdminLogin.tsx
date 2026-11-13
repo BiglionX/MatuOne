@@ -12,7 +12,7 @@ export function AdminLogin() {
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
 
-  if (getPlatformProfile()) return <Navigate to="/admin/orgs" replace />
+  if (getPlatformProfile()) return <Navigate to="/admin/dashboard" replace />
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -20,7 +20,7 @@ export function AdminLogin() {
     setError('')
     try {
       await loginPlatform(account, password)
-      navigate('/admin/orgs')
+      navigate('/admin/dashboard')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '登录失败')
     } finally {

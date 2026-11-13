@@ -28,6 +28,35 @@ export interface OrgLedgerQuery {
   keyword?: string
 }
 
+export interface OrgDetail {
+  id: string
+  orgNo: string
+  name: string
+  contactName: string
+  contactPhone: string
+  campus: string
+  seatQuota: number
+  usedSeats: number
+  activeStudents: number
+  boundParents: number
+  trialExpireAt: string | null
+  serviceEndAt: string | null
+  status: OrgStatus
+}
+
+export interface ProvisionLog {
+  id: string
+  action: '开户' | '续费' | '停用' | '恢复'
+  operator: string
+  summary: string
+  createdAt: string
+}
+
+export interface OrgDetailPayload {
+  org: OrgDetail
+  logs: ProvisionLog[]
+}
+
 export interface OrgLedgerRow {
   id: string
   orgNo: string

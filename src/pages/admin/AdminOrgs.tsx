@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, getPlatformOperator, getPlatformProfile, listOrgs, loadOverview, provisionOrg } from '@/api/adminOrgs'
-import { AdminNav } from '@/pages/admin/AdminNav'
 import type { OrgLedgerRow, OrgStatus, ProvisionOrgResult } from '@/types/orgAdmin'
 import type { OpsOverview } from '@/types/ops'
 
@@ -137,11 +136,10 @@ export function AdminOrgs() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas px-8 py-10">
+    <div className="px-8 py-8">
       <div className="mx-auto max-w-6xl">
-        <AdminNav />
         {overview && (
-          <section className="mt-6 grid gap-3 sm:grid-cols-4">
+            <section className="grid gap-3 sm:grid-cols-4">
             {[
               ['待续费', String(overview.renewing)],
               ['试用转正常', `${overview.conversion}%`],
@@ -251,7 +249,11 @@ export function AdminOrgs() {
                       className={`border-b border-line last:border-0 ${row.expiringSoon ? 'bg-warning-soft/60' : ''}`}
                     >
                       <td className="px-4 py-3 font-medium text-ink">{row.orgNo}</td>
-                      <td className="px-4 py-3 text-ink">{row.name}</td>
+                      <td className="px-4 py-3">
+                        <Link to={`/admin/orgs/${row.id}`} className="font-medium text-ink hover:text-brand-strong">
+                          {row.name}
+                        </Link>
+                      </td>
                       <td className="px-4 py-3 text-ink">{row.contactPhone}</td>
                       <td className="px-4 py-3 text-ink">{row.campus}</td>
                       <td className="px-4 py-3 text-ink">
@@ -265,7 +267,7 @@ export function AdminOrgs() {
                       </td>
                       <td className="px-4 py-3">
                         <Link to={`/admin/orgs/${row.id}`} className="text-brand-strong">
-                          收费
+                          详情
                         </Link>
                       </td>
                     </tr>

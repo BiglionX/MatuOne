@@ -93,8 +93,12 @@ async function requireParent(req: Request, db: SupabaseClient): Promise<{ id: st
   })
   const { data: userData } = await userClient.auth.getUser()
   if (!userData.user) return json(401, { message: '请先登录' })
-  const { data: parent } = await db.from('parent_account').select('id').eq('auth_user_id', userData.user.id).maybeSingle()
-  if (!parent) return json(401, { message: '请先登录' })
+  const { data: parent } = await db
+    .from('parent_account')
+    .select('id, anonymized_at')
+    .eq('auth_user_id', userData.user.id)
+    .maybeSingle()
+  if (!parent || parent.anonymized_at) return json(401, { message: '请先登录' })
   return { id: parent.id as string }
 }
 

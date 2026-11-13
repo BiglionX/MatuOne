@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ImportReport } from '@/types'
 import { importCoursePackage, listPublishedLevels, validateCoursePackage } from '@/api/catalog'
-import { AdminNav } from '@/pages/admin/AdminNav'
 import type { PublishedLevel } from '@/api/catalog'
 
 const SAMPLE = JSON.stringify(
@@ -66,11 +65,10 @@ export function AdminCourseImport() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas px-8 py-10">
+    <div className="px-8 py-8">
       <div className="mx-auto max-w-5xl">
-        <AdminNav />
-        {error && <p className="mt-4 text-sm text-danger">{error}</p>}
-        <header className="mt-4 flex items-start justify-between">
+        {error && <p className="mb-4 text-sm text-danger">{error}</p>}
+        <header className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-ink">课程包导入</h1>
             <p className="mt-1 text-sm text-ink-soft">

@@ -22,5 +22,5 @@ export async function loginDemo(role: DemoRole): Promise<string> {
     return '/parent'
   }
   await loginPlatform(demo.account, demo.password)
-  return '/admin/orgs'
+  return '/admin/dashboard'
 }

@@ -560,6 +560,14 @@ async function dispatch(req) {
         return await publicSite(req);
       case "admin-ops":
         return await adminOps(req);
+      case "admin-students":
+        return await adminStudents(req);
+      case "admin-parents":
+        return await adminParents(req);
+      case "admin-users":
+        return await adminUsers(req);
+      case "admin-dashboard":
+        return await adminDashboard(req);
       case "admin-provision-org":
         return await provisionOrg(req);
       case "course-catalog":
@@ -663,6 +671,7 @@ async function parentLogin(req) {
         [account, await hashPassword(password)]
       );
       if (!created) return fail(500, "\u6CE8\u518C\u5931\u8D25");
+      await q("update public.parent_account set last_login_at = now() where id = $1", [created.id]);
       return ok({ ...await issueSession("parent", created.id), account });
     } catch (error) {
       if (dbMessage(error).includes("duplicate") || dbMessage(error).includes("unique")) {
@@ -677,6 +686,7 @@ async function parentLogin(req) {
     return fail(401, "\u7528\u6237\u540D\u6216\u5BC6\u7801\u4E0D\u6B63\u786E");
   }
   if (!await verifyPassword(password, row.password_hash)) return fail(401, "\u7528\u6237\u540D\u6216\u5BC6\u7801\u4E0D\u6B63\u786E");
+  await q("update public.parent_account set last_login_at = now() where id = $1", [row.parent_id]);
   return ok({ ...await issueSession("parent", row.parent_id), account });
 }
 async function orgContext(req, options) {
@@ -1127,6 +1137,8 @@ function clientIp(req) {
 async function parentPortal(req) {
   const auth = await requireRole(req, "parent");
   if ("status" in auth) return auth;
+  const parent = await one("select anonymized_at from public.parent_account where id = $1", [auth.subjectId]);
+  if (!parent || parent.anonymized_at) return fail(401, "\u8BF7\u5148\u767B\u5F55");
   const action = typeof req.body.action === "string" ? req.body.action : "home";
   if (action === "unbind") {
     const studentId = typeof req.body.studentId === "string" ? req.body.studentId.trim() : "";
@@ -1279,6 +1291,410 @@ async function publicSite(req) {
     example: quoted ? { seats: safeSeats, unitPrice: quoted.unit_price, amount: quoted.amount, plan: quoted.plan_label } : null
   });
 }
+var STUDENT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function studentPage(value, fallback, max) {
+  const n = typeof value === "number" ? value : Number.NaN;
+  if (!Number.isInteger(n) || n < 1) return fallback;
+  return Math.min(n, max);
+}
+function studentStatus(value) {
+  return value === "disabled" ? "disabled" : "active";
+}
+function asIso(value) {
+  if (value == null || value === "") return null;
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+function keywordLike(keyword) {
+  const cleaned = keyword.trim().slice(0, 40).replace(/[\\%_]/g, "");
+  return cleaned ? `%${cleaned}%` : "";
+}
+async function requireOpsSession(req) {
+  const session = await readSession(req.header("authorization"));
+  if (!session) return fail(401, "\u9700\u8981\u5E73\u53F0\u8FD0\u8425\u6743\u9650");
+  if (session.role !== "platform") return fail(403, "\u9700\u8981\u5E73\u53F0\u8FD0\u8425\u6743\u9650");
+  const staff = await one(
+    "select id, role, status from public.platform_staff where id = $1",
+    [session.subjectId]
+  );
+  if (!staff || staff.status !== "active" || staff.role !== "ops") return fail(403, "\u9700\u8981\u5E73\u53F0\u8FD0\u8425\u6743\u9650");
+  return { id: staff.id };
+}
+async function publishedLevelTotal() {
+  const row = await one("select count(*)::int as total from public.course_level where published = true");
+  return Number(row?.total ?? 0);
+}
+function presentAdminStudent(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    account: row.account,
+    status: studentStatus(row.status),
+    orgId: row.org_id,
+    orgName: row.org_name || "\u2014",
+    groupName: row.group_name || "\u672A\u5206\u7EC4",
+    currentLevelOrder: Number(row.current_level_order) || 1,
+    boundParentCount: Number(row.bound_parent_count) || 0,
+    lastActiveAt: asIso(row.last_active_at)
+  };
+}
+async function adminStudents(req) {
+  const staff = await requireOpsSession(req);
+  if ("status" in staff) return staff;
+  const action = typeof req.body.action === "string" ? req.body.action : "list";
+  try {
+    if (action === "list") return await listPlatformStudents(req);
+    if (action === "detail") return await platformStudentDetail(req);
+    if (action === "reset-password") return await resetPlatformStudentPassword(req);
+    return fail(400, "\u4E0D\u8BA4\u8BC6\u7684\u64CD\u4F5C");
+  } catch (error) {
+    console.error("admin-students failed", action, action === "reset-password" ? "reset" : dbMessage(error));
+    return fail(500, action === "reset-password" ? "\u91CD\u7F6E\u5931\u8D25" : "\u8BFB\u53D6\u5931\u8D25");
+  }
+}
+async function listPlatformStudents(req) {
+  const page = studentPage(req.body.page, 1, 1e4);
+  const pageSize = studentPage(req.body.pageSize, 20, 50);
+  const status = typeof req.body.status === "string" ? req.body.status : "";
+  if (status && status !== "active" && status !== "disabled") return fail(400, "\u5B66\u751F\u72B6\u6001\u4E0D\u6B63\u786E");
+  const orgFilter = typeof req.body.orgId === "string" ? req.body.orgId.trim() : "";
+  if (orgFilter && !STUDENT_UUID.test(orgFilter)) return fail(400, "\u673A\u6784\u7B5B\u9009\u65E0\u6548");
+  const params = [keywordLike(typeof req.body.keyword === "string" ? req.body.keyword : ""), orgFilter || null, status];
+  const where = `
+    where ($1::text = '' or s.name ilike $1 or s.account ilike $1)
+      and ($2::uuid is null or s.org_id = $2)
+      and ($3::text = '' or s.status = $3)`;
+  const [totalRow, rows, totalLevels] = await Promise.all([
+    one(`select count(*)::int as total from public.student s ${where}`, params),
+    q(
+      `select
+         s.id, s.name, s.account, s.status, s.org_id, o.name as org_name,
+         coalesce(g.name, '') as group_name, s.current_level_order, s.last_active_at,
+         (
+           select count(*)::int from public.parent_binding b
+           where b.student_id = s.id and b.revoked_at is null
+         ) as bound_parent_count
+       from public.student s
+       join public.org o on o.id = s.org_id
+       left join public.student_group g on g.id::text = s.group_id
+       ${where}
+       order by s.created_at desc, s.id asc
+       limit $4 offset $5`,
+      [...params, pageSize, (page - 1) * pageSize]
+    ),
+    publishedLevelTotal()
+  ]);
+  return ok({
+    page,
+    pageSize,
+    total: Number(totalRow?.total ?? 0),
+    totalLevels,
+    students: rows.map(presentAdminStudent)
+  });
+}
+async function platformStudentDetail(req) {
+  const studentId = typeof req.body.studentId === "string" ? req.body.studentId.trim() : "";
+  if (!studentId) return fail(400, "\u8BF7\u6307\u5B9A\u5B66\u751F");
+  if (!STUDENT_UUID.test(studentId)) return fail(400, "\u6CA1\u6709\u8FD9\u540D\u5B66\u751F");
+  const [row, totalLevels, parents] = await Promise.all([
+    one(
+      `select
+         s.id, s.name, s.account, s.status, s.org_id, o.name as org_name,
+         coalesce(g.name, '') as group_name, s.current_level_order, s.last_active_at, s.bind_code,
+         (
+           select count(*)::int from public.parent_binding b
+           where b.student_id = s.id and b.revoked_at is null
+         ) as bound_parent_count
+       from public.student s
+       join public.org o on o.id = s.org_id
+       left join public.student_group g on g.id::text = s.group_id
+       where s.id = $1`,
+      [studentId]
+    ),
+    publishedLevelTotal(),
+    q(
+      `select a.account, b.created_at as bound_at
+       from public.parent_binding b
+       join public.parent_account a on a.id = b.parent_account_id
+       where b.student_id = $1 and b.revoked_at is null and a.anonymized_at is null
+       order by b.created_at desc`,
+      [studentId]
+    )
+  ]);
+  if (!row) return fail(404, "\u6CA1\u6709\u8FD9\u540D\u5B66\u751F");
+  return ok({
+    totalLevels,
+    student: { ...presentAdminStudent(row), bindCode: row.bind_code ?? "" },
+    parents: parents.map((parent) => ({ account: parent.account, boundAt: asIso(parent.bound_at) ?? String(parent.bound_at ?? "") }))
+  });
+}
+async function resetPlatformStudentPassword(req) {
+  const studentId = typeof req.body.studentId === "string" ? req.body.studentId.trim() : "";
+  if (!studentId) return fail(400, "\u8BF7\u6307\u5B9A\u5B66\u751F");
+  if (!STUDENT_UUID.test(studentId)) return fail(400, "\u6CA1\u6709\u8FD9\u540D\u5B66\u751F");
+  const plain = generateInitialPassword(8);
+  const updated = await one(
+    "update public.student set password_hash = $1 where id = $2 returning id",
+    [await hashPassword(plain), studentId]
+  );
+  if (!updated) return fail(404, "\u6CA1\u6709\u8FD9\u540D\u5B66\u751F");
+  return ok({ password: plain });
+}
+async function adminParents(req) {
+  const staff = await requireOpsSession(req);
+  if ("status" in staff) return staff;
+  const action = typeof req.body.action === "string" ? req.body.action : "list";
+  try {
+    if (action === "list") return await listPlatformParents(req);
+    if (action === "detail") return await platformParentDetail(req);
+    if (action === "unbind") return await unbindPlatformParent(req);
+    if (action === "reset-password") return await resetPlatformParentPassword(req);
+    return fail(400, "\u4E0D\u8BA4\u8BC6\u7684\u64CD\u4F5C");
+  } catch (error) {
+    console.error("admin-parents failed", action, action === "reset-password" ? "reset" : dbMessage(error));
+    return fail(500, action === "reset-password" ? "\u91CD\u7F6E\u5931\u8D25" : action === "unbind" ? "\u89E3\u9664\u5931\u8D25" : "\u8BFB\u53D6\u5931\u8D25");
+  }
+}
+function presentAdminParent(row, mask = false) {
+  const account = row.account;
+  return {
+    id: row.id,
+    account: mask ? `${account.trim().slice(0, 3)}****` : account,
+    childCount: Number(row.child_count) || 0,
+    createdAt: asIso(row.created_at) ?? String(row.created_at ?? ""),
+    lastLoginAt: asIso(row.last_login_at)
+  };
+}
+async function listPlatformParents(req, mask = false) {
+  const page = studentPage(req.body.page, 1, 1e4);
+  const pageSize = studentPage(req.body.pageSize, 20, 50);
+  const params = [keywordLike(typeof req.body.keyword === "string" ? req.body.keyword : "")];
+  const where = `
+    where p.anonymized_at is null
+      and ($1::text = '' or p.account ilike $1 or exists (
+      select 1 from public.parent_binding b
+      join public.student s on s.id = b.student_id
+      where b.parent_account_id = p.id
+        and b.revoked_at is null
+        and s.name ilike $1
+    ))`;
+  const [totalRow, rows] = await Promise.all([
+    one(`select count(*)::int as total from public.parent_account p ${where}`, params),
+    q(
+      `select
+         p.id, p.account, p.created_at, p.last_login_at,
+         (
+           select count(*)::int from public.parent_binding b
+           where b.parent_account_id = p.id and b.revoked_at is null
+         ) as child_count
+       from public.parent_account p
+       ${where}
+       order by p.created_at desc, p.id asc
+       limit $2 offset $3`,
+      [...params, pageSize, (page - 1) * pageSize]
+    )
+  ]);
+  return ok({
+    page,
+    pageSize,
+    total: Number(totalRow?.total ?? 0),
+    parents: rows.map((row) => presentAdminParent(row, mask))
+  });
+}
+async function platformParentDetail(req) {
+  const parentId = typeof req.body.parentId === "string" ? req.body.parentId.trim() : "";
+  if (!parentId) return fail(400, "\u8BF7\u6307\u5B9A\u5BB6\u957F");
+  if (!STUDENT_UUID.test(parentId)) return fail(400, "\u6CA1\u6709\u8FD9\u4F4D\u5BB6\u957F");
+  const [row, children] = await Promise.all([
+    one(
+      `select
+         p.id, p.account, p.created_at, p.last_login_at,
+         (
+           select count(*)::int from public.parent_binding b
+           where b.parent_account_id = p.id and b.revoked_at is null
+         ) as child_count
+       from public.parent_account p
+       where p.id = $1 and p.anonymized_at is null`,
+      [parentId]
+    ),
+    q(
+      `select s.id as student_id, s.name, o.name as org_name, b.created_at as bound_at
+       from public.parent_binding b
+       join public.student s on s.id = b.student_id
+       join public.org o on o.id = s.org_id
+       where b.parent_account_id = $1 and b.revoked_at is null
+       order by b.created_at desc`,
+      [parentId]
+    )
+  ]);
+  if (!row) return fail(404, "\u6CA1\u6709\u8FD9\u4F4D\u5BB6\u957F");
+  return ok({
+    parent: presentAdminParent(row),
+    children: children.map((child) => ({
+      studentId: child.student_id,
+      name: child.name,
+      orgName: child.org_name || "\u2014",
+      boundAt: asIso(child.bound_at) ?? String(child.bound_at ?? "")
+    }))
+  });
+}
+async function unbindPlatformParent(req) {
+  const parentId = typeof req.body.parentId === "string" ? req.body.parentId.trim() : "";
+  const studentId = typeof req.body.studentId === "string" ? req.body.studentId.trim() : "";
+  if (!parentId || !studentId) return fail(400, "\u8BF7\u6307\u5B9A\u8981\u89E3\u9664\u7684\u7ED1\u5B9A");
+  if (!STUDENT_UUID.test(parentId) || !STUDENT_UUID.test(studentId)) return fail(400, "\u6CA1\u6709\u8FD9\u9879\u7ED1\u5B9A");
+  const updated = await one(
+    `update public.parent_binding
+     set revoked_at = now()
+     where parent_account_id = $1 and student_id = $2 and revoked_at is null
+     returning id`,
+    [parentId, studentId]
+  );
+  if (!updated) return fail(404, "\u6CA1\u6709\u8FD9\u9879\u7ED1\u5B9A");
+  return ok({ ok: true });
+}
+async function resetPlatformParentPassword(req) {
+  const parentId = typeof req.body.parentId === "string" ? req.body.parentId.trim() : "";
+  if (!parentId) return fail(400, "\u8BF7\u6307\u5B9A\u5BB6\u957F");
+  if (!STUDENT_UUID.test(parentId)) return fail(400, "\u6CA1\u6709\u8FD9\u4F4D\u5BB6\u957F");
+  const plain = generateInitialPassword(8);
+  const updated = await one(
+    "update public.parent_account set password_hash = $1 where id = $2 returning id",
+    [await hashPassword(plain), parentId]
+  );
+  if (!updated) return fail(404, "\u6CA1\u6709\u8FD9\u4F4D\u5BB6\u957F");
+  return ok({ password: plain });
+}
+async function adminUsers(req) {
+  const staff = await requireOpsSession(req);
+  if ("status" in staff) return staff;
+  const action = typeof req.body.action === "string" ? req.body.action : "";
+  try {
+    if (action === "list_students") return await listPlatformStudents(req);
+    if (action === "student_detail") return await platformStudentDetail(req);
+    if (action === "list_parents") return await listPlatformParents(req, true);
+    if (action === "parent_detail") return await platformParentDetail(req);
+    if (action === "unbind_parent") return await unbindPlatformParent(req);
+    if (action === "reset_password") return await resetPlatformUserPassword(req);
+    if (action === "delete_parent") return await deletePlatformParent(req);
+    return fail(400, "\u4E0D\u8BA4\u8BC6\u7684\u64CD\u4F5C");
+  } catch (error) {
+    console.error("admin-users failed", action, action === "reset_password" ? "reset" : dbMessage(error));
+    const message = action === "reset_password" ? "\u91CD\u7F6E\u5931\u8D25" : action === "unbind_parent" ? "\u89E3\u9664\u5931\u8D25" : action === "delete_parent" ? "\u6CE8\u9500\u5931\u8D25" : "\u8BFB\u53D6\u5931\u8D25";
+    return fail(500, message);
+  }
+}
+async function resetPlatformUserPassword(req) {
+  const role = req.body.role === "student" || req.body.role === "parent" ? req.body.role : "";
+  const userId = typeof req.body.userId === "string" ? req.body.userId.trim() : "";
+  if (!role || !userId) return fail(400, "\u8BF7\u6307\u5B9A\u8981\u91CD\u7F6E\u7684\u8D26\u53F7");
+  if (!STUDENT_UUID.test(userId)) return fail(400, role === "student" ? "\u6CA1\u6709\u8FD9\u540D\u5B66\u751F" : "\u6CA1\u6709\u8FD9\u4F4D\u5BB6\u957F");
+  const plain = generateInitialPassword(8);
+  const passwordHash = await hashPassword(plain);
+  if (role === "student") {
+    const updated2 = await one("update public.student set password_hash = $1 where id = $2 returning id", [passwordHash, userId]);
+    if (!updated2) return fail(404, "\u6CA1\u6709\u8FD9\u540D\u5B66\u751F");
+    return ok({ password: plain });
+  }
+  const updated = await one(
+    "update public.parent_account set password_hash = $1 where id = $2 and anonymized_at is null returning id",
+    [passwordHash, userId]
+  );
+  if (!updated) return fail(404, "\u6CA1\u6709\u8FD9\u4F4D\u5BB6\u957F");
+  return ok({ password: plain });
+}
+async function deletePlatformParent(req) {
+  const parentId = typeof req.body.parentId === "string" ? req.body.parentId.trim() : "";
+  if (!parentId) return fail(400, "\u8BF7\u6307\u5B9A\u5BB6\u957F");
+  if (!STUDENT_UUID.test(parentId)) return fail(400, "\u6CA1\u6709\u8FD9\u4F4D\u5BB6\u957F");
+  const existing = await one("select id from public.parent_account where id = $1 and anonymized_at is null", [parentId]);
+  if (!existing) return fail(404, "\u6CA1\u6709\u8FD9\u4F4D\u5BB6\u957F");
+  const discarded = generateInitialPassword(24);
+  const account = existing.id.replace(/-/g, "");
+  await q("update public.parent_binding set revoked_at = now() where parent_account_id = $1 and revoked_at is null", [parentId]);
+  const updated = await one(
+    `update public.parent_account
+     set account = $2, password_hash = $3, anonymized_at = now()
+     where id = $1 and anonymized_at is null
+     returning id`,
+    [parentId, account, await hashPassword(discarded)]
+  );
+  if (!updated) return fail(404, "\u6CA1\u6709\u8FD9\u4F4D\u5BB6\u957F");
+  await q(`update public.app_session set expires_at = now() where role = 'parent' and subject_id = $1`, [parentId]);
+  return ok({ ok: true });
+}
+var DAY_MS2 = 24 * 60 * 60 * 1e3;
+function shanghaiBounds(now = /* @__PURE__ */ new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(now);
+  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+  const nextMonth = month === "12" ? `${Number(year) + 1}-01-01` : `${year}-${String(Number(month) + 1).padStart(2, "0")}-01`;
+  return {
+    monthStart: (/* @__PURE__ */ new Date(`${year}-${month}-01T00:00:00+08:00`)).getTime(),
+    nextMonth: (/* @__PURE__ */ new Date(`${nextMonth}T00:00:00+08:00`)).getTime(),
+    dayStart: (/* @__PURE__ */ new Date(`${year}-${month}-${day}T00:00:00+08:00`)).toISOString()
+  };
+}
+function daysUntil(iso, now) {
+  if (!iso) return 0;
+  const time = new Date(iso).getTime();
+  if (Number.isNaN(time)) return 0;
+  return Math.max(0, Math.ceil((time - now) / DAY_MS2));
+}
+async function adminDashboard(req) {
+  const staff = await requireStaff(req, ["ops", "finance"]);
+  if ("status" in staff) return staff;
+  const bounds = shanghaiBounds();
+  const now = Date.now();
+  const [orgs, bills, students, parents] = await Promise.all([
+    q("select * from public.list_org_ledger()"),
+    q("select org_id, type, amount, created_at from public.billing_record"),
+    one("select count(*)::int as total from public.student where status = 'active'"),
+    one("select count(*)::int as total from public.parent_account where last_login_at >= $1::timestamptz", [bounds.dayStart])
+  ]);
+  const revenue = bills.reduce((sum, row) => {
+    const at = new Date(row.created_at).getTime();
+    if (row.type === "\u8BD5\u7528" || Number.isNaN(at) || at < bounds.monthStart || at >= bounds.nextMonth) return sum;
+    return sum + Number(row.amount);
+  }, 0);
+  const purchased = new Set(bills.filter((row) => row.type === "\u65B0\u8D2D").map((row) => row.org_id));
+  const trialed = new Set(bills.filter((row) => row.type === "\u8BD5\u7528").map((row) => row.org_id));
+  for (const row of orgs) {
+    if (row.trial_expire_at) trialed.add(row.id);
+  }
+  let converted = 0;
+  for (const id of trialed) {
+    const row = orgs.find((item) => item.id === id);
+    if (purchased.has(id) || row?.status === "active") converted += 1;
+  }
+  const expiringOrgs = orgs.filter((row) => row.expiring_soon).map((row) => ({
+    id: row.id,
+    name: row.name,
+    daysLeft: daysUntil(row.service_end_at ?? row.trial_expire_at, now),
+    contactPhone: row.contact_phone
+  })).sort((a, b) => a.daysLeft - b.daysLeft);
+  const seatAlerts = orgs.filter((row) => row.seat_quota > 0 && row.used_seats / row.seat_quota >= 0.9).map((row) => ({
+    id: row.id,
+    name: row.name,
+    usedSeats: row.used_seats,
+    seatQuota: row.seat_quota
+  })).sort((a, b) => b.usedSeats / b.seatQuota - a.usedSeats / a.seatQuota);
+  return ok({
+    revenue,
+    activeStudents: Number(students?.total ?? 0),
+    activeParentsToday: Number(parents?.total ?? 0),
+    conversionRate: trialed.size ? Math.round(converted / trialed.size * 100) : 0,
+    expiringOrgs,
+    seatAlerts
+  });
+}
 async function requireStaff(req, roles) {
   const auth = await requireRole(req, "platform");
   if ("status" in auth) return auth.status === 401 ? fail(401, "\u9700\u8981\u5E73\u53F0\u8FD0\u8425\u6743\u9650") : auth;
@@ -1289,9 +1705,84 @@ async function requireStaff(req, roles) {
   if (!staff || staff.status !== "active" || !roles.includes(staff.role)) return fail(403, "\u9700\u8981\u5E73\u53F0\u8FD0\u8425\u6743\u9650");
   return { id: staff.id, displayName: staff.display_name, role: staff.role };
 }
+var ORG_STATUS_LABEL = {
+  trial: "\u8BD5\u7528\u4E2D",
+  active: "\u6B63\u5E38",
+  expired: "\u5DF2\u5230\u671F",
+  disabled: "\u505C\u7528"
+};
+function provisionSummary(action, detail) {
+  if (action === "\u5F00\u6237") return `\u8BD5\u7528 ${detail.trialDays ?? "\u2014"} \u5929\uFF0C\u5E2D\u4F4D ${detail.seatQuota ?? "\u2014"}`;
+  if (action === "\u7EED\u8D39") return `${detail.type ?? "\u7EED\u8D39"} \xB7 ${detail.seats ?? "\u2014"} \u5E2D \xB7 \xA5${detail.amount ?? "\u2014"}`;
+  if (action === "\u505C\u7528") return `\u505C\u7528\u524D\u4E3A${ORG_STATUS_LABEL[String(detail.previousStatus)] ?? "\u539F\u72B6\u6001"}`;
+  if (action === "\u6062\u590D") return `\u6062\u590D\u4E3A${ORG_STATUS_LABEL[String(detail.status)] ?? "\u53EF\u767B\u5F55"}`;
+  return "";
+}
+function jsonObject(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+async function orgDetail(req) {
+  const orgId = typeof req.body.orgId === "string" ? req.body.orgId.trim() : "";
+  if (!STUDENT_UUID.test(orgId)) return fail(404, "\u673A\u6784\u4E0D\u5B58\u5728");
+  const org = await one(
+    `select id, org_no, name, contact_name, contact_phone, campus, seat_quota, used_seats, status, trial_expire_at, service_end_at
+     from public.org where id = $1`,
+    [orgId]
+  );
+  if (!org) return fail(404, "\u673A\u6784\u4E0D\u5B58\u5728");
+  const [statusRow, students, parents, logs] = await Promise.all([
+    one("select public.effective_org_status($1, $2, $3) as status", [org.status, org.trial_expire_at, org.service_end_at]),
+    one("select count(*)::int as total from public.student where org_id = $1 and status = 'active'", [orgId]),
+    one(
+      `select count(distinct b.parent_account_id)::int as total
+       from public.parent_binding b
+       join public.student s on s.id = b.student_id
+       join public.parent_account a on a.id = b.parent_account_id
+       where s.org_id = $1 and b.revoked_at is null and a.anonymized_at is null`,
+      [orgId]
+    ),
+    q(
+      "select id, action, operator, detail, created_at from public.provision_log where org_id = $1 order by created_at desc",
+      [orgId]
+    )
+  ]);
+  return ok({
+    org: {
+      id: org.id,
+      orgNo: org.org_no,
+      name: org.name,
+      contactName: org.contact_name,
+      contactPhone: org.contact_phone,
+      campus: org.campus,
+      seatQuota: org.seat_quota,
+      usedSeats: org.used_seats,
+      activeStudents: Number(students?.total ?? 0),
+      boundParents: Number(parents?.total ?? 0),
+      trialExpireAt: org.trial_expire_at,
+      serviceEndAt: org.service_end_at,
+      status: statusRow?.status ?? org.status
+    },
+    logs: logs.map((row) => ({
+      id: row.id,
+      action: row.action,
+      operator: row.operator,
+      summary: provisionSummary(row.action, jsonObject(row.detail)),
+      createdAt: row.created_at
+    }))
+  });
+}
 async function adminOps(req) {
   const action = typeof req.body.action === "string" ? req.body.action : "ledger";
-  const financeOk = action === "ledger" || action === "overview" || action === "billing" || action === "invoice" || action === "quote";
+  const financeOk = action === "ledger" || action === "overview" || action === "billing" || action === "invoice" || action === "quote" || action === "detail";
   const staff = await requireStaff(req, financeOk ? ["ops", "finance"] : ["ops"]);
   if ("status" in staff) return staff;
   const known = ["\u8BB0\u5F55\u7C7B\u578B", "\u5E2D\u4F4D\u6570", "\u673A\u6784\u4E0D\u5B58\u5728", "\u8BD5\u7528\u8BB0\u5F55", "\u624B\u5DE5\u6539\u4EF7", "\u91D1\u989D", "\u8BF7\u586B\u5199\u670D\u52A1\u671F", "\u5F00\u7968\u72B6\u6001", "\u6536\u8D39\u8BB0\u5F55", "\u53EA\u80FD\u505C\u7528", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8FD9\u4E2A\u72B6\u6001"];
@@ -1303,6 +1794,7 @@ async function adminOps(req) {
       return friendly(error, known, "\u64CD\u4F5C\u5931\u8D25");
     }
   }
+  if (action === "detail") return await orgDetail(req);
   if (action === "billing") {
     const orgId = typeof req.body.orgId === "string" ? req.body.orgId : "";
     if (req.body.record && typeof req.body.record === "object") {

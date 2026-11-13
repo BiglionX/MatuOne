@@ -1,8 +1,8 @@
-import type { OrgLedgerQuery, OrgLedgerRow, ProvisionOrgInput, ProvisionOrgResult } from '@/types/orgAdmin'
+import type { OrgDetailPayload, OrgLedgerQuery, OrgLedgerRow, ProvisionOrgInput, ProvisionOrgResult } from '@/types/orgAdmin'
 import type { BillingInput, BillingRecord, InvoiceStatus, LeadRow, OpsOverview } from '@/types/ops'
 import { callFunction, clearAuth, establishSession } from '@/lib/backend'
 
-export type { OrgLedgerQuery, OrgLedgerRow, ProvisionOrgInput, ProvisionOrgResult } from '@/types/orgAdmin'
+export type { OrgDetail, OrgDetailPayload, OrgLedgerQuery, OrgLedgerRow, ProvisionLog, ProvisionOrgInput, ProvisionOrgResult } from '@/types/orgAdmin'
 export { ApiError } from '@/lib/apiError'
 
 const PROFILE = 'cdg.session.platform'
@@ -56,6 +56,10 @@ export async function listOrgs(query: OrgLedgerQuery = {}): Promise<OrgLedgerRow
 
 export function provisionOrg(input: ProvisionOrgInput): Promise<ProvisionOrgResult> {
   return callFunction('admin-provision-org', input, { role: 'platform' })
+}
+
+export function loadOrgDetail(orgId: string): Promise<OrgDetailPayload> {
+  return callFunction('admin-ops', { action: 'detail', orgId }, { role: 'platform' })
 }
 
 export function loadOverview(): Promise<OpsOverview> {

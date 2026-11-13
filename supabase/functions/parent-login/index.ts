@@ -77,6 +77,11 @@ async function issue(
     })
     if (attachError) return json(500, { message: '登录失败' })
     const session = await issueSession(email, password)
+    const { error: stampError } = await db.from('parent_account').update({ last_login_at: new Date().toISOString() }).eq('id', parentId)
+    if (stampError) {
+      console.error('parent last login failed', stampError.message)
+      return json(500, { message: '登录失败' })
+    }
     return json(200, {
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,

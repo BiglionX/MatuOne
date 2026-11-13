@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { ApiError, listLeads, provisionOrg, setLeadStatus } from '@/api/adminOrgs'
-import { AdminNav } from '@/pages/admin/AdminNav'
 import type { LeadRow } from '@/types/ops'
 import type { ProvisionOrgResult } from '@/types/orgAdmin'
 
@@ -44,10 +43,9 @@ export function AdminLeads() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas px-8 py-10">
+    <div className="px-8 py-8">
       <div className="mx-auto max-w-6xl">
-        <AdminNav />
-        <h1 className="mt-6 text-2xl font-bold text-ink">线索</h1>
+        <h1 className="text-2xl font-bold text-ink">线索列表</h1>
         <p className="mt-1 text-sm text-ink-soft">来自试用申请。开户后线索变为已开户，并带上机构。</p>
         {notice && <p className="mt-4 text-sm text-danger">{notice}</p>}
         {success && (

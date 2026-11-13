@@ -84,6 +84,14 @@ export async function dispatch(req: ApiRequest): Promise<ApiResult> {
         return await publicSite(req)
       case 'admin-ops':
         return await adminOps(req)
+      case 'admin-students':
+        return await adminStudents(req)
+      case 'admin-parents':
+        return await adminParents(req)
+      case 'admin-users':
+        return await adminUsers(req)
+      case 'admin-dashboard':
+        return await adminDashboard(req)
       case 'admin-provision-org':
         return await provisionOrg(req)
       case 'course-catalog':
@@ -217,6 +225,7 @@ async function parentLogin(req: ApiRequest): Promise<ApiResult> {
         [account, await hashPassword(password)],
       )
       if (!created) return fail(500, '注册失败')
+      await q('update public.parent_account set last_login_at = now() where id = $1', [created.id])
       return ok({ ...(await issueSession('parent', created.id)), account })
     } catch (error) {
       if (dbMessage(error).includes('duplicate') || dbMessage(error).includes('unique')) {
@@ -231,6 +240,7 @@ async function parentLogin(req: ApiRequest): Promise<ApiResult> {
     return fail(401, '用户名或密码不正确')
   }
   if (!(await verifyPassword(password, row.password_hash))) return fail(401, '用户名或密码不正确')
+  await q('update public.parent_account set last_login_at = now() where id = $1', [row.parent_id])
   return ok({ ...(await issueSession('parent', row.parent_id)), account })
 }
 
@@ -737,6 +747,8 @@ function clientIp(req: ApiRequest): string {
 async function parentPortal(req: ApiRequest): Promise<ApiResult> {
   const auth = await requireRole(req, 'parent')
   if ('status' in auth) return auth
+  const parent = await one<{ anonymized_at: string | null }>('select anonymized_at from public.parent_account where id = $1', [auth.subjectId])
+  if (!parent || parent.anonymized_at) return fail(401, '请先登录')
   const action = typeof req.body.action === 'string' ? req.body.action : 'home'
   if (action === 'unbind') {
     const studentId = typeof req.body.studentId === 'string' ? req.body.studentId.trim() : ''
@@ -900,6 +912,507 @@ async function publicSite(req: ApiRequest): Promise<ApiResult> {
   })
 }
 
+const STUDENT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function studentPage(value: unknown, fallback: number, max: number): number {
+  const n = typeof value === 'number' ? value : Number.NaN
+  if (!Number.isInteger(n) || n < 1) return fallback
+  return Math.min(n, max)
+}
+
+function studentStatus(value: unknown): 'active' | 'disabled' {
+  return value === 'disabled' ? 'disabled' : 'active'
+}
+
+function asIso(value: unknown): string | null {
+  if (value == null || value === '') return null
+  const date = new Date(String(value))
+  if (Number.isNaN(date.getTime())) return null
+  return date.toISOString()
+}
+
+function keywordLike(keyword: string): string {
+  const cleaned = keyword.trim().slice(0, 40).replace(/[\\%_]/g, '')
+  return cleaned ? `%${cleaned}%` : ''
+}
+
+/** 平台运营。机构会话返回 403，不把学生查询收窄到某个机构。 */
+async function requireOpsSession(req: ApiRequest): Promise<{ id: string } | ApiResult> {
+  const session = await readSession(req.header('authorization'))
+  if (!session) return fail(401, '需要平台运营权限')
+  if (session.role !== 'platform') return fail(403, '需要平台运营权限')
+  const staff = await one<{ id: string; role: string; status: string }>(
+    'select id, role, status from public.platform_staff where id = $1',
+    [session.subjectId],
+  )
+  if (!staff || staff.status !== 'active' || staff.role !== 'ops') return fail(403, '需要平台运营权限')
+  return { id: staff.id }
+}
+
+async function publishedLevelTotal(): Promise<number> {
+  const row = await one<{ total: number }>('select count(*)::int as total from public.course_level where published = true')
+  return Number(row?.total ?? 0)
+}
+
+function presentAdminStudent(row: {
+  id: string
+  name: string
+  account: string
+  status: string
+  org_id: string
+  org_name: string
+  group_name: string
+  current_level_order: number
+  bound_parent_count: number
+  last_active_at: string | null
+}) {
+  return {
+    id: row.id,
+    name: row.name,
+    account: row.account,
+    status: studentStatus(row.status),
+    orgId: row.org_id,
+    orgName: row.org_name || '—',
+    groupName: row.group_name || '未分组',
+    currentLevelOrder: Number(row.current_level_order) || 1,
+    boundParentCount: Number(row.bound_parent_count) || 0,
+    lastActiveAt: asIso(row.last_active_at),
+  }
+}
+
+async function adminStudents(req: ApiRequest): Promise<ApiResult> {
+  const staff = await requireOpsSession(req)
+  if ('status' in staff) return staff
+  const action = typeof req.body.action === 'string' ? req.body.action : 'list'
+  try {
+    if (action === 'list') return await listPlatformStudents(req)
+    if (action === 'detail') return await platformStudentDetail(req)
+    if (action === 'reset-password') return await resetPlatformStudentPassword(req)
+    return fail(400, '不认识的操作')
+  } catch (error) {
+    console.error('admin-students failed', action, action === 'reset-password' ? 'reset' : dbMessage(error))
+    return fail(500, action === 'reset-password' ? '重置失败' : '读取失败')
+  }
+}
+
+async function listPlatformStudents(req: ApiRequest): Promise<ApiResult> {
+  const page = studentPage(req.body.page, 1, 10_000)
+  const pageSize = studentPage(req.body.pageSize, 20, 50)
+  const status = typeof req.body.status === 'string' ? req.body.status : ''
+  if (status && status !== 'active' && status !== 'disabled') return fail(400, '学生状态不正确')
+  const orgFilter = typeof req.body.orgId === 'string' ? req.body.orgId.trim() : ''
+  if (orgFilter && !STUDENT_UUID.test(orgFilter)) return fail(400, '机构筛选无效')
+  const params: unknown[] = [keywordLike(typeof req.body.keyword === 'string' ? req.body.keyword : ''), orgFilter || null, status]
+  const where = `
+    where ($1::text = '' or s.name ilike $1 or s.account ilike $1)
+      and ($2::uuid is null or s.org_id = $2)
+      and ($3::text = '' or s.status = $3)`
+  const [totalRow, rows, totalLevels] = await Promise.all([
+    one<{ total: number }>(`select count(*)::int as total from public.student s ${where}`, params),
+    q<{
+      id: string
+      name: string
+      account: string
+      status: string
+      org_id: string
+      org_name: string
+      group_name: string
+      current_level_order: number
+      bound_parent_count: number
+      last_active_at: string | null
+    }>(
+      `select
+         s.id, s.name, s.account, s.status, s.org_id, o.name as org_name,
+         coalesce(g.name, '') as group_name, s.current_level_order, s.last_active_at,
+         (
+           select count(*)::int from public.parent_binding b
+           where b.student_id = s.id and b.revoked_at is null
+         ) as bound_parent_count
+       from public.student s
+       join public.org o on o.id = s.org_id
+       left join public.student_group g on g.id::text = s.group_id
+       ${where}
+       order by s.created_at desc, s.id asc
+       limit $4 offset $5`,
+      [...params, pageSize, (page - 1) * pageSize],
+    ),
+    publishedLevelTotal(),
+  ])
+  return ok({
+    page,
+    pageSize,
+    total: Number(totalRow?.total ?? 0),
+    totalLevels,
+    students: rows.map(presentAdminStudent),
+  })
+}
+
+async function platformStudentDetail(req: ApiRequest): Promise<ApiResult> {
+  const studentId = typeof req.body.studentId === 'string' ? req.body.studentId.trim() : ''
+  if (!studentId) return fail(400, '请指定学生')
+  if (!STUDENT_UUID.test(studentId)) return fail(400, '没有这名学生')
+  const [row, totalLevels, parents] = await Promise.all([
+    one<{
+      id: string
+      name: string
+      account: string
+      status: string
+      org_id: string
+      org_name: string
+      group_name: string
+      current_level_order: number
+      last_active_at: string | null
+      bind_code: string | null
+      bound_parent_count: number
+    }>(
+      `select
+         s.id, s.name, s.account, s.status, s.org_id, o.name as org_name,
+         coalesce(g.name, '') as group_name, s.current_level_order, s.last_active_at, s.bind_code,
+         (
+           select count(*)::int from public.parent_binding b
+           where b.student_id = s.id and b.revoked_at is null
+         ) as bound_parent_count
+       from public.student s
+       join public.org o on o.id = s.org_id
+       left join public.student_group g on g.id::text = s.group_id
+       where s.id = $1`,
+      [studentId],
+    ),
+    publishedLevelTotal(),
+    q<{ account: string; bound_at: string }>(
+      `select a.account, b.created_at as bound_at
+       from public.parent_binding b
+       join public.parent_account a on a.id = b.parent_account_id
+       where b.student_id = $1 and b.revoked_at is null and a.anonymized_at is null
+       order by b.created_at desc`,
+      [studentId],
+    ),
+  ])
+  if (!row) return fail(404, '没有这名学生')
+  return ok({
+    totalLevels,
+    student: { ...presentAdminStudent(row), bindCode: row.bind_code ?? '' },
+    parents: parents.map((parent) => ({ account: parent.account, boundAt: asIso(parent.bound_at) ?? String(parent.bound_at ?? '') })),
+  })
+}
+
+async function resetPlatformStudentPassword(req: ApiRequest): Promise<ApiResult> {
+  const studentId = typeof req.body.studentId === 'string' ? req.body.studentId.trim() : ''
+  if (!studentId) return fail(400, '请指定学生')
+  if (!STUDENT_UUID.test(studentId)) return fail(400, '没有这名学生')
+  const plain = generateInitialPassword(8)
+  const updated = await one<{ id: string }>(
+    'update public.student set password_hash = $1 where id = $2 returning id',
+    [await hashPassword(plain), studentId],
+  )
+  if (!updated) return fail(404, '没有这名学生')
+  return ok({ password: plain })
+}
+
+async function adminParents(req: ApiRequest): Promise<ApiResult> {
+  const staff = await requireOpsSession(req)
+  if ('status' in staff) return staff
+  const action = typeof req.body.action === 'string' ? req.body.action : 'list'
+  try {
+    if (action === 'list') return await listPlatformParents(req)
+    if (action === 'detail') return await platformParentDetail(req)
+    if (action === 'unbind') return await unbindPlatformParent(req)
+    if (action === 'reset-password') return await resetPlatformParentPassword(req)
+    return fail(400, '不认识的操作')
+  } catch (error) {
+    console.error('admin-parents failed', action, action === 'reset-password' ? 'reset' : dbMessage(error))
+    return fail(500, action === 'reset-password' ? '重置失败' : action === 'unbind' ? '解除失败' : '读取失败')
+  }
+}
+
+function presentAdminParent(
+  row: {
+    id: string
+    account: string
+    child_count: number
+    created_at: string
+    last_login_at: string | null
+  },
+  mask = false,
+) {
+  const account = row.account
+  return {
+    id: row.id,
+    account: mask ? `${account.trim().slice(0, 3)}****` : account,
+    childCount: Number(row.child_count) || 0,
+    createdAt: asIso(row.created_at) ?? String(row.created_at ?? ''),
+    lastLoginAt: asIso(row.last_login_at),
+  }
+}
+
+async function listPlatformParents(req: ApiRequest, mask = false): Promise<ApiResult> {
+  const page = studentPage(req.body.page, 1, 10_000)
+  const pageSize = studentPage(req.body.pageSize, 20, 50)
+  const params: unknown[] = [keywordLike(typeof req.body.keyword === 'string' ? req.body.keyword : '')]
+  const where = `
+    where p.anonymized_at is null
+      and ($1::text = '' or p.account ilike $1 or exists (
+      select 1 from public.parent_binding b
+      join public.student s on s.id = b.student_id
+      where b.parent_account_id = p.id
+        and b.revoked_at is null
+        and s.name ilike $1
+    ))`
+  const [totalRow, rows] = await Promise.all([
+    one<{ total: number }>(`select count(*)::int as total from public.parent_account p ${where}`, params),
+    q<{
+      id: string
+      account: string
+      child_count: number
+      created_at: string
+      last_login_at: string | null
+    }>(
+      `select
+         p.id, p.account, p.created_at, p.last_login_at,
+         (
+           select count(*)::int from public.parent_binding b
+           where b.parent_account_id = p.id and b.revoked_at is null
+         ) as child_count
+       from public.parent_account p
+       ${where}
+       order by p.created_at desc, p.id asc
+       limit $2 offset $3`,
+      [...params, pageSize, (page - 1) * pageSize],
+    ),
+  ])
+  return ok({
+    page,
+    pageSize,
+    total: Number(totalRow?.total ?? 0),
+    parents: rows.map((row) => presentAdminParent(row, mask)),
+  })
+}
+
+async function platformParentDetail(req: ApiRequest): Promise<ApiResult> {
+  const parentId = typeof req.body.parentId === 'string' ? req.body.parentId.trim() : ''
+  if (!parentId) return fail(400, '请指定家长')
+  if (!STUDENT_UUID.test(parentId)) return fail(400, '没有这位家长')
+  const [row, children] = await Promise.all([
+    one<{
+      id: string
+      account: string
+      child_count: number
+      created_at: string
+      last_login_at: string | null
+    }>(
+      `select
+         p.id, p.account, p.created_at, p.last_login_at,
+         (
+           select count(*)::int from public.parent_binding b
+           where b.parent_account_id = p.id and b.revoked_at is null
+         ) as child_count
+       from public.parent_account p
+       where p.id = $1 and p.anonymized_at is null`,
+      [parentId],
+    ),
+    q<{ student_id: string; name: string; org_name: string; bound_at: string }>(
+      `select s.id as student_id, s.name, o.name as org_name, b.created_at as bound_at
+       from public.parent_binding b
+       join public.student s on s.id = b.student_id
+       join public.org o on o.id = s.org_id
+       where b.parent_account_id = $1 and b.revoked_at is null
+       order by b.created_at desc`,
+      [parentId],
+    ),
+  ])
+  if (!row) return fail(404, '没有这位家长')
+  return ok({
+    parent: presentAdminParent(row),
+    children: children.map((child) => ({
+      studentId: child.student_id,
+      name: child.name,
+      orgName: child.org_name || '—',
+      boundAt: asIso(child.bound_at) ?? String(child.bound_at ?? ''),
+    })),
+  })
+}
+
+async function unbindPlatformParent(req: ApiRequest): Promise<ApiResult> {
+  const parentId = typeof req.body.parentId === 'string' ? req.body.parentId.trim() : ''
+  const studentId = typeof req.body.studentId === 'string' ? req.body.studentId.trim() : ''
+  if (!parentId || !studentId) return fail(400, '请指定要解除的绑定')
+  if (!STUDENT_UUID.test(parentId) || !STUDENT_UUID.test(studentId)) return fail(400, '没有这项绑定')
+  const updated = await one<{ id: string }>(
+    `update public.parent_binding
+     set revoked_at = now()
+     where parent_account_id = $1 and student_id = $2 and revoked_at is null
+     returning id`,
+    [parentId, studentId],
+  )
+  if (!updated) return fail(404, '没有这项绑定')
+  return ok({ ok: true })
+}
+
+async function resetPlatformParentPassword(req: ApiRequest): Promise<ApiResult> {
+  const parentId = typeof req.body.parentId === 'string' ? req.body.parentId.trim() : ''
+  if (!parentId) return fail(400, '请指定家长')
+  if (!STUDENT_UUID.test(parentId)) return fail(400, '没有这位家长')
+  const plain = generateInitialPassword(8)
+  const updated = await one<{ id: string }>(
+    'update public.parent_account set password_hash = $1 where id = $2 returning id',
+    [await hashPassword(plain), parentId],
+  )
+  if (!updated) return fail(404, '没有这位家长')
+  return ok({ password: plain })
+}
+
+async function adminUsers(req: ApiRequest): Promise<ApiResult> {
+  const staff = await requireOpsSession(req)
+  if ('status' in staff) return staff
+  const action = typeof req.body.action === 'string' ? req.body.action : ''
+  try {
+    if (action === 'list_students') return await listPlatformStudents(req)
+    if (action === 'student_detail') return await platformStudentDetail(req)
+    if (action === 'list_parents') return await listPlatformParents(req, true)
+    if (action === 'parent_detail') return await platformParentDetail(req)
+    if (action === 'unbind_parent') return await unbindPlatformParent(req)
+    if (action === 'reset_password') return await resetPlatformUserPassword(req)
+    if (action === 'delete_parent') return await deletePlatformParent(req)
+    return fail(400, '不认识的操作')
+  } catch (error) {
+    console.error('admin-users failed', action, action === 'reset_password' ? 'reset' : dbMessage(error))
+    const message = action === 'reset_password' ? '重置失败' : action === 'unbind_parent' ? '解除失败' : action === 'delete_parent' ? '注销失败' : '读取失败'
+    return fail(500, message)
+  }
+}
+
+async function resetPlatformUserPassword(req: ApiRequest): Promise<ApiResult> {
+  const role = req.body.role === 'student' || req.body.role === 'parent' ? req.body.role : ''
+  const userId = typeof req.body.userId === 'string' ? req.body.userId.trim() : ''
+  if (!role || !userId) return fail(400, '请指定要重置的账号')
+  if (!STUDENT_UUID.test(userId)) return fail(400, role === 'student' ? '没有这名学生' : '没有这位家长')
+  const plain = generateInitialPassword(8)
+  const passwordHash = await hashPassword(plain)
+  if (role === 'student') {
+    const updated = await one<{ id: string }>('update public.student set password_hash = $1 where id = $2 returning id', [passwordHash, userId])
+    if (!updated) return fail(404, '没有这名学生')
+    return ok({ password: plain })
+  }
+  const updated = await one<{ id: string }>(
+    'update public.parent_account set password_hash = $1 where id = $2 and anonymized_at is null returning id',
+    [passwordHash, userId],
+  )
+  if (!updated) return fail(404, '没有这位家长')
+  return ok({ password: plain })
+}
+
+async function deletePlatformParent(req: ApiRequest): Promise<ApiResult> {
+  const parentId = typeof req.body.parentId === 'string' ? req.body.parentId.trim() : ''
+  if (!parentId) return fail(400, '请指定家长')
+  if (!STUDENT_UUID.test(parentId)) return fail(400, '没有这位家长')
+  const existing = await one<{ id: string }>('select id from public.parent_account where id = $1 and anonymized_at is null', [parentId])
+  if (!existing) return fail(404, '没有这位家长')
+  const discarded = generateInitialPassword(24)
+  const account = existing.id.replace(/-/g, '')
+  await q('update public.parent_binding set revoked_at = now() where parent_account_id = $1 and revoked_at is null', [parentId])
+  const updated = await one<{ id: string }>(
+    `update public.parent_account
+     set account = $2, password_hash = $3, anonymized_at = now()
+     where id = $1 and anonymized_at is null
+     returning id`,
+    [parentId, account, await hashPassword(discarded)],
+  )
+  if (!updated) return fail(404, '没有这位家长')
+  await q(`update public.app_session set expires_at = now() where role = 'parent' and subject_id = $1`, [parentId])
+  return ok({ ok: true })
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function shanghaiBounds(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now)
+  const year = parts.find((part) => part.type === 'year')?.value ?? '1970'
+  const month = parts.find((part) => part.type === 'month')?.value ?? '01'
+  const day = parts.find((part) => part.type === 'day')?.value ?? '01'
+  const nextMonth = month === '12' ? `${Number(year) + 1}-01-01` : `${year}-${String(Number(month) + 1).padStart(2, '0')}-01`
+  return {
+    monthStart: new Date(`${year}-${month}-01T00:00:00+08:00`).getTime(),
+    nextMonth: new Date(`${nextMonth}T00:00:00+08:00`).getTime(),
+    dayStart: new Date(`${year}-${month}-${day}T00:00:00+08:00`).toISOString(),
+  }
+}
+
+function daysUntil(iso: string | null, now: number): number {
+  if (!iso) return 0
+  const time = new Date(iso).getTime()
+  if (Number.isNaN(time)) return 0
+  return Math.max(0, Math.ceil((time - now) / DAY_MS))
+}
+
+async function adminDashboard(req: ApiRequest): Promise<ApiResult> {
+  const staff = await requireStaff(req, ['ops', 'finance'])
+  if ('status' in staff) return staff
+  const bounds = shanghaiBounds()
+  const now = Date.now()
+  const [orgs, bills, students, parents] = await Promise.all([
+    q<{
+      id: string
+      name: string
+      contact_phone: string
+      seat_quota: number
+      used_seats: number
+      trial_expire_at: string | null
+      service_end_at: string | null
+      status: string
+      expiring_soon: boolean
+    }>('select * from public.list_org_ledger()'),
+    q<{ org_id: string; type: string; amount: number; created_at: string }>('select org_id, type, amount, created_at from public.billing_record'),
+    one<{ total: number }>("select count(*)::int as total from public.student where status = 'active'"),
+    one<{ total: number }>('select count(*)::int as total from public.parent_account where last_login_at >= $1::timestamptz', [bounds.dayStart]),
+  ])
+  const revenue = bills.reduce((sum, row) => {
+    const at = new Date(row.created_at).getTime()
+    if (row.type === '试用' || Number.isNaN(at) || at < bounds.monthStart || at >= bounds.nextMonth) return sum
+    return sum + Number(row.amount)
+  }, 0)
+  const purchased = new Set(bills.filter((row) => row.type === '新购').map((row) => row.org_id))
+  const trialed = new Set(bills.filter((row) => row.type === '试用').map((row) => row.org_id))
+  for (const row of orgs) {
+    if (row.trial_expire_at) trialed.add(row.id)
+  }
+  let converted = 0
+  for (const id of trialed) {
+    const row = orgs.find((item) => item.id === id)
+    if (purchased.has(id) || row?.status === 'active') converted += 1
+  }
+  const expiringOrgs = orgs
+    .filter((row) => row.expiring_soon)
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      daysLeft: daysUntil(row.service_end_at ?? row.trial_expire_at, now),
+      contactPhone: row.contact_phone,
+    }))
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+  const seatAlerts = orgs
+    .filter((row) => row.seat_quota > 0 && row.used_seats / row.seat_quota >= 0.9)
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      usedSeats: row.used_seats,
+      seatQuota: row.seat_quota,
+    }))
+    .sort((a, b) => b.usedSeats / b.seatQuota - a.usedSeats / a.seatQuota)
+  return ok({
+    revenue,
+    activeStudents: Number(students?.total ?? 0),
+    activeParentsToday: Number(parents?.total ?? 0),
+    conversionRate: trialed.size ? Math.round((converted / trialed.size) * 100) : 0,
+    expiringOrgs,
+    seatAlerts,
+  })
+}
+
 async function requireStaff(req: ApiRequest, roles: string[]): Promise<{ id: string; displayName: string; role: string } | ApiResult> {
   const auth = await requireRole(req, 'platform')
   if ('status' in auth) return auth.status === 401 ? fail(401, '需要平台运营权限') : auth
@@ -911,9 +1424,100 @@ async function requireStaff(req: ApiRequest, roles: string[]): Promise<{ id: str
   return { id: staff.id, displayName: staff.display_name, role: staff.role }
 }
 
+const ORG_STATUS_LABEL: Record<string, string> = {
+  trial: '试用中',
+  active: '正常',
+  expired: '已到期',
+  disabled: '停用',
+}
+
+function provisionSummary(action: string, detail: Record<string, unknown>): string {
+  if (action === '开户') return `试用 ${detail.trialDays ?? '—'} 天，席位 ${detail.seatQuota ?? '—'}`
+  if (action === '续费') return `${detail.type ?? '续费'} · ${detail.seats ?? '—'} 席 · ¥${detail.amount ?? '—'}`
+  if (action === '停用') return `停用前为${ORG_STATUS_LABEL[String(detail.previousStatus)] ?? '原状态'}`
+  if (action === '恢复') return `恢复为${ORG_STATUS_LABEL[String(detail.status)] ?? '可登录'}`
+  return ''
+}
+
+function jsonObject(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value) as unknown
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, unknown>
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
+async function orgDetail(req: ApiRequest): Promise<ApiResult> {
+  const orgId = typeof req.body.orgId === 'string' ? req.body.orgId.trim() : ''
+  if (!STUDENT_UUID.test(orgId)) return fail(404, '机构不存在')
+  const org = await one<{
+    id: string
+    org_no: string
+    name: string
+    contact_name: string
+    contact_phone: string
+    campus: string
+    seat_quota: number
+    used_seats: number
+    status: string
+    trial_expire_at: string | null
+    service_end_at: string | null
+  }>(
+    `select id, org_no, name, contact_name, contact_phone, campus, seat_quota, used_seats, status, trial_expire_at, service_end_at
+     from public.org where id = $1`,
+    [orgId],
+  )
+  if (!org) return fail(404, '机构不存在')
+  const [statusRow, students, parents, logs] = await Promise.all([
+    one<{ status: string }>('select public.effective_org_status($1, $2, $3) as status', [org.status, org.trial_expire_at, org.service_end_at]),
+    one<{ total: number }>("select count(*)::int as total from public.student where org_id = $1 and status = 'active'", [orgId]),
+    one<{ total: number }>(
+      `select count(distinct b.parent_account_id)::int as total
+       from public.parent_binding b
+       join public.student s on s.id = b.student_id
+       join public.parent_account a on a.id = b.parent_account_id
+       where s.org_id = $1 and b.revoked_at is null and a.anonymized_at is null`,
+      [orgId],
+    ),
+    q<{ id: string; action: string; operator: string; detail: unknown; created_at: string }>(
+      'select id, action, operator, detail, created_at from public.provision_log where org_id = $1 order by created_at desc',
+      [orgId],
+    ),
+  ])
+  return ok({
+    org: {
+      id: org.id,
+      orgNo: org.org_no,
+      name: org.name,
+      contactName: org.contact_name,
+      contactPhone: org.contact_phone,
+      campus: org.campus,
+      seatQuota: org.seat_quota,
+      usedSeats: org.used_seats,
+      activeStudents: Number(students?.total ?? 0),
+      boundParents: Number(parents?.total ?? 0),
+      trialExpireAt: org.trial_expire_at,
+      serviceEndAt: org.service_end_at,
+      status: statusRow?.status ?? org.status,
+    },
+    logs: logs.map((row) => ({
+      id: row.id,
+      action: row.action,
+      operator: row.operator,
+      summary: provisionSummary(row.action, jsonObject(row.detail)),
+      createdAt: row.created_at,
+    })),
+  })
+}
+
 async function adminOps(req: ApiRequest): Promise<ApiResult> {
   const action = typeof req.body.action === 'string' ? req.body.action : 'ledger'
-  const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote'
+  const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote' || action === 'detail'
   const staff = await requireStaff(req, financeOk ? ['ops', 'finance'] : ['ops'])
   if ('status' in staff) return staff
   const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态']
@@ -925,6 +1529,7 @@ async function adminOps(req: ApiRequest): Promise<ApiResult> {
       return friendly(error, known, '操作失败')
     }
   }
+  if (action === 'detail') return await orgDetail(req)
   if (action === 'billing') {
     const orgId = typeof req.body.orgId === 'string' ? req.body.orgId : ''
     if (req.body.record && typeof req.body.record === 'object') {
