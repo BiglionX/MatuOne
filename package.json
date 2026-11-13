@@ -6,7 +6,7 @@
   "description": "代码闯关 —— Python 编程课外课 1.0 原型",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/bundle-api.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx scripts/smoke-sim.ts",

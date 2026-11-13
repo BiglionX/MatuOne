@@ -1,4 +1,6 @@
-import { dispatch } from '../server/routes'
+import { dispatch } from './routes'
+
+export const config = { runtime: 'nodejs' }
 
 type NodeResult = { status: (code: number) => { json: (body: unknown) => void; end: () => void } }
 type RawResult = { writeHead: (code: number, headers: Record<string, string>) => void; end: (body?: string) => void }
