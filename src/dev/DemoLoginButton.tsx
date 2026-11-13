@@ -1,11 +1,9 @@
 import { lazy, Suspense } from 'react'
 import type { DemoRole } from './demoAccounts'
 
-const DevQuickLogin = import.meta.env.DEV
-  ? lazy(() => import('./DevQuickLogin').then((mod) => ({ default: mod.DevQuickLogin })))
-  : null
+const DevQuickLogin = lazy(() => import('./DevQuickLogin').then((mod) => ({ default: mod.DevQuickLogin })))
 
-/** 生产构建里是空节点，演示账号不会打进正式包。 */
+/** 试用阶段登录页展示演示账号。正式对外前再撤掉。 */
 export function DemoLoginButton({
   role,
   onDone,
@@ -15,7 +13,6 @@ export function DemoLoginButton({
   onDone: (path: string) => void
   onError: (message: string) => void
 }) {
-  if (!DevQuickLogin) return null
   return (
     <Suspense fallback={null}>
       <DevQuickLogin role={role} onDone={onDone} onError={onError} />
