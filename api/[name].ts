@@ -1,9 +1,10 @@
+import { dispatch } from '../server/routes'
+
 type NodeResult = { status: (code: number) => { json: (body: unknown) => void; end: () => void } }
 type RawResult = { writeHead: (code: number, headers: Record<string, string>) => void; end: (body?: string) => void }
 
 export default async function handler(req: RequestLike, res?: NodeResult | RawResult): Promise<Response | void> {
   try {
-    const { dispatch } = await import('../server/routes')
     const result = await dispatch(await readRequest(req))
     return send(res, result.status, result.body)
   } catch (error) {
