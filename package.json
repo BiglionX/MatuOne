@@ -13,7 +13,6 @@
     "verify:remote": "node scripts/verify-remote.mjs"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.2.0",
     "@supabase/supabase-js": "^2.119.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -1,8 +1,20 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 
-let sql: NeonQueryFunction<false, false> | null = null
+const INT_TYPES = new Set([20, 21, 23])
+const FLOAT_TYPES = new Set([700, 701, 1700])
+
+interface SqlField {
+  name: string
+  dataTypeID: number
+}
+
+interface SqlPayload {
+  fields?: SqlField[]
+  rows?: unknown[]
+  message?: string
+}
+
 let ready: Promise<void> | null = null
 
 function unquote(value: string): string {
@@ -32,15 +44,70 @@ function normalize(connectionString: string): string {
   return url.toString()
 }
 
-function getSql(): NeonQueryFunction<false, false> {
-  if (!sql) sql = neon(loadDatabaseUrl())
-  return sql
+function prepare(value: unknown): unknown {
+  if (value instanceof Date) return value.toISOString()
+  if (typeof value === 'undefined') return null
+  return value
+}
+
+function coerce(value: unknown, dataTypeID: number): unknown {
+  if (value === null || value === undefined) return null
+  if (dataTypeID === 16) return value === true || value === 't' || value === 'true'
+  if (INT_TYPES.has(dataTypeID) || FLOAT_TYPES.has(dataTypeID)) {
+    const number = typeof value === 'number' ? value : Number(value)
+    return Number.isFinite(number) ? number : value
+  }
+  return value
+}
+
+function rowsOf(payload: SqlPayload): Record<string, unknown>[] {
+  const fields = payload.fields ?? []
+  return (payload.rows ?? []).map((row) => {
+    if (Array.isArray(row)) {
+      const record: Record<string, unknown> = {}
+      fields.forEach((field, index) => {
+        record[field.name] = coerce(row[index], field.dataTypeID)
+      })
+      return record
+    }
+    const record = row && typeof row === 'object' ? (row as Record<string, unknown>) : {}
+    for (const field of fields) record[field.name] = coerce(record[field.name], field.dataTypeID)
+    return record
+  })
+}
+
+async function run(text: string, params: unknown[]): Promise<Record<string, unknown>[]> {
+  const connectionString = loadDatabaseUrl()
+  const host = new URL(connectionString).hostname.replace(/^[^.]+/, 'api')
+  const response = await fetch(`https://${host}/sql`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'neon-connection-string': connectionString,
+      'neon-raw-text-output': 'true',
+      'neon-array-mode': 'true',
+    },
+    body: JSON.stringify({ query: text, params: params.map(prepare) }),
+  })
+  const raw = await response.text()
+  let payload: SqlPayload = {}
+  if (raw) {
+    try {
+      payload = JSON.parse(raw) as SqlPayload
+    } catch {
+      payload = { message: raw }
+    }
+  }
+  if (!response.ok) {
+    const message = payload.message?.replace(/postgres(?:ql)?:\/\/\S+/gi, '').trim() || `数据库 HTTP ${response.status}`
+    throw new Error(message.slice(0, 180))
+  }
+  return rowsOf(payload)
 }
 
 export async function q<T extends Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T[]> {
   await ensureSessionTable()
-  const rows = await getSql().query(text, params)
-  return rows as T[]
+  return (await run(text, params)) as T[]
 }
 
 export async function one<T extends Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T | null> {
@@ -50,17 +117,21 @@ export async function one<T extends Record<string, unknown>>(text: string, param
 
 export async function ensureSessionTable(): Promise<void> {
   if (!ready) {
-    ready = getSql()
-      .query(
-        `create table if not exists public.app_session (
-          token_hash text primary key,
-          role text not null,
-          subject_id uuid not null,
-          expires_at timestamptz not null,
-          created_at timestamptz not null default now()
-        )`,
-      )
+    ready = run(
+      `create table if not exists public.app_session (
+        token_hash text primary key,
+        role text not null,
+        subject_id uuid not null,
+        expires_at timestamptz not null,
+        created_at timestamptz not null default now()
+      )`,
+      [],
+    )
       .then(() => undefined)
+      .catch((error: unknown) => {
+        ready = null
+        throw error
+      })
   }
   await ready
 }
