@@ -24,7 +24,7 @@ export interface Grade3Lesson {
   levelType: CurriculumLevelKind
   knowledgeTags: string[]
   milestoneBadge: string | null
-  /** 16 节之后只占格子，不能进课时页。 */
+  /** 没写进 AUTHORED 的只占格子。 */
   placeholder: boolean
 }
 
@@ -59,6 +59,9 @@ const AUTHORED: Record<string, Pick<Grade3Lesson, 'title' | 'goal' | 'levelType'
   L13: { title: '把 print 打准确', goal: '把打印用过的关键词再打一遍', levelType: 'typing', knowledgeTags: ['print'], milestoneBadge: null },
   L14: { title: '再练一次正方形', goal: '用已经会的走和转，再画一个正方形', levelType: 'practice', knowledgeTags: ['forward', 'right'], milestoneBadge: null },
   L15: { title: '把重复收成循环', goal: '看到四条边，就知道可以收成 for', levelType: 'new', knowledgeTags: ['for_loop', 'range'], milestoneBadge: null },
+  L16: { title: '问候和正方形放一起', goal: '先 print 一句问候，再画一个正方形', levelType: 'practice', knowledgeTags: ['print', 'forward', 'for_loop'], milestoneBadge: null },
+  L17: { title: '把问候装进变量', goal: '写下 name = "你好"，再用 print(name) 打印出来', levelType: 'new', knowledgeTags: ['variable', 'print'], milestoneBadge: null },
+  L18: { title: '改问候、改边长', goal: '把问候和边长两个变量都改一次，再跑一遍', levelType: 'practice', knowledgeTags: ['variable', 'print', 'forward'], milestoneBadge: null },
 }
 
 function placeholderKind(order: number): CurriculumLevelKind {

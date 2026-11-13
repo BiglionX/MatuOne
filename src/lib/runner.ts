@@ -93,7 +93,9 @@ export function applyParam(code: string, param: ChallengeParam, value: string | 
         const match = line.match(new RegExp(`^(\\s*)${variable}\\s*=.*$`))
         if (!match) return line
         replaced = true
-        return `${match[1]}${variable} = ${value}`
+        const quoted = /=\s*(['"]).*\1\s*$/.test(line)
+        const literal = quoted ? `"${String(value)}"` : String(value)
+        return `${match[1]}${variable} = ${literal}`
       })
       .join('\n')
   }

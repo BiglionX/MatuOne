@@ -44,9 +44,9 @@ const FIRST_UNIT = [
   { title: '把 print 打准确', goal: '把打印用过的关键词再打一遍', levelType: 'typing', knowledgeTags: ['print'], milestoneBadge: null, placeholder: false },
   { title: '再练一次正方形', goal: '用已经会的走和转，再画一个正方形', levelType: 'practice', knowledgeTags: ['forward', 'right'], milestoneBadge: null, placeholder: false },
   { title: '把重复收成循环', goal: '看到四条边，就知道可以收成 for', levelType: 'new', knowledgeTags: ['for_loop', 'range'], milestoneBadge: null, placeholder: false },
-  { title: '待补充项目实战', goal: '这一节的项目还在准备。', levelType: 'practice', knowledgeTags: ['project'], milestoneBadge: null, placeholder: true },
-  { title: '待补充项目实战', goal: '这一节的项目还在准备。', levelType: 'new', knowledgeTags: ['project'], milestoneBadge: null, placeholder: true },
-  { title: '待补充项目实战', goal: '这一节的项目还在准备。', levelType: 'practice', knowledgeTags: ['project'], milestoneBadge: null, placeholder: true },
+  { title: '问候和正方形放一起', goal: '先 print 一句问候，再画一个正方形', levelType: 'practice', knowledgeTags: ['print', 'forward', 'for_loop'], milestoneBadge: null, placeholder: false },
+  { title: '把问候装进变量', goal: '写下 name = "你好"，再用 print(name) 打印出来', levelType: 'new', knowledgeTags: ['variable', 'print'], milestoneBadge: null, placeholder: false },
+  { title: '改问候、改边长', goal: '把问候和边长两个变量都改一次，再跑一遍', levelType: 'practice', knowledgeTags: ['variable', 'print', 'forward'], milestoneBadge: null, placeholder: false },
   { title: '把学过的词再打一遍', goal: '把 print、forward、right 再打准确', levelType: 'typing', knowledgeTags: ['print', 'forward', 'right'], milestoneBadge: null, placeholder: false },
   { title: '单元作品：海龟问候', goal: '用一句问候和一条正方形，做成能送给同学的小作品', levelType: 'project', knowledgeTags: ['print', 'forward', 'for_loop'], milestoneBadge: 'first_drawing', placeholder: false },
 ]
@@ -214,6 +214,15 @@ function assertCurriculum() {
     throw new Error('第 20 节应是可上的项目关')
   }
   if (!levels[20].is_placeholder) throw new Error('第 21 节应标成占位')
+  if (levels[15].is_placeholder || levels[15].title !== '问候和正方形放一起' || levels[15].levelType !== 'practice') {
+    throw new Error('第 16 节应是可上的练习课')
+  }
+  if (levels[16].is_placeholder || levels[16].title !== '把问候装进变量' || levels[16].levelType !== 'new') {
+    throw new Error('第 17 节应是可上的新课')
+  }
+  if (levels[17].is_placeholder || levels[17].title !== '改问候、改边长' || levels[17].levelType !== 'practice') {
+    throw new Error('第 18 节应是可上的练习课')
+  }
   const byUnit = new Map()
   for (const level of levels) {
     const list = byUnit.get(level.unitId) ?? []

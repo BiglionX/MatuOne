@@ -281,7 +281,10 @@ class Turtle {
 
 const NUM_EXPR = /^[0-9a-zA-Z_+\-*/%().\s]+$/
 
-function safeEval(expr: string, env: Record<string, number>, line: number): number {
+type SimValue = number | string
+type SimEnv = Record<string, SimValue>
+
+function safeEval(expr: string, env: SimEnv, line: number): number {
   const trimmed = expr.trim()
   if (!trimmed || !NUM_EXPR.test(trimmed)) {
     throw new SimError(line, 'syntax', '这个算式电脑算不出来')
@@ -291,6 +294,7 @@ function safeEval(expr: string, env: Record<string, number>, line: number): numb
     if (name === 'False') return '0'
     const v = env[name]
     if (v === undefined) throw new SimError(line, 'name', `变量 ${name} 还没有装东西`)
+    if (typeof v !== 'number') throw new SimError(line, 'syntax', '文字不能拿来做计算')
     return String(v)
   })
   if (!/^[0-9+\-*/%().\s]+$/.test(replaced)) {
@@ -303,7 +307,7 @@ function safeEval(expr: string, env: Record<string, number>, line: number): numb
   return value
 }
 
-function evalCond(expr: string, env: Record<string, number>, line: number): boolean {
+function evalCond(expr: string, env: SimEnv, line: number): boolean {
   const cmp = expr.match(/^(.+?)(==|!=|<=|>=|<|>)(.+)$/)
   if (!cmp) throw new SimError(line, 'syntax', 'if 后面的判断写得不太对')
   const left = safeEval(cmp[1], env, line)
@@ -326,11 +330,12 @@ function evalCond(expr: string, env: Record<string, number>, line: number): bool
   }
 }
 
-function evalArg(raw: string, env: Record<string, number>, line: number): number | string {
+function evalArg(raw: string, env: SimEnv, line: number): number | string {
   const t = raw.trim()
   if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
     return t.slice(1, -1)
   }
+  if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(t) && typeof env[t] === 'string') return env[t]
   return safeEval(t, env, line)
 }
 
@@ -381,7 +386,7 @@ function mapColor(name: string): string {
 const CALL_RE = /^(?:t|turtle)\.([a-zA-Z_][a-zA-Z0-9_]*)\((.*)\)$/
 const PLAIN_CALL_RE = /^([a-zA-Z_][a-zA-Z0-9_]*)\((.*)\)$/
 
-function execCall(name: string, argStr: string, turtle: Turtle, env: Record<string, number>, line: number) {
+function execCall(name: string, argStr: string, turtle: Turtle, env: SimEnv, line: number) {
   const args = splitArgs(argStr)
   const num = (i: number) => Number(evalArg(args[i] ?? '0', env, line))
   switch (name) {
@@ -443,7 +448,7 @@ function execCall(name: string, argStr: string, turtle: Turtle, env: Record<stri
   }
 }
 
-function execBlock(nodes: Node[], turtle: Turtle, env: Record<string, number>) {
+function execBlock(nodes: Node[], turtle: Turtle, env: SimEnv) {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i]
     const text = node.text
@@ -480,7 +485,10 @@ function execBlock(nodes: Node[], turtle: Turtle, env: Record<string, number>) {
 
     const assign = text.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=(?!=)\s*(.+)$/)
     if (assign) {
-      env[assign[1]] = safeEval(assign[2], env, node.line)
+      const rawValue = assign[2].trim()
+      const quoted = rawValue.match(/^(['"])([\s\S]*)\1$/)
+      if (quoted) env[assign[1]] = quoted[2]
+      else env[assign[1]] = safeEval(rawValue, env, node.line)
       continue
     }
 
@@ -499,7 +507,7 @@ export function simulate(code: string): SimResult {
   const { nodes } = parseCode(code)
   checkNames(nodes, collectNames(nodes))
   const turtle = new Turtle()
-  const env: Record<string, number> = {}
+  const env: SimEnv = {}
   try {
     execBlock(nodes, turtle, env)
     turtle.finish()
