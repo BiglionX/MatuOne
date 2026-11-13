@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ApiError, getOrgSession, loginOrgAdmin } from '@/api/orgAuth'
+import { BrandMark } from '@/components/BrandMark'
+import { DemoLoginButton } from '@/dev/DemoLoginButton'
 
 export function OrgLogin() {
   const navigate = useNavigate()
@@ -32,7 +34,10 @@ export function OrgLogin() {
         <Link to="/enter" className="text-sm text-ink-soft">
           ← 返回入口
         </Link>
-        <h1 className="mt-5 text-2xl font-bold text-ink">机构端登录</h1>
+        <div className="mt-6 flex items-center gap-3">
+          <BrandMark size={44} />
+          <h1 className="text-2xl font-bold text-ink">机构端登录</h1>
+        </div>
         <p className="mt-2 text-sm text-ink-soft">使用平台开户时发放的管理员账号。初始密码只在开户成功时显示一次。</p>
 
         <label className="mt-6 block text-sm font-medium text-ink-soft">
@@ -56,6 +61,7 @@ export function OrgLogin() {
         <button type="submit" className="btn-primary mt-6 w-full" disabled={pending}>
           {pending ? '正在登录…' : '进入机构端'}
         </button>
+        <DemoLoginButton role="org" onDone={(path) => navigate(path)} onError={setError} />
       </form>
     </div>
   )

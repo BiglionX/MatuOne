@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link, Navigate } from 'react-router-dom'
 import { getCurrentStudent, loginStudentAccount } from '@/api/studentAuth'
+import { BrandMark } from '@/components/BrandMark'
+import { DemoLoginButton } from '@/dev/DemoLoginButton'
 
 export function StudentLogin() {
   const navigate = useNavigate()
@@ -26,8 +28,11 @@ export function StudentLogin() {
         <Link to="/enter" className="text-sm text-ink-soft">
           ← 返回入口
         </Link>
-        <h1 className="mt-5 text-3xl font-bold text-ink">登录代码闯关</h1>
-        <p className="mt-2 text-ink-soft">用老师给你的账号登录，今天的关卡已经准备好了。</p>
+        <div className="mt-6 flex items-center gap-3">
+          <BrandMark size={48} />
+          <h1 className="text-3xl font-bold text-ink">登录代码闯关</h1>
+        </div>
+        <p className="mt-3 text-ink-soft">用老师给你的账号登录，今天的关卡已经准备好了。</p>
 
         <label className="mt-7 block text-sm font-medium text-ink-soft">账号</label>
         <input
@@ -51,6 +56,7 @@ export function StudentLogin() {
         <button type="submit" className="btn-primary mt-7 w-full text-lg">
           进入课程地图
         </button>
+        <DemoLoginButton role="student" onDone={(path) => navigate(path)} onError={setError} />
       </form>
     </div>
   )

@@ -7,6 +7,7 @@ import type { Level, RunResult } from '@/types'
 import { buildDemoCode, runCode } from '@/lib/runner'
 import { Stars } from '@/components/WpmChart'
 import { CommandStory } from '@/components/CommandStory'
+import { BrandMark } from '@/components/BrandMark'
 import { RoundA } from './rounds/RoundA'
 import { RoundB } from './rounds/RoundB'
 import { RoundC } from './rounds/RoundC'
@@ -167,6 +168,7 @@ export function Lesson() {
           <Link to="/student" className="btn-ghost px-2" aria-label="返回课程地图">
             ←
           </Link>
+          <BrandMark size={30} />
           <div className="min-w-0">
             <h1 className="truncate text-lg font-semibold text-ink">
               第 {level.order} 关 · {level.title}

@@ -1,5 +1,6 @@
 import { NavLink, Outlet, Link, Navigate, useNavigate } from 'react-router-dom'
 import { getOrgSession, logoutOrgAdmin } from '@/api/orgAuth'
+import { BrandMark } from '@/components/BrandMark'
 import type { OrgStatus } from '@/types/orgAdmin'
 
 const NAV = [
@@ -46,7 +47,10 @@ export function OrgLayout() {
           <Link to="/enter" className="text-sm text-ink-soft">
             ← 返回入口
           </Link>
-          <h1 className="mt-4 text-lg font-bold text-ink">代码闯关</h1>
+          <div className="mt-4 flex items-center gap-2">
+            <BrandMark size={36} />
+            <h1 className="text-lg font-bold text-ink">代码闯关</h1>
+          </div>
           <p className="mt-1 text-xs text-ink-soft">{session.orgName}</p>
           <p className="mt-1 text-xs text-ink-soft">{session.orgNo}</p>
           <span className={`chip mt-3 ${STATUS_CLASS[session.status]}`}>{STATUS_LABEL[session.status]}</span>

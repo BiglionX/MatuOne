@@ -4,6 +4,7 @@ import { getCurrentStudent } from '@/api/studentAuth'
 import { loadLearningHome, type LearningHome } from '@/api/learning'
 import type { MapEntry } from '@/types'
 import { Stars } from '@/components/WpmChart'
+import { BrandMark } from '@/components/BrandMark'
 
 export function CourseMap() {
   const navigate = useNavigate()
@@ -37,6 +38,7 @@ export function CourseMap() {
             <Link to="/enter" className="btn-ghost px-2">
               ←
             </Link>
+            <BrandMark size={44} />
             <Link to="/student/profile" className="rounded-field px-2 py-1 transition hover:bg-canvas" aria-label="打开用户中心">
               <h1 className="text-xl font-bold text-ink">代码闯关</h1>
               <p className="text-sm text-ink-soft">

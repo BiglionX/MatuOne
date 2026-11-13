@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { BrandMark } from '@/components/BrandMark'
+import { SiteFooter } from '@/components/SiteFooter'
 
 const LINKS = [
   { to: '/curriculum', label: '课程体系' },
   { to: '/pricing', label: '定价' },
+  { to: '/faq', label: '常见问题' },
   { to: '/about', label: '关于' },
 ]
 
@@ -19,8 +22,9 @@ export function MarketingLayout() {
     <div className="min-h-screen bg-canvas text-ink">
       <header className="sticky top-0 z-20 border-b border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-2 px-5 py-3">
-          <Link to="/" className="text-lg font-bold text-ink">
-            代码闯关
+          <Link to="/" className="flex items-center gap-2">
+            <BrandMark size={32} />
+            <span className="text-lg font-bold text-ink">代码闯关</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-1 sm:flex">
             {LINKS.map((link) => (
@@ -71,6 +75,7 @@ export function MarketingLayout() {
       <div className="pb-24 sm:pb-0">
         <Outlet />
       </div>
+      <SiteFooter />
       <div className="sticky bottom-0 z-20 border-t border-line bg-white px-5 py-3 sm:hidden">
         <Link to="/apply" className="btn-primary w-full">
           申请 14 天试用

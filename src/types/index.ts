@@ -206,6 +206,11 @@ export interface CourseActivation {
 
 /* ---------------------------- 家长 ---------------------------- */
 
+/** 家长登录后只在浏览器留账号名。家长 id 由服务端按会话解析。 */
+export interface ParentSession {
+  account: string
+}
+
 export interface ParentBinding {
   id: string
   parentId: string
@@ -232,6 +237,17 @@ export interface ParentChildView {
   typingSeries: { weekStart: string; label: string; wpm: number | null; accuracy: number | null }[]
 }
 
+/** 机构已停用且过了宽限。只有姓名和固定提示，没有学习记录。 */
+export interface ParentStoppedChild {
+  name: string
+  message: '机构服务已停止'
+}
+
+export interface ParentHomeData {
+  children: ParentChildView[]
+  stopped: ParentStoppedChild[]
+}
+
 /* ---------------------------- 导入（机构批量建号） ---------------------------- */
 
 export interface ImportRowResult {
@@ -240,4 +256,6 @@ export interface ImportRowResult {
   account: string
   ok: boolean
   reason?: string
+  /** 导入成功时随当次响应返回，不入库。 */
+  initialPassword?: string
 }

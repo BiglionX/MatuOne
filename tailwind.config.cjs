@@ -9,6 +9,8 @@ module.exports = {
           DEFAULT: 'rgb(var(--brand-rgb) / <alpha-value>)',
           strong: 'rgb(var(--brand-strong-rgb) / <alpha-value>)',
           soft: 'rgb(var(--brand-soft-rgb) / <alpha-value>)',
+          action: 'rgb(var(--brand-action-rgb) / <alpha-value>)',
+          'action-strong': 'rgb(var(--brand-action-strong-rgb) / <alpha-value>)',
         },
         success: {
           DEFAULT: 'rgb(var(--success-rgb) / <alpha-value>)',

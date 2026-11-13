@@ -18,15 +18,17 @@ npm run typecheck  # 只做类型检查
 
 | 端 | 路由 | 说明 |
 | --- | --- | --- |
-| 入口 | `/` | 四张角色卡片（学生 / 机构 / 家长 / 平台后台） |
+| 营销站 | `/` `/curriculum` `/pricing` `/apply` `/about` `/faq` `/privacy` `/terms` | 对外获客：价值主张、课程体系、定价、试用申请、关于、常见问题、隐私政策、服务条款 |
+| 入口 | `/enter` | 四张角色卡片（学生 / 机构 / 家长 / 平台后台） |
 | 学生端 | `/student/login` | 演示账号 `chenxiaoman` / `123456` |
 | 学生端 | `/student` | 课程地图（12 关，逐关解锁，显示已闯关数与打字状态） |
 | 学生端 | `/student/lesson/:levelId` | A 看效果 → B 抄代码 → C 改一改 → 完成页 |
 | 学生端 | `/student/typing` | 独立打字热身，只有「基准键位」「编程关键词」两档 |
 | 学生端 | `/student/profile` | 用户中心：我的信息与分组、总进度与星星、打字成长曲线、12 关记录、退出登录（课程地图标题区可点进） |
-| 机构端 | `/org/dashboard` `/org/students` `/org/courses` | 左侧窄导航 + 右侧内容区 |
+| 机构端 | `/org/login` `/org/dashboard` `/org/students` `/org/courses` | 账号由平台开户发放；左侧窄导航 + 右侧内容区 |
 | 家长端 | `/parent` | 手机 H5，单列卡片，绑定码 `204815`…`204822` |
-| 平台后台 | `/admin/courses` | 只做课程 JSON 导入 + 校验报告，无可视化编辑器 |
+| 平台后台 | `/admin/orgs` `/admin/orgs/:orgId` `/admin/leads` `/admin/courses` | 多机构台账、机构详情与收费记录、线索、课程包导入 |
+| 兜底 | `*` | 404 页面（不再静默跳回首页），带页脚与返回入口 |
 
 ## 演示数据
 
@@ -43,18 +45,22 @@ npm run typecheck  # 只做类型检查
 src/
   styles/tokens.css     # 设计 token 单点（主色 #2BB3A3 只在这里出现）
   index.css             # Tailwind 三件套 + .btn/.card/.field/.code-font 等
+  config/site.ts        # 对外信息单点：主体名称、备案号、联系方式、域名、法务更新日
   types/index.ts        # 全部类型集中定义
   lib/
     runner.ts           # 页面唯一的 Python 执行入口 runCode(code, levelId)
     python-sim.ts       # 原型用的轻量 turtle/print 解释器（可替换为 Pyodide）
+    usePageMeta.ts      # 页面级 title/description/og/canonical（SPA 共用一份 index.html）
     api.ts              # 页面唯一数据入口（localStorage + mock）
     storage.ts lineCheck.ts format.ts
   mock/levels.ts        # 12 关课程包（代码都是真能跑的短代码）
   mock/lineNotes.ts     # 每关逐行「这一行在做什么」，喂给小绘本和代码说明
   mock/org.ts           # 机构 / 学生 / 打字 / 家长种子数据
-  components/           # TurtleCanvas RunPreview Toast TypingTrainer WpmChart
-  pages/                # 入口、学生端、机构端、家长端、平台后台
+  components/           # BrandMark SiteFooter TurtleCanvas RunPreview Toast TypingTrainer WpmChart
+  pages/                # 营销站、入口、学生端、机构端、家长端、平台后台、法务页、404
 scripts/smoke-sim.ts    # 冒烟测试
+scripts/brand-build.py  # 由 _brand/logo-src.jpg 生成 logo 与 favicon
+scripts/og-cover.py     # 生成 1200×630 社交分享卡 public/og-cover.png
 ```
 
 ## 关键实现约定
@@ -92,10 +98,28 @@ L08 / L09 的颜色在 `if / else` 两个分支里各写一处，改成同一个
 - **打字趋势**：手写 SVG 折线，只画 WPM 一条线，准确率一行文字；有效数据点少于 2 个显示「数据积累中」。
 - **用户中心**：`/student/profile` 汇总学生自己的信息（姓名/账号/机构/分组/最近学习）、总进度与星星、当前关卡、最近四周打字曲线和 12 关记录；不排名、不与他人对比。入口在课程地图顶部标题区（「用户中心 ›」），页内提供「退出登录」回到登录页以便换账号。
 
+## 品牌图标与 favicon
+
+- 源图 `_brand/logo-src.jpg`（3D 渲染原图，右下角带生成水印）。`python scripts/brand-build.py` 一键产出全部尺寸。
+- 处理口径：水印在主体之外，靠裁切去掉；背景用「红色偏色」做泛洪判定（主体被红框完整包住，不会被误吃），所以底部投影一并清掉、奶油色内脸保留；半透明边缘做颜色去污，避免在深色标签栏上出现白边。
+- 产物在 `public/`：`logo.png`(512)、`logo-192.png`、`favicon.ico`（16/32/48/64/128/256）、`favicon-32.png`、`favicon-16.png`、`apple-touch-icon.png`、`site.webmanifest`。
+- 页面标识一律走 `src/components/BrandMark.tsx`：`BrandMark` 只出图标，`BrandLockup` 出「图标 + 产品名」。不要在页面里硬编码图片路径。
+- 图标主色是红橙色，设计主色仍是 `#2BB3A3`：图标只当标识，按钮、进度条、强调色不改色，两者同屏靠尺寸区分层级。
+
+## 对外信息与合规位
+
+- 公司主体、备案号、客服渠道、部署域名、法务更新日全部集中在 `src/config/site.ts`；页脚（`components/SiteFooter.tsx`）、关于页、法务页都从这一处取值，不要另写一份。
+- 备案号未取得前 `icpLicense` 保持空字符串：页脚**不显示任何编号**，只展示主体名称与版权，并注明「ICP 备案办理中」。取得后只改这一个常量，页脚会自动带上工信部查询链接。
+- 客服电话不对外；`contactEmail` / `contactWechat` 为空时页脚与成功页只显示「通过申请试用表单联系」，不会渲染空联系方式。
+- 申请表单带隐私同意勾选（未勾选不可提交），勾选项链到 `/privacy` 与 `/terms`。
+- 页面级 meta 统一走 `src/lib/usePageMeta.ts`：每个页面自己声明 title 与 description，并同步 og/twitter；`siteUrl` 为空时不生成 canonical，避免出现写死的假域名。
+- `public/robots.txt` 允许抓取营销页，屏蔽 `/admin` `/student` `/org` `/parent`；`sitemap.xml` 待域名确定后再生成。
+- 分享卡 `public/og-cover.png`（1200×630）由 `python scripts/og-cover.py` 生成，改了产品名或卖点要重新跑一次。
+
 ## 附录 A 红线自查
 
 1. 独立打字模块只有「基准键位」「编程关键词」两档，课内打字用 `practice_type=lesson_embedded`。
 2. 家长端只有 WPM 折线 + 文字准确率，不排名、不对比，点数不足显示「数据积累中」。
 3. 机构端学生管理只有「批量导入」一个建号入口，没有邀请码按钮，也没有灰显占位。
-4. 平台后台只有 JSON 课程包导入 + 逐字段校验报告，没有可视化编辑器。
+4. 平台后台的课程配置只有 JSON 课程包导入 + 逐字段校验报告，没有可视化编辑器；机构侧只有台账、开户、收费记录、线索，没有自助注册与在线支付。
 5. 产品名统一为「代码闯关」。

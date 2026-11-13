@@ -5,6 +5,7 @@ import { addTypingRecord, loadTypingSeries } from '@/api/learning'
 import { getCurrentStudent } from '@/api/studentAuth'
 import { TypingTrainer } from '@/components/TypingTrainer'
 import { WpmChart } from '@/components/WpmChart'
+import { BrandMark } from '@/components/BrandMark'
 
 type Mode = 'baseline_keys' | 'keywords'
 
@@ -47,6 +48,7 @@ export function TypingWarmup() {
           <Link to="/student" className="btn-ghost px-2">
             ←
           </Link>
+          <BrandMark size={32} />
           <div>
             <h1 className="text-xl font-bold text-ink">打字热身</h1>
             <p className="text-sm text-ink-soft">每天 5 分钟，手指记住位置就好</p>

@@ -1,16 +1,22 @@
 import { Link } from 'react-router-dom'
+import { BrandMark } from '@/components/BrandMark'
+import { usePageMeta } from '@/lib/usePageMeta'
 
 const CARDS = [
   { title: '机构', text: '零师资、零硬件即可开设 Python 编程课外课，有后台可管学生、看进度。' },
   { title: '学生', text: '打开就能学，抄代码有逐行校验和友好报错，跑通即出图形。' },
-  { title: '家长', text: '手机端免费看孩子学习进度和打字成长，无需额外付费。' },
+  { title: '家长', text: '用自己的用户名和密码登录，手机上免费看孩子的学习进度和打字成长。' },
 ]
 
 export function HomePage() {
+  usePageMeta(undefined, '面向小学 2—5 年级的 Python 编程课外课：学生自己抄代码、逐行校验、跑出图形。机构零师资、零硬件开课，14 天试用。')
   return (
     <main>
       <section className="mx-auto max-w-5xl px-5 py-16">
-        <p className="text-sm font-medium text-brand-strong">代码闯关</p>
+        <div className="flex items-center gap-2.5">
+          <BrandMark size={32} />
+          <span className="text-sm font-medium text-brand-strong">代码闯关</span>
+        </div>
         <h1 className="mt-3 max-w-3xl text-4xl font-bold leading-tight text-ink">学生自己就能上的 Python 编程课，机构零师资零硬件开课</h1>
         <p className="mt-5 max-w-2xl text-lg text-ink-soft">托辅空档里的 15–30 分钟。学生抄代码、跑出图形、改一个参数。机构只负责建号和看进度。</p>
         <div className="mt-8 flex flex-wrap gap-3">

@@ -25,8 +25,8 @@ body,
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-field bg-brand px-6 text-white font-semibold transition
-      hover:bg-brand-strong active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 rounded-field bg-brand-action px-6 text-white font-semibold transition
+      hover:bg-brand-action-strong active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed;
     min-height: 44px;
   }
 

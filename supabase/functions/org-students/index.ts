@@ -2,16 +2,9 @@
 import { ensureAuthUser, loginEmail } from '../_shared/authUser.ts'
 import { empty, json } from '../_shared/http.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
-import { hashPassword } from '../_shared/password.ts'
+import { generateBindCode } from '../_shared/bindCode.ts'
+import { generateInitialPassword, hashPassword } from '../_shared/password.ts'
 import { planStudentImport } from '../_shared/studentImport.ts'
-
-const INITIAL_PASSWORD = '123456'
-
-function bindCode(): string {
-  const buf = new Uint32Array(1)
-  crypto.getRandomValues(buf)
-  return String(100000 + (buf[0] % 900000))
-}
 
 function csvIdentity(csv: string): { accounts: string[]; names: string[] } {
   const lines = csv.replace(/\r\n/g, '\n').split('\n').map((line) => line.trim()).filter(Boolean)
@@ -31,6 +24,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(405, { message: '只接受 POST' })
 
   const action = req.headers.get('x-action') ?? 'list'
+  // 代解除不算机构写入：宽限期内机构端只读，仍要能切断家长可见范围。
   const writing = action === 'import' || action === 'create-group'
   return withOrgScope(req, { write: writing, importStudents: action === 'import' }, async (ctx) => {
     if (action === 'groups' || action === 'create-group') {
@@ -52,13 +46,48 @@ Deno.serve(async (req) => {
       return json(200, { groups: data ?? [] })
     }
 
+    if (action === 'unbind-parent') {
+      const studentId = typeof ctx.body.studentId === 'string' ? ctx.body.studentId.trim() : ''
+      const { data: student, error: studentError } = await ctx.db
+        .from('student')
+        .select('id')
+        .eq('id', studentId)
+        .eq('org_id', ctx.orgId)
+        .maybeSingle()
+      if (studentError) return json(500, { message: '解除失败' })
+      if (!student) return json(404, { message: '没有这名学生' })
+      const { error: updateError } = await ctx.db
+        .from('parent_binding')
+        .update({ revoked_at: new Date().toISOString() })
+        .eq('student_id', student.id)
+        .is('revoked_at', null)
+      if (updateError) return json(500, { message: '解除失败' })
+      return json(200, { ok: true, boundParentCount: 0 })
+    }
+
     if (action !== 'import') {
       const { data, error } = await ctx.db
         .from('student')
         .select('id, name, account, group_id, status, bind_code, current_level_order, last_active_at')
         .eq('org_id', ctx.orgId)
       if (error) return json(500, { message: '读取失败' })
-      return json(200, { students: data ?? [] })
+      const ids = (data ?? []).map((row) => row.id as string)
+      const counts = new Map<string, number>()
+      if (ids.length) {
+        const { data: bindings, error: bindingError } = await ctx.db
+          .from('parent_binding')
+          .select('student_id')
+          .in('student_id', ids)
+          .is('revoked_at', null)
+        if (bindingError) return json(500, { message: '读取失败' })
+        for (const row of bindings ?? []) {
+          const id = row.student_id as string
+          counts.set(id, (counts.get(id) ?? 0) + 1)
+        }
+      }
+      return json(200, {
+        students: (data ?? []).map((row) => ({ ...row, bound_parent_count: counts.get(row.id as string) ?? 0 })),
+      })
     }
 
     const { data: groups, error: groupError } = await ctx.db
@@ -91,6 +120,7 @@ Deno.serve(async (req) => {
 
     let added = 0
     const rows = []
+    const issued = new Set<string>()
     for (const row of plan) {
       if (!row.ok) {
         rows.push({ row: row.row, name: row.name, account: row.account, ok: false, reason: row.reason })
@@ -102,8 +132,10 @@ Deno.serve(async (req) => {
         continue
       }
       try {
-        const passwordHash = await hashPassword(INITIAL_PASSWORD)
-        const authUserId = await ensureAuthUser(ctx.db, loginEmail('student', row.account), INITIAL_PASSWORD)
+        let plain = generateInitialPassword(8)
+        while (issued.has(plain)) plain = generateInitialPassword(8)
+        const passwordHash = await hashPassword(plain)
+        const authUserId = await ensureAuthUser(ctx.db, loginEmail('student', row.account), plain)
         let inserted = false
         let lastReason = '导入失败'
         for (let attempt = 0; attempt < 5 && !inserted; attempt += 1) {
@@ -115,7 +147,7 @@ Deno.serve(async (req) => {
             account: row.account,
             password_hash: passwordHash,
             status: 'active',
-            bind_code: bindCode(),
+            bind_code: generateBindCode(),
             current_level_order: 1,
           })
           if (!insertError) {
@@ -131,7 +163,8 @@ Deno.serve(async (req) => {
           continue
         }
         added += 1
-        rows.push({ row: row.row, name: row.name, account: row.account, ok: true })
+        issued.add(plain)
+        rows.push({ row: row.row, name: row.name, account: row.account, ok: true, initialPassword: plain })
       } catch (error) {
         console.error('import student failed', error instanceof Error ? error.message : error)
         rows.push({ row: row.row, name: row.name, account: row.account, ok: false, reason: '导入失败' })

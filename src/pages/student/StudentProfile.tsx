@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { loadLearningHome, type LearningHome } from '@/api/learning'
 import { getCurrentStudent, logoutStudent } from '@/api/studentAuth'
 import { Stars, WpmChart } from '@/components/WpmChart'
+import { BrandMark } from '@/components/BrandMark'
 
 /** 学生用户中心：我是谁、学到哪、打字练得怎么样，以及退出登录 */
 export function StudentProfile() {
@@ -37,6 +38,7 @@ export function StudentProfile() {
           <Link to="/student" className="btn-ghost px-2" aria-label="返回课程地图">
             ←
           </Link>
+          <BrandMark size={32} />
           <div>
             <h1 className="text-xl font-bold text-ink">用户中心</h1>
             <p className="text-sm text-ink-soft">自己的记录，只和自己比</p>

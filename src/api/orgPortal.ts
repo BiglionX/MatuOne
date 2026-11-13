@@ -49,7 +49,11 @@ export async function createOrgGroup(name: string): Promise<Group[]> {
   return result.groups
 }
 
-export async function listOrgStudents(): Promise<Student[]> {
+export interface OrgStudentListItem extends Student {
+  boundParentCount: number
+}
+
+export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
   const result = await callFunction<{
     students: {
       id: string
@@ -60,10 +64,11 @@ export async function listOrgStudents(): Promise<Student[]> {
       bind_code: string | null
       current_level_order: number
       last_active_at: string | null
+      bound_parent_count?: number
     }[]
   }>('org-students', {}, { role: 'org', headers: { 'x-action': 'list' } })
-  return result.students.map((row) =>
-    asStudent({
+  return result.students.map((row) => ({
+    ...asStudent({
       id: row.id,
       orgId: '',
       groupId: row.group_id,
@@ -74,7 +79,12 @@ export async function listOrgStudents(): Promise<Student[]> {
       lastActiveAt: row.last_active_at ?? '',
       bindCode: row.bind_code ?? '',
     }),
-  )
+    boundParentCount: row.bound_parent_count ?? 0,
+  }))
+}
+
+export async function unbindOrgStudent(studentId: string): Promise<void> {
+  await callFunction('org-students', { studentId }, { role: 'org', headers: { 'x-action': 'unbind-parent' } })
 }
 
 export async function importOrgStudents(csv: string): Promise<{ rows: ImportRowResult[]; added: number }> {

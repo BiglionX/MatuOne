@@ -1,3 +1,5 @@
+import { usePageMeta } from '@/lib/usePageMeta'
+
 const LESSONS = [
   ['1', 'print 出图案', '控制台文字'],
   ['2', '前进、转向，画一条线', '线条'],
@@ -13,6 +15,7 @@ const LESSONS = [
 ]
 
 export function CurriculumPage() {
+  usePageMeta('课程体系', '1.0 交付 12 节 Python 编程课：从 print 图案到 for、if 画多边形，每节 20 分钟，分看效果、抄代码、改一改三回合。')
   return (
     <main className="mx-auto max-w-5xl px-5 py-12">
       <h1 className="text-3xl font-bold text-ink">课程体系</h1>

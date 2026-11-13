@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ApiError } from './apiError'
 
-export type AuthRole = 'org' | 'student' | 'platform'
+export type AuthRole = 'org' | 'student' | 'platform' | 'parent'
 
 function env(): { url: string; anon: string } {
   const url = import.meta.env.VITE_SUPABASE_URL

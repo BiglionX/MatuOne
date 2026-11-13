@@ -17,9 +17,13 @@ verify_jwt = false
 [functions.public-site]
 verify_jwt = false
 
-# lookup / bind / home 都不使用 Supabase 会话。绑定靠绑定码，回家靠 x-parent-token，函数内自行校验。
-[functions.parent-portal]
+# 注册和登录时还没有会话，账号密码在函数体内校验。
+[functions.parent-login]
 verify_jwt = false
+
+# 家长会话。家长身份从 JWT 解析，绑定码只用于确认孩子，不代替登录。
+[functions.parent-portal]
+verify_jwt = true
 
 # 机构管理员会话，withOrgScope 从 JWT 取 orgId。
 [functions.org-students]

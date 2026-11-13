@@ -1,4 +1,5 @@
 node_modules
+_brand
 dist
 dist-ssr
 .vite
