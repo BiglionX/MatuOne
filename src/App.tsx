@@ -40,6 +40,7 @@ const AdminCourseImport = lazy(() => import('@/pages/admin/AdminCourseImport').t
 const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents').then((m) => ({ default: m.AdminStudents })))
 const AdminParents = lazy(() => import('@/pages/admin/AdminParents').then((m) => ({ default: m.AdminParents })))
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })))
+const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })))
 
 function RouteFallback() {
   return <div className="grid min-h-[60vh] place-items-center text-sm text-ink-soft">正在加载…</div>
@@ -88,6 +89,7 @@ export default function App() {
             <Route path="students" element={<AdminStudents />} />
             <Route path="parents" element={<AdminParents />} />
             <Route path="levels" element={<AdminCourseImport />} />
+            <Route path="settings" element={<AdminSettings />} />
             <Route path="courses" element={<Navigate to="/admin/levels" replace />} />
           </Route>
 

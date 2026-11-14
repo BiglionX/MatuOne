@@ -46,6 +46,51 @@ Deno.serve(async (req) => {
       return json(200, { groups: data ?? [] })
     }
 
+    if (action === 'progress') {
+      const studentId = typeof ctx.body.studentId === 'string' ? ctx.body.studentId.trim() : ''
+      const { data: student, error: studentError } = await ctx.db
+        .from('student')
+        .select('id, name, current_level_order')
+        .eq('id', studentId)
+        .eq('org_id', ctx.orgId)
+        .maybeSingle()
+      if (studentError) return json(500, { message: '读取失败' })
+      if (!student) return json(404, { message: '没有这名学生' })
+      const { data: records, error: recordError } = await ctx.db
+        .from('learning_record')
+        .select('level_id, completed')
+        .eq('student_id', student.id)
+      if (recordError) return json(500, { message: '读取失败' })
+      const ids = new Set((records ?? []).map((row) => row.level_id as string))
+      const { data: currentLevel } = await ctx.db
+        .from('course_level')
+        .select('level_id')
+        .eq('sort_order', student.current_level_order)
+        .maybeSingle()
+      if (currentLevel?.level_id) ids.add(currentLevel.level_id as string)
+      const idList = [...ids]
+      if (!idList.length) return json(200, { name: student.name, lessons: [] })
+      const { data: levels, error: levelError } = await ctx.db
+        .from('course_level')
+        .select('level_id, sort_order, title, teaching_intent, teacher_guide')
+        .in('level_id', idList)
+        .order('sort_order', { ascending: true })
+      if (levelError) return json(500, { message: '读取失败' })
+      const completed = new Map((records ?? []).map((row) => [row.level_id as string, row.completed === true]))
+      return json(200, {
+        name: student.name,
+        lessons: (levels ?? []).map((row) => ({
+          levelId: row.level_id,
+          order: row.sort_order,
+          title: row.title,
+          completed: completed.get(row.level_id as string) === true,
+          current: row.sort_order === student.current_level_order,
+          teachingIntent: row.teaching_intent,
+          teacherGuide: row.teacher_guide,
+        })),
+      })
+    }
+
     if (action === 'unbind-parent') {
       const studentId = typeof ctx.body.studentId === 'string' ? ctx.body.studentId.trim() : ''
       const { data: student, error: studentError } = await ctx.db

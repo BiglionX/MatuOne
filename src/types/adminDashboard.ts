@@ -12,6 +12,15 @@ export interface SeatAlert {
   seatQuota: number
 }
 
+export interface AgentCommission {
+  agentId: string
+  agentName: string
+  orgCount: number
+  seatFeeTotal: number
+  rebateDue: number
+  platformNet: number
+}
+
 export interface AdminDashboard {
   revenue: number
   activeStudents: number
@@ -19,4 +28,5 @@ export interface AdminDashboard {
   conversionRate: number
   expiringOrgs: ExpiringOrg[]
   seatAlerts: SeatAlert[]
+  commissions: AgentCommission[]
 }

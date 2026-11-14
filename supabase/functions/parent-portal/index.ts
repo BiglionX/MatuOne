@@ -200,12 +200,13 @@ Deno.serve(async (req) => {
     const [{ data: org }, { data: group }, { data: progress }, { count }, { data: sessions }, { data: typing }] = await Promise.all([
       db.from('org').select('name').eq('id', student.org_id).maybeSingle(),
       db.from('student_group').select('name').eq('id', student.group_id).maybeSingle(),
-      db.from('learning_record').select('level_id, completed').eq('student_id', student.id).eq('completed', true),
+      db.from('learning_record').select('level_id, completed, updated_at').eq('student_id', student.id),
       db.from('course_level').select('level_id', { count: 'exact', head: true }).eq('published', true),
-      db.from('study_session').select('started_at, ended_at').eq('student_id', student.id),
+      db.from('study_session').select('level_id, started_at, ended_at').eq('student_id', student.id),
       db.from('typing_record').select('practiced_on, wpm, accuracy').eq('student_id', student.id),
     ])
-    const completedCount = progress?.length ?? 0
+    const completedRows = (progress ?? []).filter((row) => row.completed === true)
+    const completedCount = completedRows.length
     const totalLevels = count ?? 0
     const order = Math.min(totalLevels || 1, Math.max(1, student.current_level_order as number))
     const { data: currentLevel } = await db.from('course_level').select('title').eq('sort_order', order).maybeSingle()
@@ -217,6 +218,24 @@ Deno.serve(async (req) => {
       return sum + Math.min(45, Math.max(0, span))
     }, 0)
     const last = [...(sessions ?? [])].sort((a, b) => String(b.started_at).localeCompare(String(a.started_at)))[0]
+    const weekStartMs = start.getTime()
+    const weeklyIds = new Set<string>()
+    for (const row of completedRows) {
+      if (row.updated_at && new Date(row.updated_at as string).getTime() >= weekStartMs) weeklyIds.add(row.level_id as string)
+    }
+    const briefIds = completedRows.map((row) => row.level_id as string)
+    const copies = briefIds.length
+      ? await db.from('course_level').select('level_id, sort_order, title, parent_brief').in('level_id', briefIds)
+      : { data: [] as { level_id: string; sort_order: number; title: string; parent_brief: string | null }[] }
+    const briefs = (copies.data ?? [])
+      .map((row) => ({
+        levelId: row.level_id as string,
+        order: row.sort_order as number,
+        title: row.title as string,
+        parentBrief: (row.parent_brief as string | null) ?? null,
+      }))
+      .sort((a, b) => a.order - b.order)
+    const learnedIds = new Set(completedRows.map((row) => row.level_id as string))
     children.push({
       student: {
         id: student.id,
@@ -240,6 +259,8 @@ Deno.serve(async (req) => {
         lastStudyDate: last ? String(last.started_at).slice(0, 10) : null,
       },
       typingSeries: bucket(typing ?? []),
+      learnedLessons: briefs.filter((row) => learnedIds.has(row.levelId)),
+      weeklyLessons: briefs.filter((row) => weeklyIds.has(row.levelId)),
       position: await curriculumPosition(db, student.id as string),
     })
   }

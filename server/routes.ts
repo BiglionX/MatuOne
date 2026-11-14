@@ -1,6 +1,7 @@
 import { generateBindCode, isAcceptableBindCode, normalizeBindCode } from '../supabase/functions/_shared/bindCode'
 import { normalizeTypingScore } from '../supabase/functions/_shared/typingScore'
 import { validateCoursePackage } from '../supabase/functions/_shared/coursePackage'
+import { COURSE_TREE_SQL, groupCourseTree, type CourseTreeSourceRow } from '../supabase/functions/_shared/courseTree'
 import { toCurriculumPosition, type CurriculumPositionRow } from '../supabase/functions/_shared/curriculumPosition'
 import { seatLimit, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
 import { generateInitialPassword, hashPassword, verifyPassword } from '../supabase/functions/_shared/password'
@@ -351,6 +352,43 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
     const groups = await q('select id, name from public.student_group where org_id = $1 order by created_at asc', [ctx.orgId])
     return ok({ groups })
   }
+  if (action === 'progress') {
+    const studentId = typeof req.body.studentId === 'string' ? req.body.studentId.trim() : ''
+    const student = await one<{ name: string; current_level_order: number }>(
+      'select name, current_level_order from public.student where id = $1 and org_id = $2',
+      [studentId, ctx.orgId],
+    )
+    if (!student) return fail(404, '没有这名学生')
+    const lessons = await q<{
+      level_id: string
+      sort_order: number
+      title: string
+      teaching_intent: string | null
+      teacher_guide: string | null
+      completed: boolean
+    }>(
+      `select cl.level_id, cl.sort_order, cl.title, cl.teaching_intent, cl.teacher_guide,
+              coalesce(lr.completed, false) as completed
+       from public.course_level cl
+       left join public.learning_record lr
+         on lr.level_id = cl.level_id and lr.student_id = $1
+       where lr.student_id is not null or cl.sort_order = $2
+       order by cl.sort_order`,
+      [studentId, student.current_level_order],
+    )
+    return ok({
+      name: student.name,
+      lessons: lessons.map((row) => ({
+        levelId: row.level_id,
+        order: row.sort_order,
+        title: row.title,
+        completed: row.completed === true,
+        current: row.sort_order === student.current_level_order,
+        teachingIntent: row.teaching_intent,
+        teacherGuide: row.teacher_guide,
+      })),
+    })
+  }
   if (action === 'unbind-parent') {
     const studentId = typeof req.body.studentId === 'string' ? req.body.studentId.trim() : ''
     const student = await one('select id from public.student where id = $1 and org_id = $2', [studentId, ctx.orgId])
@@ -437,12 +475,39 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
   return ok({ added, rows })
 }
 
+async function orgPackageLevel(orgId: string): Promise<number> {
+  const grant = await one<{ max_level: number }>('select max_level from public.org_entitlement where org_id = $1', [orgId])
+  const level = Number(grant?.max_level)
+  return Number.isInteger(level) && level > 0 ? level : 0
+}
+
+async function orgPricing(orgId: string): Promise<{ studentMonthlyPrice: number; baseSeatPrice: number }> {
+  const row = await one<{ student_monthly_price: number; base_seat_price: string }>(
+    `select o.student_monthly_price, c.value as base_seat_price
+     from public.org o
+     join public.platform_configs c on c.key = 'base_seat_price'
+     where o.id = $1`,
+    [orgId],
+  )
+  const baseSeatPrice = Number(row?.base_seat_price)
+  const studentMonthlyPrice = Number(row?.student_monthly_price)
+  if (!Number.isInteger(baseSeatPrice) || baseSeatPrice < 1) throw new Error('缺少平台底价配置')
+  return { studentMonthlyPrice, baseSeatPrice }
+}
+
 async function orgCourse(req: ApiRequest): Promise<ApiResult> {
   const action = req.header('x-action') ?? 'read'
-  const ctx = await orgContext(req, { write: action === 'save' })
+  const ctx = await orgContext(req, { write: action === 'save' || action === 'save-price' })
   if (!('orgId' in ctx)) return ctx
   const countRow = await one<{ n: number }>("select count(*)::int as n from public.course_level where published = true")
   const levelCount = countRow?.n ?? 0
+  if (action === 'save-price') {
+    const studentMonthlyPrice = Number(req.body.studentMonthlyPrice)
+    if (!Number.isInteger(studentMonthlyPrice) || studentMonthlyPrice < 150 || studentMonthlyPrice > 500) {
+      return fail(400, '家长定价需要在 150 到 500 元之间')
+    }
+    await q('update public.org set student_monthly_price = $2 where id = $1', [ctx.orgId, studentMonthlyPrice])
+  }
   if (action === 'save') {
     const groupId = typeof req.body.groupId === 'string' && req.body.groupId ? req.body.groupId : 'all'
     const seats = Number(req.body.seats)
@@ -483,7 +548,8 @@ async function orgCourse(req: ApiRequest): Promise<ApiResult> {
         )
       }
     }
-    return ok({ groupId, seats, expiresAt, activatedAt, levelCount })
+    const pricing = await orgPricing(ctx.orgId)
+    return ok({ groupId, seats, expiresAt, activatedAt, levelCount, maxLevel: await orgPackageLevel(ctx.orgId), ...pricing })
   }
   const data = await one<{ group_id: string; seats: number; expires_at: string; activated_at: string }>(
     'select group_id, seats, expires_at, activated_at from public.course_activation where org_id = $1',
@@ -494,12 +560,15 @@ async function orgCourse(req: ApiRequest): Promise<ApiResult> {
     [ctx.orgId],
   )
   const fallbackEnd = (org?.service_end_at ?? org?.trial_expire_at ?? '').slice(0, 10)
+  const pricing = await orgPricing(ctx.orgId)
   return ok({
     groupId: data?.group_id ?? 'all',
     seats: data?.seats ?? org?.seat_quota ?? ctx.seatLimit,
     expiresAt: data?.expires_at ?? fallbackEnd,
     activatedAt: data?.activated_at ?? org?.created_at ?? new Date().toISOString(),
     levelCount,
+    maxLevel: await orgPackageLevel(ctx.orgId),
+    ...pricing,
   })
 }
 
@@ -611,6 +680,11 @@ function bucketTyping(rows: { practiced_on: string | Date; wpm: number; accuracy
   })
 }
 
+/** 试课请求即使打到学生接口，也不写学习记录、打字记录和上课会话。 */
+function previewBlocksProgress(body: Record<string, unknown>): boolean {
+  return body.preview === true || body.preview === 'true' || body.sandbox === true
+}
+
 async function studentLearning(req: ApiRequest): Promise<ApiResult> {
   const auth = await requireRole(req, 'student')
   if ('status' in auth) return { status: auth.status, body: auth.status === 401 ? { message: '请先登录' } : auth.body }
@@ -629,6 +703,9 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
   ])
   if (!student || student.status !== 'active') return fail(401, '请先登录')
   const action = typeof req.body.action === 'string' ? req.body.action : 'map'
+  if (previewBlocksProgress(req.body) && (action === 'typing' || action === 'touch' || action === 'complete')) {
+    return fail(403, '预览模式不会记录学习进度')
+  }
   const levelRaw = req.body.levelId
   const requestedLevelId = typeof levelRaw === 'number' && Number.isInteger(levelRaw) ? String(levelRaw) : typeof levelRaw === 'string' ? levelRaw.trim() : ''
 
@@ -684,8 +761,9 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
     const playable = buildPlayableLevel(decision.levelId)
     if (!playable) return fail(404, '没有找到这一关')
+    const storedCopy = await findCourseLevel(decision.levelId)
     const hints = await q('select pattern, friendly_message from public.error_hint')
-    return ok({ level: playable, hints })
+    return ok({ level: withStoredGoal(playable, storedCopy?.goal), hints })
   }
 
   const access = await loadStudentAccess(student)
@@ -895,6 +973,28 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       return sum + Math.min(45, Math.max(0, span))
     }, 0)
     const last = [...sessions].sort((a, b) => String(b.started_at).localeCompare(String(a.started_at)))[0]
+    const learned = await q<{ level_id: string; sort_order: number; title: string; parent_brief: string | null }>(
+      `select cl.level_id, cl.sort_order, cl.title, cl.parent_brief
+       from public.learning_record lr
+       join public.course_level cl on cl.level_id = lr.level_id
+       where lr.student_id = $1 and lr.completed = true
+       order by cl.sort_order`,
+      [student.id],
+    )
+    const weeklyLevels = await q<{ level_id: string; sort_order: number; title: string; parent_brief: string | null }>(
+      `select cl.level_id, cl.sort_order, cl.title, cl.parent_brief
+       from public.learning_record lr
+       join public.course_level cl on cl.level_id = lr.level_id
+       where lr.student_id = $1 and lr.completed = true and lr.updated_at >= $2
+       order by cl.sort_order`,
+      [student.id, start.toISOString()],
+    )
+    const toBrief = (row: { level_id: string; sort_order: number; title: string; parent_brief: string | null }) => ({
+      levelId: row.level_id,
+      order: row.sort_order,
+      title: row.title,
+      parentBrief: row.parent_brief,
+    })
     children.push({
       student: {
         id: student.id,
@@ -919,6 +1019,8 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
         lastStudyDate: last ? asDay(last.started_at) : null,
       },
       typingSeries: bucketTyping(typing),
+      learnedLessons: learned.map(toBrief),
+      weeklyLessons: weeklyLevels.map(toBrief),
     })
   }
   if (!children.length && stopped.length) return fail(403, '机构服务已停止')
@@ -961,11 +1063,12 @@ async function publicSite(req: ApiRequest): Promise<ApiResult> {
   }
   const seats = Number(req.body.seats ?? 40)
   const safeSeats = Number.isInteger(seats) && seats > 0 ? seats : 40
-  const tiers = await q('select min_seats, max_seats, unit_price from public.seat_price_tier order by min_seats')
   const quoted = await one<{ unit_price: number; amount: number; plan_label: string }>('select * from public.quote_seat_price($1)', [safeSeats])
+  const trial = await one<{ value: string }>("select value from public.platform_configs where key = 'trial_days'")
   return ok({
-    tiers,
+    tiers: quoted ? [{ min_seats: 1, max_seats: null, unit_price: quoted.unit_price }] : [],
     example: quoted ? { seats: safeSeats, unitPrice: quoted.unit_price, amount: quoted.amount, plan: quoted.plan_label } : null,
+    trialDays: Number(trial?.value) || null,
   })
 }
 
@@ -1460,6 +1563,14 @@ async function adminDashboard(req: ApiRequest): Promise<ApiResult> {
       seatQuota: row.seat_quota,
     }))
     .sort((a, b) => b.usedSeats / b.seatQuota - a.usedSeats / a.seatQuota)
+  const commissions = await q<{
+    agent_id: string
+    agent_name: string
+    org_count: number
+    seat_fee_total: number
+    rebate_due: number
+    platform_net: number
+  }>('select * from public.list_agent_commissions()')
   return ok({
     revenue,
     activeStudents: Number(students?.total ?? 0),
@@ -1467,6 +1578,14 @@ async function adminDashboard(req: ApiRequest): Promise<ApiResult> {
     conversionRate: trialed.size ? Math.round((converted / trialed.size) * 100) : 0,
     expiringOrgs,
     seatAlerts,
+    commissions: commissions.map((row) => ({
+      agentId: row.agent_id,
+      agentName: row.agent_name,
+      orgCount: Number(row.org_count),
+      seatFeeTotal: Number(row.seat_fee_total),
+      rebateDue: Number(row.rebate_due),
+      platformNet: Number(row.platform_net),
+    })),
   })
 }
 
@@ -1574,10 +1693,27 @@ async function orgDetail(req: ApiRequest): Promise<ApiResult> {
 
 async function adminOps(req: ApiRequest): Promise<ApiResult> {
   const action = typeof req.body.action === 'string' ? req.body.action : 'ledger'
-  const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote' || action === 'detail'
+  const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote' || action === 'detail' || action === 'settings'
   const staff = await requireStaff(req, financeOk ? ['ops', 'finance'] : ['ops'])
   if ('status' in staff) return staff
-  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态']
+  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成']
+  if (action === 'settings' || action === 'save-settings') {
+    try {
+      if (action === 'save-settings') {
+        await q('select public.save_platform_configs($1, $2, $3, $4, $5)', [
+          staff.id,
+          Number(req.body.minSeatCount),
+          Number(req.body.baseSeatPrice),
+          Number(req.body.trialDays),
+          Number(req.body.agentCommissionRate),
+        ])
+      }
+      const configs = await q('select key, value, description, updated_at from public.list_platform_configs()')
+      return ok({ configs })
+    } catch (error) {
+      return friendly(error, known, '配置保存失败')
+    }
+  }
   if (action === 'quote') {
     try {
       const row = await one<{ unit_price: number; amount: number; plan_label: string }>('select * from public.quote_seat_price($1)', [Number(req.body.seats)])
@@ -1655,7 +1791,15 @@ async function adminOps(req: ApiRequest): Promise<ApiResult> {
     })
   }
   await q('select public.rewrite_org_status_for_display()')
-  const data = await q<Record<string, unknown>>('select * from public.list_org_ledger()')
+  const [data, agentLinks] = await Promise.all([
+    q<Record<string, unknown>>('select * from public.list_org_ledger()'),
+    q<{ org_id: string; agent_name: string }>(
+      `select ao.org_id, a.name as agent_name
+       from public.agent_org ao
+       join public.agent a on a.id = ao.agent_id`,
+    ),
+  ])
+  const agentByOrg = new Map(agentLinks.map((row) => [row.org_id, row.agent_name]))
   const status = typeof req.body.status === 'string' ? req.body.status : 'all'
   const keyword = typeof req.body.keyword === 'string' ? req.body.keyword.trim().toLowerCase() : ''
   const expireFrom = typeof req.body.expireFrom === 'string' ? req.body.expireFrom : ''
@@ -1684,6 +1828,7 @@ async function adminOps(req: ApiRequest): Promise<ApiResult> {
       serviceEndAt: row.service_end_at,
       status: row.status,
       expiringSoon: row.expiring_soon,
+      agentName: agentByOrg.get(String(row.id)) ?? null,
     })),
   })
 }
@@ -1696,7 +1841,8 @@ async function provisionOrg(req: ApiRequest): Promise<ApiResult> {
   if (leadId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(leadId)) {
     return fail(400, '线索不存在')
   }
-  const trialDays = req.body.trialDays == null || req.body.trialDays === '' ? 14 : Number(req.body.trialDays)
+  const requestedDays = Number(req.body.trialDays)
+  const trialDays = Number.isInteger(requestedDays) ? requestedDays : 0
   const plain = generateInitialPassword(12)
   try {
     const row = await one<{ org_no: string; admin_account: string }>('select * from public.provision_org($1,$2,$3,$4,$5,$6,$7,$8,$9)', [
@@ -1715,16 +1861,118 @@ async function provisionOrg(req: ApiRequest): Promise<ApiResult> {
   } catch (error) {
     return friendly(
       error,
-      ['机构名称需要', '联系人需要', '请填写 11 位手机号', '请填写校区', '试用天数需要', '席位额度至少为', '试用机构最多', '线索不存在', '该线索已开户', '该线索不能开户', '密码哈希无效'],
+      ['机构名称需要', '联系人需要', '请填写 11 位手机号', '请填写校区', '试用天数需要', '席位额度至少为', '试用机构最多', '线索不存在', '该线索已开户', '该线索不能开户', '密码哈希无效', '最低席位'],
       '开户失败',
     )
   }
+}
+
+const COPY_FIELDS = ['goal', 'teaching_intent', 'parent_brief', 'teacher_guide'] as const
+type CopyField = (typeof COPY_FIELDS)[number]
+
+async function findCourseLevel(levelId: string): Promise<{ level_id: string; preview_frozen: boolean; goal: string } | null> {
+  if (!levelId) return null
+  const matched = /^L(\d+)$/i.exec(levelId)
+  const order = matched ? Number(matched[1]) : null
+  return one<{ level_id: string; preview_frozen: boolean; goal: string }>(
+    `select level_id, preview_frozen, goal
+     from public.course_level
+     where level_id = $1 or ($2::int is not null and sort_order = $2)
+     order by case when level_id = $1 then 0 else 1 end
+     limit 1`,
+    [levelId, order],
+  )
+}
+
+function withStoredGoal<T extends { goal: string }>(level: T, goal: string | null | undefined): T {
+  const next = goal?.trim()
+  if (!next) return level
+  return { ...level, goal: next }
 }
 
 async function courseCatalog(req: ApiRequest): Promise<ApiResult> {
   const staff = await requireStaff(req, ['ops'])
   if ('status' in staff) return staff
   const action = typeof req.body.action === 'string' ? req.body.action : 'list'
+  if (action === 'tree') {
+    const rows = (await q(COURSE_TREE_SQL)) as unknown as CourseTreeSourceRow[]
+    return ok({ stages: groupCourseTree(rows) })
+  }
+  if (action === 'preview' || action === 'preview-lock') {
+    const raw = req.body.levelId
+    const levelId = typeof raw === 'number' && Number.isInteger(raw) ? String(raw) : typeof raw === 'string' ? raw.trim() : ''
+    const stored = await findCourseLevel(levelId)
+    if (!stored) return fail(404, '没有找到这一关')
+    if (action === 'preview-lock') {
+      const frozen = req.body.frozen === true
+      const saved = await one<{ preview_frozen: boolean }>(
+        'update public.course_level set preview_frozen = $2, updated_at = now() where level_id = $1 returning preview_frozen',
+        [stored.level_id, frozen],
+      )
+      return ok({ levelId: stored.level_id, previewFrozen: saved?.preview_frozen === true })
+    }
+    if (stored.preview_frozen === true) return fail(403, '这一关已冻结，不能试课预览')
+    const playable = buildPlayableLevel(levelId) ?? buildPlayableLevel(stored.level_id)
+    if (!playable) return fail(404, '没有找到这一关')
+    const hints = await q('select pattern, friendly_message from public.error_hint')
+    return ok({ level: withStoredGoal(playable, stored.goal), hints })
+  }
+  if (action === 'copy-save' || action === 'copy-history') {
+    const raw = req.body.levelId
+    const levelId = typeof raw === 'number' && Number.isInteger(raw) ? String(raw) : typeof raw === 'string' ? raw.trim() : ''
+    const stored = await findCourseLevel(levelId)
+    if (!stored) return fail(404, '没有找到这一关')
+    if (action === 'copy-history') {
+      const [revision, entries] = await Promise.all([
+        one<{ revision_count: number }>('select revision_count from public.course_level where level_id = $1', [stored.level_id]),
+        q<{
+          field: CopyField
+          previous_text: string | null
+          next_text: string | null
+          revision_count: number
+          editor_name: string
+          created_at: string
+        }>(
+          `select field, previous_text, next_text, revision_count, editor_name, created_at
+           from public.content_history
+           where level_id = $1
+           order by created_at desc
+           limit 20`,
+          [stored.level_id],
+        ),
+      ])
+      return ok({
+        revisionCount: revision?.revision_count ?? 0,
+        entries: entries.map((row) => ({
+          field: row.field,
+          previousText: row.previous_text,
+          nextText: row.next_text,
+          revisionCount: row.revision_count,
+          editorName: row.editor_name,
+          editedAt: row.created_at,
+        })),
+      })
+    }
+    const field = req.body.field
+    if (typeof field !== 'string' || !COPY_FIELDS.includes(field as CopyField)) return fail(400, '文案字段不正确')
+    if (typeof req.body.text !== 'string') return fail(400, '文案字段不正确')
+    try {
+      const saved = await one<{ changed: boolean; revision_count: number; stored_text: string | null }>(
+        `select changed, revision_count, stored_text
+         from public.save_course_copy($1, $2, $3, $4::uuid, $5)`,
+        [stored.level_id, field, req.body.text, staff.id, staff.displayName],
+      )
+      if (!saved) return fail(500, '文案没有保存')
+      return ok({
+        field,
+        text: saved.stored_text,
+        revisionCount: saved.revision_count,
+        changed: saved.changed === true,
+      })
+    } catch (error) {
+      return friendly(error, ['文案字段不正确', '学习目标不能为空', '文案请控制在 2000', '没有找到这一关', '需要平台运营权限'], '文案没有保存')
+    }
+  }
   if (action === 'validate' || action === 'import') {
     const text = typeof req.body.text === 'string' ? req.body.text : ''
     const { report, levels, placement } = validateCoursePackage(text)
@@ -1745,13 +1993,14 @@ async function courseCatalog(req: ApiRequest): Promise<ApiResult> {
         await q(
           `insert into public.course_level (
              level_id, sort_order, title, goal, body, published, updated_at,
-             unit_id, knowledge_tags, level_type, milestone_badge
+             unit_id, knowledge_tags, level_type, milestone_badge,
+             teaching_intent, parent_brief, teacher_guide
            ) values (
              $1, $2, $3, $4, $5::jsonb, true, now(),
              coalesce($6, 'G5-spring-inbox'),
              coalesce($7::text[], '{}'),
              coalesce($8, 'new'),
-             $9
+             $9, $10, $11, $12
            )
            on conflict (level_id) do update set
              sort_order = excluded.sort_order,
@@ -1760,10 +2009,13 @@ async function courseCatalog(req: ApiRequest): Promise<ApiResult> {
              body = excluded.body,
              published = true,
              updated_at = now(),
-             unit_id = case when $10::boolean then excluded.unit_id else public.course_level.unit_id end,
-             knowledge_tags = case when $11::boolean then excluded.knowledge_tags else public.course_level.knowledge_tags end,
-             level_type = case when $12::boolean then excluded.level_type else public.course_level.level_type end,
-             milestone_badge = case when $13::boolean then excluded.milestone_badge else public.course_level.milestone_badge end`,
+             unit_id = case when $13::boolean then excluded.unit_id else public.course_level.unit_id end,
+             knowledge_tags = case when $14::boolean then excluded.knowledge_tags else public.course_level.knowledge_tags end,
+             level_type = case when $15::boolean then excluded.level_type else public.course_level.level_type end,
+             milestone_badge = case when $16::boolean then excluded.milestone_badge else public.course_level.milestone_badge end,
+             teaching_intent = case when $17::boolean then excluded.teaching_intent else public.course_level.teaching_intent end,
+             parent_brief = case when $18::boolean then excluded.parent_brief else public.course_level.parent_brief end,
+             teacher_guide = case when $19::boolean then excluded.teacher_guide else public.course_level.teacher_guide end`,
           [
             level.level_id,
             level.order,
@@ -1774,10 +2026,16 @@ async function courseCatalog(req: ApiRequest): Promise<ApiResult> {
             level.knowledge_tags ?? null,
             level.pedagogy ?? null,
             level.milestone_badge ?? null,
+            level.teaching_intent ?? null,
+            level.parent_brief ?? null,
+            level.teacher_guide ?? null,
             Boolean(level.unit_id),
             level.knowledge_tags !== undefined,
             Boolean(level.pedagogy),
             level.milestone_badge !== undefined,
+            level.teaching_intent !== undefined,
+            level.parent_brief !== undefined,
+            level.teacher_guide !== undefined,
           ],
         )
       }

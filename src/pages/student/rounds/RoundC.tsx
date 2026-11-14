@@ -12,6 +12,8 @@ interface Props {
   studentId: string
   targetResult: RunResult | null
   onComplete: () => void
+  /** 试课沙盒：打字成绩只留在页面上，不写 typing_record。 */
+  sandbox?: boolean
 }
 
 function ParamControl({
@@ -62,7 +64,7 @@ function ParamControl({
 }
 
 /** C 回合：改一改 → 再跑一次 → 本节关键词打字 → 完成 */
-export function RoundC({ level, studentId, targetResult, onComplete }: Props) {
+export function RoundC({ level, studentId: _studentId, targetResult, onComplete, sandbox = false }: Props) {
   const defaults = useMemo(() => {
     const init: Record<string, string | number> = {}
     for (const param of level.challenge_params) init[param.name] = param.default
@@ -272,6 +274,7 @@ export function RoundC({ level, studentId, targetResult, onComplete }: Props) {
               hint="一个词一个词地打，不用赶"
               onComplete={(stats) => {
                 setTypingStats(stats)
+                if (sandbox) return
                 const score = normalizeTypingScore(stats.wpm, stats.accuracy)
                 if (!score) return
                 void addTypingRecord({

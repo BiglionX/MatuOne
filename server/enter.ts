@@ -1,5 +1,13 @@
 import { one, q } from './db'
-import { decideEnterLevel, isLevelEntitled, type EnterLevelResult, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
+import {
+  decideEnterLevel,
+  isLevelEntitled,
+  openMaxLevel,
+  readStageLevel,
+  stageLevelOfOrder,
+  type EnterLevelResult,
+  type OrgStatus,
+} from '../supabase/functions/_shared/orgStatus'
 
 export interface EnterDecision {
   httpStatus: number
@@ -42,18 +50,32 @@ export async function decideStudentLevel(studentId: string, levelId: string): Pr
   if (!isOrgStatus(statusRow?.status)) {
     return { httpStatus: 500, levelId: canonical, result: { allowed: false, reason: 'not_found' } }
   }
-  const entitlements = await q<{
-    org_id: string
-    subject_type: 'org' | 'group' | 'student'
-    subject_id: string
-    level_order_min: number
-    level_order_max: number
-    expires_at: string | null
-  }>('select org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at from public.level_entitlement where org_id = $1', [
-    student.org_id,
+  const orderMatch = /^L(\d+)$/i.exec(canonical)
+  const levelOrder = orderMatch ? Number(orderMatch[1]) : null
+  const [entitlements, grant, levelRow] = await Promise.all([
+    q<{
+      org_id: string
+      subject_type: 'org' | 'group' | 'student'
+      subject_id: string
+      level_order_min: number
+      level_order_max: number
+      expires_at: string | null
+    }>('select org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at from public.level_entitlement where org_id = $1', [
+      student.org_id,
+    ]),
+    one<{ max_level: number; valid_until: string | null }>(
+      'select max_level, valid_until from public.org_entitlement where org_id = $1',
+      [student.org_id],
+    ),
+    one<{ stage_level: number | null }>(
+      `select stage_level
+       from public.course_level
+       where level_id = $1 or ($2::int is not null and sort_order = $2)
+       order by case when level_id = $1 then 0 else 1 end
+       limit 1`,
+      [canonical, levelOrder],
+    ),
   ])
-  const order = /^L(\d+)$/i.exec(canonical)
-  const levelOrder = order ? Number(order[1]) : null
   const open = entitlements.filter((row) => !row.expires_at || new Date(row.expires_at).getTime() > Date.now())
   const entitled =
     levelOrder != null &&
@@ -70,9 +92,11 @@ export async function decideStudentLevel(studentId: string, levelId: string): Pr
       student.id,
       levelOrder,
     )
+  const stageLevel = readStageLevel(levelRow?.stage_level) ?? (levelOrder == null ? null : stageLevelOfOrder(levelOrder))
+  const maxLevel = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
   return {
     httpStatus: 200,
     levelId: canonical,
-    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled }),
+    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel }),
   }
 }

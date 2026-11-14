@@ -67,6 +67,16 @@ function readTags(value) {
   if (!Array.isArray(value) || value.some((tag) => typeof tag !== "string" || !tag.trim())) return null;
   return value.map((tag) => tag.trim());
 }
+function readCopy(value, field, push) {
+  if (value === void 0) return void 0;
+  if (value === null) return null;
+  if (typeof value !== "string") {
+    push(field, `${field} \u9700\u8981\u662F\u6587\u5B57\uFF0C\u6CA1\u6709\u5C31\u4E0D\u8981\u5199\u8FD9\u4E2A\u5B57\u6BB5`);
+    return void 0;
+  }
+  const text = value.trim();
+  return text.length ? text : null;
+}
 function readPlacement(parsed, issues) {
   if (!isRecord(parsed) || !("stage_level" in parsed) && !("stage" in parsed) && !("unit" in parsed)) return null;
   const stage = isRecord(parsed.stage) ? parsed.stage : null;
@@ -166,6 +176,9 @@ function validateCoursePackage(text) {
       push("milestone_badge", "milestone_badge \u4E0D\u9881\u53D1\u5C31\u5199 null\uFF0C\u9881\u53D1\u5C31\u5199\u5FBD\u7AE0\u6807\u8BC6");
     }
     if (typeof raw.milestone_badge === "string" && !raw.milestone_badge.trim()) push("milestone_badge", "\u5FBD\u7AE0\u6807\u8BC6\u4E0D\u80FD\u662F\u7A7A\u5B57\u7B26\u4E32");
+    const teachingIntent = readCopy(raw.teaching_intent, "teaching_intent", push);
+    const parentBrief = readCopy(raw.parent_brief, "parent_brief", push);
+    const teacherGuide = readCopy(raw.teacher_guide, "teacher_guide", push);
     const blankLines = readBlankLines(raw.blank_lines);
     if (levelType === "fill_blank" && (!blankLines || blankLines.length === 0)) {
       push("blank_lines", "fill_blank \u5173\u5361\u9700\u8981 blank_lines\uFF0C\u5199\u660E\u54EA\u51E0\u884C\u8981\u586B\u7A7A");
@@ -210,7 +223,10 @@ function validateCoursePackage(text) {
         pedagogy: pedagogy ?? void 0,
         knowledge_tags: tags ?? void 0,
         milestone_badge: raw.milestone_badge === null ? null : typeof raw.milestone_badge === "string" ? raw.milestone_badge.trim() : void 0,
-        unit_id: placement?.unit.unit_id
+        unit_id: placement?.unit.unit_id,
+        ...teachingIntent !== void 0 ? { teaching_intent: teachingIntent } : {},
+        ...parentBrief !== void 0 ? { parent_brief: parentBrief } : {},
+        ...teacherGuide !== void 0 ? { teacher_guide: teacherGuide } : {}
       });
     }
   });
@@ -224,6 +240,177 @@ function validateCoursePackage(text) {
     levels: valid,
     placement
   };
+}
+
+// supabase/functions/_shared/courseTree.ts
+var UNIT_ID = /^L[1-8]_U\d{2}$/;
+var STAGE_SUBTITLE = ["\u57FA\u7840\u5165\u95E8", "\u6D77\u9F9F\u7ED8\u56FE", "\u5FAA\u73AF\u9B54\u6CD5", "\u6761\u4EF6\u5224\u65AD", "\u6570\u636E\u8FDB\u9636", "\u903B\u8F91\u8FDB\u9636", "\u7EFC\u5408\u9879\u76EE", "\u7B97\u6CD5\u521D\u63A2"];
+var COURSE_TREE_SQL = `
+select
+  u.stage_level,
+  u.unit_id,
+  u.title as unit_title,
+  u.sort_order as unit_sort,
+  cl.level_id,
+  cl.sort_order,
+  cl.title,
+  cl.goal,
+  cl.level_type,
+  cl.knowledge_tags::text as knowledge_tags,
+  cl.milestone_badge,
+  cl.published,
+  cl.preview_frozen,
+  cl.teaching_intent,
+  cl.parent_brief,
+  cl.teacher_guide,
+  cl.body->>'preview_kind' as preview_kind,
+  cl.body->>'level_type' as exercise,
+  cl.body->>'estimated_minutes' as estimated_minutes,
+  cl.body->'keywords' as keywords
+from public.curriculum_unit u
+left join public.course_level cl on cl.unit_id = u.unit_id
+where u.unit_id ~ '^L[1-8]_U[0-9]{2}$'
+  and u.stage_level between 1 and 8
+order by u.stage_level, u.sort_order, cl.sort_order nulls last
+`;
+function catalogLevelId(sortOrder) {
+  return `L${String(sortOrder).padStart(4, "0")}`;
+}
+function groupCourseTree(rows) {
+  const stages = /* @__PURE__ */ new Map();
+  for (const row of rows) {
+    const stageLevel = asInt(row.stage_level);
+    const unitSort = asInt(row.unit_sort);
+    if (stageLevel == null || stageLevel < 1 || stageLevel > 8 || !UNIT_ID.test(row.unit_id) || unitSort == null) continue;
+    let stage = stages.get(stageLevel);
+    if (!stage) {
+      stage = {
+        stageLevel,
+        title: `Level ${stageLevel}`,
+        subtitle: STAGE_SUBTITLE[stageLevel - 1] ?? "",
+        units: []
+      };
+      stages.set(stageLevel, stage);
+    }
+    let unit = stage.units.find((item) => item.unitId === row.unit_id);
+    if (!unit) {
+      unit = {
+        unitId: row.unit_id,
+        title: row.unit_title,
+        label: `\u5355\u5143 ${unitSort}`,
+        sortOrder: unitSort,
+        levels: []
+      };
+      stage.units.push(unit);
+    }
+    const level = toLevel(row);
+    if (level) unit.levels.push(level);
+  }
+  return [...stages.values()].sort((a, b) => a.stageLevel - b.stageLevel).map((stage) => ({
+    ...stage,
+    units: stage.units.sort((a, b) => a.sortOrder - b.sortOrder).map((unit) => ({
+      ...unit,
+      levels: unit.levels.sort((a, b) => a.sortOrder - b.sortOrder)
+    }))
+  }));
+}
+function toLevel(row) {
+  const sortOrder = asInt(row.sort_order);
+  if (!row.level_id || sortOrder == null) return null;
+  const levelType = asLevelType(row.level_type);
+  return {
+    levelId: row.level_id,
+    catalogId: catalogLevelId(sortOrder),
+    sortOrder,
+    title: row.title?.trim() || "\u672A\u547D\u540D\u5173\u5361",
+    goal: row.goal?.trim() || "",
+    levelType: levelType ?? "new",
+    knowledgeTags: readTextArray(row.knowledge_tags),
+    milestoneBadge: asText(row.milestone_badge),
+    published: row.published === true || row.published === "t" || row.published === "true",
+    previewFrozen: row.preview_frozen === true || row.preview_frozen === "t" || row.preview_frozen === "true",
+    teachingIntent: asText(row.teaching_intent),
+    parentBrief: asText(row.parent_brief),
+    teacherGuide: asText(row.teacher_guide),
+    keywords: readKeywords(row),
+    estimatedMinutes: asMinutes(row.estimated_minutes ?? readBody(row.body)?.estimated_minutes),
+    previewKind: asPreview(row.preview_kind ?? readBody(row.body)?.preview_kind),
+    exercise: asExercise(row.exercise ?? readBody(row.body)?.level_type)
+  };
+}
+function readBody(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value;
+}
+function readKeywords(row) {
+  if (row.keywords !== void 0 && row.keywords !== null) return readTextArray(row.keywords);
+  const body = readBody(row.body);
+  return body ? readTextArray(body.keywords) : [];
+}
+function asInt(value) {
+  if (typeof value === "number" && Number.isInteger(value)) return value;
+  if (typeof value === "string" && /^-?\d+$/.test(value.trim())) return Number(value.trim());
+  return null;
+}
+function asText(value) {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  return text.length ? text : null;
+}
+function asMinutes(value) {
+  const number = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
+  return Number.isFinite(number) ? number : null;
+}
+function asLevelType(value) {
+  return value === "new" || value === "practice" || value === "project" || value === "typing" ? value : null;
+}
+function asPreview(value) {
+  return value === "text" || value === "turtle" ? value : null;
+}
+function asExercise(value) {
+  return value === "normal" || value === "fill_blank" || value === "debug" ? value : null;
+}
+function readTextArray(value) {
+  if (Array.isArray(value)) {
+    return value.filter((item) => typeof item === "string" && item.trim().length > 0).map((item) => item.trim());
+  }
+  if (typeof value !== "string") return [];
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "{}") return [];
+  if (trimmed.startsWith("[")) {
+    try {
+      return readTextArray(JSON.parse(trimmed));
+    } catch {
+      return [];
+    }
+  }
+  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return [];
+  const body = trimmed.slice(1, -1);
+  const tags = [];
+  let current = "";
+  let quoted = false;
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+    if (char === '"') {
+      if (quoted && body[index + 1] === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+      continue;
+    }
+    if (char === "," && !quoted) {
+      const tag = current.trim();
+      if (tag) tags.push(tag);
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  const last = current.trim();
+  if (last) tags.push(last);
+  return tags;
 }
 
 // supabase/functions/_shared/curriculumPosition.ts
@@ -259,6 +446,24 @@ function seatLimit(org, effective) {
   if (org.status === "trial" || effective === "trial") return Math.min(org.seatQuota, TRIAL_SEAT_CAP);
   return org.seatQuota;
 }
+var LESSONS_PER_STAGE = 120;
+function stageLevelOfOrder(order) {
+  if (!Number.isInteger(order) || order < 1) return null;
+  return Math.floor((order - 1) / LESSONS_PER_STAGE) + 1;
+}
+function readStageLevel(value) {
+  const stage = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
+  if (!Number.isInteger(stage) || stage < 1) return null;
+  return stage;
+}
+function openMaxLevel(grant, now = /* @__PURE__ */ new Date()) {
+  if (!grant || !Number.isInteger(grant.maxLevel) || grant.maxLevel < 1) return 0;
+  if (grant.validUntil) {
+    const end = new Date(grant.validUntil).getTime();
+    if (!Number.isFinite(end) || now.getTime() >= end) return 0;
+  }
+  return grant.maxLevel;
+}
 function isLevelEntitled(rows, orgId, groupId, studentId, order) {
   return rows.some(
     (row) => row.orgId === orgId && order >= row.levelOrderMin && order <= row.levelOrderMax && (row.subjectType === "org" && row.subjectId === orgId || row.subjectType === "group" && row.subjectId === groupId || row.subjectType === "student" && row.subjectId === studentId)
@@ -270,6 +475,8 @@ function decideEnterLevel(input) {
   if (input.status !== "trial" && input.status !== "active") return { allowed: false, reason: "org_expired" };
   if (input.status === "trial" && input.levelOrder > TRIAL_LEVEL_MAX) return { allowed: false, reason: "trial_locked" };
   if (!input.entitled) return { allowed: false, reason: "not_entitled" };
+  if (input.stageLevel == null) return { allowed: false, reason: "not_found" };
+  if (input.stageLevel > input.maxLevel) return { allowed: false, reason: "course_locked" };
   return { allowed: true, reason: "ok" };
 }
 
@@ -515,11 +722,25 @@ async function decideStudentLevel(studentId, levelId) {
   if (!isOrgStatus(statusRow?.status)) {
     return { httpStatus: 500, levelId: canonical, result: { allowed: false, reason: "not_found" } };
   }
-  const entitlements = await q("select org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at from public.level_entitlement where org_id = $1", [
-    student.org_id
+  const orderMatch = /^L(\d+)$/i.exec(canonical);
+  const levelOrder = orderMatch ? Number(orderMatch[1]) : null;
+  const [entitlements, grant, levelRow] = await Promise.all([
+    q("select org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at from public.level_entitlement where org_id = $1", [
+      student.org_id
+    ]),
+    one(
+      "select max_level, valid_until from public.org_entitlement where org_id = $1",
+      [student.org_id]
+    ),
+    one(
+      `select stage_level
+       from public.course_level
+       where level_id = $1 or ($2::int is not null and sort_order = $2)
+       order by case when level_id = $1 then 0 else 1 end
+       limit 1`,
+      [canonical, levelOrder]
+    )
   ]);
-  const order = /^L(\d+)$/i.exec(canonical);
-  const levelOrder = order ? Number(order[1]) : null;
   const open = entitlements.filter((row) => !row.expires_at || new Date(row.expires_at).getTime() > Date.now());
   const entitled = levelOrder != null && isLevelEntitled(
     open.map((row) => ({
@@ -534,10 +755,12 @@ async function decideStudentLevel(studentId, levelId) {
     student.id,
     levelOrder
   );
+  const stageLevel = readStageLevel(levelRow?.stage_level) ?? (levelOrder == null ? null : stageLevelOfOrder(levelOrder));
+  const maxLevel = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
   return {
     httpStatus: 200,
     levelId: canonical,
-    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled })
+    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel })
   };
 }
 
@@ -2100,6 +2323,36 @@ async function orgStudents(req) {
     const groups2 = await q("select id, name from public.student_group where org_id = $1 order by created_at asc", [ctx.orgId]);
     return ok({ groups: groups2 });
   }
+  if (action === "progress") {
+    const studentId = typeof req.body.studentId === "string" ? req.body.studentId.trim() : "";
+    const student = await one(
+      "select name, current_level_order from public.student where id = $1 and org_id = $2",
+      [studentId, ctx.orgId]
+    );
+    if (!student) return fail(404, "\u6CA1\u6709\u8FD9\u540D\u5B66\u751F");
+    const lessons = await q(
+      `select cl.level_id, cl.sort_order, cl.title, cl.teaching_intent, cl.teacher_guide,
+              coalesce(lr.completed, false) as completed
+       from public.course_level cl
+       left join public.learning_record lr
+         on lr.level_id = cl.level_id and lr.student_id = $1
+       where lr.student_id is not null or cl.sort_order = $2
+       order by cl.sort_order`,
+      [studentId, student.current_level_order]
+    );
+    return ok({
+      name: student.name,
+      lessons: lessons.map((row) => ({
+        levelId: row.level_id,
+        order: row.sort_order,
+        title: row.title,
+        completed: row.completed === true,
+        current: row.sort_order === student.current_level_order,
+        teachingIntent: row.teaching_intent,
+        teacherGuide: row.teacher_guide
+      }))
+    });
+  }
   if (action === "unbind-parent") {
     const studentId = typeof req.body.studentId === "string" ? req.body.studentId.trim() : "";
     const student = await one("select id from public.student where id = $1 and org_id = $2", [studentId, ctx.orgId]);
@@ -2183,12 +2436,37 @@ async function orgStudents(req) {
   if (added > 0) await q("update public.org set used_seats = used_seats + $2 where id = $1", [ctx.orgId, added]);
   return ok({ added, rows });
 }
+async function orgPackageLevel(orgId) {
+  const grant = await one("select max_level from public.org_entitlement where org_id = $1", [orgId]);
+  const level = Number(grant?.max_level);
+  return Number.isInteger(level) && level > 0 ? level : 0;
+}
+async function orgPricing(orgId) {
+  const row = await one(
+    `select o.student_monthly_price, c.value as base_seat_price
+     from public.org o
+     join public.platform_configs c on c.key = 'base_seat_price'
+     where o.id = $1`,
+    [orgId]
+  );
+  const baseSeatPrice = Number(row?.base_seat_price);
+  const studentMonthlyPrice = Number(row?.student_monthly_price);
+  if (!Number.isInteger(baseSeatPrice) || baseSeatPrice < 1) throw new Error("\u7F3A\u5C11\u5E73\u53F0\u5E95\u4EF7\u914D\u7F6E");
+  return { studentMonthlyPrice, baseSeatPrice };
+}
 async function orgCourse(req) {
   const action = req.header("x-action") ?? "read";
-  const ctx = await orgContext(req, { write: action === "save" });
+  const ctx = await orgContext(req, { write: action === "save" || action === "save-price" });
   if (!("orgId" in ctx)) return ctx;
   const countRow = await one("select count(*)::int as n from public.course_level where published = true");
   const levelCount = countRow?.n ?? 0;
+  if (action === "save-price") {
+    const studentMonthlyPrice = Number(req.body.studentMonthlyPrice);
+    if (!Number.isInteger(studentMonthlyPrice) || studentMonthlyPrice < 150 || studentMonthlyPrice > 500) {
+      return fail(400, "\u5BB6\u957F\u5B9A\u4EF7\u9700\u8981\u5728 150 \u5230 500 \u5143\u4E4B\u95F4");
+    }
+    await q("update public.org set student_monthly_price = $2 where id = $1", [ctx.orgId, studentMonthlyPrice]);
+  }
   if (action === "save") {
     const groupId = typeof req.body.groupId === "string" && req.body.groupId ? req.body.groupId : "all";
     const seats = Number(req.body.seats);
@@ -2229,7 +2507,8 @@ async function orgCourse(req) {
         );
       }
     }
-    return ok({ groupId, seats, expiresAt, activatedAt, levelCount });
+    const pricing2 = await orgPricing(ctx.orgId);
+    return ok({ groupId, seats, expiresAt, activatedAt, levelCount, maxLevel: await orgPackageLevel(ctx.orgId), ...pricing2 });
   }
   const data = await one(
     "select group_id, seats, expires_at, activated_at from public.course_activation where org_id = $1",
@@ -2240,12 +2519,15 @@ async function orgCourse(req) {
     [ctx.orgId]
   );
   const fallbackEnd = (org?.service_end_at ?? org?.trial_expire_at ?? "").slice(0, 10);
+  const pricing = await orgPricing(ctx.orgId);
   return ok({
     groupId: data?.group_id ?? "all",
     seats: data?.seats ?? org?.seat_quota ?? ctx.seatLimit,
     expiresAt: data?.expires_at ?? fallbackEnd,
     activatedAt: data?.activated_at ?? org?.created_at ?? (/* @__PURE__ */ new Date()).toISOString(),
-    levelCount
+    levelCount,
+    maxLevel: await orgPackageLevel(ctx.orgId),
+    ...pricing
   });
 }
 async function orgDashboard(req) {
@@ -2339,6 +2621,9 @@ function bucketTyping(rows) {
     return { weekStart: start.toISOString().slice(0, 10), label, wpm: Math.round(wpm * 10) / 10, accuracy: Math.round(accuracy * 10) / 10 };
   });
 }
+function previewBlocksProgress(body) {
+  return body.preview === true || body.preview === "true" || body.sandbox === true;
+}
 async function studentLearning(req) {
   const auth = await requireRole(req, "student");
   if ("status" in auth) return { status: auth.status, body: auth.status === 401 ? { message: "\u8BF7\u5148\u767B\u5F55" } : auth.body };
@@ -2347,6 +2632,9 @@ async function studentLearning(req) {
   ]);
   if (!student || student.status !== "active") return fail(401, "\u8BF7\u5148\u767B\u5F55");
   const action = typeof req.body.action === "string" ? req.body.action : "map";
+  if (previewBlocksProgress(req.body) && (action === "typing" || action === "touch" || action === "complete")) {
+    return fail(403, "\u9884\u89C8\u6A21\u5F0F\u4E0D\u4F1A\u8BB0\u5F55\u5B66\u4E60\u8FDB\u5EA6");
+  }
   const levelRaw = req.body.levelId;
   const requestedLevelId = typeof levelRaw === "number" && Number.isInteger(levelRaw) ? String(levelRaw) : typeof levelRaw === "string" ? levelRaw.trim() : "";
   if (action === "typing") {
@@ -2401,8 +2689,9 @@ async function studentLearning(req) {
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result };
     const playable = buildPlayableLevel(decision.levelId);
     if (!playable) return fail(404, "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173");
+    const storedCopy = await findCourseLevel(decision.levelId);
     const hints2 = await q("select pattern, friendly_message from public.error_hint");
-    return ok({ level: playable, hints: hints2 });
+    return ok({ level: withStoredGoal(playable, storedCopy?.goal), hints: hints2 });
   }
   const access = await loadStudentAccess(student);
   const marks = await readProgressMarks(student.id);
@@ -2590,6 +2879,28 @@ async function parentPortal(req) {
       return sum + Math.min(45, Math.max(0, span));
     }, 0);
     const last = [...sessions].sort((a, b) => String(b.started_at).localeCompare(String(a.started_at)))[0];
+    const learned = await q(
+      `select cl.level_id, cl.sort_order, cl.title, cl.parent_brief
+       from public.learning_record lr
+       join public.course_level cl on cl.level_id = lr.level_id
+       where lr.student_id = $1 and lr.completed = true
+       order by cl.sort_order`,
+      [student.id]
+    );
+    const weeklyLevels = await q(
+      `select cl.level_id, cl.sort_order, cl.title, cl.parent_brief
+       from public.learning_record lr
+       join public.course_level cl on cl.level_id = lr.level_id
+       where lr.student_id = $1 and lr.completed = true and lr.updated_at >= $2
+       order by cl.sort_order`,
+      [student.id, start.toISOString()]
+    );
+    const toBrief = (row) => ({
+      levelId: row.level_id,
+      order: row.sort_order,
+      title: row.title,
+      parentBrief: row.parent_brief
+    });
     children.push({
       student: {
         id: student.id,
@@ -2613,7 +2924,9 @@ async function parentPortal(req) {
         totalMinutes: Math.round(minutes),
         lastStudyDate: last ? asDay(last.started_at) : null
       },
-      typingSeries: bucketTyping(typing)
+      typingSeries: bucketTyping(typing),
+      learnedLessons: learned.map(toBrief),
+      weeklyLessons: weeklyLevels.map(toBrief)
     });
   }
   if (!children.length && stopped.length) return fail(403, "\u673A\u6784\u670D\u52A1\u5DF2\u505C\u6B62");
@@ -2654,11 +2967,12 @@ async function publicSite(req) {
   }
   const seats = Number(req.body.seats ?? 40);
   const safeSeats = Number.isInteger(seats) && seats > 0 ? seats : 40;
-  const tiers = await q("select min_seats, max_seats, unit_price from public.seat_price_tier order by min_seats");
   const quoted = await one("select * from public.quote_seat_price($1)", [safeSeats]);
+  const trial = await one("select value from public.platform_configs where key = 'trial_days'");
   return ok({
-    tiers,
-    example: quoted ? { seats: safeSeats, unitPrice: quoted.unit_price, amount: quoted.amount, plan: quoted.plan_label } : null
+    tiers: quoted ? [{ min_seats: 1, max_seats: null, unit_price: quoted.unit_price }] : [],
+    example: quoted ? { seats: safeSeats, unitPrice: quoted.unit_price, amount: quoted.amount, plan: quoted.plan_label } : null,
+    trialDays: Number(trial?.value) || null
   });
 }
 var STUDENT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -3056,13 +3370,22 @@ async function adminDashboard(req) {
     usedSeats: row.used_seats,
     seatQuota: row.seat_quota
   })).sort((a, b) => b.usedSeats / b.seatQuota - a.usedSeats / a.seatQuota);
+  const commissions = await q("select * from public.list_agent_commissions()");
   return ok({
     revenue,
     activeStudents: Number(students?.total ?? 0),
     activeParentsToday: Number(parents?.total ?? 0),
     conversionRate: trialed.size ? Math.round(converted / trialed.size * 100) : 0,
     expiringOrgs,
-    seatAlerts
+    seatAlerts,
+    commissions: commissions.map((row) => ({
+      agentId: row.agent_id,
+      agentName: row.agent_name,
+      orgCount: Number(row.org_count),
+      seatFeeTotal: Number(row.seat_fee_total),
+      rebateDue: Number(row.rebate_due),
+      platformNet: Number(row.platform_net)
+    }))
   });
 }
 async function requireStaff(req, roles) {
@@ -3152,10 +3475,27 @@ async function orgDetail(req) {
 }
 async function adminOps(req) {
   const action = typeof req.body.action === "string" ? req.body.action : "ledger";
-  const financeOk = action === "ledger" || action === "overview" || action === "billing" || action === "invoice" || action === "quote" || action === "detail";
+  const financeOk = action === "ledger" || action === "overview" || action === "billing" || action === "invoice" || action === "quote" || action === "detail" || action === "settings";
   const staff = await requireStaff(req, financeOk ? ["ops", "finance"] : ["ops"]);
   if ("status" in staff) return staff;
-  const known = ["\u8BB0\u5F55\u7C7B\u578B", "\u5E2D\u4F4D\u6570", "\u673A\u6784\u4E0D\u5B58\u5728", "\u8BD5\u7528\u8BB0\u5F55", "\u624B\u5DE5\u6539\u4EF7", "\u91D1\u989D", "\u8BF7\u586B\u5199\u670D\u52A1\u671F", "\u5F00\u7968\u72B6\u6001", "\u6536\u8D39\u8BB0\u5F55", "\u53EA\u80FD\u505C\u7528", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8FD9\u4E2A\u72B6\u6001"];
+  const known = ["\u8BB0\u5F55\u7C7B\u578B", "\u5E2D\u4F4D\u6570", "\u673A\u6784\u4E0D\u5B58\u5728", "\u8BD5\u7528\u8BB0\u5F55", "\u624B\u5DE5\u6539\u4EF7", "\u91D1\u989D", "\u8BF7\u586B\u5199\u670D\u52A1\u671F", "\u5F00\u7968\u72B6\u6001", "\u6536\u8D39\u8BB0\u5F55", "\u53EA\u80FD\u505C\u7528", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8FD9\u4E2A\u72B6\u6001", "\u6700\u4F4E\u5E2D\u4F4D", "\u5E73\u53F0\u5E95\u4EF7", "\u8BD5\u7528\u5929\u6570", "\u5206\u6210\u6BD4\u4F8B", "\u7F3A\u5C11\u5E73\u53F0\u5E95\u4EF7", "\u7F3A\u5C11\u4EE3\u7406\u5206\u6210"];
+  if (action === "settings" || action === "save-settings") {
+    try {
+      if (action === "save-settings") {
+        await q("select public.save_platform_configs($1, $2, $3, $4, $5)", [
+          staff.id,
+          Number(req.body.minSeatCount),
+          Number(req.body.baseSeatPrice),
+          Number(req.body.trialDays),
+          Number(req.body.agentCommissionRate)
+        ]);
+      }
+      const configs = await q("select key, value, description, updated_at from public.list_platform_configs()");
+      return ok({ configs });
+    } catch (error) {
+      return friendly(error, known, "\u914D\u7F6E\u4FDD\u5B58\u5931\u8D25");
+    }
+  }
   if (action === "quote") {
     try {
       const row = await one("select * from public.quote_seat_price($1)", [Number(req.body.seats)]);
@@ -3233,7 +3573,15 @@ async function adminOps(req) {
     });
   }
   await q("select public.rewrite_org_status_for_display()");
-  const data = await q("select * from public.list_org_ledger()");
+  const [data, agentLinks] = await Promise.all([
+    q("select * from public.list_org_ledger()"),
+    q(
+      `select ao.org_id, a.name as agent_name
+       from public.agent_org ao
+       join public.agent a on a.id = ao.agent_id`
+    )
+  ]);
+  const agentByOrg = new Map(agentLinks.map((row) => [row.org_id, row.agent_name]));
   const status = typeof req.body.status === "string" ? req.body.status : "all";
   const keyword = typeof req.body.keyword === "string" ? req.body.keyword.trim().toLowerCase() : "";
   const expireFrom = typeof req.body.expireFrom === "string" ? req.body.expireFrom : "";
@@ -3261,7 +3609,8 @@ async function adminOps(req) {
       trialExpireAt: row.trial_expire_at,
       serviceEndAt: row.service_end_at,
       status: row.status,
-      expiringSoon: row.expiring_soon
+      expiringSoon: row.expiring_soon,
+      agentName: agentByOrg.get(String(row.id)) ?? null
     }))
   });
 }
@@ -3273,7 +3622,8 @@ async function provisionOrg(req) {
   if (leadId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(leadId)) {
     return fail(400, "\u7EBF\u7D22\u4E0D\u5B58\u5728");
   }
-  const trialDays = req.body.trialDays == null || req.body.trialDays === "" ? 14 : Number(req.body.trialDays);
+  const requestedDays = Number(req.body.trialDays);
+  const trialDays = Number.isInteger(requestedDays) ? requestedDays : 0;
   const plain = generateInitialPassword(12);
   try {
     const row = await one("select * from public.provision_org($1,$2,$3,$4,$5,$6,$7,$8,$9)", [
@@ -3292,15 +3642,106 @@ async function provisionOrg(req) {
   } catch (error) {
     return friendly(
       error,
-      ["\u673A\u6784\u540D\u79F0\u9700\u8981", "\u8054\u7CFB\u4EBA\u9700\u8981", "\u8BF7\u586B\u5199 11 \u4F4D\u624B\u673A\u53F7", "\u8BF7\u586B\u5199\u6821\u533A", "\u8BD5\u7528\u5929\u6570\u9700\u8981", "\u5E2D\u4F4D\u989D\u5EA6\u81F3\u5C11\u4E3A", "\u8BD5\u7528\u673A\u6784\u6700\u591A", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8BE5\u7EBF\u7D22\u5DF2\u5F00\u6237", "\u8BE5\u7EBF\u7D22\u4E0D\u80FD\u5F00\u6237", "\u5BC6\u7801\u54C8\u5E0C\u65E0\u6548"],
+      ["\u673A\u6784\u540D\u79F0\u9700\u8981", "\u8054\u7CFB\u4EBA\u9700\u8981", "\u8BF7\u586B\u5199 11 \u4F4D\u624B\u673A\u53F7", "\u8BF7\u586B\u5199\u6821\u533A", "\u8BD5\u7528\u5929\u6570\u9700\u8981", "\u5E2D\u4F4D\u989D\u5EA6\u81F3\u5C11\u4E3A", "\u8BD5\u7528\u673A\u6784\u6700\u591A", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8BE5\u7EBF\u7D22\u5DF2\u5F00\u6237", "\u8BE5\u7EBF\u7D22\u4E0D\u80FD\u5F00\u6237", "\u5BC6\u7801\u54C8\u5E0C\u65E0\u6548", "\u6700\u4F4E\u5E2D\u4F4D"],
       "\u5F00\u6237\u5931\u8D25"
     );
   }
+}
+var COPY_FIELDS = ["goal", "teaching_intent", "parent_brief", "teacher_guide"];
+async function findCourseLevel(levelId) {
+  if (!levelId) return null;
+  const matched = /^L(\d+)$/i.exec(levelId);
+  const order = matched ? Number(matched[1]) : null;
+  return one(
+    `select level_id, preview_frozen, goal
+     from public.course_level
+     where level_id = $1 or ($2::int is not null and sort_order = $2)
+     order by case when level_id = $1 then 0 else 1 end
+     limit 1`,
+    [levelId, order]
+  );
+}
+function withStoredGoal(level, goal) {
+  const next = goal?.trim();
+  if (!next) return level;
+  return { ...level, goal: next };
 }
 async function courseCatalog(req) {
   const staff = await requireStaff(req, ["ops"]);
   if ("status" in staff) return staff;
   const action = typeof req.body.action === "string" ? req.body.action : "list";
+  if (action === "tree") {
+    const rows = await q(COURSE_TREE_SQL);
+    return ok({ stages: groupCourseTree(rows) });
+  }
+  if (action === "preview" || action === "preview-lock") {
+    const raw = req.body.levelId;
+    const levelId = typeof raw === "number" && Number.isInteger(raw) ? String(raw) : typeof raw === "string" ? raw.trim() : "";
+    const stored = await findCourseLevel(levelId);
+    if (!stored) return fail(404, "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173");
+    if (action === "preview-lock") {
+      const frozen = req.body.frozen === true;
+      const saved = await one(
+        "update public.course_level set preview_frozen = $2, updated_at = now() where level_id = $1 returning preview_frozen",
+        [stored.level_id, frozen]
+      );
+      return ok({ levelId: stored.level_id, previewFrozen: saved?.preview_frozen === true });
+    }
+    if (stored.preview_frozen === true) return fail(403, "\u8FD9\u4E00\u5173\u5DF2\u51BB\u7ED3\uFF0C\u4E0D\u80FD\u8BD5\u8BFE\u9884\u89C8");
+    const playable = buildPlayableLevel(levelId) ?? buildPlayableLevel(stored.level_id);
+    if (!playable) return fail(404, "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173");
+    const hints = await q("select pattern, friendly_message from public.error_hint");
+    return ok({ level: withStoredGoal(playable, stored.goal), hints });
+  }
+  if (action === "copy-save" || action === "copy-history") {
+    const raw = req.body.levelId;
+    const levelId = typeof raw === "number" && Number.isInteger(raw) ? String(raw) : typeof raw === "string" ? raw.trim() : "";
+    const stored = await findCourseLevel(levelId);
+    if (!stored) return fail(404, "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173");
+    if (action === "copy-history") {
+      const [revision, entries] = await Promise.all([
+        one("select revision_count from public.course_level where level_id = $1", [stored.level_id]),
+        q(
+          `select field, previous_text, next_text, revision_count, editor_name, created_at
+           from public.content_history
+           where level_id = $1
+           order by created_at desc
+           limit 20`,
+          [stored.level_id]
+        )
+      ]);
+      return ok({
+        revisionCount: revision?.revision_count ?? 0,
+        entries: entries.map((row) => ({
+          field: row.field,
+          previousText: row.previous_text,
+          nextText: row.next_text,
+          revisionCount: row.revision_count,
+          editorName: row.editor_name,
+          editedAt: row.created_at
+        }))
+      });
+    }
+    const field = req.body.field;
+    if (typeof field !== "string" || !COPY_FIELDS.includes(field)) return fail(400, "\u6587\u6848\u5B57\u6BB5\u4E0D\u6B63\u786E");
+    if (typeof req.body.text !== "string") return fail(400, "\u6587\u6848\u5B57\u6BB5\u4E0D\u6B63\u786E");
+    try {
+      const saved = await one(
+        `select changed, revision_count, stored_text
+         from public.save_course_copy($1, $2, $3, $4::uuid, $5)`,
+        [stored.level_id, field, req.body.text, staff.id, staff.displayName]
+      );
+      if (!saved) return fail(500, "\u6587\u6848\u6CA1\u6709\u4FDD\u5B58");
+      return ok({
+        field,
+        text: saved.stored_text,
+        revisionCount: saved.revision_count,
+        changed: saved.changed === true
+      });
+    } catch (error) {
+      return friendly(error, ["\u6587\u6848\u5B57\u6BB5\u4E0D\u6B63\u786E", "\u5B66\u4E60\u76EE\u6807\u4E0D\u80FD\u4E3A\u7A7A", "\u6587\u6848\u8BF7\u63A7\u5236\u5728 2000", "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173", "\u9700\u8981\u5E73\u53F0\u8FD0\u8425\u6743\u9650"], "\u6587\u6848\u6CA1\u6709\u4FDD\u5B58");
+    }
+  }
   if (action === "validate" || action === "import") {
     const text = typeof req.body.text === "string" ? req.body.text : "";
     const { report, levels: levels2, placement } = validateCoursePackage(text);
@@ -3321,13 +3762,14 @@ async function courseCatalog(req) {
         await q(
           `insert into public.course_level (
              level_id, sort_order, title, goal, body, published, updated_at,
-             unit_id, knowledge_tags, level_type, milestone_badge
+             unit_id, knowledge_tags, level_type, milestone_badge,
+             teaching_intent, parent_brief, teacher_guide
            ) values (
              $1, $2, $3, $4, $5::jsonb, true, now(),
              coalesce($6, 'G5-spring-inbox'),
              coalesce($7::text[], '{}'),
              coalesce($8, 'new'),
-             $9
+             $9, $10, $11, $12
            )
            on conflict (level_id) do update set
              sort_order = excluded.sort_order,
@@ -3336,10 +3778,13 @@ async function courseCatalog(req) {
              body = excluded.body,
              published = true,
              updated_at = now(),
-             unit_id = case when $10::boolean then excluded.unit_id else public.course_level.unit_id end,
-             knowledge_tags = case when $11::boolean then excluded.knowledge_tags else public.course_level.knowledge_tags end,
-             level_type = case when $12::boolean then excluded.level_type else public.course_level.level_type end,
-             milestone_badge = case when $13::boolean then excluded.milestone_badge else public.course_level.milestone_badge end`,
+             unit_id = case when $13::boolean then excluded.unit_id else public.course_level.unit_id end,
+             knowledge_tags = case when $14::boolean then excluded.knowledge_tags else public.course_level.knowledge_tags end,
+             level_type = case when $15::boolean then excluded.level_type else public.course_level.level_type end,
+             milestone_badge = case when $16::boolean then excluded.milestone_badge else public.course_level.milestone_badge end,
+             teaching_intent = case when $17::boolean then excluded.teaching_intent else public.course_level.teaching_intent end,
+             parent_brief = case when $18::boolean then excluded.parent_brief else public.course_level.parent_brief end,
+             teacher_guide = case when $19::boolean then excluded.teacher_guide else public.course_level.teacher_guide end`,
           [
             level.level_id,
             level.order,
@@ -3350,10 +3795,16 @@ async function courseCatalog(req) {
             level.knowledge_tags ?? null,
             level.pedagogy ?? null,
             level.milestone_badge ?? null,
+            level.teaching_intent ?? null,
+            level.parent_brief ?? null,
+            level.teacher_guide ?? null,
             Boolean(level.unit_id),
             level.knowledge_tags !== void 0,
             Boolean(level.pedagogy),
-            level.milestone_badge !== void 0
+            level.milestone_badge !== void 0,
+            level.teaching_intent !== void 0,
+            level.parent_brief !== void 0,
+            level.teacher_guide !== void 0
           ]
         );
       }

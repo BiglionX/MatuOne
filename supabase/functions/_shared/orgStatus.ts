@@ -62,7 +62,38 @@ export type EnterLevelReason =
   | 'org_disabled'
   | 'trial_locked'
   | 'not_entitled'
+  | 'course_locked'
   | 'not_found'
+
+/** 与课程目录一致：每个 Level 120 节。库里没有 stage_level 时用关卡序号推。 */
+export const LESSONS_PER_STAGE = 120
+
+export function stageLevelOfOrder(order: number): number | null {
+  if (!Number.isInteger(order) || order < 1) return null
+  return Math.floor((order - 1) / LESSONS_PER_STAGE) + 1
+}
+
+export function readStageLevel(value: unknown): number | null {
+  const stage = typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : NaN
+  if (!Number.isInteger(stage) || stage < 1) return null
+  return stage
+}
+
+/**
+ * 课程包还在有效期内时返回 max_level。
+ * 没有授权，或 valid_until 已到，视为 0：任何阶段都会 course_locked。
+ */
+export function openMaxLevel(
+  grant: { maxLevel: number; validUntil: string | null } | null,
+  now = new Date(),
+): number {
+  if (!grant || !Number.isInteger(grant.maxLevel) || grant.maxLevel < 1) return 0
+  if (grant.validUntil) {
+    const end = new Date(grant.validUntil).getTime()
+    if (!Number.isFinite(end) || now.getTime() >= end) return 0
+  }
+  return grant.maxLevel
+}
 
 export interface EnterLevelResult {
   allowed: boolean
@@ -103,16 +134,24 @@ export function isLevelEntitled(
   )
 }
 
-/** 顺序固定：机构状态 → 试用关卡范围 → 开通记录。调用方不要在页面里重算。 */
+/**
+ * 顺序固定：机构状态 → 试用关卡范围 → 开通记录 → 课程包阶段。
+ * stageLevel 取 course_level.stage_level。大于 org_entitlement 的有效 max_level 时 course_locked。
+ * 调用方不要在页面里重算。
+ */
 export function decideEnterLevel(input: {
   status: OrgStatus
   levelOrder: number | null
   entitled: boolean
+  stageLevel: number | null
+  maxLevel: number
 }): EnterLevelResult {
   if (input.levelOrder == null) return { allowed: false, reason: 'not_found' }
   if (input.status === 'disabled') return { allowed: false, reason: 'org_disabled' }
   if (input.status !== 'trial' && input.status !== 'active') return { allowed: false, reason: 'org_expired' }
   if (input.status === 'trial' && input.levelOrder > TRIAL_LEVEL_MAX) return { allowed: false, reason: 'trial_locked' }
   if (!input.entitled) return { allowed: false, reason: 'not_entitled' }
+  if (input.stageLevel == null) return { allowed: false, reason: 'not_found' }
+  if (input.stageLevel > input.maxLevel) return { allowed: false, reason: 'course_locked' }
   return { allowed: true, reason: 'ok' }
 }

@@ -356,6 +356,7 @@ function toLedgerRow(org: OrgRow, now: Date): OrgLedgerRow {
     serviceEndAt: org.serviceEndAt,
     status,
     expiringSoon: isExpiringSoon(org, now),
+    agentName: null,
   }
 }
 

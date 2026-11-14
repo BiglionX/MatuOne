@@ -157,6 +157,24 @@ export interface RunResult {
   source: 'mock'
 }
 
+/** 海龟此刻的位置。分步执行时画在画布上，转弯才看得见。 */
+export interface RunCursor {
+  x: number
+  y: number
+  heading: number
+}
+
+/** 分步执行的一帧：走到某一行之后，画面和打印停在这一步。 */
+export interface RunStep {
+  /** 源码行号，从 1 开始 */
+  line: number
+  /** 给孩子看的这一步说明 */
+  note: string
+  text: string
+  art: TurtleArt
+  cursor: RunCursor
+}
+
 /* ---------------------------- 学习记录 ---------------------------- */
 
 export interface MapEntry {
@@ -270,6 +288,14 @@ export interface ParentCurriculumProgress {
   beyondAuthored: boolean
 }
 
+/** 家长展开某一关时看到的通俗解读。不含教学话术。 */
+export interface ParentLessonBrief {
+  levelId: string
+  order: number
+  title: string
+  parentBrief: string | null
+}
+
 export interface ParentChildView {
   student: Student
   groupName: string
@@ -281,6 +307,10 @@ export interface ParentChildView {
   /** 家长看到的是当前 Level 里的单元进度，不是全课程总关数。 */
   curriculum: ParentCurriculumProgress
   weekly: WeeklySummary
+  /** 本周碰到过的课时，供「本周学习」展开。 */
+  weeklyLessons: ParentLessonBrief[]
+  /** 已完成的课时，供「已学关卡」展开。 */
+  learnedLessons: ParentLessonBrief[]
   typingSeries: { weekStart: string; label: string; wpm: number | null; accuracy: number | null }[]
 }
 

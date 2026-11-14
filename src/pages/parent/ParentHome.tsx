@@ -5,8 +5,46 @@ import { WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
 import { LEARNING_ROADMAP } from '@/data/learningRoadmap'
 import { formatDay } from '@/lib/format'
-import type { ParentChildView, ParentStoppedChild } from '@/types'
+import type { ParentChildView, ParentLessonBrief, ParentStoppedChild } from '@/types'
 import { ApiError } from '@/lib/apiError'
+
+function catalogId(order: number): string {
+  return `L${String(order).padStart(4, '0')}`
+}
+
+function LessonBriefList({ lessons, empty }: { lessons: ParentLessonBrief[]; empty: string }) {
+  const [openId, setOpenId] = useState('')
+  if (lessons.length === 0) return <p className="mt-4 text-sm text-ink-soft">{empty}</p>
+  return (
+    <ul className="mt-4 divide-y divide-line">
+      {lessons.map((lesson) => {
+        const open = openId === lesson.levelId
+        return (
+          <li key={lesson.levelId} className="py-3">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-3 text-left"
+              aria-expanded={open}
+              onClick={() => setOpenId(open ? '' : lesson.levelId)}
+            >
+              <span className="min-w-0">
+                <span className="block text-xs text-ink-soft">{catalogId(lesson.order)}</span>
+                <span className="block truncate font-medium text-ink">{lesson.title}</span>
+              </span>
+              <span className="shrink-0 text-sm text-brand-strong">{open ? '收起' : '展开'}</span>
+            </button>
+            {open && (
+              <div className="mt-3 rounded-field bg-canvas px-4 py-3">
+                <p className="text-sm font-medium text-ink">本节课学了什么</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{lesson.parentBrief?.trim() || '这一节还没有通俗解读。'}</p>
+              </div>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
 
 /** 家长端 H5：先登录，再绑定孩子。只放结论。 */
 export function ParentHome() {
@@ -220,6 +258,13 @@ export function ParentHome() {
                   <p className="mt-1 text-sm text-ink-soft">最近学习</p>
                 </div>
               </div>
+              <h3 className="mt-5 text-sm font-medium text-ink">本周课时</h3>
+              <LessonBriefList lessons={view.weeklyLessons} empty="本周还没有学完的课。学完之后，才会看到这一节学了什么。" />
+            </section>
+            <section className="card p-5">
+              <h2 className="text-lg font-semibold text-ink">已学关卡</h2>
+              <p className="mt-1 text-sm text-ink-soft">只展示已经学完的课，后面还没学的内容先不打开。</p>
+              <LessonBriefList lessons={view.learnedLessons} empty="还没有学完的关卡。" />
             </section>
             <section className="card p-5">
               <h2 className="text-lg font-semibold text-ink">课程进度</h2>

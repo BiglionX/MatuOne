@@ -53,7 +53,8 @@ Deno.serve(async (req) => {
     return json(400, { message: '线索不存在' })
   }
 
-  const trialDays = body.trialDays == null || body.trialDays === '' ? 14 : Number(body.trialDays)
+  const requestedDays = Number(body.trialDays)
+  const trialDays = Number.isInteger(requestedDays) ? requestedDays : 0
   const plain = generateInitialPassword(12)
   const passwordHash = await hashPassword(plain)
 

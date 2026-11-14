@@ -1,7 +1,7 @@
-import type { ChallengeParam, Level, RunResult } from '@/types'
+import type { ChallengeParam, Level, RunResult, RunStep } from '@/types'
 import { resolveFriendly } from './errorHint'
 import { hintFor, resolveLevel } from './levelCatalog'
-import { SimError, simulate } from './python-sim'
+import { SimError, simulate, traceCode } from './python-sim'
 
 /**
  * Python 执行适配层（页面唯一的运行入口）。
@@ -71,6 +71,17 @@ export async function runCode(code: string, levelId: string): Promise<RunResult>
       },
     }
   }
+}
+
+/** 分步执行：每一步是一条语句跑完后的画面。页面用它做「按空格走一步」。 */
+export function traceRun(code: string): RunStep[] {
+  return traceCode(code).map((step) => ({
+    line: step.line,
+    note: step.note,
+    text: step.text,
+    art: { strokes: step.strokes, bounds: step.bounds },
+    cursor: step.cursor,
+  }))
 }
 
 /**

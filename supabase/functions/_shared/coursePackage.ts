@@ -43,6 +43,10 @@ export interface PackageLevel {
   /** null 表示不颁发。字段缺省表示这次导入不改徽章。 */
   milestone_badge?: string | null
   unit_id?: string
+  /** 缺省表示这次导入不改这三列。空字符串会写成 null。 */
+  teaching_intent?: string | null
+  parent_brief?: string | null
+  teacher_guide?: string | null
 }
 
 export type PedagogyKind = 'new' | 'practice' | 'project' | 'typing'
@@ -98,6 +102,17 @@ function readExercise(explicit: unknown, legacy: unknown): 'normal' | 'fill_blan
 function readTags(value: unknown): string[] | null {
   if (!Array.isArray(value) || value.some((tag) => typeof tag !== 'string' || !tag.trim())) return null
   return value.map((tag) => tag.trim())
+}
+
+function readCopy(value: unknown, field: string, push: (field: string, message: string) => void): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  if (typeof value !== 'string') {
+    push(field, `${field} 需要是文字，没有就不要写这个字段`)
+    return undefined
+  }
+  const text = value.trim()
+  return text.length ? text : null
 }
 
 function readPlacement(parsed: unknown, issues: ImportIssue[]): CurriculumPlacement | null {
@@ -205,6 +220,9 @@ export function validateCoursePackage(text: string): { report: ImportReport; lev
       push('milestone_badge', 'milestone_badge 不颁发就写 null，颁发就写徽章标识')
     }
     if (typeof raw.milestone_badge === 'string' && !raw.milestone_badge.trim()) push('milestone_badge', '徽章标识不能是空字符串')
+    const teachingIntent = readCopy(raw.teaching_intent, 'teaching_intent', push)
+    const parentBrief = readCopy(raw.parent_brief, 'parent_brief', push)
+    const teacherGuide = readCopy(raw.teacher_guide, 'teacher_guide', push)
     const blankLines = readBlankLines(raw.blank_lines)
     if (levelType === 'fill_blank' && (!blankLines || blankLines.length === 0)) {
       push('blank_lines', 'fill_blank 关卡需要 blank_lines，写明哪几行要填空')
@@ -256,6 +274,9 @@ export function validateCoursePackage(text: string): { report: ImportReport; lev
         knowledge_tags: tags ?? undefined,
         milestone_badge: raw.milestone_badge === null ? null : typeof raw.milestone_badge === 'string' ? raw.milestone_badge.trim() : undefined,
         unit_id: placement?.unit.unit_id,
+        ...(teachingIntent !== undefined ? { teaching_intent: teachingIntent } : {}),
+        ...(parentBrief !== undefined ? { parent_brief: parentBrief } : {}),
+        ...(teacherGuide !== undefined ? { teacher_guide: teacherGuide } : {}),
       })
     }
   })

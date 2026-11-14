@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { ApiError, loadOrgDashboard, type OrgDashboardView } from '@/api/orgPortal'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
+import { OrgStudentProgress } from '@/components/OrgStudentProgress'
 import { formatDate } from '@/lib/format'
 
 export function OrgDashboard() {
   const [dashboard, setDashboard] = useState<OrgDashboardView | null>(null)
   const [notice, setNotice] = useState('')
+  const [detailId, setDetailId] = useState('')
   const totalLevels = dashboard?.totalLevels ?? 0
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export function OrgDashboard() {
         <div className="flex items-center justify-between px-6 py-5">
           <div>
             <h2 className="text-lg font-semibold text-ink">学生明细</h2>
-            <p className="mt-1 text-sm text-ink-soft">点表格里的名字可以看该生的关卡位置。</p>
+            <p className="mt-1 text-sm text-ink-soft">点名字查看关卡明细。关卡旁的「话术」是教学设计意图和上课引导。</p>
           </div>
         </div>
 
@@ -95,7 +97,9 @@ export function OrgDashboard() {
               {dashboard.studentRows.map((row) => (
                 <tr key={row.student.id} className="border-b border-line last:border-0">
                   <td className="px-6 py-3.5 font-medium text-ink">
-                    {row.student.name}
+                    <button type="button" className="text-brand-strong hover:underline" onClick={() => setDetailId(row.student.id)}>
+                      {row.student.name}
+                    </button>
                     {row.student.status === 'disabled' && (
                       <span className="ml-2 chip bg-canvas text-ink-soft">已停用</span>
                     )}
@@ -117,6 +121,7 @@ export function OrgDashboard() {
       </section>
 
       <p className="mt-6 text-xs text-ink-soft">1.0 只统计：完成节数、当前关卡、打字 WPM/准确率、最近活跃时间。</p>
+      {detailId && <OrgStudentProgress studentId={detailId} onClose={() => setDetailId('')} />}
     </div>
   )
 }

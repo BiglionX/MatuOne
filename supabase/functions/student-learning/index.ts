@@ -42,6 +42,12 @@ Deno.serve(async (req) => {
     body = {}
   }
   const action = typeof body.action === 'string' ? body.action : 'map'
+  if (
+    (body.preview === true || body.preview === 'true' || body.sandbox === true) &&
+    (action === 'typing' || action === 'touch' || action === 'complete')
+  ) {
+    return json(403, { message: '预览模式不会记录学习进度' })
+  }
   const db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
 
   const { data: student } = await db
@@ -142,8 +148,9 @@ Deno.serve(async (req) => {
       findStoredLevel(db, decision.levelId),
       db.from('error_hint').select('pattern, friendly_message'),
     ])
-    if (!found?.body) return json(404, { message: '没有找到这一关' })
-    return json(200, { level: found.body, hints: levelHints ?? [] })
+    if (!found?.body || typeof found.body !== 'object') return json(404, { message: '没有找到这一关' })
+    const goal = typeof found.goal === 'string' && found.goal.trim() ? found.goal : (found.body as { goal?: string }).goal
+    return json(200, { level: { ...(found.body as Record<string, unknown>), goal }, hints: levelHints ?? [] })
   }
 
   const position = await curriculumPosition(db, student.id)
@@ -304,12 +311,12 @@ interface LevelRow {
 async function findStoredLevel(
   db: ReturnType<typeof createClient>,
   levelId: string,
-): Promise<{ level_id: string; sort_order: number; body?: unknown } | null> {
-  const direct = await db.from('course_level').select('level_id, sort_order, body').eq('level_id', levelId).maybeSingle()
+): Promise<{ level_id: string; sort_order: number; goal?: string; body?: unknown } | null> {
+  const direct = await db.from('course_level').select('level_id, sort_order, goal, body').eq('level_id', levelId).maybeSingle()
   if (direct.data) return direct.data
   const order = levelOrderOf(levelId)
   if (!order) return null
-  const byOrder = await db.from('course_level').select('level_id, sort_order, body').eq('sort_order', order).maybeSingle()
+  const byOrder = await db.from('course_level').select('level_id, sort_order, goal, body').eq('sort_order', order).maybeSingle()
   return byOrder.data ?? null
 }
 

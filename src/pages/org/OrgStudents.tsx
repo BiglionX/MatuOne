@@ -11,6 +11,7 @@ import {
   type OrgStudentListItem,
 } from '@/api/orgPortal'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
+import { OrgStudentProgress } from '@/components/OrgStudentProgress'
 import type { Group } from '@/types'
 import { formatDate } from '@/lib/format'
 
@@ -21,6 +22,7 @@ import { formatDate } from '@/lib/format'
 export function OrgStudents() {
   const [students, setStudents] = useState<OrgStudentListItem[]>([])
   const [pendingUnbind, setPendingUnbind] = useState('')
+  const [detailId, setDetailId] = useState('')
   const [groups, setGroups] = useState<Group[]>([])
   const [groupNameInput, setGroupNameInput] = useState('')
   const [notice, setNotice] = useState('')
@@ -196,7 +198,11 @@ export function OrgStudents() {
             <tbody>
               {students.map((student) => (
                 <tr key={student.id} className="border-b border-line last:border-0 hover:bg-canvas/60">
-                  <td className="px-6 py-3.5 font-medium text-ink">{student.name}</td>
+                  <td className="px-6 py-3.5 font-medium text-ink">
+                    <button type="button" className="text-brand-strong hover:underline" onClick={() => setDetailId(student.id)}>
+                      {student.name}
+                    </button>
+                  </td>
                   <td className="px-6 py-3.5 text-ink-soft">{groups.find((group) => group.id === student.groupId)?.name ?? '未分组'}</td>
                   <td className="px-6 py-3.5">
                     <span
@@ -255,8 +261,9 @@ export function OrgStudents() {
       </section>
 
       <p className="mt-5 text-xs text-ink-soft">
-        新导入的绑定码是 10 位字母数字。已绑定家长数只统计尚未解除的关系，代解除后家长首页不再显示这名学生。
+        新导入的绑定码是 10 位字母数字。已绑定家长数只统计尚未解除的关系，代解除后家长首页不再显示这名学生。点名字可看关卡明细和教学话术。
       </p>
+      {detailId && <OrgStudentProgress studentId={detailId} onClose={() => setDetailId('')} />}
     </div>
   )
 }

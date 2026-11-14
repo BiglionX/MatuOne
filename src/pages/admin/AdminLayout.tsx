@@ -103,10 +103,14 @@ export function AdminLayout() {
               </div>
             )}
 
+            <NavLink to="/admin/settings" className={({ isActive }) => itemClass(isActive)}>
+              运营配置
+            </NavLink>
+
             <p className="mt-3 px-3 py-2 text-sm font-medium text-ink">内容管理</p>
             <div className="pl-3">
               <NavLink to="/admin/levels" className={({ isActive }) => itemClass(isActive)}>
-                课程包
+                课程管理
               </NavLink>
             </div>
           </nav>

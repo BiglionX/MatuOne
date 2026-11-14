@@ -96,6 +96,39 @@ export function AdminDashboard() {
                 )}
               </section>
             </div>
+
+            <section className="card mt-6 p-5">
+              <h2 className="text-lg font-semibold text-ink">分账看板</h2>
+              <p className="mt-1 text-sm text-ink-soft">席位费是机构实付。代理应发按平台底价乘分成比例。平台净收入 = 席位费 − 代理应发。</p>
+              {(data.commissions ?? []).length === 0 ? (
+                <p className="mt-4 text-sm text-ink-soft">还没有代理商。</p>
+              ) : (
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-left text-sm">
+                    <thead className="text-ink-soft">
+                      <tr className="border-b border-line">
+                        {['代理', '名下机构数', '席位费总额', '代理应发', '平台净收入'].map((label) => (
+                          <th key={label} className="px-3 py-3 font-medium">
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(data.commissions ?? []).map((row) => (
+                        <tr key={row.agentId} className="border-b border-line last:border-0">
+                          <td className="px-3 py-3 font-medium text-ink">{row.agentName}</td>
+                          <td className="px-3 py-3 text-ink">{row.orgCount}</td>
+                          <td className="px-3 py-3 text-ink">{money(row.seatFeeTotal)}</td>
+                          <td className="px-3 py-3 text-ink">{money(row.rebateDue)}</td>
+                          <td className="px-3 py-3 text-ink">{money(row.platformNet)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </>
         )}
       </div>

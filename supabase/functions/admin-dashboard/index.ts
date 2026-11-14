@@ -61,13 +61,14 @@ Deno.serve(async (req) => {
 
   const bounds = shanghaiBounds()
   const now = Date.now()
-  const [{ data: orgs, error: orgError }, { data: bills, error: billError }, students, parents] = await Promise.all([
+  const [{ data: orgs, error: orgError }, { data: bills, error: billError }, students, parents, commissions] = await Promise.all([
     auth.db.rpc('list_org_ledger'),
     auth.db.from('billing_record').select('org_id, type, amount, created_at'),
     auth.db.from('student').select('id', { count: 'exact', head: true }).eq('status', 'active'),
     auth.db.from('parent_account').select('id', { count: 'exact', head: true }).gte('last_login_at', bounds.dayStart),
+    auth.db.rpc('list_agent_commissions'),
   ])
-  if (orgError || billError || students.error || parents.error) return json(500, { message: '读取失败' })
+  if (orgError || billError || students.error || parents.error || commissions.error) return json(500, { message: '读取失败' })
 
   const ledger = (orgs ?? []) as LedgerRow[]
   const records = (bills ?? []) as BillRow[]
@@ -115,5 +116,20 @@ Deno.serve(async (req) => {
     conversionRate: trialed.size ? Math.round((converted / trialed.size) * 100) : 0,
     expiringOrgs,
     seatAlerts,
+    commissions: ((commissions.data ?? []) as {
+      agent_id: string
+      agent_name: string
+      org_count: number
+      seat_fee_total: number
+      rebate_due: number
+      platform_net: number
+    }[]).map((row) => ({
+      agentId: row.agent_id,
+      agentName: row.agent_name,
+      orgCount: Number(row.org_count),
+      seatFeeTotal: Number(row.seat_fee_total),
+      rebateDue: Number(row.rebate_due),
+      platformNet: Number(row.platform_net),
+    })),
   })
 })

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, getPlatformOperator, getPlatformProfile, listOrgs, loadOverview, provisionOrg } from '@/api/adminOrgs'
+import { loadPlatformSettings } from '@/api/adminSettings'
 import type { OrgLedgerRow, OrgStatus, ProvisionOrgResult } from '@/types/orgAdmin'
 import type { OpsOverview } from '@/types/ops'
 
@@ -16,8 +17,7 @@ const EMPTY_FORM = {
   contactName: '',
   contactPhone: '',
   campus: '',
-  seatQuota: '10',
-  trialDays: '14',
+  seatQuota: '5',
 }
 
 function ledgerDay(iso: string | null): string {
@@ -60,8 +60,26 @@ export function AdminOrgs() {
   const [formError, setFormError] = useState('')
   const [success, setSuccess] = useState<ProvisionOrgResult | null>(null)
   const [copied, setCopied] = useState<'account' | 'password' | ''>('')
+  const [trialNote, setTrialNote] = useState('试用天数以运营配置为准')
   const [overview, setOverview] = useState<OpsOverview | null>(null)
   const canProvision = getPlatformProfile()?.role !== 'finance'
+
+  useEffect(() => {
+    if (!open || success) return
+    let cancelled = false
+    loadPlatformSettings()
+      .then((settings) => {
+        if (cancelled) return
+        setTrialNote(`试用 ${settings.trialDays} 天，来自运营配置`)
+        setForm((prev) => ({ ...prev, seatQuota: String(settings.minSeatCount) }))
+      })
+      .catch(() => {
+        if (!cancelled) setTrialNote('试用天数以运营配置为准')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open, success])
 
   useEffect(() => {
     if (!open) return
@@ -119,7 +137,6 @@ export function AdminOrgs() {
         contactPhone: form.contactPhone,
         campus: form.campus,
         seatQuota: Number(form.seatQuota),
-        trialDays: Number(form.trialDays),
       })
       setSuccess(result)
       setStatus('all')
@@ -227,10 +244,10 @@ export function AdminOrgs() {
             <p className="px-4 py-6 text-sm text-ink-soft">没有符合条件的机构。</p>
           )}
           {!loadError && rows.length > 0 && (
-            <table className="w-full min-w-[960px] text-left text-sm">
+            <table className="w-full min-w-[1100px] text-left text-sm">
               <thead className="text-ink-soft">
                 <tr className="border-b border-line">
-                  {['机构编号', '名称', '联系人电话', '校区', '席位（额度/已用）', '开通日', '试用到期', '正式到期', '状态', ''].map(
+                  {['机构编号', '名称', '所属代理', '联系人电话', '校区', '席位（额度/已用）', '开通日', '试用到期', '正式到期', '状态', ''].map(
                     (label) => (
                       <th key={label} className="px-4 py-3 font-medium">
                         {label}
@@ -254,6 +271,7 @@ export function AdminOrgs() {
                           {row.name}
                         </Link>
                       </td>
+                      <td className="px-4 py-3 text-ink">{row.agentName || '—'}</td>
                       <td className="px-4 py-3 text-ink">{row.contactPhone}</td>
                       <td className="px-4 py-3 text-ink">{row.campus}</td>
                       <td className="px-4 py-3 text-ink">
@@ -346,7 +364,7 @@ export function AdminOrgs() {
                 <h2 id="provision-title" className="text-xl font-bold text-ink">
                   机构开户
                 </h2>
-                <p className="mt-1 text-sm text-ink-soft">开通后状态为试用中。试用席位最多 10 个。</p>
+                <p className="mt-1 text-sm text-ink-soft">开通后状态为试用中。{trialNote}。试用席位最多 10 个，且不能低于运营配置里的最低席位。</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <label className="text-sm text-ink-soft sm:col-span-2">
                     机构名
@@ -382,15 +400,7 @@ export function AdminOrgs() {
                       onChange={(e) => setForm((prev) => ({ ...prev, seatQuota: e.target.value }))}
                     />
                   </label>
-                  <label className="text-sm text-ink-soft">
-                    试用天数
-                    <input
-                      className="field mt-1"
-                      inputMode="numeric"
-                      value={form.trialDays}
-                      onChange={(e) => setForm((prev) => ({ ...prev, trialDays: e.target.value }))}
-                    />
-                  </label>
+                  <p className="self-end text-sm text-ink-soft">{trialNote}</p>
                 </div>
                 {formError && <p className="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{formError}</p>}
                 <div className="mt-5 flex justify-end gap-2">

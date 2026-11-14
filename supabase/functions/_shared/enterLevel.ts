@@ -4,6 +4,9 @@ import {
   decideEnterLevel as judgeEnterLevel,
   isLevelEntitled,
   levelOrderOf,
+  openMaxLevel,
+  readStageLevel,
+  stageLevelOfOrder,
   type EnterLevelResult,
   type OrgStatus,
 } from './orgStatus.ts'
@@ -50,18 +53,25 @@ export async function decideEnterLevel(
     .maybeSingle()
   if (!org) return { httpStatus: 200, levelId: canonical, result: { allowed: false, reason: 'org_disabled' } }
 
-  const { data: entitlements } = await svcDb
-    .from('level_entitlement')
-    .select('org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at')
-    .eq('org_id', student.org_id)
-
   const order = levelOrderOf(canonical)
-  const { data: status, error: statusError } = await svcDb.rpc('effective_org_status', {
-    p_status: org.status,
-    p_trial_expire_at: org.trial_expire_at,
-    p_service_end_at: org.service_end_at,
-  })
-  if (statusError || !isOrgStatus(status)) {
+  const [{ data: entitlements }, { data: status, error: statusError }, { data: grant, error: grantError }, { data: levelById, error: levelError }, { data: levelByOrder, error: orderError }] =
+    await Promise.all([
+      svcDb
+        .from('level_entitlement')
+        .select('org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at')
+        .eq('org_id', student.org_id),
+      svcDb.rpc('effective_org_status', {
+        p_status: org.status,
+        p_trial_expire_at: org.trial_expire_at,
+        p_service_end_at: org.service_end_at,
+      }),
+      svcDb.from('org_entitlement').select('max_level, valid_until').eq('org_id', student.org_id).maybeSingle(),
+      svcDb.from('course_level').select('stage_level').eq('level_id', canonical).maybeSingle(),
+      order == null
+        ? Promise.resolve({ data: null, error: null })
+        : svcDb.from('course_level').select('stage_level').eq('sort_order', order).maybeSingle(),
+    ])
+  if (statusError || grantError || levelError || orderError || !isOrgStatus(status)) {
     return { httpStatus: 500, levelId: canonical, result: { allowed: false, reason: 'not_found' } }
   }
 
@@ -84,9 +94,14 @@ export async function decideEnterLevel(
       order,
     )
 
+  const stageLevel = readStageLevel(levelById?.stage_level) ?? readStageLevel(levelByOrder?.stage_level) ?? (order == null ? null : stageLevelOfOrder(order))
+  const maxLevel = openMaxLevel(
+    grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null,
+  )
+
   return {
     httpStatus: 200,
     levelId: canonical,
-    result: judgeEnterLevel({ status, levelOrder: order, entitled }),
+    result: judgeEnterLevel({ status, levelOrder: order, entitled, stageLevel, maxLevel }),
   }
 }

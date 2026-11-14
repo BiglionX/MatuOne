@@ -6,7 +6,7 @@ import { requireStaff } from '../_shared/staff.ts'
 function fail(error: { message: string }): Response {
   const line = error.message.split('\n')[0]?.replace(/^ERROR:\s*/, '') ?? ''
   if (line.includes('forbidden') || line.includes('42501')) return json(403, { message: '需要平台权限' })
-  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态']
+  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成']
   if (known.some((item) => line.includes(item))) return json(400, { message: line })
   return json(500, { message: '操作失败' })
 }
@@ -114,9 +114,25 @@ Deno.serve(async (req) => {
   }
   const action = typeof body.action === 'string' ? body.action : 'ledger'
 
-  const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote' || action === 'detail'
+  const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote' || action === 'detail' || action === 'settings'
   const auth = await requireStaff(req, financeOk ? ['ops', 'finance'] : ['ops'])
   if ('error' in auth) return auth.error
+
+  if (action === 'settings' || action === 'save-settings') {
+    if (action === 'save-settings') {
+      const { error } = await auth.db.rpc('save_platform_configs', {
+        p_staff_id: auth.staff.id,
+        p_min_seat_count: Number(body.minSeatCount),
+        p_base_seat_price: Number(body.baseSeatPrice),
+        p_trial_days: Number(body.trialDays),
+        p_agent_commission_rate: Number(body.agentCommissionRate),
+      })
+      if (error) return fail(error)
+    }
+    const { data, error } = await auth.db.rpc('list_platform_configs')
+    if (error) return json(500, { message: '读取失败' })
+    return json(200, { configs: data ?? [] })
+  }
 
   if (action === 'quote') {
     const seats = Number(body.seats)
@@ -212,8 +228,14 @@ Deno.serve(async (req) => {
   }
 
   await auth.db.rpc('rewrite_org_status_for_display')
-  const { data, error } = await auth.db.rpc('list_org_ledger')
-  if (error) return json(500, { message: '读取失败' })
+  const [{ data, error }, { data: links, error: linkError }, { data: agents, error: agentError }] = await Promise.all([
+    auth.db.rpc('list_org_ledger'),
+    auth.db.from('agent_org').select('org_id, agent_id'),
+    auth.db.from('agent').select('id, name'),
+  ])
+  if (error || linkError || agentError) return json(500, { message: '读取失败' })
+  const agentName = new Map((agents ?? []).map((row) => [String(row.id), String(row.name ?? '')]))
+  const agentByOrg = new Map((links ?? []).map((row) => [String(row.org_id), agentName.get(String(row.agent_id)) || null]))
   const status = typeof body.status === 'string' ? body.status : 'all'
   const keyword = typeof body.keyword === 'string' ? body.keyword.trim().toLowerCase() : ''
   const expireFrom = typeof body.expireFrom === 'string' ? body.expireFrom : ''
@@ -245,6 +267,7 @@ Deno.serve(async (req) => {
       serviceEndAt: row.service_end_at,
       status: row.status,
       expiringSoon: row.expiring_soon,
+      agentName: agentByOrg.get(String(row.id)) ?? null,
     })),
   })
 })

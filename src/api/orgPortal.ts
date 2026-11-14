@@ -1,4 +1,5 @@
 import type { Group, ImportRowResult, Student } from '@/types'
+import type { OrgStudentProgress } from '@/types/orgProgress'
 import { callFunction } from '@/lib/backend'
 
 export { ApiError } from '@/lib/apiError'
@@ -9,6 +10,15 @@ export interface OrgCourseSettings {
   expiresAt: string
   activatedAt: string
   levelCount: number
+  /** org_entitlement.max_level。0 表示还没有课程包。 */
+  maxLevel: number
+  studentMonthlyPrice: number
+  /** 平台底价，元/席/月。来自运营配置。 */
+  baseSeatPrice: number
+}
+
+export function saveOrgStudentPrice(studentMonthlyPrice: number): Promise<OrgCourseSettings> {
+  return callFunction('org-course', { studentMonthlyPrice }, { role: 'org', headers: { 'x-action': 'save-price' } })
 }
 
 export interface OrgDashboardView {
@@ -81,6 +91,11 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
     }),
     boundParentCount: row.bound_parent_count ?? 0,
   }))
+}
+
+/** studentId 只用来点名本机构的一名学生，机构身份仍由服务端会话决定。 */
+export async function loadOrgStudentProgress(studentId: string): Promise<OrgStudentProgress> {
+  return callFunction('org-students', { studentId }, { role: 'org', headers: { 'x-action': 'progress' } })
 }
 
 export async function unbindOrgStudent(studentId: string): Promise<void> {

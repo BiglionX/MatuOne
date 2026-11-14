@@ -78,6 +78,8 @@ export async function loadParentHome(): Promise<ParentHomeData> {
   return {
     children: result.children.map((child) => ({
       ...child,
+      weeklyLessons: child.weeklyLessons ?? [],
+      learnedLessons: child.learnedLessons ?? [],
       curriculum: child.curriculum ?? presentParentProgress(child.currentLevelOrder),
       student: {
         ...(child.student as Omit<Student, 'password' | 'account' | 'bindCode'>),

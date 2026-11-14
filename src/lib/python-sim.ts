@@ -448,7 +448,75 @@ function execCall(name: string, argStr: string, turtle: Turtle, env: SimEnv, lin
   }
 }
 
-function execBlock(nodes: Node[], turtle: Turtle, env: SimEnv) {
+function describeCall(name: string, argStr: string, env: SimEnv, line: number): string {
+  const args = splitArgs(argStr)
+  const shown = (i: number) => String(evalArg(args[i] ?? '0', env, line))
+  switch (name) {
+    case 'print':
+      return `打印出「${shown(0)}」`
+    case 'forward':
+    case 'fd':
+      return `向前走 ${shown(0)}`
+    case 'backward':
+    case 'bk':
+      return `向后退 ${shown(0)}`
+    case 'right':
+    case 'rt':
+      return `向右转 ${shown(0)} 度`
+    case 'left':
+    case 'lt':
+      return `向左转 ${shown(0)} 度`
+    case 'circle':
+      return `画一个圆，半径 ${shown(0)}`
+    case 'pencolor':
+    case 'color':
+      return `换一种颜色：${shown(0)}`
+    case 'penup':
+    case 'pu':
+      return '抬笔，接下来先不画线'
+    case 'pendown':
+    case 'pd':
+      return '落笔，接下来会画出线'
+    case 'goto':
+    case 'setpos':
+      return `走到 (${shown(0)}, ${shown(1)})`
+    case 'home':
+      return '回到起点'
+    default:
+      return '执行这一行'
+  }
+}
+
+function snapshot(turtle: Turtle) {
+  const strokes = turtle.strokes.map((stroke) => ({
+    color: stroke.color,
+    points: stroke.points.map((point) => [point[0], point[1]] as [number, number]),
+  }))
+  if (turtle.penDown && turtle.current.length > 1) {
+    strokes.push({
+      color: turtle.color,
+      points: turtle.current.map((point) => [point[0], point[1]] as [number, number]),
+    })
+  }
+  return {
+    strokes,
+    text: turtle.textLines.join('\n'),
+    bounds: { minX: turtle.minX, minY: turtle.minY, maxX: turtle.maxX, maxY: turtle.maxY },
+    cursor: { x: turtle.x, y: turtle.y, heading: turtle.heading },
+  }
+}
+
+export interface SimStep {
+  line: number
+  note: string
+  strokes: Stroke[]
+  text: string
+  bounds: { minX: number; minY: number; maxX: number; maxY: number }
+  cursor: { x: number; y: number; heading: number }
+}
+
+/** 每执行完一条语句记一帧。不传 onStep 时和原来一次跑完一样。 */
+function execBlock(nodes: Node[], turtle: Turtle, env: SimEnv, onStep?: (line: number, note: string) => void) {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i]
     const text = node.text
@@ -457,9 +525,14 @@ function execBlock(nodes: Node[], turtle: Turtle, env: SimEnv) {
       const match = text.match(/^for\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+range\((.*)\)\s*:$/)
       if (!match) throw new SimError(node.line, 'syntax', 'for 这一行写得不太对')
       const count = Math.max(0, Math.floor(Number(evalArg(match[2], env, node.line))))
+      if (count === 0) {
+        onStep?.(node.line, '循环 0 次，里面的代码先不跑')
+        continue
+      }
       for (let k = 0; k < count; k++) {
         env[match[1]] = k
-        execBlock(node.children, turtle, env)
+        onStep?.(node.line, `第 ${k + 1} / ${count} 次循环`)
+        execBlock(node.children, turtle, env, onStep)
       }
       continue
     }
@@ -473,8 +546,12 @@ function execBlock(nodes: Node[], turtle: Turtle, env: SimEnv) {
       const ok = evalCond(match[1], env, node.line)
       const next = nodes[i + 1]
       const hasElse = !!next && next.indent === node.indent && next.text.startsWith('else')
-      if (ok) execBlock(node.children, turtle, env)
-      else if (hasElse) execBlock(next.children, turtle, env)
+      onStep?.(node.line, ok ? '判断成立，走进去' : hasElse ? '判断不成立，去看 else' : '判断不成立，跳过这一段')
+      if (ok) execBlock(node.children, turtle, env, onStep)
+      else if (hasElse) {
+        onStep?.(next.line, '走进 else')
+        execBlock(next.children, turtle, env, onStep)
+      }
       if (hasElse) i++
       continue
     }
@@ -489,12 +566,14 @@ function execBlock(nodes: Node[], turtle: Turtle, env: SimEnv) {
       const quoted = rawValue.match(/^(['"])([\s\S]*)\1$/)
       if (quoted) env[assign[1]] = quoted[2]
       else env[assign[1]] = safeEval(rawValue, env, node.line)
+      onStep?.(node.line, `${assign[1]} 现在是 ${env[assign[1]]}`)
       continue
     }
 
     const call = text.match(CALL_RE) || text.match(PLAIN_CALL_RE)
     if (call) {
       execCall(call[1], call[2], turtle, env, node.line)
+      onStep?.(node.line, describeCall(call[1], call[2], env, node.line))
       continue
     }
 
@@ -520,6 +599,24 @@ export function simulate(code: string): SimResult {
     text: turtle.textLines.join('\n'),
     bounds: { minX: turtle.minX, minY: turtle.minY, maxX: turtle.maxX, maxY: turtle.maxY },
   }
+}
+
+/** 把同一段代码拆成逐步快照。最后一帧和 simulate 的结果一致。 */
+export function traceCode(code: string): SimStep[] {
+  const { nodes } = parseCode(code)
+  checkNames(nodes, collectNames(nodes))
+  const turtle = new Turtle()
+  const steps: SimStep[] = []
+  try {
+    execBlock(nodes, turtle, {}, (line, note) => {
+      const frame = snapshot(turtle)
+      steps.push({ line, note, ...frame })
+    })
+  } catch (err) {
+    if (err instanceof SimError) throw err
+    throw new SimError(1, 'syntax', '这段代码跑不起来')
+  }
+  return steps
 }
 
 export type { TurtleArt }

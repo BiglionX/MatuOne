@@ -37,16 +37,16 @@ Deno.serve(async (req) => {
   }
 
   const seats = Number(body.seats ?? 40)
-  const [{ data: tiers, error }, quote] = await Promise.all([
-    db.from('seat_price_tier').select('min_seats, max_seats, unit_price').order('min_seats'),
-    db.rpc('quote_seat_price', { p_seats: Number.isInteger(seats) && seats > 0 ? seats : 40 }),
+  const safeSeats = Number.isInteger(seats) && seats > 0 ? seats : 40
+  const [quote, trial] = await Promise.all([
+    db.rpc('quote_seat_price', { p_seats: safeSeats }),
+    db.from('platform_configs').select('value').eq('key', 'trial_days').maybeSingle(),
   ])
-  if (error) return json(500, { message: '读取定价失败' })
+  if (quote.error) return json(500, { message: '读取定价失败' })
   const quoted = Array.isArray(quote.data) ? quote.data[0] : quote.data
   return json(200, {
-    tiers: tiers ?? [],
-    example: quoted
-      ? { seats: Number.isInteger(seats) && seats > 0 ? seats : 40, unitPrice: quoted.unit_price, amount: quoted.amount, plan: quoted.plan_label }
-      : null,
+    tiers: quoted ? [{ min_seats: 1, max_seats: null, unit_price: quoted.unit_price }] : [],
+    example: quoted ? { seats: safeSeats, unitPrice: quoted.unit_price, amount: quoted.amount, plan: quoted.plan_label } : null,
+    trialDays: Number(trial.data?.value) || null,
   })
 })

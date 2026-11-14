@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ApiError, listLeads, provisionOrg, setLeadStatus } from '@/api/adminOrgs'
+import { loadPlatformSettings } from '@/api/adminSettings'
 import type { LeadRow } from '@/types/ops'
 import type { ProvisionOrgResult } from '@/types/orgAdmin'
 
@@ -7,8 +8,8 @@ export function AdminLeads() {
   const [rows, setRows] = useState<LeadRow[]>([])
   const [notice, setNotice] = useState('')
   const [opening, setOpening] = useState<LeadRow | null>(null)
-  const [seats, setSeats] = useState('10')
-  const [days, setDays] = useState('14')
+  const [seats, setSeats] = useState('5')
+  const [trialNote, setTrialNote] = useState('试用天数以运营配置为准')
   const [success, setSuccess] = useState<ProvisionOrgResult | null>(null)
 
   const reload = () =>
@@ -18,6 +19,12 @@ export function AdminLeads() {
 
   useEffect(() => {
     void reload()
+    loadPlatformSettings()
+      .then((settings) => {
+        setSeats(String(settings.minSeatCount))
+        setTrialNote(`试用 ${settings.trialDays} 天，来自运营配置`)
+      })
+      .catch(() => setTrialNote('试用天数以运营配置为准'))
   }, [])
 
   const open = async (event: React.FormEvent) => {
@@ -31,7 +38,6 @@ export function AdminLeads() {
         contactPhone: opening.phone,
         campus: opening.city,
         seatQuota: Number(seats),
-        trialDays: Number(days),
         leadId: opening.id,
       })
       setSuccess(result)
@@ -111,10 +117,7 @@ export function AdminLeads() {
               席位
               <input className="field mt-1" value={seats} onChange={(e) => setSeats(e.target.value)} />
             </label>
-            <label className="text-sm text-ink-soft">
-              试用天数
-              <input className="field mt-1" value={days} onChange={(e) => setDays(e.target.value)} />
-            </label>
+            <p className="self-end text-sm text-ink-soft">{trialNote}。试用席位最多 10 个。</p>
             <div className="sm:col-span-2 flex gap-2">
               <button type="submit" className="btn-primary">
                 确认开户

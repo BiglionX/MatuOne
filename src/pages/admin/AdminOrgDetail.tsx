@@ -439,7 +439,7 @@ function RenewForm({
         <h2 id="renew-title" className="text-xl font-bold text-ink">
           续费
         </h2>
-        <p className="mt-1 text-sm text-ink-soft">金额按席位年费计算，收款方式为对公转账。改价时需要写备注。</p>
+        <p className="mt-1 text-sm text-ink-soft">金额按运营配置里的平台底价计算，单位是元/席/月。改价时需要写备注。有所属代理时，系统按分成比例自动记一笔佣金。</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="text-sm text-ink-soft">
             类型

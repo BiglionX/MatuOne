@@ -71,6 +71,8 @@ export interface OrgLedgerRow {
   status: OrgStatus
   /** 试用中/正常且 30 天内到期，台账标黄 */
   expiringSoon: boolean
+  /** 没有归属时代账显示为空 */
+  agentName: string | null
 }
 
 export interface OrgSession {

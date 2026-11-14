@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import type { Level, RunResult } from '@/types'
-import { buildDemoCode, runCode } from '@/lib/runner'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Level, RunResult, RunStep } from '@/types'
+import { buildDemoCode, runCode, traceRun } from '@/lib/runner'
 import { getLineNotes } from '@/lib/lineNotes'
 import { RunPreview } from '@/components/RunPreview'
 
@@ -15,22 +15,50 @@ function missedGuessHint(answer: string): string {
   return `猜错了没关系，看看图形和你想的一样吗？其实这是${name}哦`
 }
 
+function stepResult(level: Level, step: RunStep, total: number): RunResult {
+  return {
+    ok: true,
+    kind: level.preview_kind,
+    text: step.text,
+    art: step.art,
+    lineCount: total,
+    runId: 'step',
+    elapsedMs: 0,
+    source: 'mock',
+  }
+}
+
 /** A 回合：先看效果、猜一猜，再运行给定代码验证。猜错也能跑通。 */
 export function RoundA({ level, targetResult, onNext }: Props) {
   const [choice, setChoice] = useState<number | null>(null)
   const [result, setResult] = useState<RunResult | null>(null)
   const [flash, setFlash] = useState(false)
   const [running, setRunning] = useState(false)
+  const [steps, setSteps] = useState<RunStep[]>([])
+  const [stepIndex, setStepIndex] = useState(-1)
+  const [stepping, setStepping] = useState(false)
+  const [stepError, setStepError] = useState('')
+  const activeLineRef = useRef<HTMLDivElement>(null)
 
   const answered = choice !== null
   const correct = choice === level.quiz.answerIndex
+  const source = useMemo(
+    () => (level.unfolded_lines?.length ? level.unfolded_lines.join('\n') : buildDemoCode(level)),
+    [level],
+  )
+  const sourceLines = source.split('\n')
   const notes = level.unfolded_lines?.length ? [] : getLineNotes(level)
-  const previewLines = level.unfolded_lines?.length ? level.unfolded_lines : level.teach_code_lines
+  const step = stepping && stepIndex >= 0 ? steps[stepIndex] : null
+  const steppedDone = steps.length > 0 && stepIndex >= steps.length - 1
+  const passed = !!result?.ok || (stepping && steppedDone)
+  const nextStep = stepping && stepIndex + 1 < steps.length ? steps[stepIndex + 1] : null
+  const frame = stepping && steps.length > 0 ? steps[steps.length - 1].art.bounds : undefined
 
   const run = async () => {
     if (running) return
     setRunning(true)
-    const source = level.unfolded_lines?.length ? level.unfolded_lines.join('\n') : buildDemoCode(level)
+    setStepping(false)
+    setStepIndex(-1)
     const res = await runCode(source, level.level_id)
     setResult(res)
     setRunning(false)
@@ -40,19 +68,76 @@ export function RoundA({ level, targetResult, onNext }: Props) {
     }
   }
 
+  const startStep = () => {
+    setStepError('')
+    setResult(null)
+    setFlash(false)
+    try {
+      const traced = traceRun(source)
+      if (!traced.length) {
+        setStepError('这段代码没有可以一步一步走的语句。')
+        setStepping(false)
+        return
+      }
+      setSteps(traced)
+      setStepIndex(-1)
+      setStepping(true)
+    } catch (err) {
+      setStepping(false)
+      setStepError(err instanceof Error ? err.message : '这段代码没法分步走')
+    }
+  }
+
+  const advance = () => {
+    setStepIndex((current) => (current + 1 < steps.length ? current + 1 : current))
+  }
+
+  useEffect(() => {
+    if (!stepping) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== 'Space') return
+      const el = event.target as HTMLElement | null
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return
+      event.preventDefault()
+      setStepIndex((current) => (current + 1 < steps.length ? current + 1 : current))
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [stepping, steps.length])
+
+  useEffect(() => {
+    activeLineRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [stepIndex])
+
+  const preview = step ? stepResult(level, step, steps.length) : stepping ? null : (result ?? targetResult)
+
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(320px,46%)_minmax(0,1fr)]">
       <div className="flex flex-col gap-3">
-        <div className="text-sm font-medium text-ink-soft">{result ? '运行后的样子' : '这一段代码跑出来是这样'}</div>
-        <div className="min-h-[360px] flex-1">
-          <RunPreview result={result ?? targetResult} flash={flash && !!result?.ok} />
+        <div className="text-sm font-medium text-ink-soft">
+          {stepping ? (step ? `第 ${stepIndex + 1} / ${steps.length} 步` : '准备分步走') : result ? '运行后的样子' : '这一段代码跑出来是这样'}
         </div>
-        {result?.ok && correct && (
+        <div className="min-h-[360px] flex-1">
+          <RunPreview
+            result={preview}
+            flash={flash && !!result?.ok}
+            frame={frame}
+            cursor={step && !steppedDone ? step.cursor : undefined}
+            blank={stepping && !step}
+          />
+        </div>
+        {step && (
+          <p className="rounded-field bg-brand-soft px-4 py-3 text-brand-strong" aria-live="polite">
+            {step.note}
+            {steppedDone ? ' · 全部走完了' : ' · 按空格走下一步'}
+          </p>
+        )}
+        {passed && correct && (
           <p className="rounded-field bg-success-soft px-4 py-3 text-success">
             跑通了！和刚才看到的图案一样，代码就是这样指挥电脑的。
           </p>
         )}
-        {result?.ok && !correct && (
+        {passed && !correct && (
           <p className="rounded-field bg-warning-soft px-4 py-3 text-ink">
             {missedGuessHint(level.quiz.options[level.quiz.answerIndex] ?? '')}
           </p>
@@ -67,13 +152,7 @@ export function RoundA({ level, targetResult, onNext }: Props) {
           {level.quiz.options.map((option, i) => {
             const isChosen = choice === i
             const isAnswer = level.quiz.answerIndex === i
-            const state = !answered
-              ? 'idle'
-              : isAnswer
-                ? 'right'
-                : isChosen
-                  ? 'wrong'
-                  : 'idle'
+            const state = !answered ? 'idle' : isAnswer ? 'right' : isChosen ? 'wrong' : 'idle'
             return (
               <button
                 key={option}
@@ -89,9 +168,7 @@ export function RoundA({ level, targetResult, onNext }: Props) {
                 } ${answered ? 'cursor-default' : ''}`}
               >
                 <span>{option}</span>
-                <span className="text-sm text-ink-soft">
-                  {state === 'right' ? '✓ 对' : state === 'wrong' ? '再想想' : ''}
-                </span>
+                <span className="text-sm text-ink-soft">{state === 'right' ? '✓ 对' : state === 'wrong' ? '再想想' : ''}</span>
               </button>
             )
           })}
@@ -107,26 +184,50 @@ export function RoundA({ level, targetResult, onNext }: Props) {
         <div className="mt-auto pt-8">
           <div className="mb-4 rounded-field border border-line bg-code-bg px-4 py-3">
             <p className="mb-2 text-xs text-ink-soft">要运行的代码 · 每一行在做什么</p>
-            <div className="max-h-64 space-y-2.5 overflow-auto pr-1">
-              {previewLines.map((line, i) => (
-                <div key={`${i}-${line}`}>
-                  <pre className="code-font text-sm text-ink">{line || ' '}</pre>
-                  {notes[i] && <p className="mt-0.5 text-sm leading-snug text-ink-soft">{notes[i]}</p>}
-                </div>
-              ))}
+            <div className="max-h-64 space-y-1 overflow-auto pr-1">
+              {sourceLines.map((line, i) => {
+                const lineNo = i + 1
+                const active = !!step && step.line === lineNo
+                const upcoming = !!nextStep && nextStep.line === lineNo && !active
+                return (
+                  <div
+                    key={`${i}-${line}`}
+                    ref={active ? activeLineRef : undefined}
+                    className={`rounded-md px-2 py-1 ${
+                      active ? 'bg-brand-soft ring-1 ring-brand' : upcoming ? 'border border-dashed border-brand/40' : ''
+                    }`}
+                  >
+                    <pre className={`code-font whitespace-pre text-sm ${active ? 'font-semibold text-brand-strong' : 'text-ink'}`}>
+                      {line || ' '}
+                    </pre>
+                    {active && <p className="mt-0.5 text-sm leading-snug text-brand-strong">{step.note}</p>}
+                    {!active && notes[i] && <p className="mt-0.5 text-sm leading-snug text-ink-soft">{notes[i]}</p>}
+                  </div>
+                )
+              })}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button type="button" className="btn-primary px-8" onClick={run} disabled={running || !answered}>
               {running ? '运行中…' : '运行看看'}
             </button>
+            <button type="button" className="btn-secondary" onClick={startStep} disabled={!answered}>
+              {stepping ? '重新分步' : '分步执行'}
+            </button>
+            {stepping && (
+              <button type="button" className="btn-secondary" onClick={advance} disabled={steppedDone}>
+                {steppedDone ? '走完了' : '下一步'}
+              </button>
+            )}
             {!answered && <span className="text-sm text-ink-soft">先选一个答案，再运行验证</span>}
-            {result?.ok && (
+            {stepping && !steppedDone && <span className="text-sm text-ink-soft">按空格走下一步</span>}
+            {passed && (
               <button type="button" className="btn-secondary" onClick={onNext}>
                 开始抄代码
               </button>
             )}
           </div>
+          {stepError && <p className="mt-3 text-sm text-danger">{stepError}</p>}
         </div>
       </div>
     </div>

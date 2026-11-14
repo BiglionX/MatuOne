@@ -476,6 +476,8 @@ export function getChildView(studentId: string): ParentChildView {
       totalMinutes: weekly.totalMinutes,
       lastStudyDate: weekly.lastStudyDate,
     },
+    weeklyLessons: [],
+    learnedLessons: [],
     typingSeries: getTypingSeries(student.id).map((p) => ({
       weekStart: p.weekStart,
       label: p.label,

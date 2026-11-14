@@ -1,32 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Level } from '@/types'
-import { getLineNotes } from '@/lib/lineNotes'
-
-type Kind = 'goal' | 'print' | 'forward' | 'turn' | 'loop' | 'branch' | 'color' | 'variable' | 'done' | 'ready'
-
-interface StoryPage {
-  kind: Kind
-  kicker: string
-  title: string
-  text: string
-  code?: string
-  speak: string
-}
-
-function kindOf(line: string): Kind {
-  if (line.trimStart().startsWith('print')) return 'print'
-  if (/color/.test(line)) return 'color'
-  if (/\b(for|while)\b|range\(/.test(line)) return 'loop'
-  if (/^\s*(if|else)\b/.test(line)) return 'branch'
-  if (/forward|backward/.test(line)) return 'forward'
-  if (/right|left/.test(line)) return 'turn'
-  if (/done/.test(line)) return 'done'
-  if (/=/.test(line)) return 'variable'
-  return 'goal'
-}
+import { buildStoryPages, type StoryScene } from '@/lib/storyOutline'
 
 /** 极简扁平插图，全部用线条画，颜色跟着 token 走 */
-function Art({ kind }: { kind: Kind }) {
+function Art({ kind }: { kind: StoryScene }) {
   const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
 
   const body = () => {
@@ -159,59 +136,13 @@ function speak(text: string) {
 interface Props {
   level: Level
   onClose: () => void
+  /** 后台预览时改成「关闭」，学生进关仍用原来的收束文案。 */
+  finishLabel?: string
+  dismissLabel?: string
 }
 /** 进入关卡前的“小绘本”：几页图画 + 一句说明 + 系统语音朗读 */
-export function CommandStory({ level, onClose }: Props) {
-  const pages = useMemo<StoryPage[]>(() => {
-    const notes = getLineNotes(level)
-    const picked: { line: string; note: string }[] = []
-    level.teach_code_lines.forEach((line, i) => {
-      if (picked.length >= 4) return
-      if (picked.some((p) => p.line === line)) return
-      picked.push({ line, note: notes[i] ?? '' })
-    })
-
-    const list: StoryPage[] = [
-      {
-        kind: 'goal',
-        kicker: '这一关要做什么',
-        title: level.title,
-        text: level.goal,
-        speak: `第${level.order}关，${level.title}。${level.goal}`,
-      },
-    ]
-
-    for (const item of picked) {
-      list.push({
-        kind: kindOf(item.line),
-        kicker: '这一行在做什么',
-        title: item.note || '看看这一行',
-        text: item.note || '',
-        code: item.line,
-        speak: item.note || item.line,
-      })
-    }
-
-    list.push({
-      kind: 'ready',
-      kicker: '看完了',
-      title: '接下来，先猜一猜',
-      text:
-        level.level_type === 'fill_blank'
-          ? '猜完再运行，然后把空出来的词填上。'
-          : level.unfolded_lines?.length
-            ? '猜完再运行，然后看重复的代码怎么收成循环。'
-            : '猜完再运行，然后一行一行把代码抄出来。',
-      speak:
-        level.level_type === 'fill_blank'
-          ? '看完了。接下来先猜一猜结果，再把空出来的词填上。'
-          : level.unfolded_lines?.length
-            ? '看完了。接下来先猜一猜结果，再看重复的代码怎么收成循环。'
-            : '看完了。接下来先猜一猜结果，再一行一行把代码抄出来。',
-    })
-
-    return list
-  }, [level])
+export function CommandStory({ level, onClose, finishLabel = '看懂了，开始猜一猜', dismissLabel = '跳过' }: Props) {
+  const pages = useMemo(() => buildStoryPages(level), [level])
 
   const [index, setIndex] = useState(0)
   const [autoRead, setAutoRead] = useState(true)
@@ -266,7 +197,7 @@ export function CommandStory({ level, onClose }: Props) {
               朗读一遍
             </button>
             <button type="button" className="btn-ghost px-4 py-2 text-sm" onClick={onClose}>
-              跳过
+              {dismissLabel}
             </button>
           </div>
         </div>
@@ -320,7 +251,7 @@ export function CommandStory({ level, onClose }: Props) {
 
               {last ? (
                 <button type="button" className="btn-primary px-8" onClick={onClose}>
-                  看懂了，开始猜一猜
+                  {finishLabel}
                 </button>
               ) : (
                 <button

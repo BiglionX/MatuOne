@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { loadPreviewLevel } from '@/api/catalog'
 import { completeLevel, loadLevel, touchLevel } from '@/api/learning'
+import { getPlatformProfile } from '@/api/adminOrgs'
 import { curriculumLevelById, isPlaceholderLevel, nextLevelId } from '@/data/fullCurriculum'
 import { enterLevel, type EnterLevelReason } from '@/api/studentLevel'
 import { getCurrentStudent } from '@/api/studentAuth'
@@ -30,7 +32,19 @@ const ENTER_COPY: Record<EnterLevelReason, string> = {
   org_disabled: '机构已停用，请联系老师',
   trial_locked: '试用期间只能学习前 3 关',
   not_entitled: '老师还没有为你开通这一关',
+  course_locked: '本机构尚未开通该阶段课程，请联系老师',
   not_found: '没有找到这一关',
+}
+
+function PreviewBanner() {
+  return (
+    <div
+      role="status"
+      className="fixed inset-x-0 top-0 z-50 border-b border-warning bg-warning-soft px-4 py-2.5 text-center text-sm font-semibold text-ink shadow-card"
+    >
+      预览模式（不会记录学习进度）
+    </div>
+  )
 }
 
 function PlaceholderBanner({ show }: { show: boolean }) {
@@ -51,10 +65,14 @@ const ENCOURAGE = [
 
 export function Lesson() {
   const { levelId } = useParams()
+  const [searchParams] = useSearchParams()
+  const preview = searchParams.get('preview') === 'true'
   const navigate = useNavigate()
   const student = getCurrentStudent()
+  const staff = preview ? getPlatformProfile() : null
   const [level, setLevel] = useState<Level | null>(null)
   const [missing, setMissing] = useState(false)
+  const [previewError, setPreviewError] = useState('')
   const [round, setRound] = useState<Round>('A')
   const [gate, setGate] = useState<Awaited<ReturnType<typeof enterLevel>> | null>(null)
   const [targetResult, setTargetResult] = useState<RunResult | null>(null)
@@ -64,7 +82,29 @@ export function Lesson() {
   const [finished, setFinished] = useState(false)
 
   useEffect(() => {
-    if (!levelId || !student) return
+    if (!levelId) return
+    if (preview) {
+      if (!staff) return
+      let alive = true
+      setLevel(null)
+      setMissing(false)
+      setPreviewError('')
+      setGate({ allowed: true, reason: 'ok' })
+      setFinished(false)
+      setRound('A')
+      loadPreviewLevel(levelId)
+        .then((next) => {
+          if (alive) setLevel(next)
+        })
+        .catch((err: unknown) => {
+          if (!alive) return
+          setPreviewError(err instanceof Error ? err.message : '试课打开失败')
+        })
+      return () => {
+        alive = false
+      }
+    }
+    if (!student) return
     let alive = true
     setLevel(null)
     setMissing(false)
@@ -90,7 +130,7 @@ export function Lesson() {
     return () => {
       alive = false
     }
-  }, [levelId, student?.id])
+  }, [levelId, preview, staff?.displayName, student?.id])
 
   useEffect(() => {
     if (!level || !gate?.allowed) return
@@ -103,17 +143,44 @@ export function Lesson() {
     }
   }, [level, gate])
 
-  if (!student) return <Navigate to="/student/login" replace />
+  if (preview && !staff) {
+    return (
+      <div className="student-shell min-h-screen bg-canvas pt-12">
+        <PreviewBanner />
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+          <p className="text-xl text-ink">请先登录平台后台，再试课。</p>
+          <Link to="/admin/login" className="btn-primary">
+            去登录
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (!preview && !student) return <Navigate to="/student/login" replace />
 
   const catalogLevel = levelId ? curriculumLevelById(levelId) : undefined
   const placeholderLesson = isPlaceholderLevel(catalogLevel ?? level ?? { title: '' })
 
+  if (preview && previewError) {
+    return (
+      <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas pt-12">
+        <PreviewBanner />
+        <p className="text-xl text-ink">{previewError}</p>
+        <Link to="/admin/levels" className="btn-primary">
+          回到课程管理
+        </Link>
+      </div>
+    )
+  }
+
   if (missing || (gate && !gate.allowed && gate.reason === 'not_found')) {
     return (
-      <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas">
+      <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas pt-12">
+        {preview && <PreviewBanner />}
         <p className="text-xl text-ink">没有找到这一关</p>
-        <Link to="/student" className="btn-primary">
-          回到课程地图
+        <Link to={preview ? '/admin/levels' : '/student'} className="btn-primary">
+          {preview ? '回到课程管理' : '回到课程地图'}
         </Link>
       </div>
     )
@@ -122,9 +189,9 @@ export function Lesson() {
   if (gate && !gate.allowed) {
     return (
       <div className="student-shell min-h-screen bg-canvas">
-        <PlaceholderBanner show={placeholderLesson} />
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
           <p className="text-xl text-ink">{ENTER_COPY[gate.reason]}</p>
+          {gate.reason === 'course_locked' && <p className="max-w-md text-base text-ink-soft">请联系平台升级课程包。</p>}
           <Link to="/student" className="btn-primary">
             回到课程地图
           </Link>
@@ -135,8 +202,9 @@ export function Lesson() {
 
   if (!level || !gate) {
     return (
-      <div className="student-shell flex min-h-screen items-center justify-center bg-canvas">
-        <p className="text-xl text-ink">正在确认能不能进入这一关</p>
+      <div className={`student-shell flex min-h-screen items-center justify-center bg-canvas ${preview ? 'pt-12' : ''}`}>
+        {preview && <PreviewBanner />}
+        <p className="text-xl text-ink">{preview ? '正在打开试课…' : '正在确认能不能进入这一关'}</p>
       </div>
     )
   }
@@ -145,28 +213,35 @@ export function Lesson() {
   const nextId = nextLevelId(level.order)
 
   const finish = () => {
+    if (preview) {
+      setFinished(true)
+      return
+    }
     void completeLevel(level.level_id, stars, errorTaps).finally(() => setFinished(true))
   }
 
   if (finished) {
     return (
-      <div className="student-shell flex min-h-screen flex-col items-center justify-center bg-canvas px-6 text-center">
+      <div className={`student-shell flex min-h-screen flex-col items-center justify-center bg-canvas px-6 text-center ${preview ? 'pt-12' : ''}`}>
+        {preview && <PreviewBanner />}
         <div className="card w-full max-w-xl p-10 fade-up">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success-soft text-4xl text-success">
             ✓
           </div>
-          <h1 className="mt-6 text-3xl font-bold text-ink">这一关完成了</h1>
+          <h1 className="mt-6 text-3xl font-bold text-ink">{preview ? '预览结束' : '这一关完成了'}</h1>
           <p className="mt-3 text-ink-soft">
-            {level.title} · 你打对了 {level.teach_code_lines.length} 行代码，还自己改了一次参数。
+            {preview
+              ? `${level.title} · 三个回合都走完了，学习记录没有写入。`
+              : `${level.title} · 你打对了 ${level.teach_code_lines.length} 行代码，还自己改了一次参数。`}
           </p>
           <div className="mt-5 flex justify-center">
             <Stars count={stars} size={28} />
           </div>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link to="/student" className="btn-secondary">
-              回到课程地图
+            <Link to={preview ? '/admin/levels' : '/student'} className="btn-secondary">
+              {preview ? '回到课程管理' : '回到课程地图'}
             </Link>
-            {nextId && (
+            {!preview && nextId && (
               <button type="button" className="btn-primary px-8" onClick={() => navigate(`/student/lesson/${nextId}`)}>
                 下一关
               </button>
@@ -178,11 +253,12 @@ export function Lesson() {
   }
 
   return (
-    <div className="student-shell flex min-h-screen min-w-[1024px] flex-col bg-canvas">
+    <div className={`student-shell flex min-h-screen min-w-[1024px] flex-col bg-canvas ${preview ? 'pt-12' : ''}`}>
+      {preview && <PreviewBanner />}
       <PlaceholderBanner show={level.is_placeholder || placeholderLesson} />
-      <div className="sticky top-0 z-20 border-b border-line bg-white">
+      <div className={`sticky z-20 border-b border-line bg-white ${preview ? 'top-12' : 'top-0'}`}>
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-8 py-3.5">
-          <Link to="/student" className="btn-ghost px-2" aria-label="返回课程地图">
+          <Link to={preview ? '/admin/levels' : '/student'} className="btn-ghost px-2" aria-label={preview ? '返回课程管理' : '返回课程地图'}>
             ←
           </Link>
           <BrandMark size={30} />
@@ -232,7 +308,15 @@ export function Lesson() {
             onNext={() => setBreakOverlay({ next: 'C', line: ENCOURAGE[1] })}
           />
         )}
-        {round === 'C' && <RoundC level={level} studentId={student.id} targetResult={targetResult} onComplete={finish} />}
+        {round === 'C' && (
+          <RoundC
+            level={level}
+            studentId={student?.id ?? ''}
+            targetResult={targetResult}
+            onComplete={finish}
+            sandbox={preview}
+          />
+        )}
       </main>
 
       {storyOpen && <CommandStory level={level} onClose={() => setStoryOpen(false)} />}
