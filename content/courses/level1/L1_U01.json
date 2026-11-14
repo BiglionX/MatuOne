@@ -1,0 +1,2137 @@
+{
+  "stage_level": 1,
+  "unit": {
+    "unit_id": "L1_U01",
+    "title": "Level 1 · 单元 1",
+    "sort_order": 1
+  },
+  "unit_tags": [
+    "forward",
+    "right",
+    "for_loop"
+  ],
+  "levels": [
+    {
+      "level_id": "L0001",
+      "order": 1,
+      "title": "走一条直线",
+      "goal": "让小海龟向前走出一条线",
+      "knowledge_tags": [
+        "forward"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(80)\nt.done()",
+      "expected_output": "一条横线",
+      "teach_code_lines": [
+        "t.forward(80)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 80 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.forward(80)",
+        "t.done()",
+        "t.forward"
+      ],
+      "drill_chunk": "t.forward(80)",
+      "challenge_params": [
+        {
+          "name": "long",
+          "label": "把这条线改长",
+          "type": "number",
+          "default": 80,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "数字越大，线越长。",
+          "min": 40,
+          "max": 160,
+          "step": 20
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "小海龟会画出什么？",
+        "options": [
+          "一条直线",
+          "一个正方形",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "forward 是往前走，所以先出现一条线。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把这条线改长」改一下，看看线变得更长。",
+        "target_param_name": "long",
+        "target_value": "140",
+        "expected_output": "线变得更长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "让小海龟向前走出一条线",
+      "parent_brief": "孩子会画出一条横线。改一个数，线变得更长。",
+      "teacher_guide": "先看一条横线，再只改「把这条线改长」，确认线变得更长。"
+    },
+    {
+      "level_id": "L0002",
+      "order": 2,
+      "title": "走完向右转",
+      "goal": "向前走一段，再向右转，接着再走一段",
+      "knowledge_tags": [
+        "forward",
+        "right"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(80)\nt.right(90)\nt.forward(80)\nt.done()",
+      "expected_output": "一个直角拐弯",
+      "teach_code_lines": [
+        "t.forward(80)",
+        "t.right(90)",
+        "t.forward(80)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 80 步",
+        "向右转 90 度",
+        "小海龟向前走 80 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.forward",
+        "t.right",
+        "t.done",
+        "t.right(90)"
+      ],
+      "drill_chunk": "t.forward(80)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "拐弯的角度",
+          "type": "select",
+          "default": "90",
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "改成 120 度，直角就张开了。",
+          "options": [
+            {
+              "value": "90",
+              "label": "90 度（直角）"
+            },
+            {
+              "value": "120",
+              "label": "120 度（拐得更大）"
+            }
+          ]
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "t.right(90) 是在做什么？",
+        "options": [
+          "向右转 90 度",
+          "向前走 90 步",
+          "把线涂成红色"
+        ],
+        "answerIndex": 0,
+        "explain": "right 是转弯，括号里的数字是角度。"
+      },
+      "bonus_challenge": {
+        "type": "reverse_draw",
+        "instruction": "把海龟掉头，往反方向画一条一样长的线。",
+        "target_value": "80",
+        "expected_output": "反方向又有一条一样长的线",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "向前走一段，再向右转，接着再走一段",
+      "parent_brief": "孩子会画出一个直角拐弯。改一个数，拐角张开，不再是直角。",
+      "teacher_guide": "先看一个直角拐弯，再只改「拐弯的角度」，确认拐角张开，不再是直角。"
+    },
+    {
+      "level_id": "L0003",
+      "order": 3,
+      "title": "换成向左转",
+      "goal": "用 left 让小海龟向另一边拐",
+      "knowledge_tags": [
+        "left"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(80)\nt.left(90)\nt.forward(80)\nt.done()",
+      "expected_output": "一个向左的直角",
+      "teach_code_lines": [
+        "t.forward(80)",
+        "t.left(90)",
+        "t.forward(80)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 80 步",
+        "向左转 90 度",
+        "小海龟向前走 80 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.left(90)",
+        "t.forward(80)",
+        "t.left",
+        "t.done()"
+      ],
+      "drill_chunk": "t.right(90)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "左转的角度",
+          "type": "select",
+          "default": "90",
+          "apply": {
+            "kind": "arg",
+            "func": "left",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "改成 120 度，左边的角会张开。",
+          "options": [
+            {
+              "value": "90",
+              "label": "90 度"
+            },
+            {
+              "value": "120",
+              "label": "120 度"
+            }
+          ]
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这两条线往哪边拐？",
+        "options": [
+          "向左拐",
+          "向右拐",
+          "还是一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "left 是向左转，拐弯的方向和 right 相反。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「左转的角度」改一下，看看左边的拐角张开。",
+        "target_param_name": "turn",
+        "target_value": "120",
+        "expected_output": "左边的拐角张开",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "用 left 让小海龟向另一边拐",
+      "parent_brief": "孩子会画出一个向左的直角。改一个数，左边的拐角张开。",
+      "teacher_guide": "先看一个向左的直角，再只改「左转的角度」，确认左边的拐角张开。"
+    },
+    {
+      "level_id": "L0004",
+      "order": 4,
+      "title": "再画一个直角",
+      "goal": "用已经会的走和右转，再画一个一长一短的拐角",
+      "knowledge_tags": [
+        "forward",
+        "right"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(100)\nt.right(90)\nt.forward(50)\nt.done()",
+      "expected_output": "一长一短的直角",
+      "teach_code_lines": [
+        "t.forward(100)",
+        "t.right(90)",
+        "t.forward(50)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 100 步",
+        "向右转 90 度",
+        "小海龟向前走 50 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.forward(100)",
+        "t.right(90)",
+        "t.forward(50)",
+        "t.done()"
+      ],
+      "drill_chunk": "t.left(90)",
+      "challenge_params": [
+        {
+          "name": "long",
+          "label": "把第一条边改短",
+          "type": "number",
+          "default": 100,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "第一条边一短，拐角就胖一点。",
+          "min": 40,
+          "max": 140,
+          "step": 20
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这两条线一样长吗？",
+        "options": [
+          "一长一短",
+          "一样长的正方形",
+          "三条边的三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "第一条走 100，第二条走 50，所以一边长一边短。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把第一条边改短」改一下，看看长的那条边变短，拐角还在。",
+        "target_param_name": "long",
+        "target_value": "40",
+        "expected_output": "长的那条边变短，拐角还在",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "用已经会的走和右转，再画一个一长一短的拐角",
+      "parent_brief": "孩子会画出一长一短的直角。改一个数，长的那条边变短，拐角还在。",
+      "teacher_guide": "先看一长一短的直角，再只改「把第一条边改短」，确认长的那条边变短，拐角还在。"
+    },
+    {
+      "level_id": "L0005",
+      "order": 5,
+      "title": "画一扇小门",
+      "goal": "连走三笔，画出一扇开口的小门",
+      "knowledge_tags": [
+        "forward",
+        "right"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(70)\nt.right(90)\nt.forward(90)\nt.right(90)\nt.forward(70)\nt.done()",
+      "expected_output": "一扇开口的小门",
+      "teach_code_lines": [
+        "t.forward(70)",
+        "t.right(90)",
+        "t.forward(90)",
+        "t.right(90)",
+        "t.forward(70)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 70 步",
+        "向右转 90 度",
+        "小海龟向前走 90 步",
+        "向右转 90 度",
+        "小海龟向前走 70 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.forward(70)",
+        "t.right(90)",
+        "t.forward(90)",
+        "t.done()"
+      ],
+      "drill_chunk": "t.right(90)",
+      "challenge_params": [
+        {
+          "name": "tall",
+          "label": "把门框改矮",
+          "type": "number",
+          "default": 90,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "中间那一笔变短，门就变矮。",
+          "min": 40,
+          "max": 120,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这三笔看起来像什么？",
+        "options": [
+          "一扇开口的小门",
+          "一个封口的正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "三条边围出门口，下面还空着。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把门框改矮」改一下，看看门框变矮。",
+        "target_param_name": "tall",
+        "target_value": "40",
+        "expected_output": "门框变矮",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "连走三笔，画出一扇开口的小门",
+      "parent_brief": "孩子会画出一扇开口的小门。改一个数，门框变矮。",
+      "teacher_guide": "先看一扇开口的小门，再只改「把门框改矮」，确认门框变矮。"
+    },
+    {
+      "level_id": "L0006",
+      "order": 6,
+      "title": "拐一个大角",
+      "goal": "把直角换成 120 度，看见更开的拐角",
+      "knowledge_tags": [
+        "right"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(80)\nt.right(120)\nt.forward(80)\nt.done()",
+      "expected_output": "一个更开的拐角",
+      "teach_code_lines": [
+        "t.forward(80)",
+        "t.right(120)",
+        "t.forward(80)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 80 步",
+        "向右转 120 度",
+        "小海龟向前走 80 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.right(120)",
+        "t.forward(80)",
+        "t.right",
+        "t.done()"
+      ],
+      "drill_chunk": "t.forward(90)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把大角改小",
+          "type": "select",
+          "default": "120",
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "改成 90 度，就变回直角。",
+          "options": [
+            {
+              "value": "120",
+              "label": "120 度"
+            },
+            {
+              "value": "90",
+              "label": "90 度"
+            }
+          ]
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这个拐角和直角比，怎么样？",
+        "options": [
+          "比直角更开",
+          "还是一条直线",
+          "已经封成正方形"
+        ],
+        "answerIndex": 0,
+        "explain": "120 比 90 大，所以拐得更开。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把大角改小」改一下，看看拐角收回来，变成直角。",
+        "target_param_name": "turn",
+        "target_value": "90",
+        "expected_output": "拐角收回来，变成直角",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "把直角换成 120 度，看见更开的拐角",
+      "parent_brief": "孩子会画出一个更开的拐角。改一个数，拐角收回来，变成直角。",
+      "teacher_guide": "先看一个更开的拐角，再只改「把大角改小」，确认拐角收回来，变成直角。"
+    },
+    {
+      "level_id": "L0007",
+      "order": 7,
+      "title": "围成一个三角形",
+      "goal": "走三笔，每次转 120 度，围成三角形",
+      "knowledge_tags": [
+        "right"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(80)\nt.right(120)\nt.forward(80)\nt.right(120)\nt.forward(80)\nt.right(120)\nt.done()",
+      "expected_output": "一个三角形",
+      "teach_code_lines": [
+        "t.forward(80)",
+        "t.right(120)",
+        "t.forward(80)",
+        "t.right(120)",
+        "t.forward(80)",
+        "t.right(120)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 80 步",
+        "向右转 120 度",
+        "小海龟向前走 80 步",
+        "向右转 120 度",
+        "小海龟向前走 80 步",
+        "向右转 120 度",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.right(120)",
+        "t.forward(80)",
+        "t.done()",
+        "t.right"
+      ],
+      "drill_chunk": "t.right(120)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把每个角改成直角",
+          "type": "number",
+          "default": 120,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": "all"
+          },
+          "hint": "四个位置的 120 一起变成 90，三角形就散开了。",
+          "min": 60,
+          "max": 120,
+          "step": 30
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "三笔都走完，会围成什么？",
+        "options": [
+          "一个三角形",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "每次转 120 度，转三次正好围上。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把每个角改成直角」改一下，看看三个角都变直角，不再是三角形。",
+        "target_param_name": "turn",
+        "target_value": "90",
+        "expected_output": "三个角都变直角，不再是三角形",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "走三笔，每次转 120 度，围成三角形",
+      "parent_brief": "孩子会画出一个三角形。改一个数，三个角都变直角，不再是三角形。",
+      "teacher_guide": "先看一个三角形，再只改「把每个角改成直角」，确认三个角都变直角，不再是三角形。"
+    },
+    {
+      "level_id": "L0008",
+      "order": 8,
+      "title": "把走和转打准确",
+      "goal": "打字课：把刚学的 forward、right、left 再打一遍",
+      "knowledge_tags": [
+        "forward",
+        "right"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "keywords",
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(60)\nt.right(90)\nt.forward(60)\nt.done()",
+      "expected_output": "一个小直角",
+      "teach_code_lines": [
+        "t.forward(60)",
+        "t.right(90)",
+        "t.forward(60)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 60 步",
+        "向右转 90 度",
+        "小海龟向前走 60 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.forward",
+        "t.right",
+        "t.left",
+        "t.done()"
+      ],
+      "drill_chunk": "t.right(120)",
+      "challenge_params": [
+        {
+          "name": "long",
+          "label": "把边改长",
+          "type": "number",
+          "default": 60,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": "all"
+          },
+          "hint": "两条边一起变长，拐角更大。",
+          "min": 40,
+          "max": 140,
+          "step": 20
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节主要在练什么？",
+        "options": [
+          "把 forward 和 right 打准确",
+          "新学一种转弯",
+          "画出一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "打字课不讲新画法，只把刚学的词打熟。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把这节的词再打一遍。",
+        "expected_output": "编程关键词",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：把刚学的 forward、right、left 再打一遍",
+      "parent_brief": "孩子会画出一个小直角。改一个数，两条边一起变长。",
+      "teacher_guide": "先看一个小直角，再只改「把边改长」，确认两条边一起变长。"
+    },
+    {
+      "level_id": "L0009",
+      "order": 9,
+      "title": "画出正方形",
+      "goal": "四条边，每次转 90 度，围成正方形",
+      "knowledge_tags": [
+        "right"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(70)\nt.right(90)\nt.forward(70)\nt.right(90)\nt.forward(70)\nt.right(90)\nt.forward(70)\nt.right(90)",
+      "expected_output": "一个正方形",
+      "teach_code_lines": [
+        "t.forward(70)",
+        "t.right(90)",
+        "t.forward(70)",
+        "t.right(90)",
+        "t.forward(70)",
+        "t.right(90)",
+        "t.forward(70)",
+        "t.right(90)"
+      ],
+      "line_notes": [
+        "小海龟向前走 70 步",
+        "向右转 90 度",
+        "小海龟向前走 70 步",
+        "向右转 90 度",
+        "小海龟向前走 70 步",
+        "向右转 90 度",
+        "小海龟向前走 70 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "t.forward(70)",
+        "t.right(90)",
+        "t.right",
+        "t.forward"
+      ],
+      "drill_chunk": "t.forward(60)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把直角改成 60 度",
+          "type": "number",
+          "default": 90,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": "all"
+          },
+          "hint": "四个角一起改成 60 度，正方形就散了。",
+          "min": 60,
+          "max": 120,
+          "step": 30
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "四条边都转 90 度，画出什么？",
+        "options": [
+          "一个正方形",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "四个直角围一圈，就是正方形。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把直角改成 60 度」改一下，看看四个角都变了，不再方方正正。",
+        "target_param_name": "turn",
+        "target_value": "60",
+        "expected_output": "四个角都变了，不再方方正正",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "四条边，每次转 90 度，围成正方形",
+      "parent_brief": "孩子会画出一个正方形。改一个数，四个角都变了，不再方方正正。",
+      "teacher_guide": "先看一个正方形，再只改「把直角改成 60 度」，确认四个角都变了，不再方方正正。"
+    },
+    {
+      "level_id": "L0010",
+      "order": 10,
+      "title": "用循环画正方形",
+      "goal": "把重复的走和转，收成一个 for",
+      "knowledge_tags": [
+        "for_loop",
+        "right"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    t.forward(70)\n    t.right(90)",
+      "expected_output": "一个正方形",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    t.forward(70)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 70 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "for i in range(4):",
+        "t.forward(70)",
+        "t.right(90)",
+        "range(4)"
+      ],
+      "drill_chunk": "t.right(90)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把 90 度改成 120 度",
+          "type": "select",
+          "default": "90",
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "角一变，四个直角就围不成正方形。",
+          "options": [
+            {
+              "value": "90",
+              "label": "90 度"
+            },
+            {
+              "value": "120",
+              "label": "120 度"
+            }
+          ]
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "正方形是怎么画出来的？",
+        "options": [
+          "走和转重复了 4 次",
+          "只走了一次",
+          "画成了三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "range(4) 让里面的两行做 4 遍。"
+      },
+      "bonus_challenge": {
+        "type": "add_color",
+        "instruction": "给正方形的边框加上红色。",
+        "target_value": "red",
+        "expected_output": "正方形的边变成红色",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "把重复的走和转，收成一个 for",
+      "parent_brief": "孩子会画出一个正方形。改一个数，还是走 4 次，但角变了，不再是正方形。",
+      "teacher_guide": "先看一个正方形，再只改「把 90 度改成 120 度」，确认还是走 4 次，但角变了，不再是正方形。"
+    },
+    {
+      "level_id": "L0011",
+      "order": 11,
+      "title": "用循环画三角形",
+      "goal": "把重复改成 3 次，每次转 120 度",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(3):\n    t.forward(80)\n    t.right(120)",
+      "expected_output": "一个三角形",
+      "teach_code_lines": [
+        "for i in range(3):",
+        "    t.forward(80)",
+        "    t.right(120)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 80 步",
+        "向右转 120 度"
+      ],
+      "keywords": [
+        "for i in range(3):",
+        "t.right(120)",
+        "t.forward(80)",
+        "range(3)"
+      ],
+      "drill_chunk": "t.right(90)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把 120 度改成直角",
+          "type": "select",
+          "default": "120",
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "角改成 90 度，三角形就封不上了。",
+          "options": [
+            {
+              "value": "120",
+              "label": "120 度"
+            },
+            {
+              "value": "90",
+              "label": "90 度"
+            }
+          ]
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "range(3) 再转 120 度，画出什么？",
+        "options": [
+          "一个三角形",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "三笔、每次 120 度，正好围成三角形。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把 120 度改成直角」改一下，看看还是三笔，但变成了直角折线。",
+        "target_param_name": "turn",
+        "target_value": "90",
+        "expected_output": "还是三笔，但变成了直角折线",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "把重复改成 3 次，每次转 120 度",
+      "parent_brief": "孩子会画出一个三角形。改一个数，还是三笔，但变成了直角折线。",
+      "teacher_guide": "先看一个三角形，再只改「把 120 度改成直角」，确认还是三笔，但变成了直角折线。"
+    },
+    {
+      "level_id": "L0012",
+      "order": 12,
+      "title": "再画一个小正方形",
+      "goal": "用循环再画一次正方形，把边长换短",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    t.forward(50)\n    t.right(90)",
+      "expected_output": "一个小正方形",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    t.forward(50)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 50 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "for i in range(4):",
+        "t.forward(50)",
+        "t.right(90)",
+        "range(4)"
+      ],
+      "drill_chunk": "t.right(120)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把边长改长",
+          "type": "number",
+          "default": 50,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "边一长，正方形就变大。",
+          "min": 40,
+          "max": 120,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这一次画出来的是什么？",
+        "options": [
+          "一个小正方形",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "还是走 4 次、转 90 度，只是边更短。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把边长改长」改一下，看看正方形变大。",
+        "target_param_name": "side",
+        "target_value": "110",
+        "expected_output": "正方形变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "用循环再画一次正方形，把边长换短",
+      "parent_brief": "孩子会画出一个小正方形。改一个数，正方形变大。",
+      "teacher_guide": "先看一个小正方形，再只改「把边长改长」，确认正方形变大。"
+    },
+    {
+      "level_id": "L0013",
+      "order": 13,
+      "title": "走过去再退回来",
+      "goal": "用 backward 让小海龟沿原路退回，再拐弯",
+      "knowledge_tags": [
+        "backward"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(80)\nt.backward(80)\nt.right(90)\nt.forward(60)\nt.done()",
+      "expected_output": "一个直角",
+      "teach_code_lines": [
+        "t.forward(80)",
+        "t.backward(80)",
+        "t.right(90)",
+        "t.forward(60)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 80 步",
+        "小海龟退回 80 步",
+        "向右转 90 度",
+        "小海龟向前走 60 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.backward(80)",
+        "t.forward(80)",
+        "t.right(90)",
+        "t.done()"
+      ],
+      "drill_chunk": "t.forward(50)",
+      "challenge_params": [
+        {
+          "name": "back",
+          "label": "少退一点",
+          "type": "number",
+          "default": 80,
+          "apply": {
+            "kind": "arg",
+            "func": "backward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "少退一点，第二条线就换了个起点。",
+          "min": 20,
+          "max": 80,
+          "step": 20
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "退回去再转弯，会留下什么？",
+        "options": [
+          "一个直角",
+          "一个三角形",
+          "一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "退回起点后再转弯，第二条线就从起点画出去。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「少退一点」改一下，看看没退回到起点，竖线的位置挪了。",
+        "target_param_name": "back",
+        "target_value": "20",
+        "expected_output": "没退回到起点，竖线的位置挪了",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "用 backward 让小海龟沿原路退回，再拐弯",
+      "parent_brief": "孩子会画出一个直角。改一个数，没退回到起点，竖线的位置挪了。",
+      "teacher_guide": "先看一个直角，再只改「少退一点」，确认没退回到起点，竖线的位置挪了。"
+    },
+    {
+      "level_id": "L0014",
+      "order": 14,
+      "title": "抬笔空出一段",
+      "goal": "用 penup 走一段不画线，再落下笔",
+      "knowledge_tags": [
+        "penup",
+        "pendown"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(50)\nt.penup()\nt.forward(30)\nt.pendown()\nt.forward(50)\nt.done()",
+      "expected_output": "两条分开的短线",
+      "teach_code_lines": [
+        "t.forward(50)",
+        "t.penup()",
+        "t.forward(30)",
+        "t.pendown()",
+        "t.forward(50)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 50 步",
+        "把笔抬起来，接着走先不画线",
+        "小海龟向前走 30 步",
+        "把笔放下，接着走就会画出线",
+        "小海龟向前走 50 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.penup()",
+        "t.pendown()",
+        "t.forward(50)",
+        "t.forward(30)"
+      ],
+      "drill_chunk": "t.backward(80)",
+      "challenge_params": [
+        {
+          "name": "gap",
+          "label": "把空档拉宽",
+          "type": "number",
+          "default": 30,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "空着走的那一段变长，两条线离得更远。",
+          "min": 20,
+          "max": 90,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "抬笔再落笔，线上会怎样？",
+        "options": [
+          "中间空出一段",
+          "变成一个正方形",
+          "变成一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "笔抬起来的时候不画，所以线是断开的。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把空档拉宽」改一下，看看中间的空档变宽。",
+        "target_param_name": "gap",
+        "target_value": "80",
+        "expected_output": "中间的空档变宽",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "用 penup 走一段不画线，再落下笔",
+      "parent_brief": "孩子会画出两条分开的短线。改一个数，中间的空档变宽。",
+      "teacher_guide": "先看两条分开的短线，再只改「把空档拉宽」，确认中间的空档变宽。"
+    },
+    {
+      "level_id": "L0015",
+      "order": 15,
+      "title": "把线画粗",
+      "goal": "用 pensize 让这条线变粗",
+      "knowledge_tags": [
+        "pensize"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.pensize(6)\nt.forward(80)\nt.done()",
+      "expected_output": "一条粗线",
+      "teach_code_lines": [
+        "t.pensize(6)",
+        "t.forward(80)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "把线改成 6 那么粗",
+        "小海龟向前走 80 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.pensize(6)",
+        "t.forward(80)",
+        "t.done()",
+        "t.pensize"
+      ],
+      "drill_chunk": "t.penup()",
+      "challenge_params": [
+        {
+          "name": "wide",
+          "label": "把线改细",
+          "type": "number",
+          "default": 6,
+          "apply": {
+            "kind": "arg",
+            "func": "pensize",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "改成 1，线就细回去了。",
+          "min": 1,
+          "max": 12,
+          "step": 1
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "和刚才的细线比，这条线怎样？",
+        "options": [
+          "更粗",
+          "变成正方形",
+          "变成三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "pensize 里的数字越大，线越粗。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把线改细」改一下，看看线变细。",
+        "target_param_name": "wide",
+        "target_value": "1",
+        "expected_output": "线变细",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "用 pensize 让这条线变粗",
+      "parent_brief": "孩子会画出一条粗线。改一个数，线变细。",
+      "teacher_guide": "先看一条粗线，再只改「把线改细」，确认线变细。"
+    },
+    {
+      "level_id": "L0016",
+      "order": 16,
+      "title": "打一打基准键",
+      "goal": "打字课：练习基准键位，手指回原位",
+      "knowledge_tags": [
+        "forward"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "baseline_keys",
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(40)\nt.done()",
+      "expected_output": "一条短线",
+      "teach_code_lines": [
+        "t.forward(40)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 40 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "asdf",
+        "jkl;",
+        "ffjj",
+        "fjfj"
+      ],
+      "drill_chunk": "t.pensize(6)",
+      "challenge_params": [
+        {
+          "name": "long",
+          "label": "把短线改长",
+          "type": "number",
+          "default": 40,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "线变长，画面马上能看出来。",
+          "min": 20,
+          "max": 120,
+          "step": 20
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节在练哪一档打字？",
+        "options": [
+          "基准键位",
+          "一个新的转角",
+          "六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "这一档只练手指的原位，不讲新画法。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把基准键再打一遍。",
+        "expected_output": "基准键位",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：练习基准键位，手指回原位",
+      "parent_brief": "孩子会画出一条短线。改一个数，短线变长。",
+      "teacher_guide": "先看一条短线，再只改「把短线改长」，确认短线变长。"
+    },
+    {
+      "level_id": "L0017",
+      "order": 17,
+      "title": "再画一个三角形",
+      "goal": "用循环把三角形再画一次",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(3):\n    t.forward(60)\n    t.right(120)",
+      "expected_output": "一个三角形",
+      "teach_code_lines": [
+        "for i in range(3):",
+        "    t.forward(60)",
+        "    t.right(120)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 60 步",
+        "向右转 120 度"
+      ],
+      "keywords": [
+        "for i in range(3):",
+        "t.forward(60)",
+        "t.right(120)",
+        "range(3)"
+      ],
+      "drill_chunk": "t.forward(40)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把边长改长",
+          "type": "number",
+          "default": 60,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "边一长，三角形就变大。",
+          "min": 40,
+          "max": 120,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这次画出来的是什么？",
+        "options": [
+          "一个三角形",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "还是 3 次、120 度，只是边短了一些。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把边长改长」改一下，看看三角形变大。",
+        "target_param_name": "side",
+        "target_value": "110",
+        "expected_output": "三角形变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "用循环把三角形再画一次",
+      "parent_brief": "孩子会画出一个三角形。改一个数，三角形变大。",
+      "teacher_guide": "先看一个三角形，再只改「把边长改长」，确认三角形变大。"
+    },
+    {
+      "level_id": "L0018",
+      "order": 18,
+      "title": "再空出一段",
+      "goal": "再练一次抬笔，画出两条分开的短线",
+      "knowledge_tags": [
+        "penup"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(40)\nt.penup()\nt.forward(20)\nt.pendown()\nt.forward(40)\nt.done()",
+      "expected_output": "两条分开的短线",
+      "teach_code_lines": [
+        "t.forward(40)",
+        "t.penup()",
+        "t.forward(20)",
+        "t.pendown()",
+        "t.forward(40)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 40 步",
+        "把笔抬起来，接着走先不画线",
+        "小海龟向前走 20 步",
+        "把笔放下，接着走就会画出线",
+        "小海龟向前走 40 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.penup()",
+        "t.pendown()",
+        "t.forward(40)",
+        "t.forward(20)"
+      ],
+      "drill_chunk": "t.right(120)",
+      "challenge_params": [
+        {
+          "name": "gap",
+          "label": "把空档拉宽",
+          "type": "number",
+          "default": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "空档一宽，两条线离得更远。",
+          "min": 10,
+          "max": 80,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这次的线是怎样的？",
+        "options": [
+          "两条分开的短线",
+          "一个封口的正方形",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "中间抬笔的那一段没有画出来。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把空档拉宽」改一下，看看空档变宽。",
+        "target_param_name": "gap",
+        "target_value": "70",
+        "expected_output": "空档变宽",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "再练一次抬笔，画出两条分开的短线",
+      "parent_brief": "孩子会画出两条分开的短线。改一个数，空档变宽。",
+      "teacher_guide": "先看两条分开的短线，再只改「把空档拉宽」，确认空档变宽。"
+    },
+    {
+      "level_id": "L0019",
+      "order": 19,
+      "title": "正方形再来一次",
+      "goal": "用循环把正方形再画一遍",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    t.forward(60)\n    t.right(90)",
+      "expected_output": "一个正方形",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    t.forward(60)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 60 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "for i in range(4):",
+        "t.forward(60)",
+        "t.right(90)",
+        "range(4)"
+      ],
+      "drill_chunk": "t.penup()",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把 90 度改成 60 度",
+          "type": "number",
+          "default": 90,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "角一改，正方形就封不上了。",
+          "min": 60,
+          "max": 120,
+          "step": 30
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这次围出来的是什么？",
+        "options": [
+          "一个正方形",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "4 次直角，还是正方形。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把 90 度改成 60 度」改一下，看看角变了，不再是正方形。",
+        "target_param_name": "turn",
+        "target_value": "60",
+        "expected_output": "角变了，不再是正方形",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "用循环把正方形再画一遍",
+      "parent_brief": "孩子会画出一个正方形。改一个数，角变了，不再是正方形。",
+      "teacher_guide": "先看一个正方形，再只改「把 90 度改成 60 度」，确认角变了，不再是正方形。"
+    },
+    {
+      "level_id": "L0020",
+      "order": 20,
+      "title": "小方窗",
+      "goal": "用循环画一个方方的小窗，当作这一单元的作品",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "project",
+      "exercise": "normal",
+      "milestone_badge": "square_window",
+      "badge_title": "小方窗",
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    t.forward(80)\n    t.right(90)\nt.done()",
+      "expected_output": "一个方窗",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    t.forward(80)",
+        "    t.right(90)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 80 步",
+        "向右转 90 度",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "for i in range(4):",
+        "t.forward(80)",
+        "t.right(90)",
+        "t.done()"
+      ],
+      "drill_chunk": "t.right(90)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把小窗改大",
+          "type": "number",
+          "default": 80,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "边长一变，整扇窗一起变大。",
+          "min": 40,
+          "max": 140,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这个作品是什么形状？",
+        "options": [
+          "一个方方的小窗",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "四条一样长的边，每次转 90 度。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把小窗改大」改一下，看看小窗变大。",
+        "target_param_name": "side",
+        "target_value": "130",
+        "expected_output": "小窗变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 20,
+      "is_review": false,
+      "teaching_intent": "用循环画一个方方的小窗，当作这一单元的作品",
+      "parent_brief": "孩子会画出一个方窗。改一个数，小窗变大。",
+      "teacher_guide": "先看一个方窗，再只改「把小窗改大」，确认小窗变大。"
+    }
+  ]
+}

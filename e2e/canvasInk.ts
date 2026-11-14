@@ -6,6 +6,10 @@ export interface CanvasInk {
   bh: number
   w: number
   h: number
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
 }
 
 /** 读画布上非白色像素的范围。真实 Pyodide 画出的线用这个核对，不再看 SVG。 */
@@ -13,7 +17,7 @@ export async function readCanvasInk(page: Page): Promise<CanvasInk> {
   return page.getByRole('img', { name: '程序运行结果' }).evaluate((el) => {
     const canvas = el as HTMLCanvasElement
     const ctx = canvas.getContext('2d')
-    if (!ctx) return { ink: 0, bw: 0, bh: 0, w: 0, h: 0 }
+    if (!ctx) return { ink: 0, bw: 0, bh: 0, w: 0, h: 0, minX: 0, minY: 0, maxX: 0, maxY: 0 }
     const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height)
     let minX = width
     let maxX = 0
@@ -32,8 +36,8 @@ export async function readCanvasInk(page: Page): Promise<CanvasInk> {
       if (y < minY) minY = y
       if (y > maxY) maxY = y
     }
-    if (ink === 0) return { ink: 0, bw: 0, bh: 0, w: width, h: height }
-    return { ink, bw: maxX - minX, bh: maxY - minY, w: width, h: height }
+    if (ink === 0) return { ink: 0, bw: 0, bh: 0, w: width, h: height, minX: 0, minY: 0, maxX: 0, maxY: 0 }
+    return { ink, bw: maxX - minX, bh: maxY - minY, w: width, h: height, minX, minY, maxX, maxY }
   })
 }
 

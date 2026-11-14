@@ -1,13 +1,14 @@
 /**
  * 生成 960 节课骨架：Level 1–8，每个 Level 6 个单元、120 节。
  *
- * 学习序号从 Level 1 开始，第 1–20 节仍是已经写好的第一单元课文，
- * 第 21 节落在 Level 1 的第 2 单元。占位课标题用「Level X · 单元 Y · 第 Z 关」。
- * 除第一单元里已写好的课文外，每个单元严格 12 new + 5 practice + 2 typing + 1 project。
+ * 学习序号从 Level 1 开始。若 content/courses/level1 里有 6 个单元包，
+ * 第 1–120 节用那份课文盖住骨架；第 121 节仍是占位。
+ * 占位课标题用「Level X · 单元 Y · 第 Z 关」。
+ * 每个单元严格 12 new + 5 practice + 2 typing + 1 project。
  *
  * 用法：node scripts/generate-full-curriculum.js
  */
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -194,34 +195,60 @@ LEVELS.forEach((stageUnits, stageIndex) => {
   })
 })
 
-function assertCurriculum() {
+function overlayLevel1() {
+  const ids = ['L1_U01', 'L1_U02', 'L1_U03', 'L1_U04', 'L1_U05', 'L1_U06']
+  const files = ids.map((id) => join(root, 'content', 'courses', 'level1', `${id}.json`))
+  if (!files.every((file) => existsSync(file))) return false
+  for (const file of files) {
+    const pack = JSON.parse(readFileSync(file, 'utf8'))
+    const unit = units.find((item) => item.unitId === pack.unit.unit_id)
+    if (unit && Array.isArray(pack.unit_tags)) unit.knowledgeTags = pack.unit_tags
+    for (const lesson of pack.levels) {
+      const row = levels[lesson.order - 1]
+      if (!row || row.order !== lesson.order) throw new Error(`课程包序号错位 ${lesson.order}`)
+      row.title = lesson.title
+      row.goal = lesson.goal
+      row.levelType = lesson.level_type
+      row.knowledgeTags = lesson.knowledge_tags
+      row.milestoneBadge = lesson.milestone_badge
+      row.placeholder = false
+      row.is_placeholder = false
+      if (typeof lesson.milestone_badge === 'string' && lesson.badge_title) badges[lesson.milestone_badge] = lesson.badge_title
+    }
+  }
+  return true
+}
+
+function assertCurriculum(overlaid) {
   if (stages.length !== 8) throw new Error(`Level 数应为 8，实际 ${stages.length}`)
   if (units.length !== 48) throw new Error(`单元数应为 48，实际 ${units.length}`)
   if (levels.length !== 960) throw new Error(`课时数应为 960，实际 ${levels.length}`)
   const ids = new Set(levels.map((level) => level.levelId))
   if (ids.size !== 960) throw new Error('level_id 有重复')
   if (levels[0].levelId !== 'L0001' || levels[959].levelId !== 'L0960') throw new Error('level_id 没有覆盖 L0001–L0960')
-  if (levels[0].title !== '让电脑开口说话' || levels[0].unitId !== 'L1_U01' || levels[0].stageLevel !== 1) {
-    throw new Error('第 1 节不是 Level 1 第一单元的现有课文')
-  }
+  if (levels[0].unitId !== 'L1_U01' || levels[0].stageLevel !== 1) throw new Error('第 1 节不在 Level 1 第一单元')
   if (levels[19].unitId !== 'L1_U01' || levels[20].unitId !== 'L1_U02' || levels[20].order !== 21) {
     throw new Error('第 21 节没有落在第二单元')
   }
-  if (levels[18].order !== 19 || levels[18].levelType !== 'typing' || levels[18].is_placeholder) {
-    throw new Error('第 19 节应是可上的打字关')
+  if (levels[120].order !== 121 || levels[120].title !== 'Level 2 · 单元 1 · 第 1 关' || !levels[120].is_placeholder) {
+    throw new Error('第 121 节应仍是 Level 2 的占位课')
   }
-  if (levels[19].order !== 20 || levels[19].levelType !== 'project' || levels[19].is_placeholder) {
-    throw new Error('第 20 节应是可上的项目关')
-  }
-  if (!levels[20].is_placeholder) throw new Error('第 21 节应标成占位')
-  if (levels[15].is_placeholder || levels[15].title !== '问候和正方形放一起' || levels[15].levelType !== 'practice') {
-    throw new Error('第 16 节应是可上的练习课')
-  }
-  if (levels[16].is_placeholder || levels[16].title !== '把问候装进变量' || levels[16].levelType !== 'new') {
-    throw new Error('第 17 节应是可上的新课')
-  }
-  if (levels[17].is_placeholder || levels[17].title !== '改问候、改边长' || levels[17].levelType !== 'practice') {
-    throw new Error('第 18 节应是可上的练习课')
+  if (overlaid) {
+    if (levels[0].title !== '走一条直线' || levels[0].is_placeholder) throw new Error('第 1 节应是已写好的直线课')
+    if (levels[19].order !== 20 || levels[19].levelType !== 'project' || levels[19].is_placeholder) {
+      throw new Error('第 20 节应是可上的项目关')
+    }
+    if (levels[20].is_placeholder || levels[20].title !== '边长装进盒子') throw new Error('第 21 节应是已写好的变量课')
+  } else {
+    if (levels[0].title !== '让电脑开口说话') throw new Error('第 1 节不是 Level 1 第一单元的现有课文')
+    if (levels[18].order !== 19 || levels[18].levelType !== 'typing' || levels[18].is_placeholder) {
+      throw new Error('第 19 节应是可上的打字关')
+    }
+    if (levels[19].order !== 20 || levels[19].levelType !== 'project' || levels[19].is_placeholder) {
+      throw new Error('第 20 节应是可上的项目关')
+    }
+    if (!levels[20].is_placeholder) throw new Error('第 21 节应标成占位')
+    if (!/^Level 1 · 单元 2 · 第 1 关$/.test(levels[20].title)) throw new Error('占位课标题不是 Level 格式')
   }
   const byUnit = new Map()
   for (const level of levels) {
@@ -231,7 +258,7 @@ function assertCurriculum() {
   }
   for (const [unitId, list] of byUnit) {
     if (list.length !== 20) throw new Error(`${unitId} 不是 20 节`)
-    if (unitId === 'L1_U01') continue
+    if (unitId === 'L1_U01' && !overlaid) continue
     const count = { new: 0, practice: 0, typing: 0, project: 0 }
     for (const level of list) count[level.levelType] += 1
     if (count.new !== 12 || count.practice !== 5 || count.typing !== 2 || count.project !== 1) {
@@ -244,10 +271,10 @@ function assertCurriculum() {
     if (count !== 120) throw new Error(`Level ${stageLevel} 不是 120 节`)
     if (units.filter((item) => item.stageLevel === stageLevel).length !== 6) throw new Error(`Level ${stageLevel} 不是 6 个单元`)
   }
-  if (!/^Level 1 · 单元 2 · 第 1 关$/.test(levels[20].title)) throw new Error('占位课标题不是 Level 格式')
 }
 
-assertCurriculum()
+const level1Ready = overlayLevel1()
+assertCurriculum(level1Ready)
 
 const catalog = { stages, units, levels, badges }
 const jsonPath = join(root, 'src', 'data', 'generated', 'curriculum.json')

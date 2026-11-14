@@ -1,0 +1,2184 @@
+{
+  "stage_level": 1,
+  "unit": {
+    "unit_id": "L1_U05",
+    "title": "Level 1 · 单元 5",
+    "sort_order": 5
+  },
+  "unit_tags": [
+    "nested_loop"
+  ],
+  "levels": [
+    {
+      "level_id": "L0081",
+      "order": 81,
+      "title": "画完再转一下",
+      "goal": "画一个小正方形，转 60 度，再画一个",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    t.forward(36)\n    t.right(90)\nt.right(60)\nfor i in range(4):\n    t.forward(36)\n    t.right(90)",
+      "expected_output": "两个错开的小正方形",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    t.forward(36)",
+        "    t.right(90)",
+        "t.right(60)",
+        "for i in range(4):",
+        "    t.forward(36)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 36 步",
+        "向右转 90 度",
+        "向右转 60 度",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 36 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "t.right(60)",
+        "t.right(90)",
+        "t.forward(36)",
+        "range(4)"
+      ],
+      "drill_chunk": "side = 60",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把中间的转角加大",
+          "type": "number",
+          "default": 60,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "第二个正方形会转得更开。",
+          "min": 30,
+          "max": 120,
+          "step": 30
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "画面上有几个小正方形？",
+        "options": [
+          "两个错开的",
+          "一个大正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "中间多转了 60 度，第二个就歪开了。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把中间的转角加大」改一下，看看第二个正方形转得更开。",
+        "target_param_name": "turn",
+        "target_value": "120",
+        "expected_output": "第二个正方形转得更开",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "画一个小正方形，转 60 度，再画一个",
+      "parent_brief": "孩子会画出两个错开的小正方形。改一个数，第二个正方形转得更开。",
+      "teacher_guide": "先看两个错开的小正方形，再只改「把中间的转角加大」，确认第二个正方形转得更开。"
+    },
+    {
+      "level_id": "L0082",
+      "order": 82,
+      "title": "收成两层循环",
+      "goal": "把「画正方形再转」收进外面那一层，画出六片花瓣",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(6):\n    for j in range(4):\n        t.forward(30)\n        t.right(90)\n    t.right(60)",
+      "expected_output": "六片小方花瓣",
+      "teach_code_lines": [
+        "for i in range(6):",
+        "    for j in range(4):",
+        "        t.forward(30)",
+        "        t.right(90)",
+        "    t.right(60)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 30 步",
+        "向右转 90 度",
+        "向右转 60 度"
+      ],
+      "keywords": [
+        "for i in range(6):",
+        "for j in range(4):",
+        "t.right(60)",
+        "t.forward(30)"
+      ],
+      "drill_chunk": "t.right(60)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把花瓣转得更密",
+          "type": "number",
+          "default": 60,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "外层角度变小，花瓣挤得更紧。",
+          "min": 30,
+          "max": 90,
+          "step": 30
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "六片小方块是怎么来的？",
+        "options": [
+          "外面转一圈，里面画正方形",
+          "只画了一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "外层负责转角度，内层负责画小方块。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花瓣转得更密」改一下，看看花瓣之间的角度变小。",
+        "target_param_name": "turn",
+        "target_value": "30",
+        "expected_output": "花瓣之间的角度变小",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "把「画正方形再转」收进外面那一层，画出六片花瓣",
+      "parent_brief": "孩子会画出六片小方花瓣。改一个数，花瓣之间的角度变小。",
+      "teacher_guide": "先看六片小方花瓣，再只改「把花瓣转得更密」，确认花瓣之间的角度变小。"
+    },
+    {
+      "level_id": "L0083",
+      "order": 83,
+      "title": "四片散开的方块",
+      "goal": "外层只转 30 度，四片小正方形散开",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    for j in range(4):\n        t.forward(36)\n        t.right(90)\n    t.right(30)",
+      "expected_output": "四片散开的小正方形",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    for j in range(4):",
+        "        t.forward(36)",
+        "        t.right(90)",
+        "    t.right(30)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 36 步",
+        "向右转 90 度",
+        "向右转 30 度"
+      ],
+      "keywords": [
+        "t.right(30)",
+        "for i in range(4):",
+        "for j in range(4):",
+        "t.forward(36)"
+      ],
+      "drill_chunk": "t.right(60)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把外层转成直角",
+          "type": "number",
+          "default": 30,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "转成 90 度后，四片会叠成一个方块。",
+          "min": 30,
+          "max": 90,
+          "step": 30
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "四片小方块现在是怎样的？",
+        "options": [
+          "散开的",
+          "一条直线",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "外层只转 30 度，所以它们没有叠在一起。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把外层转成直角」改一下，看看四片叠成一个方块。",
+        "target_param_name": "turn",
+        "target_value": "90",
+        "expected_output": "四片叠成一个方块",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "外层只转 30 度，四片小正方形散开",
+      "parent_brief": "孩子会画出四片散开的小正方形。改一个数，四片叠成一个方块。",
+      "teacher_guide": "先看四片散开的小正方形，再只改「把外层转成直角」，确认四片叠成一个方块。"
+    },
+    {
+      "level_id": "L0084",
+      "order": 84,
+      "title": "六片花瓣再画",
+      "goal": "用两层循环把六片花瓣再画一次",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(6):\n    for j in range(4):\n        t.forward(28)\n        t.right(90)\n    t.right(60)",
+      "expected_output": "六片小方花瓣",
+      "teach_code_lines": [
+        "for i in range(6):",
+        "    for j in range(4):",
+        "        t.forward(28)",
+        "        t.right(90)",
+        "    t.right(60)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 28 步",
+        "向右转 90 度",
+        "向右转 60 度"
+      ],
+      "keywords": [
+        "for i in range(6):",
+        "for j in range(4):",
+        "t.right(60)",
+        "t.forward(28)"
+      ],
+      "drill_chunk": "t.right(30)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把花瓣转得更密",
+          "type": "number",
+          "default": 60,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "外层角度变小，花瓣更密。",
+          "min": 30,
+          "max": 90,
+          "step": 30
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这次还是什么？",
+        "options": [
+          "六片小方花瓣",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "画法没变，只是再练一次。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花瓣转得更密」改一下，看看花瓣转得更密。",
+        "target_param_name": "turn",
+        "target_value": "30",
+        "expected_output": "花瓣转得更密",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "用两层循环把六片花瓣再画一次",
+      "parent_brief": "孩子会画出六片小方花瓣。改一个数，花瓣转得更密。",
+      "teacher_guide": "先看六片小方花瓣，再只改「把花瓣转得更密」，确认花瓣转得更密。"
+    },
+    {
+      "level_id": "L0085",
+      "order": 85,
+      "title": "花瓣的第一条边涂红",
+      "goal": "每一片小正方形的第一条边涂红，其余涂蓝",
+      "knowledge_tags": [
+        "nested_loop",
+        "if"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    for j in range(4):\n        if j == 0:\n            t.color(\"red\")\n        else:\n            t.color(\"blue\")\n        t.forward(30)\n        t.right(90)\n    t.right(40)",
+      "expected_output": "红蓝边的小方花瓣",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    for j in range(4):",
+        "        if j == 0:",
+        "            t.color(\"red\")",
+        "        else:",
+        "            t.color(\"blue\")",
+        "        t.forward(30)",
+        "        t.right(90)",
+        "    t.right(40)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "每一小块的第一条边，走这里",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 30 步",
+        "向右转 90 度",
+        "向右转 40 度"
+      ],
+      "keywords": [
+        "if j == 0:",
+        "t.color(\"red\")",
+        "t.color(\"blue\")",
+        "t.right(40)"
+      ],
+      "drill_chunk": "t.right(60)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把花瓣转开",
+          "type": "number",
+          "default": 40,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "外层角度变大，花瓣散得更开。",
+          "min": 20,
+          "max": 80,
+          "step": 20
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "每一片小方块的颜色是怎样的？",
+        "options": [
+          "第一条边红，其余蓝",
+          "一个纯绿色三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "内层用 if 决定第一条边的颜色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花瓣转开」改一下，看看花瓣转得更开。",
+        "target_param_name": "turn",
+        "target_value": "80",
+        "expected_output": "花瓣转得更开",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "每一片小正方形的第一条边涂红，其余涂蓝",
+      "parent_brief": "孩子会画出红蓝边的小方花瓣。改一个数，花瓣转得更开。",
+      "teacher_guide": "先看红蓝边的小方花瓣，再只改「把花瓣转开」，确认花瓣转得更开。"
+    },
+    {
+      "level_id": "L0086",
+      "order": 86,
+      "title": "花瓣用边长",
+      "goal": "小正方形的边长装进 side",
+      "knowledge_tags": [
+        "nested_loop",
+        "variable"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 24\nfor i in range(5):\n    for j in range(4):\n        t.forward(side)\n        t.right(90)\n    t.right(72)",
+      "expected_output": "五片小方瓣",
+      "teach_code_lines": [
+        "side = 24",
+        "for i in range(5):",
+        "    for j in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "    t.right(72)"
+      ],
+      "line_notes": [
+        "先记住边长是 24",
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "向右转 72 度"
+      ],
+      "keywords": [
+        "side = 24",
+        "t.forward(side)",
+        "t.right(72)",
+        "for j in range(4):"
+      ],
+      "drill_chunk": "t.color(\"red\")",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把花瓣改大",
+          "type": "number",
+          "min": 16,
+          "max": 40,
+          "step": 8,
+          "default": 24,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "side 变大，每一片都变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "想让花瓣变大，改哪里？",
+        "options": [
+          "改 side",
+          "改成一条直线",
+          "改成一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "里面的四条边都读 side。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花瓣改大」改一下，看看花瓣变大。",
+        "target_param_name": "side",
+        "target_value": "40",
+        "expected_output": "花瓣变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "小正方形的边长装进 side",
+      "parent_brief": "孩子会画出五片小方瓣。改一个数，花瓣变大。",
+      "teacher_guide": "先看五片小方瓣，再只改「把花瓣改大」，确认花瓣变大。"
+    },
+    {
+      "level_id": "L0087",
+      "order": 87,
+      "title": "三片叶子",
+      "goal": "外层只重复 3 次，每次转 120 度",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(3):\n    for j in range(4):\n        t.forward(32)\n        t.right(90)\n    t.right(120)",
+      "expected_output": "三片小方瓣",
+      "teach_code_lines": [
+        "for i in range(3):",
+        "    for j in range(4):",
+        "        t.forward(32)",
+        "        t.right(90)",
+        "    t.right(120)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 32 步",
+        "向右转 90 度",
+        "向右转 120 度"
+      ],
+      "keywords": [
+        "t.right(120)",
+        "range(3)",
+        "for j in range(4):",
+        "t.forward(32)"
+      ],
+      "drill_chunk": "side = 24",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把三片转得更近",
+          "type": "number",
+          "default": 120,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "外层角度变小，三片靠得更近。",
+          "min": 60,
+          "max": 120,
+          "step": 30
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "有几片小方块？",
+        "options": [
+          "三片",
+          "一个六边形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "外层 range(3)，所以是三片。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把三片转得更近」改一下，看看三片靠得更近。",
+        "target_param_name": "turn",
+        "target_value": "60",
+        "expected_output": "三片靠得更近",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "外层只重复 3 次，每次转 120 度",
+      "parent_brief": "孩子会画出三片小方瓣。改一个数，三片靠得更近。",
+      "teacher_guide": "先看三片小方瓣，再只改「把三片转得更近」，确认三片靠得更近。"
+    },
+    {
+      "level_id": "L0088",
+      "order": 88,
+      "title": "把循环和转弯打准确",
+      "goal": "打字课：打 for、right、forward、color",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "keywords",
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(40)\nt.right(90)\nt.forward(40)",
+      "expected_output": "一个直角",
+      "teach_code_lines": [
+        "t.forward(40)",
+        "t.right(90)",
+        "t.forward(40)"
+      ],
+      "line_notes": [
+        "小海龟向前走 40 步",
+        "向右转 90 度",
+        "小海龟向前走 40 步"
+      ],
+      "keywords": [
+        "for",
+        "t.right",
+        "t.forward",
+        "t.color"
+      ],
+      "drill_chunk": "t.right(120)",
+      "challenge_params": [
+        {
+          "name": "long",
+          "label": "把第一条边改长",
+          "type": "number",
+          "default": 40,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "第一条边一长，拐角就变了。",
+          "min": 20,
+          "max": 100,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节要打哪些词？",
+        "options": [
+          "for、right、forward、color",
+          "一个新命令",
+          "三层循环"
+        ],
+        "answerIndex": 0,
+        "explain": "只打刚用过的词。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把这节的词再打一遍。",
+        "expected_output": "编程关键词",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：打 for、right、forward、color",
+      "parent_brief": "孩子会画出一个直角。改一个数，第一条边变长。",
+      "teacher_guide": "先看一个直角，再只改「把第一条边改长」，确认第一条边变长。"
+    },
+    {
+      "level_id": "L0089",
+      "order": 89,
+      "title": "六片小三角",
+      "goal": "里面改成三角形，外面转 60 度",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(6):\n    for j in range(3):\n        t.forward(36)\n        t.right(120)\n    t.right(60)",
+      "expected_output": "六片小三角花瓣",
+      "teach_code_lines": [
+        "for i in range(6):",
+        "    for j in range(3):",
+        "        t.forward(36)",
+        "        t.right(120)",
+        "    t.right(60)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 36 步",
+        "向右转 120 度",
+        "向右转 60 度"
+      ],
+      "keywords": [
+        "t.right(120)",
+        "t.right(60)",
+        "range(3)",
+        "range(6)"
+      ],
+      "drill_chunk": "t.forward(40)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把外层转得更密",
+          "type": "number",
+          "default": 60,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "外层角度变小，六片靠得更近。",
+          "min": 30,
+          "max": 90,
+          "step": 30
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "里面画的是什么？",
+        "options": [
+          "小三角形",
+          "一个大正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "内层转 120 度，是三角形。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把外层转得更密」改一下，看看花瓣之间的角度变小。",
+        "target_param_name": "turn",
+        "target_value": "30",
+        "expected_output": "花瓣之间的角度变小",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "里面改成三角形，外面转 60 度",
+      "parent_brief": "孩子会画出六片小三角花瓣。改一个数，花瓣之间的角度变小。",
+      "teacher_guide": "先看六片小三角花瓣，再只改「把外层转得更密」，确认花瓣之间的角度变小。"
+    },
+    {
+      "level_id": "L0090",
+      "order": 90,
+      "title": "绿蓝小三角",
+      "goal": "每片小三角的第一条边涂绿，其余涂蓝",
+      "knowledge_tags": [
+        "nested_loop",
+        "if"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    for j in range(3):\n        if j == 0:\n            t.color(\"green\")\n        else:\n            t.color(\"blue\")\n        t.forward(34)\n        t.right(120)\n    t.right(90)",
+      "expected_output": "绿蓝小三角花瓣",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    for j in range(3):",
+        "        if j == 0:",
+        "            t.color(\"green\")",
+        "        else:",
+        "            t.color(\"blue\")",
+        "        t.forward(34)",
+        "        t.right(120)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "每一小块的第一条边，走这里",
+        "把画笔换成绿色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 34 步",
+        "向右转 120 度",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "t.color(\"green\")",
+        "t.color(\"blue\")",
+        "if j == 0:",
+        "t.right(120)"
+      ],
+      "drill_chunk": "t.right(60)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把四片转得更密",
+          "type": "number",
+          "default": 90,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "外层角度变小，四片靠得更近。",
+          "min": 45,
+          "max": 90,
+          "step": 45
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "每片小三角的颜色是怎样的？",
+        "options": [
+          "第一条边绿，其余蓝",
+          "一个大红正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "内层的 if 只管第一条边。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把四片转得更密」改一下，看看四片转得更密。",
+        "target_param_name": "turn",
+        "target_value": "45",
+        "expected_output": "四片转得更密",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "每片小三角的第一条边涂绿，其余涂蓝",
+      "parent_brief": "孩子会画出绿蓝小三角花瓣。改一个数，四片转得更密。",
+      "teacher_guide": "先看绿蓝小三角花瓣，再只改「把四片转得更密」，确认四片转得更密。"
+    },
+    {
+      "level_id": "L0091",
+      "order": 91,
+      "title": "八片小方瓣",
+      "goal": "外层的角度装进 turn，重复八片",
+      "knowledge_tags": [
+        "nested_loop",
+        "variable"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "turn = 45\nfor i in range(8):\n    for j in range(4):\n        t.forward(22)\n        t.right(90)\n    t.right(turn)",
+      "expected_output": "八片小方瓣",
+      "teach_code_lines": [
+        "turn = 45",
+        "for i in range(8):",
+        "    for j in range(4):",
+        "        t.forward(22)",
+        "        t.right(90)",
+        "    t.right(turn)"
+      ],
+      "line_notes": [
+        "先记住转弯的度数是 45",
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 22 步",
+        "向右转 90 度",
+        "向右转 盒子 turn 里的数"
+      ],
+      "keywords": [
+        "turn = 45",
+        "t.right(turn)",
+        "range(8)",
+        "t.forward(22)"
+      ],
+      "drill_chunk": "t.right(90)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把外层转成直角",
+          "type": "number",
+          "min": 45,
+          "max": 90,
+          "step": 45,
+          "default": 45,
+          "apply": {
+            "kind": "assign",
+            "variable": "turn"
+          },
+          "hint": "转成 90 度后，花瓣会叠得更拢。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "有几片小方块？",
+        "options": [
+          "八片",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "外层 range(8)。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把外层转成直角」改一下，看看八片叠得更拢。",
+        "target_param_name": "turn",
+        "target_value": "90",
+        "expected_output": "八片叠得更拢",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "外层的角度装进 turn，重复八片",
+      "parent_brief": "孩子会画出八片小方瓣。改一个数，八片叠得更拢。",
+      "teacher_guide": "先看八片小方瓣，再只改「把外层转成直角」，确认八片叠得更拢。"
+    },
+    {
+      "level_id": "L0092",
+      "order": 92,
+      "title": "四片斜开的方块",
+      "goal": "外层转 45 度，再画四片",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    for j in range(4):\n        t.forward(30)\n        t.right(90)\n    t.right(45)",
+      "expected_output": "四片斜开的小方块",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    for j in range(4):",
+        "        t.forward(30)",
+        "        t.right(90)",
+        "    t.right(45)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 30 步",
+        "向右转 90 度",
+        "向右转 45 度"
+      ],
+      "keywords": [
+        "t.right(45)",
+        "t.right(90)",
+        "t.forward(30)",
+        "range(4)"
+      ],
+      "drill_chunk": "turn = 45",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把外层转成直角",
+          "type": "number",
+          "default": 45,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "转成 90 度，四片会叠成一个方块。",
+          "min": 45,
+          "max": 90,
+          "step": 45
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这四片现在是怎样的？",
+        "options": [
+          "斜着散开",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "外层转 45 度，所以没有完全叠住。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把外层转成直角」改一下，看看四片叠成一个方块。",
+        "target_param_name": "turn",
+        "target_value": "90",
+        "expected_output": "四片叠成一个方块",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "外层转 45 度，再画四片",
+      "parent_brief": "孩子会画出四片斜开的小方块。改一个数，四片叠成一个方块。",
+      "teacher_guide": "先看四片斜开的小方块，再只改「把外层转成直角」，确认四片叠成一个方块。"
+    },
+    {
+      "level_id": "L0093",
+      "order": 93,
+      "title": "橙紫小方花",
+      "goal": "五片小方瓣，第一条边橙，其余紫",
+      "knowledge_tags": [
+        "nested_loop",
+        "if"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 26\nfor i in range(5):\n    for j in range(4):\n        if j == 0:\n            t.color(\"orange\")\n        else:\n            t.color(\"purple\")\n        t.forward(side)\n        t.right(90)\n    t.right(72)",
+      "expected_output": "橙紫小方花",
+      "teach_code_lines": [
+        "side = 26",
+        "for i in range(5):",
+        "    for j in range(4):",
+        "        if j == 0:",
+        "            t.color(\"orange\")",
+        "        else:",
+        "            t.color(\"purple\")",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "    t.right(72)"
+      ],
+      "line_notes": [
+        "先记住边长是 26",
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "每一小块的第一条边，走这里",
+        "把画笔换成橙色",
+        "对不上的时候，走这边",
+        "把画笔换成紫色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "向右转 72 度"
+      ],
+      "keywords": [
+        "side = 26",
+        "t.color(\"orange\")",
+        "t.color(\"purple\")",
+        "t.right(72)"
+      ],
+      "drill_chunk": "t.right(45)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把花瓣改大",
+          "type": "number",
+          "min": 20,
+          "max": 40,
+          "step": 2,
+          "default": 26,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "side 变大，五片一起变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "每片的第一条边是什么颜色？",
+        "options": [
+          "橙色",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "内层 if 把第一条边涂成橙色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花瓣改大」改一下，看看花瓣变大。",
+        "target_param_name": "side",
+        "target_value": "40",
+        "expected_output": "花瓣变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "五片小方瓣，第一条边橙，其余紫",
+      "parent_brief": "孩子会画出橙紫小方花。改一个数，花瓣变大。",
+      "teacher_guide": "先看橙紫小方花，再只改「把花瓣改大」，确认花瓣变大。"
+    },
+    {
+      "level_id": "L0094",
+      "order": 94,
+      "title": "三片三角花瓣",
+      "goal": "里面画三角形，外面转 120 度，只要三片",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(3):\n    for j in range(3):\n        t.forward(40)\n        t.right(120)\n    t.right(120)",
+      "expected_output": "三片三角花瓣",
+      "teach_code_lines": [
+        "for i in range(3):",
+        "    for j in range(3):",
+        "        t.forward(40)",
+        "        t.right(120)",
+        "    t.right(120)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 40 步",
+        "向右转 120 度",
+        "向右转 120 度"
+      ],
+      "keywords": [
+        "t.forward(40)",
+        "t.right(120)",
+        "range(3)",
+        "for j in range(3):"
+      ],
+      "drill_chunk": "side = 26",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把花瓣改大",
+          "type": "number",
+          "default": 40,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "边一长，三片一起变大。",
+          "min": 30,
+          "max": 80,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "里面和外面各在做什么？",
+        "options": [
+          "里面画三角，外面转开",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "两层都用 120 度，一片是三角形。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花瓣改大」改一下，看看三角花瓣变大。",
+        "target_param_name": "side",
+        "target_value": "70",
+        "expected_output": "三角花瓣变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "里面画三角形，外面转 120 度，只要三片",
+      "parent_brief": "孩子会画出三片三角花瓣。改一个数，三角花瓣变大。",
+      "teacher_guide": "先看三片三角花瓣，再只改「把花瓣改大」，确认三角花瓣变大。"
+    },
+    {
+      "level_id": "L0095",
+      "order": 95,
+      "title": "第一片涂红",
+      "goal": "只有第一片小正方形是红色，后面是蓝色",
+      "knowledge_tags": [
+        "nested_loop",
+        "if"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    if i == 0:\n        t.color(\"red\")\n    else:\n        t.color(\"blue\")\n    for j in range(4):\n        t.forward(28)\n        t.right(90)\n    t.right(30)",
+      "expected_output": "第一片红、后面蓝的花瓣",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    if i == 0:",
+        "        t.color(\"red\")",
+        "    else:",
+        "        t.color(\"blue\")",
+        "    for j in range(4):",
+        "        t.forward(28)",
+        "        t.right(90)",
+        "    t.right(30)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "电脑从 0 开始数，0 就是第一笔",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 28 步",
+        "向右转 90 度",
+        "向右转 30 度"
+      ],
+      "keywords": [
+        "if i == 0:",
+        "t.color(\"red\")",
+        "t.color(\"blue\")",
+        "t.right(30)"
+      ],
+      "drill_chunk": "t.forward(40)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把花瓣转开",
+          "type": "number",
+          "default": 30,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "外层角度变大，四片散得更开。",
+          "min": 20,
+          "max": 80,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "哪一片是红色？",
+        "options": [
+          "第一片",
+          "一个绿色三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "外层的 if 只让第一片走红色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花瓣转开」改一下，看看花瓣转得更开。",
+        "target_param_name": "turn",
+        "target_value": "80",
+        "expected_output": "花瓣转得更开",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "只有第一片小正方形是红色，后面是蓝色",
+      "parent_brief": "孩子会画出第一片红、后面蓝的花瓣。改一个数，花瓣转得更开。",
+      "teacher_guide": "先看第一片红、后面蓝的花瓣，再只改「把花瓣转开」，确认花瓣转得更开。"
+    },
+    {
+      "level_id": "L0096",
+      "order": 96,
+      "title": "基准键再打一轮",
+      "goal": "打字课：手指放回基准键",
+      "knowledge_tags": [
+        "forward"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "baseline_keys",
+      "preview_kind": "turtle",
+      "demo_code": "t.right(90)\nt.forward(20)\nt.done()",
+      "expected_output": "一条短线",
+      "teach_code_lines": [
+        "t.right(90)",
+        "t.forward(20)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "向右转 90 度",
+        "小海龟向前走 20 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "asdf",
+        "jkl;",
+        "ffjj",
+        "fjfj"
+      ],
+      "drill_chunk": "t.right(30)",
+      "challenge_params": [
+        {
+          "name": "long",
+          "label": "把短线改长",
+          "type": "number",
+          "default": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "线变长，一眼就能看出来。",
+          "min": 20,
+          "max": 80,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节在练哪一档？",
+        "options": [
+          "基准键位",
+          "三层循环",
+          "一个新图形"
+        ],
+        "answerIndex": 0,
+        "explain": "只练键位。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把基准键再打一遍。",
+        "expected_output": "基准键位",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：手指放回基准键",
+      "parent_brief": "孩子会画出一条短线。改一个数，短线变长。",
+      "teacher_guide": "先看一条短线，再只改「把短线改长」，确认短线变长。"
+    },
+    {
+      "level_id": "L0097",
+      "order": 97,
+      "title": "六片方瓣再练",
+      "goal": "把六片小方花瓣再画一次，边短一点",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(6):\n    for j in range(4):\n        t.forward(24)\n        t.right(90)\n    t.right(60)",
+      "expected_output": "六片小方花瓣",
+      "teach_code_lines": [
+        "for i in range(6):",
+        "    for j in range(4):",
+        "        t.forward(24)",
+        "        t.right(90)",
+        "    t.right(60)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 24 步",
+        "向右转 90 度",
+        "向右转 60 度"
+      ],
+      "keywords": [
+        "t.forward(24)",
+        "t.right(90)",
+        "t.right(60)",
+        "range(6)"
+      ],
+      "drill_chunk": "t.forward(20)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把花瓣改大",
+          "type": "number",
+          "default": 24,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "边一长，六片一起变大。",
+          "min": 20,
+          "max": 48,
+          "step": 4
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这次还是什么？",
+        "options": [
+          "六片小方花瓣",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "画法没变。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花瓣改大」改一下，看看花瓣变大。",
+        "target_param_name": "side",
+        "target_value": "40",
+        "expected_output": "花瓣变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "把六片小方花瓣再画一次，边短一点",
+      "parent_brief": "孩子会画出六片小方花瓣。改一个数，花瓣变大。",
+      "teacher_guide": "先看六片小方花瓣，再只改「把花瓣改大」，确认花瓣变大。"
+    },
+    {
+      "level_id": "L0098",
+      "order": 98,
+      "title": "小三角再练",
+      "goal": "六片小三角再画一次",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(6):\n    for j in range(3):\n        t.forward(30)\n        t.right(120)\n    t.right(60)",
+      "expected_output": "六片小三角",
+      "teach_code_lines": [
+        "for i in range(6):",
+        "    for j in range(3):",
+        "        t.forward(30)",
+        "        t.right(120)",
+        "    t.right(60)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 30 步",
+        "向右转 120 度",
+        "向右转 60 度"
+      ],
+      "keywords": [
+        "t.forward(30)",
+        "t.right(120)",
+        "t.right(60)",
+        "range(3)"
+      ],
+      "drill_chunk": "t.forward(24)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把小三角改大",
+          "type": "number",
+          "default": 30,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "边一长，六片一起变大。",
+          "min": 20,
+          "max": 60,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "里面是什么形状？",
+        "options": [
+          "小三角形",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "内层转 120 度。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把小三角改大」改一下，看看小三角变大。",
+        "target_param_name": "side",
+        "target_value": "50",
+        "expected_output": "小三角变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "六片小三角再画一次",
+      "parent_brief": "孩子会画出六片小三角。改一个数，小三角变大。",
+      "teacher_guide": "先看六片小三角，再只改「把小三角改大」，确认小三角变大。"
+    },
+    {
+      "level_id": "L0099",
+      "order": 99,
+      "title": "转得更开的四片",
+      "goal": "外层只转 20 度，四片小方块散开",
+      "knowledge_tags": [
+        "nested_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    for j in range(4):\n        t.forward(32)\n        t.right(90)\n    t.right(20)",
+      "expected_output": "四片散开的小方块",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    for j in range(4):",
+        "        t.forward(32)",
+        "        t.right(90)",
+        "    t.right(20)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 32 步",
+        "向右转 90 度",
+        "向右转 20 度"
+      ],
+      "keywords": [
+        "t.right(20)",
+        "t.right(90)",
+        "t.forward(32)",
+        "range(4)"
+      ],
+      "drill_chunk": "t.forward(30)",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把外层转成直角",
+          "type": "number",
+          "default": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "转成 90 度，四片会叠在一起。",
+          "min": 20,
+          "max": 90,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这四片现在离得怎样？",
+        "options": [
+          "散开的",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "外层只转 20 度。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把外层转成直角」改一下，看看四片叠到一起。",
+        "target_param_name": "turn",
+        "target_value": "90",
+        "expected_output": "四片叠到一起",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "外层只转 20 度，四片小方块散开",
+      "parent_brief": "孩子会画出四片散开的小方块。改一个数，四片叠到一起。",
+      "teacher_guide": "先看四片散开的小方块，再只改「把外层转成直角」，确认四片叠到一起。"
+    },
+    {
+      "level_id": "L0100",
+      "order": 100,
+      "title": "方瓣花",
+      "goal": "用 side 画一朵六片的方瓣花",
+      "knowledge_tags": [
+        "nested_loop",
+        "variable"
+      ],
+      "level_type": "project",
+      "exercise": "normal",
+      "milestone_badge": "petal_flower",
+      "badge_title": "方瓣花",
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 28\nfor i in range(6):\n    for j in range(4):\n        t.forward(side)\n        t.right(90)\n    t.right(60)",
+      "expected_output": "六片方瓣花",
+      "teach_code_lines": [
+        "side = 28",
+        "for i in range(6):",
+        "    for j in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "    t.right(60)"
+      ],
+      "line_notes": [
+        "先记住边长是 28",
+        "外面这一圈要重复做，做完再来一圈",
+        "里面再重复，把一小块画完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "向右转 60 度"
+      ],
+      "keywords": [
+        "side = 28",
+        "t.forward(side)",
+        "t.right(60)",
+        "range(6)"
+      ],
+      "drill_chunk": "t.right(20)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把花改大",
+          "type": "number",
+          "min": 20,
+          "max": 44,
+          "step": 2,
+          "default": 28,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "side 变大，六片一起变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这朵花有几片？",
+        "options": [
+          "六片小方瓣",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "外层走 6 次，每次转 60 度。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花改大」改一下，看看整朵花变大。",
+        "target_param_name": "side",
+        "target_value": "42",
+        "expected_output": "整朵花变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 20,
+      "is_review": false,
+      "teaching_intent": "用 side 画一朵六片的方瓣花",
+      "parent_brief": "孩子会画出六片方瓣花。改一个数，整朵花变大。",
+      "teacher_guide": "先看六片方瓣花，再只改「把花改大」，确认整朵花变大。"
+    }
+  ]
+}

@@ -51,7 +51,7 @@ export interface PackageLevel {
   drill_chunk?: string
   /** 课后可选副本。缺省表示这节没有巩固练习。 */
   bonus_challenge?: {
-    type: 'param_edit' | 'code_fill' | 'typing'
+    type: 'param_edit' | 'code_fill' | 'typing' | 'reverse_draw' | 'add_color'
     instruction: string
     target_param_name?: string
     target_value?: string
@@ -93,16 +93,16 @@ function readBonus(
   }
   const row = value as Record<string, unknown>
   const type = row.type
-  if (type !== 'param_edit' && type !== 'code_fill' && type !== 'typing') {
-    push('bonus_challenge', 'type 只能是 param_edit、code_fill、typing')
+  if (type !== 'param_edit' && type !== 'code_fill' && type !== 'typing' && type !== 'reverse_draw' && type !== 'add_color') {
+    push('bonus_challenge', 'type 只能是 param_edit、code_fill、typing、reverse_draw、add_color')
     return undefined
   }
   if (typeof row.instruction !== 'string' || !row.instruction.trim()) push('bonus_challenge', '缺少 instruction')
   if (typeof row.expected_output !== 'string' || !row.expected_output.trim()) push('bonus_challenge', '缺少 expected_output')
   if (typeof row.bonus_reward !== 'string' || !row.bonus_reward.trim()) push('bonus_challenge', '缺少 bonus_reward')
   const targetValue = row.target_value == null ? '' : String(row.target_value).trim()
-  if ((type === 'param_edit' || type === 'code_fill') && !targetValue) {
-    push('bonus_challenge', 'param_edit 和 code_fill 需要 target_value')
+  if ((type === 'param_edit' || type === 'code_fill' || type === 'reverse_draw' || type === 'add_color') && !targetValue) {
+    push('bonus_challenge', 'param_edit、code_fill、reverse_draw、add_color 需要 target_value')
   }
   if (type === 'param_edit' && (typeof row.target_param_name !== 'string' || !row.target_param_name.trim())) {
     push('bonus_challenge', 'param_edit 需要 target_param_name')

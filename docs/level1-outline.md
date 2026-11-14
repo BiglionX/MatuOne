@@ -1,13 +1,15 @@
 # Level 1 课程提纲
 
+Level 1 第 1–120 关的上课正文以 `docs/level1-curriculum.md` 和 `content/courses/level1/` 为准。下面这份 print / input 提纲不再作为 21–120 关的生产稿。
+
 | 项 | 内容 |
 |---|---|
 | 文档版本 | V1.0 |
-| 关联文档 | `docs/curriculum-roadmap.md`、`docs/curriculum-schema.md` |
-| 适用范围 | Level 1 第 1 单元第 16–18 节已有正文；第 2–6 单元仍是提纲 |
-| 文档目标 | 定下标题、课型和目标，供后面按课程包写正文 |
+| 关联文档 | `docs/level1-curriculum.md`、`docs/curriculum-roadmap.md`、`docs/curriculum-schema.md` |
+| 适用范围 | 旧提纲，仅供对照。正式课文已改成小海龟绘图 |
+| 文档目标 | 保留当时的标题和课型讨论 |
 
-第 16–18 节已经写成可上课的课文，地图不再把这三节标成「内容制作中」。第 2–6 单元仍只有提纲，生成脚本里继续占位。
+第 16–18 节当时写成了问候和正方形。第 2–6 单元当时只有提纲。
 
 目录编号用 `L0016` 这种，和全课程序号一致。库里前 60 节若仍是 `L01` 这种旧编号，以后导入时按序号对齐，不另开一套课。
 

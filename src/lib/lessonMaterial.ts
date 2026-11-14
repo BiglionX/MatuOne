@@ -8,6 +8,7 @@ import {
 import { getLevelById } from '../mock/levels'
 import { bonusForOrder } from '../data/bonusChallenges'
 import { drillForOrder } from '../data/drillChunks'
+import { level1Lesson } from '../data/level1Course'
 
 function orderOf(levelId: string): number | null {
   const matched = /^L(\d+)$/i.exec(levelId.trim())
@@ -20,23 +21,29 @@ function metaOf(levelId: string): CatalogLevel | undefined {
   return curriculumLevelById(levelId) ?? curriculumLevelByOrder(orderOf(levelId) ?? 0)
 }
 
-/** 把目录里的一节收成课时页能跑的课文。前 12 节用现成课文，第 16–20 节用补上的课文。 */
+/** 把目录里的一节收成课时页能跑的课文。Level 1 的 1–120 关走课程包，再往后才用占位。 */
 export function buildPlayableLevel(levelId: string): Level | undefined {
   const meta = metaOf(levelId)
   if (!meta) return undefined
   const level = playableBody(meta)
   if (!level) return undefined
-  const bonus = bonusForOrder(meta.order)
-  const drill = drillForOrder(meta.order)
+  const bonus = level.bonus_challenge ? undefined : bonusForOrder(meta.order)
+  const drill = level.drill_chunk ? undefined : drillForOrder(meta.order)
   return {
     ...level,
     ...(bonus ? { bonus_challenge: bonus } : {}),
     ...(drill ? { drill_chunk: drill } : {}),
-    is_placeholder: isPlaceholderLevel(meta),
+    is_placeholder: meta.order >= 1 && meta.order <= 120 && level1Lesson(meta.order) ? false : isPlaceholderLevel(meta),
   }
 }
 
 function playableBody(meta: CatalogLevel): Level | undefined {
+  if (meta.order >= 1 && meta.order <= 120) {
+    const course = level1Lesson(meta.order)
+    if (course) {
+      return { ...course, level_id: meta.levelId, order: meta.order }
+    }
+  }
   const authored = meta.legacyLevelId ? getLevelById(meta.legacyLevelId) : undefined
   if (authored) {
     return { ...authored, level_id: meta.levelId, order: meta.order, title: meta.title, goal: meta.goal }

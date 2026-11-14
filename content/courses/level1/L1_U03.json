@@ -1,0 +1,2298 @@
+{
+  "stage_level": 1,
+  "unit": {
+    "unit_id": "L1_U03",
+    "title": "Level 1 · 单元 3",
+    "sort_order": 3
+  },
+  "unit_tags": [
+    "if",
+    "color"
+  ],
+  "levels": [
+    {
+      "level_id": "L0041",
+      "order": 41,
+      "title": "涂成一条红线",
+      "goal": "用 color 把线涂成红色",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "ink = \"red\"\nt.color(ink)\nt.forward(80)\nt.done()",
+      "expected_output": "一条红线",
+      "teach_code_lines": [
+        "ink = \"red\"",
+        "t.color(ink)",
+        "t.forward(80)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "先记住颜色是红色",
+        "把画笔换成盒子里的那种颜色",
+        "小海龟向前走 80 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "ink = \"red\"",
+        "t.color(ink)",
+        "t.forward(80)",
+        "red"
+      ],
+      "drill_chunk": "turn = 60",
+      "challenge_params": [
+        {
+          "name": "ink",
+          "label": "换成蓝色",
+          "type": "select",
+          "default": "red",
+          "options": [
+            {
+              "value": "red",
+              "label": "红色"
+            },
+            {
+              "value": "blue",
+              "label": "蓝色"
+            }
+          ],
+          "apply": {
+            "kind": "assign",
+            "variable": "ink"
+          },
+          "hint": "换成蓝色，颜色会跟着变。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这条线是什么颜色？",
+        "options": [
+          "红色",
+          "一个蓝色正方形",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "ink 里装着 red，color 就拿它来涂。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「换成蓝色」改一下，看看红线变成蓝线。",
+        "target_param_name": "ink",
+        "target_value": "blue",
+        "expected_output": "红线变成蓝线",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "用 color 把线涂成红色",
+      "parent_brief": "孩子会画出一条红线。改一个数，红线变成蓝线。",
+      "teacher_guide": "先看一条红线，再只改「换成蓝色」，确认红线变成蓝线。"
+    },
+    {
+      "level_id": "L0042",
+      "order": 42,
+      "title": "后半段换成蓝色",
+      "goal": "前半段红色，后半段蓝色",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "a = \"red\"\nb = \"blue\"\nt.color(a)\nt.forward(60)\nt.color(b)\nt.forward(60)\nt.done()",
+      "expected_output": "红一段、蓝一段",
+      "teach_code_lines": [
+        "a = \"red\"",
+        "b = \"blue\"",
+        "t.color(a)",
+        "t.forward(60)",
+        "t.color(b)",
+        "t.forward(60)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "先记住前半段的颜色是红色",
+        "先记住后半段的颜色是蓝色",
+        "把画笔换成盒子里的那种颜色",
+        "小海龟向前走 60 步",
+        "把画笔换成盒子里的那种颜色",
+        "小海龟向前走 60 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "a = \"red\"",
+        "b = \"blue\"",
+        "t.color(a)",
+        "t.color(b)"
+      ],
+      "drill_chunk": "ink = \"red\"",
+      "challenge_params": [
+        {
+          "name": "b",
+          "label": "后半段换成绿色",
+          "type": "select",
+          "default": "blue",
+          "options": [
+            {
+              "value": "blue",
+              "label": "蓝色"
+            },
+            {
+              "value": "green",
+              "label": "绿色"
+            }
+          ],
+          "apply": {
+            "kind": "assign",
+            "variable": "b"
+          },
+          "hint": "换成绿色，颜色会跟着变。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这条线的颜色是怎样的？",
+        "options": [
+          "前红后蓝",
+          "整条都是红色",
+          "一个正方形"
+        ],
+        "answerIndex": 0,
+        "explain": "走到一半又换了一次颜色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「后半段换成绿色」改一下，看看后半段从蓝色变成绿色。",
+        "target_param_name": "b",
+        "target_value": "green",
+        "expected_output": "后半段从蓝色变成绿色",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "前半段红色，后半段蓝色",
+      "parent_brief": "孩子会画出红一段、蓝一段。改一个数，后半段从蓝色变成绿色。",
+      "teacher_guide": "先看红一段、蓝一段，再只改「后半段换成绿色」，确认后半段从蓝色变成绿色。"
+    },
+    {
+      "level_id": "L0043",
+      "order": 43,
+      "title": "第一条边涂红",
+      "goal": "正方形里，只有对上的那一条边涂成红色",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "n = 0\nfor i in range(4):\n    if i == n:\n        t.color(\"red\")\n    t.forward(60)\n    t.right(90)",
+      "expected_output": "带一条红边的正方形",
+      "teach_code_lines": [
+        "n = 0",
+        "for i in range(4):",
+        "    if i == n:",
+        "        t.color(\"red\")",
+        "    t.forward(60)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "先记住要涂色的那一圈是 0",
+        "外面这一圈要重复做，做完再来一圈",
+        "这一圈的号如果和 n 一样，就做下面这行",
+        "把画笔换成红色",
+        "小海龟向前走 60 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "n = 0",
+        "if i == n:",
+        "t.color(\"red\")",
+        "t.right(90)"
+      ],
+      "drill_chunk": "b = \"blue\"",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "换一条边涂红",
+          "type": "number",
+          "min": 0,
+          "max": 3,
+          "step": 1,
+          "default": 0,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "n 一变，红边就挪到另一条边上。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "正方形上能看见什么？",
+        "options": [
+          "一条红边",
+          "四条边都是红的",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "电脑从 0 数起，0 就是第一条边。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「换一条边涂红」改一下，看看红边换到另一条边上。",
+        "target_param_name": "n",
+        "target_value": "2",
+        "expected_output": "红边换到另一条边上",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "正方形里，只有对上的那一条边涂成红色",
+      "parent_brief": "孩子会画出带一条红边的正方形。改一个数，红边换到另一条边上。",
+      "teacher_guide": "先看带一条红边的正方形，再只改「换一条边涂红」，确认红边换到另一条边上。"
+    },
+    {
+      "level_id": "L0044",
+      "order": 44,
+      "title": "画一条绿线",
+      "goal": "再涂一次颜色，这次用绿色",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "ink = \"green\"\nt.color(ink)\nt.forward(70)\nt.done()",
+      "expected_output": "一条绿线",
+      "teach_code_lines": [
+        "ink = \"green\"",
+        "t.color(ink)",
+        "t.forward(70)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "先记住颜色是绿色",
+        "把画笔换成盒子里的那种颜色",
+        "小海龟向前走 70 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "ink = \"green\"",
+        "t.color(ink)",
+        "t.forward(70)",
+        "green"
+      ],
+      "drill_chunk": "n = 0",
+      "challenge_params": [
+        {
+          "name": "ink",
+          "label": "换成橙色",
+          "type": "select",
+          "default": "green",
+          "options": [
+            {
+              "value": "green",
+              "label": "绿色"
+            },
+            {
+              "value": "orange",
+              "label": "橙色"
+            }
+          ],
+          "apply": {
+            "kind": "assign",
+            "variable": "ink"
+          },
+          "hint": "换成橙色，颜色会跟着变。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这条线是什么颜色？",
+        "options": [
+          "绿色",
+          "一个红色正方形",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "ink 里现在是 green。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「换成橙色」改一下，看看绿线变成橙色。",
+        "target_param_name": "ink",
+        "target_value": "orange",
+        "expected_output": "绿线变成橙色",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "再涂一次颜色，这次用绿色",
+      "parent_brief": "孩子会画出一条绿线。改一个数，绿线变成橙色。",
+      "teacher_guide": "先看一条绿线，再只改「换成橙色」，确认绿线变成橙色。"
+    },
+    {
+      "level_id": "L0045",
+      "order": 45,
+      "title": "其余的边涂蓝",
+      "goal": "对上的那条边涂红，其他边涂蓝",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "n = 0\nfor i in range(4):\n    if i == n:\n        t.color(\"red\")\n    else:\n        t.color(\"blue\")\n    t.forward(60)\n    t.right(90)",
+      "expected_output": "一条红边、其余蓝边",
+      "teach_code_lines": [
+        "n = 0",
+        "for i in range(4):",
+        "    if i == n:",
+        "        t.color(\"red\")",
+        "    else:",
+        "        t.color(\"blue\")",
+        "    t.forward(60)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "先记住要涂色的那一圈是 0",
+        "外面这一圈要重复做，做完再来一圈",
+        "这一圈的号如果和 n 一样，就做下面这行",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 60 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "if i == n:",
+        "else:",
+        "t.color(\"red\")",
+        "t.color(\"blue\")"
+      ],
+      "drill_chunk": "ink = \"green\"",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把红边挪走",
+          "type": "number",
+          "min": 0,
+          "max": 3,
+          "step": 1,
+          "default": 0,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "红边会挪到另一条边上。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "这个正方形的颜色是怎样的？",
+        "options": [
+          "一条红边，其余是蓝边",
+          "四条边都是红的",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "对上的走红色，对不上的走蓝色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把红边挪走」改一下，看看红边换了位置。",
+        "target_param_name": "n",
+        "target_value": "2",
+        "expected_output": "红边换了位置",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "对上的那条边涂红，其他边涂蓝",
+      "parent_brief": "孩子会画出一条红边、其余蓝边。改一个数，红边换了位置。",
+      "teacher_guide": "先看一条红边、其余蓝边，再只改「把红边挪走」，确认红边换了位置。"
+    },
+    {
+      "level_id": "L0046",
+      "order": 46,
+      "title": "走到一半再换色",
+      "goal": "先涂红，走到指定的那一圈再涂成紫色",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "n = 2\nfor i in range(4):\n    if i == 0:\n        t.color(\"red\")\n    if i == n:\n        t.color(\"purple\")\n    t.forward(60)\n    t.right(90)",
+      "expected_output": "红紫两色的正方形",
+      "teach_code_lines": [
+        "n = 2",
+        "for i in range(4):",
+        "    if i == 0:",
+        "        t.color(\"red\")",
+        "    if i == n:",
+        "        t.color(\"purple\")",
+        "    t.forward(60)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "先记住要涂色的那一圈是 2",
+        "外面这一圈要重复做，做完再来一圈",
+        "电脑从 0 开始数，0 就是第一笔",
+        "把画笔换成红色",
+        "这一圈的号如果和 n 一样，就做下面这行",
+        "把画笔换成紫色",
+        "小海龟向前走 60 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "n = 2",
+        "if i == 0:",
+        "t.color(\"purple\")",
+        "t.right(90)"
+      ],
+      "drill_chunk": "n = 0",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "让紫色早点出现",
+          "type": "number",
+          "min": 0,
+          "max": 3,
+          "step": 1,
+          "default": 2,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "n 改小，紫色的边会提前出现。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "颜色会换几次？",
+        "options": [
+          "从红再换成紫",
+          "只有一条直线",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "两个 if，颜色会换一次。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「让紫色早点出现」改一下，看看紫色提前出现。",
+        "target_param_name": "n",
+        "target_value": "1",
+        "expected_output": "紫色提前出现",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "先涂红，走到指定的那一圈再涂成紫色",
+      "parent_brief": "孩子会画出红紫两色的正方形。改一个数，紫色提前出现。",
+      "teacher_guide": "先看红紫两色的正方形，再只改「让紫色早点出现」，确认紫色提前出现。"
+    },
+    {
+      "level_id": "L0047",
+      "order": 47,
+      "title": "红蓝三角形",
+      "goal": "三角形里，一条边红，其余蓝",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "n = 0\nfor i in range(3):\n    if i == n:\n        t.color(\"red\")\n    else:\n        t.color(\"blue\")\n    t.forward(70)\n    t.right(120)",
+      "expected_output": "红蓝三角形",
+      "teach_code_lines": [
+        "n = 0",
+        "for i in range(3):",
+        "    if i == n:",
+        "        t.color(\"red\")",
+        "    else:",
+        "        t.color(\"blue\")",
+        "    t.forward(70)",
+        "    t.right(120)"
+      ],
+      "line_notes": [
+        "先记住要涂色的那一圈是 0",
+        "外面这一圈要重复做，做完再来一圈",
+        "这一圈的号如果和 n 一样，就做下面这行",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 70 步",
+        "向右转 120 度"
+      ],
+      "keywords": [
+        "n = 0",
+        "t.color(\"red\")",
+        "t.color(\"blue\")",
+        "t.right(120)"
+      ],
+      "drill_chunk": "n = 2",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把红边挪走",
+          "type": "number",
+          "min": 0,
+          "max": 2,
+          "step": 1,
+          "default": 0,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "红边会换到另一条边上。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "这次涂色的是什么图形？",
+        "options": [
+          "一个红蓝三角形",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "还是三笔转 120 度，只是加上了颜色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把红边挪走」改一下，看看红边换到另一条边上。",
+        "target_param_name": "n",
+        "target_value": "1",
+        "expected_output": "红边换到另一条边上",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "三角形里，一条边红，其余蓝",
+      "parent_brief": "孩子会画出红蓝三角形。改一个数，红边换到另一条边上。",
+      "teacher_guide": "先看红蓝三角形，再只改「把红边挪走」，确认红边换到另一条边上。"
+    },
+    {
+      "level_id": "L0048",
+      "order": 48,
+      "title": "把颜色和 if 打准确",
+      "goal": "打字课：打 color、if 和刚用过的颜色",
+      "knowledge_tags": [
+        "color",
+        "if"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "keywords",
+      "preview_kind": "turtle",
+      "demo_code": "ink = \"red\"\nt.color(ink)\nt.forward(50)\nt.done()",
+      "expected_output": "一条红线",
+      "teach_code_lines": [
+        "ink = \"red\"",
+        "t.color(ink)",
+        "t.forward(50)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "先记住颜色是红色",
+        "把画笔换成盒子里的那种颜色",
+        "小海龟向前走 50 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.color",
+        "if",
+        "red",
+        "blue"
+      ],
+      "drill_chunk": "n = 0",
+      "challenge_params": [
+        {
+          "name": "ink",
+          "label": "换成紫色",
+          "type": "select",
+          "default": "red",
+          "options": [
+            {
+              "value": "red",
+              "label": "红色"
+            },
+            {
+              "value": "purple",
+              "label": "紫色"
+            }
+          ],
+          "apply": {
+            "kind": "assign",
+            "variable": "ink"
+          },
+          "hint": "换成紫色，颜色会跟着变。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节要打哪些词？",
+        "options": [
+          "color、if、red、blue",
+          "一个新的转角",
+          "六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "只打这一单元刚用过的词。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把这节的词再打一遍。",
+        "expected_output": "编程关键词",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：打 color、if 和刚用过的颜色",
+      "parent_brief": "孩子会画出一条红线。改一个数，红线变成紫色。",
+      "teacher_guide": "先看一条红线，再只改「换成紫色」，确认红线变成紫色。"
+    },
+    {
+      "level_id": "L0049",
+      "order": 49,
+      "title": "绿橙六边形",
+      "goal": "六边形里一条边绿色，其余橙色",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "n = 0\nfor i in range(6):\n    if i == n:\n        t.color(\"green\")\n    else:\n        t.color(\"orange\")\n    t.forward(40)\n    t.right(60)",
+      "expected_output": "绿橙六边形",
+      "teach_code_lines": [
+        "n = 0",
+        "for i in range(6):",
+        "    if i == n:",
+        "        t.color(\"green\")",
+        "    else:",
+        "        t.color(\"orange\")",
+        "    t.forward(40)",
+        "    t.right(60)"
+      ],
+      "line_notes": [
+        "先记住要涂色的那一圈是 0",
+        "外面这一圈要重复做，做完再来一圈",
+        "这一圈的号如果和 n 一样，就做下面这行",
+        "把画笔换成绿色",
+        "对不上的时候，走这边",
+        "把画笔换成橙色",
+        "小海龟向前走 40 步",
+        "向右转 60 度"
+      ],
+      "keywords": [
+        "t.color(\"green\")",
+        "t.color(\"orange\")",
+        "t.right(60)",
+        "if i == n:"
+      ],
+      "drill_chunk": "ink = \"red\"",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把绿边挪走",
+          "type": "number",
+          "min": 0,
+          "max": 5,
+          "step": 1,
+          "default": 0,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "绿边会挪到另一条边上。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "这次是什么图形？",
+        "options": [
+          "绿橙六边形",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "六条边，其中一条是绿色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把绿边挪走」改一下，看看绿边换了位置。",
+        "target_param_name": "n",
+        "target_value": "3",
+        "expected_output": "绿边换了位置",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "六边形里一条边绿色，其余橙色",
+      "parent_brief": "孩子会画出绿橙六边形。改一个数，绿边换了位置。",
+      "teacher_guide": "先看绿橙六边形，再只改「把绿边挪走」，确认绿边换了位置。"
+    },
+    {
+      "level_id": "L0050",
+      "order": 50,
+      "title": "边长和颜色一起",
+      "goal": "正方形的边长用 side，颜色仍由 if 决定",
+      "knowledge_tags": [
+        "if",
+        "variable"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 60\nn = 0\nfor i in range(4):\n    if i == n:\n        t.color(\"red\")\n    else:\n        t.color(\"blue\")\n    t.forward(side)\n    t.right(90)",
+      "expected_output": "红蓝正方形",
+      "teach_code_lines": [
+        "side = 60",
+        "n = 0",
+        "for i in range(4):",
+        "    if i == n:",
+        "        t.color(\"red\")",
+        "    else:",
+        "        t.color(\"blue\")",
+        "    t.forward(side)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "先记住边长是 60",
+        "先记住要涂色的那一圈是 0",
+        "外面这一圈要重复做，做完再来一圈",
+        "这一圈的号如果和 n 一样，就做下面这行",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "side = 60",
+        "if i == n:",
+        "t.forward(side)",
+        "t.color(\"red\")"
+      ],
+      "drill_chunk": "n = 0",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把正方形改大",
+          "type": "number",
+          "min": 40,
+          "max": 120,
+          "step": 10,
+          "default": 60,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "边变长，红蓝规律不变。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "想让这个正方形变大，改哪里？",
+        "options": [
+          "改 side",
+          "改颜色的英文",
+          "把它画成一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "四条边都读 side。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把正方形改大」改一下，看看正方形变大，颜色规律还在。",
+        "target_param_name": "side",
+        "target_value": "100",
+        "expected_output": "正方形变大，颜色规律还在",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "正方形的边长用 side，颜色仍由 if 决定",
+      "parent_brief": "孩子会画出红蓝正方形。改一个数，正方形变大，颜色规律还在。",
+      "teacher_guide": "先看红蓝正方形，再只改「把正方形改大」，确认正方形变大，颜色规律还在。"
+    },
+    {
+      "level_id": "L0051",
+      "order": 51,
+      "title": "红边画粗一点",
+      "goal": "第一条边又红又粗，其余又蓝又细",
+      "knowledge_tags": [
+        "if",
+        "pensize"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(4):\n    if i == 0:\n        t.color(\"red\")\n        t.pensize(8)\n    else:\n        t.color(\"blue\")\n        t.pensize(2)\n    t.forward(60)\n    t.right(90)",
+      "expected_output": "粗红边加细蓝边",
+      "teach_code_lines": [
+        "for i in range(4):",
+        "    if i == 0:",
+        "        t.color(\"red\")",
+        "        t.pensize(8)",
+        "    else:",
+        "        t.color(\"blue\")",
+        "        t.pensize(2)",
+        "    t.forward(60)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "电脑从 0 开始数，0 就是第一笔",
+        "把画笔换成红色",
+        "把线改成 8 那么粗",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "把线改成 2 那么粗",
+        "小海龟向前走 60 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "t.pensize(8)",
+        "t.color(\"red\")",
+        "t.pensize(2)",
+        "if i == 0:"
+      ],
+      "drill_chunk": "side = 60",
+      "challenge_params": [
+        {
+          "name": "wide",
+          "label": "把红边改细",
+          "type": "number",
+          "default": 8,
+          "apply": {
+            "kind": "arg",
+            "func": "pensize",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "红边的笔变细，粗细对比就弱了。",
+          "min": 1,
+          "max": 10,
+          "step": 1
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "第一条边和后面的边有什么不同？",
+        "options": [
+          "又红又粗",
+          "四条边一样细",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "对上的那条边笔更粗。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把红边改细」改一下，看看红边变细。",
+        "target_param_name": "wide",
+        "target_value": "2",
+        "expected_output": "红边变细",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "第一条边又红又粗，其余又蓝又细",
+      "parent_brief": "孩子会画出粗红边加细蓝边。改一个数，红边变细。",
+      "teacher_guide": "先看粗红边加细蓝边，再只改「把红边改细」，确认红边变细。"
+    },
+    {
+      "level_id": "L0052",
+      "order": 52,
+      "title": "换成橙和紫",
+      "goal": "再画一个正方形，一条边橙，其余紫",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "n = 0\nfor i in range(4):\n    if i == n:\n        t.color(\"orange\")\n    else:\n        t.color(\"purple\")\n    t.forward(60)\n    t.right(90)",
+      "expected_output": "橙紫正方形",
+      "teach_code_lines": [
+        "n = 0",
+        "for i in range(4):",
+        "    if i == n:",
+        "        t.color(\"orange\")",
+        "    else:",
+        "        t.color(\"purple\")",
+        "    t.forward(60)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "先记住要涂色的那一圈是 0",
+        "外面这一圈要重复做，做完再来一圈",
+        "这一圈的号如果和 n 一样，就做下面这行",
+        "把画笔换成橙色",
+        "对不上的时候，走这边",
+        "把画笔换成紫色",
+        "小海龟向前走 60 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "t.color(\"orange\")",
+        "t.color(\"purple\")",
+        "if i == n:",
+        "t.right(90)"
+      ],
+      "drill_chunk": "t.pensize(8)",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把橙边挪走",
+          "type": "number",
+          "min": 0,
+          "max": 3,
+          "step": 1,
+          "default": 0,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "橙边会换一条边。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "这次的正方形是什么颜色？",
+        "options": [
+          "一条橙边，其余是紫边",
+          "一个绿色三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "只是把红蓝换成了橙和紫。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把橙边挪走」改一下，看看橙边换了位置。",
+        "target_param_name": "n",
+        "target_value": "2",
+        "expected_output": "橙边换了位置",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "再画一个正方形，一条边橙，其余紫",
+      "parent_brief": "孩子会画出橙紫正方形。改一个数，橙边换了位置。",
+      "teacher_guide": "先看橙紫正方形，再只改「把橙边挪走」，确认橙边换了位置。"
+    },
+    {
+      "level_id": "L0053",
+      "order": 53,
+      "title": "红线和蓝线分开",
+      "goal": "抬笔隔开，左边红线，右边蓝线",
+      "knowledge_tags": [
+        "color",
+        "penup"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.color(\"red\")\nt.forward(40)\nt.penup()\nt.forward(20)\nt.pendown()\nt.color(\"blue\")\nt.forward(40)\nt.done()",
+      "expected_output": "分开的红线和蓝线",
+      "teach_code_lines": [
+        "t.color(\"red\")",
+        "t.forward(40)",
+        "t.penup()",
+        "t.forward(20)",
+        "t.pendown()",
+        "t.color(\"blue\")",
+        "t.forward(40)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "把画笔换成红色",
+        "小海龟向前走 40 步",
+        "把笔抬起来，接着走先不画线",
+        "小海龟向前走 20 步",
+        "把笔放下，接着走就会画出线",
+        "把画笔换成蓝色",
+        "小海龟向前走 40 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.color(\"red\")",
+        "t.penup()",
+        "t.color(\"blue\")",
+        "t.pendown()"
+      ],
+      "drill_chunk": "n = 0",
+      "challenge_params": [
+        {
+          "name": "gap",
+          "label": "把空档拉宽",
+          "type": "number",
+          "default": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "空档一宽，红线和蓝线离得更远。",
+          "min": 10,
+          "max": 80,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这两段线是怎样的？",
+        "options": [
+          "一红一蓝，中间断开",
+          "一个正方形",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "抬笔的那一段没有画出来。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把空档拉宽」改一下，看看两段线离得更远。",
+        "target_param_name": "gap",
+        "target_value": "70",
+        "expected_output": "两段线离得更远",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "抬笔隔开，左边红线，右边蓝线",
+      "parent_brief": "孩子会画出分开的红线和蓝线。改一个数，两段线离得更远。",
+      "teacher_guide": "先看分开的红线和蓝线，再只改「把空档拉宽」，确认两段线离得更远。"
+    },
+    {
+      "level_id": "L0054",
+      "order": 54,
+      "title": "紫绿五边形",
+      "goal": "五边形里一条边紫色，其余绿色",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "n = 0\nfor i in range(5):\n    if i == n:\n        t.color(\"purple\")\n    else:\n        t.color(\"green\")\n    t.forward(45)\n    t.right(72)",
+      "expected_output": "紫绿五边形",
+      "teach_code_lines": [
+        "n = 0",
+        "for i in range(5):",
+        "    if i == n:",
+        "        t.color(\"purple\")",
+        "    else:",
+        "        t.color(\"green\")",
+        "    t.forward(45)",
+        "    t.right(72)"
+      ],
+      "line_notes": [
+        "先记住要涂色的那一圈是 0",
+        "外面这一圈要重复做，做完再来一圈",
+        "这一圈的号如果和 n 一样，就做下面这行",
+        "把画笔换成紫色",
+        "对不上的时候，走这边",
+        "把画笔换成绿色",
+        "小海龟向前走 45 步",
+        "向右转 72 度"
+      ],
+      "keywords": [
+        "t.color(\"purple\")",
+        "t.color(\"green\")",
+        "t.right(72)",
+        "range(5)"
+      ],
+      "drill_chunk": "t.penup()",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把紫边挪走",
+          "type": "number",
+          "min": 0,
+          "max": 4,
+          "step": 1,
+          "default": 0,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "紫边会挪到另一条边上。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "这次是什么图形？",
+        "options": [
+          "紫绿五边形",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "五条边里有一条是紫色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把紫边挪走」改一下，看看紫边换了位置。",
+        "target_param_name": "n",
+        "target_value": "2",
+        "expected_output": "紫边换了位置",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "五边形里一条边紫色，其余绿色",
+      "parent_brief": "孩子会画出紫绿五边形。改一个数，紫边换了位置。",
+      "teacher_guide": "先看紫绿五边形，再只改「把紫边挪走」，确认紫边换了位置。"
+    },
+    {
+      "level_id": "L0055",
+      "order": 55,
+      "title": "红橙三角形",
+      "goal": "用 side 画三角形，一条边红，其余橙",
+      "knowledge_tags": [
+        "if",
+        "variable"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 70\nfor i in range(3):\n    if i == 0:\n        t.color(\"red\")\n    else:\n        t.color(\"orange\")\n    t.forward(side)\n    t.right(120)",
+      "expected_output": "红橙三角形",
+      "teach_code_lines": [
+        "side = 70",
+        "for i in range(3):",
+        "    if i == 0:",
+        "        t.color(\"red\")",
+        "    else:",
+        "        t.color(\"orange\")",
+        "    t.forward(side)",
+        "    t.right(120)"
+      ],
+      "line_notes": [
+        "先记住边长是 70",
+        "外面这一圈要重复做，做完再来一圈",
+        "电脑从 0 开始数，0 就是第一笔",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成橙色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 120 度"
+      ],
+      "keywords": [
+        "side = 70",
+        "t.color(\"red\")",
+        "t.color(\"orange\")",
+        "t.right(120)"
+      ],
+      "drill_chunk": "n = 0",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把三角形改大",
+          "type": "number",
+          "min": 40,
+          "max": 120,
+          "step": 10,
+          "default": 70,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "边变长，红橙还在。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "这个三角形的颜色是怎样的？",
+        "options": [
+          "一条红边，其余是橙边",
+          "一个蓝色正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "第一条走红色，另外两条走橙色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把三角形改大」改一下，看看三角形变大。",
+        "target_param_name": "side",
+        "target_value": "110",
+        "expected_output": "三角形变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "用 side 画三角形，一条边红，其余橙",
+      "parent_brief": "孩子会画出红橙三角形。改一个数，三角形变大。",
+      "teacher_guide": "先看红橙三角形，再只改「把三角形改大」，确认三角形变大。"
+    },
+    {
+      "level_id": "L0056",
+      "order": 56,
+      "title": "再打基准键",
+      "goal": "打字课：手指放回基准键",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "baseline_keys",
+      "preview_kind": "turtle",
+      "demo_code": "ink = \"blue\"\nt.color(ink)\nt.forward(40)",
+      "expected_output": "一条蓝线",
+      "teach_code_lines": [
+        "ink = \"blue\"",
+        "t.color(ink)",
+        "t.forward(40)"
+      ],
+      "line_notes": [
+        "先记住颜色是蓝色",
+        "把画笔换成盒子里的那种颜色",
+        "小海龟向前走 40 步"
+      ],
+      "keywords": [
+        "asdf",
+        "jkl;",
+        "ffjj",
+        "fjfj"
+      ],
+      "drill_chunk": "side = 70",
+      "challenge_params": [
+        {
+          "name": "ink",
+          "label": "换成红色",
+          "type": "select",
+          "default": "blue",
+          "options": [
+            {
+              "value": "blue",
+              "label": "蓝色"
+            },
+            {
+              "value": "red",
+              "label": "红色"
+            }
+          ],
+          "apply": {
+            "kind": "assign",
+            "variable": "ink"
+          },
+          "hint": "换成红色，颜色会跟着变。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节在练哪一档？",
+        "options": [
+          "基准键位",
+          "一个新的转角",
+          "八边形"
+        ],
+        "answerIndex": 0,
+        "explain": "只练键位，颜色还是已经会的。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把基准键再打一遍。",
+        "expected_output": "基准键位",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：手指放回基准键",
+      "parent_brief": "孩子会画出一条蓝线。改一个数，蓝线变成红线。",
+      "teacher_guide": "先看一条蓝线，再只改「换成红色」，确认蓝线变成红线。"
+    },
+    {
+      "level_id": "L0057",
+      "order": 57,
+      "title": "红蓝三角形再画",
+      "goal": "把红蓝三角形再画一次",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(3):\n    if i == 0:\n        t.color(\"red\")\n    else:\n        t.color(\"blue\")\n    t.forward(55)\n    t.right(120)",
+      "expected_output": "红蓝三角形",
+      "teach_code_lines": [
+        "for i in range(3):",
+        "    if i == 0:",
+        "        t.color(\"red\")",
+        "    else:",
+        "        t.color(\"blue\")",
+        "    t.forward(55)",
+        "    t.right(120)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "电脑从 0 开始数，0 就是第一笔",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 55 步",
+        "向右转 120 度"
+      ],
+      "keywords": [
+        "t.color(\"red\")",
+        "t.color(\"blue\")",
+        "t.right(120)",
+        "if i == 0:"
+      ],
+      "drill_chunk": "ink = \"blue\"",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把边长改长",
+          "type": "number",
+          "default": 55,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "边一长，三角形变大。",
+          "min": 40,
+          "max": 110,
+          "step": 5
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "这次还是什么？",
+        "options": [
+          "红蓝三角形",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "画法没变，只是再练一次。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把边长改长」改一下，看看三角形变大。",
+        "target_param_name": "side",
+        "target_value": "100",
+        "expected_output": "三角形变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "把红蓝三角形再画一次",
+      "parent_brief": "孩子会画出红蓝三角形。改一个数，三角形变大。",
+      "teacher_guide": "先看红蓝三角形，再只改「把边长改长」，确认三角形变大。"
+    },
+    {
+      "level_id": "L0058",
+      "order": 58,
+      "title": "橙边挪一挪",
+      "goal": "橙边不在第一条，而在第二条",
+      "knowledge_tags": [
+        "if"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "n = 1\nfor i in range(4):\n    if i == n:\n        t.color(\"orange\")\n    else:\n        t.color(\"purple\")\n    t.forward(55)\n    t.right(90)",
+      "expected_output": "有一条橙边的紫色正方形",
+      "teach_code_lines": [
+        "n = 1",
+        "for i in range(4):",
+        "    if i == n:",
+        "        t.color(\"orange\")",
+        "    else:",
+        "        t.color(\"purple\")",
+        "    t.forward(55)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "先记住要涂色的那一圈是 1",
+        "外面这一圈要重复做，做完再来一圈",
+        "这一圈的号如果和 n 一样，就做下面这行",
+        "把画笔换成橙色",
+        "对不上的时候，走这边",
+        "把画笔换成紫色",
+        "小海龟向前走 55 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "n = 1",
+        "t.color(\"orange\")",
+        "t.color(\"purple\")",
+        "t.right(90)"
+      ],
+      "drill_chunk": "t.right(120)",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把橙边再挪一次",
+          "type": "number",
+          "min": 0,
+          "max": 3,
+          "step": 1,
+          "default": 1,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "橙边会挪到最后一条边上。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "橙边在哪里？",
+        "options": [
+          "在其中一条边上",
+          "四条边都是橙的",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "只有和 n 对上的那条边是橙色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把橙边再挪一次」改一下，看看橙边又换了一条边。",
+        "target_param_name": "n",
+        "target_value": "3",
+        "expected_output": "橙边又换了一条边",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "橙边不在第一条，而在第二条",
+      "parent_brief": "孩子会画出有一条橙边的紫色正方形。改一个数，橙边又换了一条边。",
+      "teacher_guide": "先看有一条橙边的紫色正方形，再只改「把橙边再挪一次」，确认橙边又换了一条边。"
+    },
+    {
+      "level_id": "L0059",
+      "order": 59,
+      "title": "红蓝六边形",
+      "goal": "六边形第一条边涂红，其余涂蓝",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "for i in range(6):\n    if i == 0:\n        t.color(\"red\")\n    else:\n        t.color(\"blue\")\n    t.forward(36)\n    t.right(60)",
+      "expected_output": "红蓝六边形",
+      "teach_code_lines": [
+        "for i in range(6):",
+        "    if i == 0:",
+        "        t.color(\"red\")",
+        "    else:",
+        "        t.color(\"blue\")",
+        "    t.forward(36)",
+        "    t.right(60)"
+      ],
+      "line_notes": [
+        "外面这一圈要重复做，做完再来一圈",
+        "电脑从 0 开始数，0 就是第一笔",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 36 步",
+        "向右转 60 度"
+      ],
+      "keywords": [
+        "t.color(\"red\")",
+        "t.color(\"blue\")",
+        "t.right(60)",
+        "range(6)"
+      ],
+      "drill_chunk": "n = 1",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把边长改长",
+          "type": "number",
+          "default": 36,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "边一长，六边形变大。",
+          "min": 30,
+          "max": 66,
+          "step": 6
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "这次是什么？",
+        "options": [
+          "红蓝六边形",
+          "一个正方形",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "六条边，第一条是红的。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把边长改长」改一下，看看六边形变大。",
+        "target_param_name": "side",
+        "target_value": "60",
+        "expected_output": "六边形变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "六边形第一条边涂红，其余涂蓝",
+      "parent_brief": "孩子会画出红蓝六边形。改一个数，六边形变大。",
+      "teacher_guide": "先看红蓝六边形，再只改「把边长改长」，确认六边形变大。"
+    },
+    {
+      "level_id": "L0060",
+      "order": 60,
+      "title": "双色小窗",
+      "goal": "用 side 画一扇红蓝小窗",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "project",
+      "exercise": "normal",
+      "milestone_badge": "two_color",
+      "badge_title": "双色小窗",
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 70\nfor i in range(4):\n    if i == 0:\n        t.color(\"red\")\n    else:\n        t.color(\"blue\")\n    t.forward(side)\n    t.right(90)",
+      "expected_output": "红蓝小窗",
+      "teach_code_lines": [
+        "side = 70",
+        "for i in range(4):",
+        "    if i == 0:",
+        "        t.color(\"red\")",
+        "    else:",
+        "        t.color(\"blue\")",
+        "    t.forward(side)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "先记住边长是 70",
+        "外面这一圈要重复做，做完再来一圈",
+        "电脑从 0 开始数，0 就是第一笔",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "side = 70",
+        "t.color(\"red\")",
+        "t.color(\"blue\")",
+        "t.right(90)"
+      ],
+      "drill_chunk": "t.right(60)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把小窗改大",
+          "type": "number",
+          "min": 40,
+          "max": 120,
+          "step": 10,
+          "default": 70,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "边变长，红蓝还在。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "这个作品是什么？",
+        "options": [
+          "一扇红蓝小窗",
+          "一个三角形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "方的轮廓没变，第一条边是红的。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把小窗改大」改一下，看看小窗变大。",
+        "target_param_name": "side",
+        "target_value": "110",
+        "expected_output": "小窗变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 20,
+      "is_review": false,
+      "teaching_intent": "用 side 画一扇红蓝小窗",
+      "parent_brief": "孩子会画出红蓝小窗。改一个数，小窗变大。",
+      "teacher_guide": "先看红蓝小窗，再只改「把小窗改大」，确认小窗变大。"
+    }
+  ]
+}

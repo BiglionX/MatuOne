@@ -94,7 +94,7 @@ export interface LevelQuiz {
 }
 
 /** 课后巩固。缺省表示这节没有副本，学生做完三回合就可以走。 */
-export type BonusChallengeType = 'param_edit' | 'code_fill' | 'typing'
+export type BonusChallengeType = 'param_edit' | 'code_fill' | 'typing' | 'reverse_draw' | 'add_color'
 
 export interface BonusChallenge {
   type: BonusChallengeType
@@ -102,7 +102,7 @@ export interface BonusChallenge {
   instruction: string
   /** param_edit：对应 challenge_params.name，用课内闲着的那个参数 */
   target_param_name?: string
-  /** param_edit：要改成的值。code_fill：空里要填的词。 */
+  /** param_edit：要改成的值。code_fill：空里要填的词。reverse_draw：反着画的长度。add_color：要涂上的颜色。 */
   target_value?: string
   /** code_fill：带空的那一行，空位写成 ____ */
   prompt_line?: string

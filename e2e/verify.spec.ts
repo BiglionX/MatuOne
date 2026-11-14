@@ -201,7 +201,7 @@ test('R11 旧课程路由进课程树，没有可视化编辑器', async ({ page
   await page.getByRole('button', { name: /^单元 2/ }).click()
   await page.getByRole('button', { name: /L0021/ }).click()
   await expect(detail.getByRole('heading', { name: /L0021/ })).toBeVisible()
-  await expect(detail.getByText('尚未填写。').first()).toBeVisible()
+  await expect(detail.getByText('把走的步数先装进 side，再让小海龟去走').first()).toBeVisible()
   await page.getByRole('button', { name: '导入课程包' }).click()
   await expect(page.getByRole('heading', { name: '课程包导入' })).toBeVisible()
   await expect(page.getByRole('button', { name: '导入课程包' })).toBeVisible()
@@ -591,14 +591,14 @@ test.describe('课内复习与热身', () => {
     await loginStudent(studentPage, 'chenxiaoman', '123456')
     await studentPage.goto('/student/lesson/L0002')
     await expect(studentPage.getByRole('heading', { name: '先把上一节的这一串遮住打一遍' })).toBeVisible()
-    await studentPage.getByLabel('组块打字').fill('print("')
+    await studentPage.getByLabel('组块打字').fill('t.forward(80)')
     await studentPage.getByRole('button', { name: '跳过' }).click()
     await studentPage.getByRole('button', { name: '向右转 90 度' }).click()
     await studentPage.getByRole('button', { name: '运行看看' }).click()
     await studentPage.getByRole('button', { name: '开始抄代码' }).click()
     await studentPage.getByRole('button', { name: '准备好了' }).click()
 
-    const lines = ['t.forward(200)', 't.right(90)', 't.forward(120)', 't.done()']
+    const lines = ['t.forward(80)', 't.right(90)', 't.forward(80)', 't.done()']
     for (let i = 0; i < lines.length; i++) {
       const input = studentPage.getByRole('textbox', { name: `第 ${i + 1} 行代码` })
       await input.fill(lines[i])
@@ -616,27 +616,27 @@ test.describe('课内复习与热身', () => {
     const box = drill.getByLabel('组块打字')
     await expect(drill.getByText('第 1 / 4 次')).toBeVisible()
     await expect(drill.getByText('看着打')).toBeVisible()
-    await expect(guide).toHaveText('t.forward(')
-    await box.fill('t.forward(')
+    await expect(guide).toHaveText('t.forward(80)')
+    await box.fill('t.forward(80)')
 
     await expect(drill.getByText('第 2 / 4 次')).toBeVisible()
     await expect(drill.getByText('看着打')).toBeVisible()
-    await expect(guide).toHaveText('t.forward(')
-    await box.fill('t.forward(')
+    await expect(guide).toHaveText('t.forward(80)')
+    await box.fill('t.forward(80)')
 
     await expect(drill.getByText('第 3 / 4 次')).toBeVisible()
     await expect(drill.getByText('遮住了，凭手打')).toBeVisible()
-    await expect(guide).toHaveText('__________')
-    await box.fill('t.forward(')
+    await expect(guide).toHaveText('_____________')
+    await box.fill('t.forward(80)')
 
     await expect(drill.getByText('第 4 / 4 次')).toBeVisible()
     await expect(drill.getByText('遮住了，凭手打')).toBeVisible()
-    await expect(guide).toHaveText('__________')
+    await expect(guide).toHaveText('_____________')
     const saved = studentPage.waitForResponse((response) => {
       const data = response.request().postData() ?? ''
       return response.url().includes('/api/student-learning') && data.includes('"action":"drill"')
     })
-    await box.fill('t.forward(')
+    await box.fill('t.forward(80)')
     const savedResponse = await saved
     const savedBody = await savedResponse.text()
     expect(savedResponse.ok(), `${savedResponse.status()} ${savedBody}`).toBe(true)
@@ -675,7 +675,7 @@ test.describe('课内复习与热身', () => {
   })
 })
 
-test('T3 第 21 关没有上一关的复习组块', async ({ page }) => {
+test('T3 第 21 关先复习上一节组块，课文里没有 for', async ({ page }) => {
   const { q } = await import('../server/db.ts')
   const before = await q<{ preview_frozen: boolean }>('select preview_frozen from public.course_level where sort_order = 21', [])
   const frozen = before[0]?.preview_frozen === true
@@ -688,10 +688,11 @@ test('T3 第 21 关没有上一关的复习组块', async ({ page }) => {
   try {
     await loginOps(page)
     await page.goto('/student/lesson/L0021?preview=true')
-    await expect(page.getByRole('button', { name: '跳过' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: '先把上一节的这一串遮住打一遍' })).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: '先把上一节的这一串遮住打一遍' })).toBeVisible()
     await expect(page.locator('body')).not.toContainText('for i in range(')
     await expect(page.getByText('网络波动，复习记录暂未同步')).toHaveCount(0)
+    await page.getByLabel('组块打字').fill('t.right(90)')
+    await expect(page.getByRole('button', { name: '跳过' })).toBeVisible()
     await page.getByRole('button', { name: '跳过' }).click()
     await expect(page.getByRole('heading', { name: /第 21 关/ })).toBeVisible()
     await expect(page.locator('body')).not.toContainText('for i in range(')
@@ -707,7 +708,7 @@ async function openRoundB(page: Page, levelId: string, answer: string) {
   await page.goto(`/student/lesson/${levelId}`)
   await expect(page.getByRole('heading', { name: /第 \d+ 关|遮住打一遍/ })).toBeVisible()
   const recall = page.getByRole('heading', { name: '先把上一节的这一串遮住打一遍' })
-  if (await recall.isVisible()) await page.getByLabel('组块打字').fill('print("')
+  if (await recall.isVisible()) await page.getByLabel('组块打字').fill('t.forward(80)')
   const skip = page.getByRole('button', { name: '跳过' })
   if (await skip.isVisible()) await skip.click()
   await page.getByRole('button', { name: answer }).click()
@@ -724,7 +725,7 @@ test('T-Py1 运行第 2 关代码，画布有像素且不报错', async ({ page 
   const skip = page.getByRole('button', { name: '跳过' })
   const choice = page.getByRole('button', { name: '向右转 90 度' })
   await expect(recall.or(skip).or(choice)).toBeVisible()
-  if (await recall.isVisible()) await page.getByLabel('组块打字').fill('print("')
+  if (await recall.isVisible()) await page.getByLabel('组块打字').fill('t.forward(80)')
   if (await skip.isVisible()) await skip.click()
   await choice.click()
   await page.getByRole('button', { name: '运行看看' }).click()
@@ -738,8 +739,8 @@ test('T-Py1 运行第 2 关代码，画布有像素且不报错', async ({ page 
 
 test('T-Py2 少一个括号时显示人话，并高亮出错的那一行', async ({ page }) => {
   test.setTimeout(180_000)
-  await openRoundB(page, 'L0001', '一个三角形')
-  await page.getByRole('textbox', { name: '第 1 行代码' }).fill('print("hello"')
+  await openRoundB(page, 'L0001', '一条直线')
+  await page.getByRole('textbox', { name: '第 1 行代码' }).fill('t.forward(80')
   await page.getByRole('button', { name: '运行', exact: true }).click()
   await expect(page.getByText('第 1 行出了点小问题')).toBeVisible({ timeout: 90_000 })
   await expect(page.getByText('这里的括号没有闭合哦')).toBeVisible()

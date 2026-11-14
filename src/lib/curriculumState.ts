@@ -10,6 +10,7 @@ import {
   unitsOfStage,
   type CatalogLevel,
 } from '../data/fullCurriculum'
+import { level1Lesson } from '../data/level1Course'
 
 export interface ProgressMark {
   order: number
@@ -134,15 +135,16 @@ export function projectUnit(unitId: string, marks: ProgressMark[], access: Acces
   return levelsOfUnit(unitId).map((level) => {
     const done = completed.has(level.order)
     const unlocked = canOpen(level.order, done, focus, access)
+    const course = level.order >= 1 && level.order <= 120 ? level1Lesson(level.order) : undefined
     return {
       levelId: level.levelId,
       order: level.order,
-      title: level.title,
-      goal: level.goal,
+      title: course?.title ?? level.title,
+      goal: course?.goal ?? level.goal,
       levelType: level.levelType,
       milestoneBadge: level.milestoneBadge,
-      placeholder: isPlaceholderLevel(level),
-      is_placeholder: isPlaceholderLevel(level),
+      placeholder: course ? false : isPlaceholderLevel(level),
+      is_placeholder: course ? false : isPlaceholderLevel(level),
       completed: done,
       unlocked,
       current: unlocked && !done && level.order === focus,

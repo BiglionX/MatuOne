@@ -1,0 +1,2237 @@
+{
+  "stage_level": 1,
+  "unit": {
+    "unit_id": "L1_U06",
+    "title": "Level 1 · 单元 6",
+    "sort_order": 6
+  },
+  "unit_tags": [
+    "project"
+  ],
+  "levels": [
+    {
+      "level_id": "L0101",
+      "order": 101,
+      "title": "画一级级台阶",
+      "goal": "向前、向右、再向左，走出一级级台阶",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 20\nfor i in range(4):\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\n    t.left(90)",
+      "expected_output": "四级阶梯",
+      "teach_code_lines": [
+        "side = 20",
+        "for i in range(4):",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "    t.left(90)"
+      ],
+      "line_notes": [
+        "先记住边长是 20",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向左转 90 度"
+      ],
+      "keywords": [
+        "side = 20",
+        "t.right(90)",
+        "t.left(90)",
+        "t.forward(side)"
+      ],
+      "drill_chunk": "side = 28",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把台阶改大",
+          "type": "number",
+          "min": 12,
+          "max": 36,
+          "step": 4,
+          "default": 20,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "每一级都变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这幅画像什么？",
+        "options": [
+          "一级级台阶",
+          "一个正方形",
+          "一个三角形"
+        ],
+        "answerIndex": 0,
+        "explain": "向右再向左，台阶就一级级走下去。"
+      },
+      "bonus_challenge": {
+        "type": "code_fill",
+        "instruction": "台阶的步数空着，填上原来的数。",
+        "prompt_line": "side = ____",
+        "target_value": "20",
+        "expected_output": "台阶的步数是 20",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "向前、向右、再向左，走出一级级台阶",
+      "parent_brief": "孩子会画出四级阶梯。改一个数，台阶变大。",
+      "teacher_guide": "先看四级阶梯，再只改「把台阶改大」，确认台阶变大。"
+    },
+    {
+      "level_id": "L0102",
+      "order": 102,
+      "title": "画一支箭头",
+      "goal": "先画箭杆，再在尖上画出两个小尖角",
+      "knowledge_tags": [
+        "forward",
+        "backward"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(80)\nt.right(150)\nt.forward(30)\nt.backward(30)\nt.left(120)\nt.forward(30)\nt.done()",
+      "expected_output": "一支箭头",
+      "teach_code_lines": [
+        "t.forward(80)",
+        "t.right(150)",
+        "t.forward(30)",
+        "t.backward(30)",
+        "t.left(120)",
+        "t.forward(30)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 80 步",
+        "向右转 150 度",
+        "小海龟向前走 30 步",
+        "小海龟退回 30 步",
+        "向左转 120 度",
+        "小海龟向前走 30 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.forward(80)",
+        "t.right(150)",
+        "t.backward(30)",
+        "t.left(120)"
+      ],
+      "drill_chunk": "side = 20",
+      "challenge_params": [
+        {
+          "name": "shaft",
+          "label": "把箭杆改长",
+          "type": "number",
+          "default": 80,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "箭杆一长，箭头还在尖上。",
+          "min": 60,
+          "max": 140,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这幅画像什么？",
+        "options": [
+          "一支箭头",
+          "一个正方形",
+          "一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "长的是箭杆，短的两笔是箭头。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把箭杆改长」改一下，看看箭杆变长。",
+        "target_param_name": "shaft",
+        "target_value": "120",
+        "expected_output": "箭杆变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "先画箭杆，再在尖上画出两个小尖角",
+      "parent_brief": "孩子会画出一支箭头。改一个数，箭杆变长。",
+      "teacher_guide": "先看一支箭头，再只改「把箭杆改长」，确认箭杆变长。"
+    },
+    {
+      "level_id": "L0103",
+      "order": 103,
+      "title": "画一面小旗",
+      "goal": "先画旗杆，再在顶上画一个小三角",
+      "knowledge_tags": [
+        "left",
+        "right"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.left(90)\nt.forward(70)\nt.right(90)\nt.forward(40)\nt.right(120)\nt.forward(40)\nt.right(120)\nt.forward(40)\nt.done()",
+      "expected_output": "一面小旗",
+      "teach_code_lines": [
+        "t.left(90)",
+        "t.forward(70)",
+        "t.right(90)",
+        "t.forward(40)",
+        "t.right(120)",
+        "t.forward(40)",
+        "t.right(120)",
+        "t.forward(40)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "向左转 90 度",
+        "小海龟向前走 70 步",
+        "向右转 90 度",
+        "小海龟向前走 40 步",
+        "向右转 120 度",
+        "小海龟向前走 40 步",
+        "向右转 120 度",
+        "小海龟向前走 40 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.left(90)",
+        "t.forward(70)",
+        "t.right(120)",
+        "t.forward(40)"
+      ],
+      "drill_chunk": "t.forward(80)",
+      "challenge_params": [
+        {
+          "name": "pole",
+          "label": "把旗杆改高",
+          "type": "number",
+          "default": 70,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "旗杆变高，旗面还在顶上。",
+          "min": 40,
+          "max": 120,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这幅画像什么？",
+        "options": [
+          "一面小旗",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "长的是旗杆，三角是旗面。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把旗杆改高」改一下，看看旗杆变高。",
+        "target_param_name": "pole",
+        "target_value": "110",
+        "expected_output": "旗杆变高",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "先画旗杆，再在顶上画一个小三角",
+      "parent_brief": "孩子会画出一面小旗。改一个数，旗杆变高。",
+      "teacher_guide": "先看一面小旗，再只改「把旗杆改高」，确认旗杆变高。"
+    },
+    {
+      "level_id": "L0104",
+      "order": 104,
+      "title": "台阶再爬一次",
+      "goal": "把台阶再画一次，这次多一级",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 16\nfor i in range(5):\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\n    t.left(90)",
+      "expected_output": "五级阶梯",
+      "teach_code_lines": [
+        "side = 16",
+        "for i in range(5):",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "    t.left(90)"
+      ],
+      "line_notes": [
+        "先记住边长是 16",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向左转 90 度"
+      ],
+      "keywords": [
+        "side = 16",
+        "t.right(90)",
+        "t.left(90)",
+        "range(5)"
+      ],
+      "drill_chunk": "t.forward(70)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把台阶改大",
+          "type": "number",
+          "min": 12,
+          "max": 32,
+          "step": 4,
+          "default": 16,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "每一级都变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这次有几级台阶？",
+        "options": [
+          "五级",
+          "一个三角形",
+          "一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "循环走了 5 次。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把台阶改大」改一下，看看台阶变大。",
+        "target_param_name": "side",
+        "target_value": "28",
+        "expected_output": "台阶变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "把台阶再画一次，这次多一级",
+      "parent_brief": "孩子会画出五级阶梯。改一个数，台阶变大。",
+      "teacher_guide": "先看五级阶梯，再只改「把台阶改大」，确认台阶变大。"
+    },
+    {
+      "level_id": "L0105",
+      "order": 105,
+      "title": "搭一座小房子",
+      "goal": "先画方方的房身，再在上面加一个三角顶",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 60\nfor i in range(4):\n    t.forward(side)\n    t.left(90)\nt.left(90)\nt.forward(side)\nt.right(30)\nt.forward(side)\nt.right(120)\nt.forward(side)",
+      "expected_output": "一座小房子",
+      "teach_code_lines": [
+        "side = 60",
+        "for i in range(4):",
+        "    t.forward(side)",
+        "    t.left(90)",
+        "t.left(90)",
+        "t.forward(side)",
+        "t.right(30)",
+        "t.forward(side)",
+        "t.right(120)",
+        "t.forward(side)"
+      ],
+      "line_notes": [
+        "先记住边长是 60",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 盒子 side 里的数",
+        "向左转 90 度",
+        "向左转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 30 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 120 度",
+        "小海龟向前走 盒子 side 里的数"
+      ],
+      "keywords": [
+        "side = 60",
+        "t.left(90)",
+        "t.right(30)",
+        "t.right(120)"
+      ],
+      "drill_chunk": "side = 16",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把房子改大",
+          "type": "number",
+          "min": 40,
+          "max": 100,
+          "step": 10,
+          "default": 60,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "房身和房顶一起变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "房顶是什么形状？",
+        "options": [
+          "一个三角顶，下面是方的",
+          "只有一条直线",
+          "一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "下面四条边是房身，上面两条斜边是房顶。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把房子改大」改一下，看看房子整体变大。",
+        "target_param_name": "side",
+        "target_value": "90",
+        "expected_output": "房子整体变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "先画方方的房身，再在上面加一个三角顶",
+      "parent_brief": "孩子会画出一座小房子。改一个数，房子整体变大。",
+      "teacher_guide": "先看一座小房子，再只改「把房子改大」，确认房子整体变大。"
+    },
+    {
+      "level_id": "L0106",
+      "order": 106,
+      "title": "画一朵小花",
+      "goal": "绿色的茎上面，开一朵红色小三角",
+      "knowledge_tags": [
+        "color",
+        "for_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.left(90)\nt.color(\"green\")\nt.forward(50)\nt.color(\"red\")\nfor i in range(3):\n    t.forward(28)\n    t.right(120)",
+      "expected_output": "一朵有茎的小花",
+      "teach_code_lines": [
+        "t.left(90)",
+        "t.color(\"green\")",
+        "t.forward(50)",
+        "t.color(\"red\")",
+        "for i in range(3):",
+        "    t.forward(28)",
+        "    t.right(120)"
+      ],
+      "line_notes": [
+        "向左转 90 度",
+        "把画笔换成绿色",
+        "小海龟向前走 50 步",
+        "把画笔换成红色",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 28 步",
+        "向右转 120 度"
+      ],
+      "keywords": [
+        "t.color(\"green\")",
+        "t.color(\"red\")",
+        "t.forward(50)",
+        "t.right(120)"
+      ],
+      "drill_chunk": "side = 60",
+      "challenge_params": [
+        {
+          "name": "stem",
+          "label": "把花茎改长",
+          "type": "number",
+          "default": 50,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "茎变长，花还在顶上。",
+          "min": 30,
+          "max": 100,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "茎和花各是什么颜色？",
+        "options": [
+          "茎是绿色，花是红色",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "先涂绿画茎，再涂红画三角。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花茎改长」改一下，看看花茎变长。",
+        "target_param_name": "stem",
+        "target_value": "90",
+        "expected_output": "花茎变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "绿色的茎上面，开一朵红色小三角",
+      "parent_brief": "孩子会画出一朵有茎的小花。改一个数，花茎变长。",
+      "teacher_guide": "先看一朵有茎的小花，再只改「把花茎改长」，确认花茎变长。"
+    },
+    {
+      "level_id": "L0107",
+      "order": 107,
+      "title": "蓝色箭头",
+      "goal": "把箭头涂成蓝色，再画一次",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.color(\"blue\")\nt.forward(70)\nt.right(150)\nt.forward(24)\nt.backward(24)\nt.left(120)\nt.forward(24)\nt.done()",
+      "expected_output": "一支蓝色箭头",
+      "teach_code_lines": [
+        "t.color(\"blue\")",
+        "t.forward(70)",
+        "t.right(150)",
+        "t.forward(24)",
+        "t.backward(24)",
+        "t.left(120)",
+        "t.forward(24)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "把画笔换成蓝色",
+        "小海龟向前走 70 步",
+        "向右转 150 度",
+        "小海龟向前走 24 步",
+        "小海龟退回 24 步",
+        "向左转 120 度",
+        "小海龟向前走 24 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.color(\"blue\")",
+        "t.forward(70)",
+        "t.right(150)",
+        "t.left(120)"
+      ],
+      "drill_chunk": "t.forward(50)",
+      "challenge_params": [
+        {
+          "name": "shaft",
+          "label": "把箭杆改长",
+          "type": "number",
+          "default": 70,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "箭杆变长，箭头还在。",
+          "min": 50,
+          "max": 130,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这支箭头是什么颜色？",
+        "options": [
+          "蓝色",
+          "一个正方形",
+          "一个三角形旗"
+        ],
+        "answerIndex": 0,
+        "explain": "整支箭头都用蓝色画。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把箭杆改长」改一下，看看箭杆变长。",
+        "target_param_name": "shaft",
+        "target_value": "110",
+        "expected_output": "箭杆变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "把箭头涂成蓝色，再画一次",
+      "parent_brief": "孩子会画出一支蓝色箭头。改一个数，箭杆变长。",
+      "teacher_guide": "先看一支蓝色箭头，再只改「把箭杆改长」，确认箭杆变长。"
+    },
+    {
+      "level_id": "L0108",
+      "order": 108,
+      "title": "把作品里的词打准确",
+      "goal": "打字课：打 forward、right、left、color",
+      "knowledge_tags": [
+        "forward"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "keywords",
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(40)\nt.right(90)\nt.forward(40)\nt.done()",
+      "expected_output": "一个直角",
+      "teach_code_lines": [
+        "t.forward(40)",
+        "t.right(90)",
+        "t.forward(40)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 40 步",
+        "向右转 90 度",
+        "小海龟向前走 40 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.forward",
+        "t.right",
+        "t.left",
+        "t.color"
+      ],
+      "drill_chunk": "t.forward(70)",
+      "challenge_params": [
+        {
+          "name": "long",
+          "label": "把边改长",
+          "type": "number",
+          "default": 40,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": "all"
+          },
+          "hint": "两条边一起变长。",
+          "min": 20,
+          "max": 100,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节要打哪些词？",
+        "options": [
+          "forward、right、left、color",
+          "一个新命令",
+          "三层循环"
+        ],
+        "answerIndex": 0,
+        "explain": "这些词作品里都用过。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把这节的词再打一遍。",
+        "expected_output": "编程关键词",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：打 forward、right、left、color",
+      "parent_brief": "孩子会画出一个直角。改一个数，两条边一起变长。",
+      "teacher_guide": "先看一个直角，再只改「把边改长」，确认两条边一起变长。"
+    },
+    {
+      "level_id": "L0109",
+      "order": 109,
+      "title": "橙紫台阶",
+      "goal": "第一级台阶涂橙，后面涂紫",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 18\nfor i in range(4):\n    if i == 0:\n        t.color(\"orange\")\n    else:\n        t.color(\"purple\")\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\n    t.left(90)",
+      "expected_output": "橙紫阶梯",
+      "teach_code_lines": [
+        "side = 18",
+        "for i in range(4):",
+        "    if i == 0:",
+        "        t.color(\"orange\")",
+        "    else:",
+        "        t.color(\"purple\")",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "    t.left(90)"
+      ],
+      "line_notes": [
+        "先记住边长是 18",
+        "外面这一圈要重复做，做完再来一圈",
+        "电脑从 0 开始数，0 就是第一笔",
+        "把画笔换成橙色",
+        "对不上的时候，走这边",
+        "把画笔换成紫色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向左转 90 度"
+      ],
+      "keywords": [
+        "side = 18",
+        "t.color(\"orange\")",
+        "t.color(\"purple\")",
+        "t.left(90)"
+      ],
+      "drill_chunk": "t.forward(40)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把台阶改大",
+          "type": "number",
+          "min": 12,
+          "max": 30,
+          "step": 6,
+          "default": 18,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "每一级都变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "第一级台阶是什么颜色？",
+        "options": [
+          "橙色，后面是紫色",
+          "一个正方形",
+          "一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "只有第一圈走橙色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把台阶改大」改一下，看看台阶变大。",
+        "target_param_name": "side",
+        "target_value": "30",
+        "expected_output": "台阶变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "第一级台阶涂橙，后面涂紫",
+      "parent_brief": "孩子会画出橙紫阶梯。改一个数，台阶变大。",
+      "teacher_guide": "先看橙紫阶梯，再只改「把台阶改大」，确认台阶变大。"
+    },
+    {
+      "level_id": "L0110",
+      "order": 110,
+      "title": "蓝杆红旗",
+      "goal": "旗杆涂蓝，旗面涂红",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.color(\"blue\")\nt.left(90)\nt.forward(60)\nt.right(90)\nt.color(\"red\")\nt.forward(36)\nt.right(120)\nt.forward(36)\nt.right(120)\nt.forward(36)",
+      "expected_output": "蓝杆红旗",
+      "teach_code_lines": [
+        "t.color(\"blue\")",
+        "t.left(90)",
+        "t.forward(60)",
+        "t.right(90)",
+        "t.color(\"red\")",
+        "t.forward(36)",
+        "t.right(120)",
+        "t.forward(36)",
+        "t.right(120)",
+        "t.forward(36)"
+      ],
+      "line_notes": [
+        "把画笔换成蓝色",
+        "向左转 90 度",
+        "小海龟向前走 60 步",
+        "向右转 90 度",
+        "把画笔换成红色",
+        "小海龟向前走 36 步",
+        "向右转 120 度",
+        "小海龟向前走 36 步",
+        "向右转 120 度",
+        "小海龟向前走 36 步"
+      ],
+      "keywords": [
+        "t.color(\"blue\")",
+        "t.color(\"red\")",
+        "t.forward(60)",
+        "t.right(120)"
+      ],
+      "drill_chunk": "side = 18",
+      "challenge_params": [
+        {
+          "name": "pole",
+          "label": "把旗杆改高",
+          "type": "number",
+          "default": 60,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "旗杆变高，红旗还在顶上。",
+          "min": 40,
+          "max": 120,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "杆和旗各是什么颜色？",
+        "options": [
+          "杆是蓝色，旗是红色",
+          "一个正方形",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "先涂蓝画杆，再涂红画三角旗。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把旗杆改高」改一下，看看旗杆变高。",
+        "target_param_name": "pole",
+        "target_value": "100",
+        "expected_output": "旗杆变高",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "旗杆涂蓝，旗面涂红",
+      "parent_brief": "孩子会画出蓝杆红旗。改一个数，旗杆变高。",
+      "teacher_guide": "先看蓝杆红旗，再只改「把旗杆改高」，确认旗杆变高。"
+    },
+    {
+      "level_id": "L0111",
+      "order": 111,
+      "title": "橙色小房子",
+      "goal": "把整座小房子涂成橙色",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.color(\"orange\")\nfor i in range(4):\n    t.forward(50)\n    t.left(90)\nt.left(90)\nt.forward(50)\nt.right(30)\nt.forward(50)\nt.right(120)\nt.forward(50)",
+      "expected_output": "一座橙色小房子",
+      "teach_code_lines": [
+        "t.color(\"orange\")",
+        "for i in range(4):",
+        "    t.forward(50)",
+        "    t.left(90)",
+        "t.left(90)",
+        "t.forward(50)",
+        "t.right(30)",
+        "t.forward(50)",
+        "t.right(120)",
+        "t.forward(50)"
+      ],
+      "line_notes": [
+        "把画笔换成橙色",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 50 步",
+        "向左转 90 度",
+        "向左转 90 度",
+        "小海龟向前走 50 步",
+        "向右转 30 度",
+        "小海龟向前走 50 步",
+        "向右转 120 度",
+        "小海龟向前走 50 步"
+      ],
+      "keywords": [
+        "t.color(\"orange\")",
+        "t.forward(50)",
+        "t.left(90)",
+        "t.right(120)"
+      ],
+      "drill_chunk": "t.forward(60)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把房子改大",
+          "type": "number",
+          "default": 50,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": "all"
+          },
+          "hint": "房身和房顶一起变大。",
+          "min": 40,
+          "max": 80,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这座房子是什么颜色？",
+        "options": [
+          "橙色",
+          "一个三角形旗",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "房身和房顶都是橙色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把房子改大」改一下，看看房子变大。",
+        "target_param_name": "side",
+        "target_value": "80",
+        "expected_output": "房子变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "把整座小房子涂成橙色",
+      "parent_brief": "孩子会画出一座橙色小房子。改一个数，房子变大。",
+      "teacher_guide": "先看一座橙色小房子，再只改「把房子改大」，确认房子变大。"
+    },
+    {
+      "level_id": "L0112",
+      "order": 112,
+      "title": "紫色箭头",
+      "goal": "把箭头再画一次，换成紫色",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.color(\"purple\")\nt.forward(60)\nt.right(150)\nt.forward(22)\nt.backward(22)\nt.left(120)\nt.forward(22)",
+      "expected_output": "一支紫色箭头",
+      "teach_code_lines": [
+        "t.color(\"purple\")",
+        "t.forward(60)",
+        "t.right(150)",
+        "t.forward(22)",
+        "t.backward(22)",
+        "t.left(120)",
+        "t.forward(22)"
+      ],
+      "line_notes": [
+        "把画笔换成紫色",
+        "小海龟向前走 60 步",
+        "向右转 150 度",
+        "小海龟向前走 22 步",
+        "小海龟退回 22 步",
+        "向左转 120 度",
+        "小海龟向前走 22 步"
+      ],
+      "keywords": [
+        "t.color(\"purple\")",
+        "t.forward(60)",
+        "t.right(150)",
+        "t.backward(22)"
+      ],
+      "drill_chunk": "t.forward(50)",
+      "challenge_params": [
+        {
+          "name": "shaft",
+          "label": "把箭杆改长",
+          "type": "number",
+          "default": 60,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "箭杆变长。",
+          "min": 40,
+          "max": 120,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这支箭头是什么颜色？",
+        "options": [
+          "紫色",
+          "一个正方形",
+          "一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "画法没变，只换了颜色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把箭杆改长」改一下，看看箭杆变长。",
+        "target_param_name": "shaft",
+        "target_value": "100",
+        "expected_output": "箭杆变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "把箭头再画一次，换成紫色",
+      "parent_brief": "孩子会画出一支紫色箭头。改一个数，箭杆变长。",
+      "teacher_guide": "先看一支紫色箭头，再只改「把箭杆改长」，确认箭杆变长。"
+    },
+    {
+      "level_id": "L0113",
+      "order": 113,
+      "title": "绿蓝台阶",
+      "goal": "五级台阶，第一级涂绿，后面涂蓝",
+      "knowledge_tags": [
+        "if",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 14\nfor i in range(5):\n    if i == 0:\n        t.color(\"green\")\n    else:\n        t.color(\"blue\")\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\n    t.left(90)",
+      "expected_output": "绿蓝阶梯",
+      "teach_code_lines": [
+        "side = 14",
+        "for i in range(5):",
+        "    if i == 0:",
+        "        t.color(\"green\")",
+        "    else:",
+        "        t.color(\"blue\")",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "    t.left(90)"
+      ],
+      "line_notes": [
+        "先记住边长是 14",
+        "外面这一圈要重复做，做完再来一圈",
+        "电脑从 0 开始数，0 就是第一笔",
+        "把画笔换成绿色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向左转 90 度"
+      ],
+      "keywords": [
+        "side = 14",
+        "t.color(\"green\")",
+        "t.color(\"blue\")",
+        "t.left(90)"
+      ],
+      "drill_chunk": "t.forward(60)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把台阶改大",
+          "type": "number",
+          "min": 10,
+          "max": 26,
+          "step": 4,
+          "default": 14,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "每一级都变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "compare",
+          "match": "Maybe you meant '=='",
+          "friendlyMessage": "判断要写两个等号 ==，一个等号是把数装进盒子。"
+        }
+      ],
+      "quiz": {
+        "question": "第一级是什么颜色？",
+        "options": [
+          "绿色，后面是蓝色",
+          "一个三角形",
+          "一个正方形"
+        ],
+        "answerIndex": 0,
+        "explain": "只有第一圈走绿色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把台阶改大」改一下，看看台阶变大。",
+        "target_param_name": "side",
+        "target_value": "26",
+        "expected_output": "台阶变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "五级台阶，第一级涂绿，后面涂蓝",
+      "parent_brief": "孩子会画出绿蓝阶梯。改一个数，台阶变大。",
+      "teacher_guide": "先看绿蓝阶梯，再只改「把台阶改大」，确认台阶变大。"
+    },
+    {
+      "level_id": "L0114",
+      "order": 114,
+      "title": "方瓣小花",
+      "goal": "绿茎上面开一朵橙色的小方花",
+      "knowledge_tags": [
+        "color",
+        "for_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.left(90)\nt.color(\"green\")\nt.forward(40)\nt.color(\"orange\")\nfor i in range(4):\n    t.forward(22)\n    t.right(90)",
+      "expected_output": "一朵方瓣小花",
+      "teach_code_lines": [
+        "t.left(90)",
+        "t.color(\"green\")",
+        "t.forward(40)",
+        "t.color(\"orange\")",
+        "for i in range(4):",
+        "    t.forward(22)",
+        "    t.right(90)"
+      ],
+      "line_notes": [
+        "向左转 90 度",
+        "把画笔换成绿色",
+        "小海龟向前走 40 步",
+        "把画笔换成橙色",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 22 步",
+        "向右转 90 度"
+      ],
+      "keywords": [
+        "t.color(\"green\")",
+        "t.color(\"orange\")",
+        "t.forward(40)",
+        "t.right(90)"
+      ],
+      "drill_chunk": "side = 14",
+      "challenge_params": [
+        {
+          "name": "stem",
+          "label": "把花茎改长",
+          "type": "number",
+          "default": 40,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "茎变长，花还在顶上。",
+          "min": 20,
+          "max": 90,
+          "step": 10
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "花是什么形状？",
+        "options": [
+          "一个小正方形",
+          "一个三角形旗",
+          "一条直线"
+        ],
+        "answerIndex": 0,
+        "explain": "茎是绿的，上面的方块是橙色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花茎改长」改一下，看看花茎变长。",
+        "target_param_name": "stem",
+        "target_value": "80",
+        "expected_output": "花茎变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "绿茎上面开一朵橙色的小方花",
+      "parent_brief": "孩子会画出一朵方瓣小花。改一个数，花茎变长。",
+      "teacher_guide": "先看一朵方瓣小花，再只改「把花茎改长」，确认花茎变长。"
+    },
+    {
+      "level_id": "L0115",
+      "order": 115,
+      "title": "旗杆可以变高",
+      "goal": "旗杆的高度装进 pole",
+      "knowledge_tags": [
+        "variable",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "pole = 70\nt.left(90)\nt.forward(pole)\nt.right(90)\nt.color(\"red\")\nt.forward(30)\nt.right(120)\nt.forward(30)\nt.right(120)\nt.forward(30)",
+      "expected_output": "可以变高的小旗",
+      "teach_code_lines": [
+        "pole = 70",
+        "t.left(90)",
+        "t.forward(pole)",
+        "t.right(90)",
+        "t.color(\"red\")",
+        "t.forward(30)",
+        "t.right(120)",
+        "t.forward(30)",
+        "t.right(120)",
+        "t.forward(30)"
+      ],
+      "line_notes": [
+        "先记住旗杆有多高是 70",
+        "向左转 90 度",
+        "小海龟向前走 盒子 pole 里的数",
+        "向右转 90 度",
+        "把画笔换成红色",
+        "小海龟向前走 30 步",
+        "向右转 120 度",
+        "小海龟向前走 30 步",
+        "向右转 120 度",
+        "小海龟向前走 30 步"
+      ],
+      "keywords": [
+        "pole = 70",
+        "t.forward(pole)",
+        "t.color(\"red\")",
+        "t.right(120)"
+      ],
+      "drill_chunk": "t.forward(40)",
+      "challenge_params": [
+        {
+          "name": "pole",
+          "label": "把旗杆改高",
+          "type": "number",
+          "min": 40,
+          "max": 120,
+          "step": 10,
+          "default": 70,
+          "apply": {
+            "kind": "assign",
+            "variable": "pole"
+          },
+          "hint": "杆变高，红旗还在顶上。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "想让旗杆变高，改哪里？",
+        "options": [
+          "改 pole",
+          "一个正方形",
+          "一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "杆的长度就是 pole。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把旗杆改高」改一下，看看旗杆变高。",
+        "target_param_name": "pole",
+        "target_value": "110",
+        "expected_output": "旗杆变高",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "旗杆的高度装进 pole",
+      "parent_brief": "孩子会画出可以变高的小旗。改一个数，旗杆变高。",
+      "teacher_guide": "先看可以变高的小旗，再只改「把旗杆改高」，确认旗杆变高。"
+    },
+    {
+      "level_id": "L0116",
+      "order": 116,
+      "title": "作品前再打基准键",
+      "goal": "打字课：手指放回基准键",
+      "knowledge_tags": [
+        "forward"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "baseline_keys",
+      "preview_kind": "turtle",
+      "demo_code": "t.forward(24)\nt.done()",
+      "expected_output": "一条短线",
+      "teach_code_lines": [
+        "t.forward(24)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "小海龟向前走 24 步",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "asdf",
+        "jkl;",
+        "ffjj",
+        "fjfj"
+      ],
+      "drill_chunk": "pole = 70",
+      "challenge_params": [
+        {
+          "name": "long",
+          "label": "把短线改长",
+          "type": "number",
+          "default": 24,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "线变长。",
+          "min": 20,
+          "max": 100,
+          "step": 4
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节在练哪一档？",
+        "options": [
+          "基准键位",
+          "一座新房子",
+          "三层循环"
+        ],
+        "answerIndex": 0,
+        "explain": "只练键位。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把基准键再打一遍。",
+        "expected_output": "基准键位",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：手指放回基准键",
+      "parent_brief": "孩子会画出一条短线。改一个数，短线变长。",
+      "teacher_guide": "先看一条短线，再只改「把短线改长」，确认短线变长。"
+    },
+    {
+      "level_id": "L0117",
+      "order": 117,
+      "title": "台阶再练四级",
+      "goal": "四级台阶再画一次",
+      "knowledge_tags": [
+        "for_loop"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 22\nfor i in range(4):\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\n    t.left(90)",
+      "expected_output": "四级阶梯",
+      "teach_code_lines": [
+        "side = 22",
+        "for i in range(4):",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "    t.left(90)"
+      ],
+      "line_notes": [
+        "先记住边长是 22",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向左转 90 度"
+      ],
+      "keywords": [
+        "side = 22",
+        "t.right(90)",
+        "t.left(90)",
+        "range(4)"
+      ],
+      "drill_chunk": "t.forward(24)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把台阶改大",
+          "type": "number",
+          "min": 16,
+          "max": 36,
+          "step": 2,
+          "default": 22,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "每一级都变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这次有几级？",
+        "options": [
+          "四级台阶",
+          "一个三角形",
+          "一面旗"
+        ],
+        "answerIndex": 0,
+        "explain": "循环走了 4 次。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把台阶改大」改一下，看看台阶变大。",
+        "target_param_name": "side",
+        "target_value": "34",
+        "expected_output": "台阶变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "四级台阶再画一次",
+      "parent_brief": "孩子会画出四级阶梯。改一个数，台阶变大。",
+      "teacher_guide": "先看四级阶梯，再只改「把台阶改大」，确认台阶变大。"
+    },
+    {
+      "level_id": "L0118",
+      "order": 118,
+      "title": "红色箭头",
+      "goal": "把箭头再画一次，换成红色",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.color(\"red\")\nt.forward(64)\nt.right(150)\nt.forward(20)\nt.backward(20)\nt.left(120)\nt.forward(20)",
+      "expected_output": "一支红色箭头",
+      "teach_code_lines": [
+        "t.color(\"red\")",
+        "t.forward(64)",
+        "t.right(150)",
+        "t.forward(20)",
+        "t.backward(20)",
+        "t.left(120)",
+        "t.forward(20)"
+      ],
+      "line_notes": [
+        "把画笔换成红色",
+        "小海龟向前走 64 步",
+        "向右转 150 度",
+        "小海龟向前走 20 步",
+        "小海龟退回 20 步",
+        "向左转 120 度",
+        "小海龟向前走 20 步"
+      ],
+      "keywords": [
+        "t.color(\"red\")",
+        "t.forward(64)",
+        "t.backward(20)",
+        "t.left(120)"
+      ],
+      "drill_chunk": "side = 22",
+      "challenge_params": [
+        {
+          "name": "shaft",
+          "label": "把箭杆改长",
+          "type": "number",
+          "default": 64,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "箭杆变长。",
+          "min": 40,
+          "max": 120,
+          "step": 4
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这支箭头是什么颜色？",
+        "options": [
+          "红色",
+          "一个正方形",
+          "一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "画法没变，只换成了红色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把箭杆改长」改一下，看看箭杆变长。",
+        "target_param_name": "shaft",
+        "target_value": "100",
+        "expected_output": "箭杆变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "把箭头再画一次，换成红色",
+      "parent_brief": "孩子会画出一支红色箭头。改一个数，箭杆变长。",
+      "teacher_guide": "先看一支红色箭头，再只改「把箭杆改长」，确认箭杆变长。"
+    },
+    {
+      "level_id": "L0119",
+      "order": 119,
+      "title": "紫花再开一次",
+      "goal": "绿茎上再开一朵紫色小花",
+      "knowledge_tags": [
+        "color"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "t.left(90)\nt.color(\"green\")\nt.forward(36)\nt.color(\"purple\")\nfor i in range(3):\n    t.forward(24)\n    t.right(120)",
+      "expected_output": "一朵紫花",
+      "teach_code_lines": [
+        "t.left(90)",
+        "t.color(\"green\")",
+        "t.forward(36)",
+        "t.color(\"purple\")",
+        "for i in range(3):",
+        "    t.forward(24)",
+        "    t.right(120)"
+      ],
+      "line_notes": [
+        "向左转 90 度",
+        "把画笔换成绿色",
+        "小海龟向前走 36 步",
+        "把画笔换成紫色",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 24 步",
+        "向右转 120 度"
+      ],
+      "keywords": [
+        "t.color(\"green\")",
+        "t.color(\"purple\")",
+        "t.forward(36)",
+        "t.right(120)"
+      ],
+      "drill_chunk": "t.forward(64)",
+      "challenge_params": [
+        {
+          "name": "stem",
+          "label": "把花茎改长",
+          "type": "number",
+          "default": 36,
+          "apply": {
+            "kind": "arg",
+            "func": "forward",
+            "argIndex": 0,
+            "occurrence": 1
+          },
+          "hint": "茎变长，花还在顶上。",
+          "min": 24,
+          "max": 80,
+          "step": 2
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "花是什么颜色？",
+        "options": [
+          "紫色",
+          "一个正方形",
+          "一面旗"
+        ],
+        "answerIndex": 0,
+        "explain": "茎是绿的，花是紫的。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把花茎改长」改一下，看看花茎变长。",
+        "target_param_name": "stem",
+        "target_value": "70",
+        "expected_output": "花茎变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "绿茎上再开一朵紫色小花",
+      "parent_brief": "孩子会画出一朵紫花。改一个数，花茎变长。",
+      "teacher_guide": "先看一朵紫花，再只改「把花茎改长」，确认花茎变长。"
+    },
+    {
+      "level_id": "L0120",
+      "order": 120,
+      "title": "我的小房子",
+      "goal": "用 side 画出一座能变大变小的小房子",
+      "knowledge_tags": [
+        "variable",
+        "for_loop"
+      ],
+      "level_type": "project",
+      "exercise": "normal",
+      "milestone_badge": "little_house",
+      "badge_title": "小房子",
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "side = 60\nfor i in range(4):\n    t.forward(side)\n    t.left(90)\nt.left(90)\nt.forward(side)\nt.right(30)\nt.forward(side)\nt.right(120)\nt.forward(side)",
+      "expected_output": "一座小房子",
+      "teach_code_lines": [
+        "side = 60",
+        "for i in range(4):",
+        "    t.forward(side)",
+        "    t.left(90)",
+        "t.left(90)",
+        "t.forward(side)",
+        "t.right(30)",
+        "t.forward(side)",
+        "t.right(120)",
+        "t.forward(side)"
+      ],
+      "line_notes": [
+        "先记住边长是 60",
+        "外面这一圈要重复做，做完再来一圈",
+        "小海龟向前走 盒子 side 里的数",
+        "向左转 90 度",
+        "向左转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 30 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 120 度",
+        "小海龟向前走 盒子 side 里的数"
+      ],
+      "keywords": [
+        "side = 60",
+        "t.left(90)",
+        "t.right(30)",
+        "t.right(120)"
+      ],
+      "drill_chunk": "t.forward(36)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把房子改大",
+          "type": "number",
+          "min": 40,
+          "max": 100,
+          "step": 10,
+          "default": 60,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "改 side，整座房子一起变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，循环或判断里的代码才算在里面。"
+        }
+      ],
+      "quiz": {
+        "question": "这座房子由谁决定大小？",
+        "options": [
+          "side",
+          "一条直线",
+          "一个六边形"
+        ],
+        "answerIndex": 0,
+        "explain": "房身和房顶都读 side。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把房子改大」改一下，看看房子整体变大。",
+        "target_param_name": "side",
+        "target_value": "90",
+        "expected_output": "房子整体变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 20,
+      "is_review": false,
+      "teaching_intent": "用 side 画出一座能变大变小的小房子",
+      "parent_brief": "孩子会画出一座小房子。改一个数，房子整体变大。",
+      "teacher_guide": "先看一座小房子，再只改「把房子改大」，确认房子整体变大。"
+    }
+  ]
+}

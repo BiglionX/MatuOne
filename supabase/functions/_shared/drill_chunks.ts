@@ -1,4 +1,7 @@
-/** 1–20 关各死磕的那一串。同一串跨课重复，第 21 关起没有。本地接口和 Edge 共用这一张表。 */
+// @ts-expect-error 边缘函数要带 .ts 后缀，应用这边的 tsconfig 不允许。
+import { LEVEL1_DRILLS } from './level1Drills.ts'
+
+/** 1–20 关的旧组块。Level 1 新课文优先用 level1Drills，这里只作更早课文的兜底。 */
 const DRILL: Record<number, string> = {
   1: 'print("',
   2: 't.forward(',
@@ -23,7 +26,7 @@ const DRILL: Record<number, string> = {
 }
 
 export function drillForOrder(order: number): string | undefined {
-  return DRILL[order]
+  return LEVEL1_DRILLS[order] ?? DRILL[order]
 }
 
 /** 课文 body 上的 drill_chunk。空着或不是一行短字符串时返回 null。 */

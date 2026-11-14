@@ -308,7 +308,7 @@ export function Lesson() {
             )}
           </div>
           {level.bonus_challenge && !bonusReward && (
-            <p className="mt-4 text-sm text-ink-soft">还有力气可以巩固一下，不做也能去下一关。</p>
+            <p className="mt-4 text-sm text-ink-soft">{level.bonus_challenge.instruction} 不做也能去下一关。</p>
           )}
         </div>
       </div>
