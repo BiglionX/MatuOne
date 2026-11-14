@@ -17,18 +17,34 @@ function missingRelation(error: unknown): boolean {
 
 /** 进度只按 student_id 取，不带 org_id。序号用来和目录对齐。 */
 export async function readProgressMarks(studentId: string): Promise<ProgressMark[]> {
-  const sql = (table: 'learning_record' | 'level_progress') =>
-    `select cl.sort_order, src.completed, src.stars
+  const sql = (table: 'learning_record' | 'level_progress', withBonus: boolean) =>
+    `select cl.sort_order, src.completed, src.stars${withBonus ? ', src.bonus_completed' : ''}
      from public.${table} src
      join public.course_level cl on cl.level_id = src.level_id
      where src.student_id = $1`
+  const mapRows = (rows: { sort_order: number; completed: boolean; stars: number; bonus_completed?: boolean }[]): ProgressMark[] =>
+    rows.map((row) => ({
+      order: Number(row.sort_order),
+      completed: Boolean(row.completed),
+      stars: Number(row.stars) || 0,
+      bonusCompleted: row.bonus_completed === true,
+    }))
   try {
-    const rows = await q<{ sort_order: number; completed: boolean; stars: number }>(sql('learning_record'), [studentId])
-    return rows.map((row) => ({ order: Number(row.sort_order), completed: Boolean(row.completed), stars: Number(row.stars) || 0 }))
+    const rows = await q<{ sort_order: number; completed: boolean; stars: number; bonus_completed?: boolean }>(
+      sql('learning_record', true),
+      [studentId],
+    )
+    return mapRows(rows)
   } catch (error) {
     if (!missingRelation(error)) throw error
-    const rows = await q<{ sort_order: number; completed: boolean; stars: number }>(sql('level_progress'), [studentId])
-    return rows.map((row) => ({ order: Number(row.sort_order), completed: Boolean(row.completed), stars: Number(row.stars) || 0 }))
+    try {
+      const rows = await q<{ sort_order: number; completed: boolean; stars: number }>(sql('learning_record', false), [studentId])
+      return mapRows(rows)
+    } catch (again) {
+      if (!missingRelation(again)) throw again
+      const rows = await q<{ sort_order: number; completed: boolean; stars: number }>(sql('level_progress', false), [studentId])
+      return mapRows(rows)
+    }
   }
 }
 

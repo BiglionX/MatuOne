@@ -6,6 +6,8 @@ import {
   type CatalogLevel,
 } from '../data/fullCurriculum'
 import { getLevelById } from '../mock/levels'
+import { bonusForOrder } from '../data/bonusChallenges'
+import { drillForOrder } from '../data/drillChunks'
 
 function orderOf(levelId: string): number | null {
   const matched = /^L(\d+)$/i.exec(levelId.trim())
@@ -24,7 +26,14 @@ export function buildPlayableLevel(levelId: string): Level | undefined {
   if (!meta) return undefined
   const level = playableBody(meta)
   if (!level) return undefined
-  return { ...level, is_placeholder: isPlaceholderLevel(meta) }
+  const bonus = bonusForOrder(meta.order)
+  const drill = drillForOrder(meta.order)
+  return {
+    ...level,
+    ...(bonus ? { bonus_challenge: bonus } : {}),
+    ...(drill ? { drill_chunk: drill } : {}),
+    is_placeholder: isPlaceholderLevel(meta),
+  }
 }
 
 function playableBody(meta: CatalogLevel): Level | undefined {

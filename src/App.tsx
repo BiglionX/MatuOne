@@ -41,6 +41,8 @@ const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents').then((m) 
 const AdminParents = lazy(() => import('@/pages/admin/AdminParents').then((m) => ({ default: m.AdminParents })))
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })))
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })))
+const AgentLogin = lazy(() => import('@/pages/agent/AgentLogin').then((m) => ({ default: m.AgentLogin })))
+const AgentHome = lazy(() => import('@/pages/agent/AgentHome').then((m) => ({ default: m.AgentHome })))
 
 function RouteFallback() {
   return <div className="grid min-h-[60vh] place-items-center text-sm text-ink-soft">正在加载…</div>
@@ -79,6 +81,8 @@ export default function App() {
 
           <Route path="/parent/login" element={<ParentLogin />} />
           <Route path="/parent" element={<ParentHome />} />
+          <Route path="/agent/login" element={<AgentLogin />} />
+          <Route path="/agent" element={<AgentHome />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminGate><AdminLayout /></AdminGate>}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />

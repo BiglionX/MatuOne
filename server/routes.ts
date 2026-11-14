@@ -9,6 +9,9 @@ import { planStudentImport } from '../supabase/functions/_shared/studentImport'
 import { dbMessage, one, q } from './db'
 import { decideStudentLevel } from './enter'
 import { readProgressMarks, resolveStoredLevel } from './curriculum'
+import { readBonusChallenge } from '../src/lib/bonusChallenge'
+import { readDrillChunk } from '../src/lib/drillChunk'
+import { drillForOrder, reviewChunkOf } from '../supabase/functions/_shared/drill_chunks'
 import { buildPlayableLevel } from '../src/lib/lessonMaterial'
 import { presentLearningHome, projectUnit, type AccessContext } from '../src/lib/curriculumState'
 import { curriculumUnitById } from '../src/data/fullCurriculum'
@@ -126,6 +129,10 @@ export async function dispatch(req: ApiRequest): Promise<ApiResult> {
     switch (req.name) {
       case 'org-login':
         return await orgLogin(req)
+      case 'agent-login':
+        return await agentLogin(req)
+      case 'agent-portal':
+        return await agentPortal(req)
       case 'student-login':
         return await studentLogin(req)
       case 'platform-login':
@@ -167,6 +174,49 @@ export async function dispatch(req: ApiRequest): Promise<ApiResult> {
     const message = publicError(error)
     console.error('api failed', req.name, dbMessage(error))
     return fail(500, message)
+  }
+}
+
+async function agentLogin(req: ApiRequest): Promise<ApiResult> {
+  const account = typeof req.body.account === 'string' ? req.body.account.trim() : ''
+  const password = typeof req.body.password === 'string' ? req.body.password : ''
+  if (!account || !password) return fail(401, '账号或密码不正确')
+  const row = await one<{
+    admin_id: string
+    password_hash: string
+    agent_name: string
+    region: string
+    agent_status: string
+  }>('select * from public.agent_login_lookup($1)', [account])
+  if (!row) {
+    await hashPassword('timing-pad')
+    return fail(401, '账号或密码不正确')
+  }
+  if (!(await verifyPassword(password, row.password_hash))) return fail(401, '账号或密码不正确')
+  if (row.agent_status !== 'active') return fail(403, '区域服务商已停用，无法登录')
+  await q('select public.mark_agent_admin_login($1)', [row.admin_id])
+  const session = await issueSession('agent', row.admin_id)
+  return ok({
+    ...session,
+    adminId: row.admin_id,
+    account,
+    agentName: row.agent_name,
+    region: row.region,
+  })
+}
+
+async function agentPortal(req: ApiRequest): Promise<ApiResult> {
+  const auth = await requireRole(req, 'agent')
+  if ('status' in auth) return auth
+  try {
+    const row = await one<{ agent_home: Record<string, unknown> }>('select public.agent_home($1) as agent_home', [auth.subjectId])
+    if (!row?.agent_home) return fail(401, '未登录')
+    return ok(row.agent_home)
+  } catch (error) {
+    const line = dbMessage(error)
+    if (line.includes('已停用')) return fail(403, '区域服务商已停用，无法登录')
+    if (line.includes('未登录')) return fail(401, '未登录')
+    throw error
   }
 }
 
@@ -703,7 +753,7 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
   ])
   if (!student || student.status !== 'active') return fail(401, '请先登录')
   const action = typeof req.body.action === 'string' ? req.body.action : 'map'
-  if (previewBlocksProgress(req.body) && (action === 'typing' || action === 'touch' || action === 'complete')) {
+  if (previewBlocksProgress(req.body) && (action === 'typing' || action === 'touch' || action === 'complete' || action === 'bonus' || action === 'drill')) {
     return fail(403, '预览模式不会记录学习进度')
   }
   const levelRaw = req.body.levelId
@@ -756,6 +806,69 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
     }
     return ok({ ok: true })
   }
+  if (action === 'bonus') {
+    const decision = await decideStudentLevel(student.id, requestedLevelId)
+    if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
+    const playable = buildPlayableLevel(decision.levelId)
+    const stored = await resolveStoredLevel(decision.levelId)
+    const storedCopy = await findCourseLevel(decision.levelId)
+    const bonus = readBonusChallenge(bodyBonus(storedCopy?.body)) ?? playable?.bonus_challenge
+    if (!stored || !bonus) return fail(400, '这一关没有巩固练习')
+    const done = await one<{ completed: boolean }>('select completed from public.learning_record where student_id = $1 and level_id = $2', [
+      student.id,
+      stored.levelId,
+    ])
+    if (!done?.completed) return fail(400, '先完成这一关，再做巩固')
+    await q(
+      `update public.learning_record
+       set bonus_completed = true, bonus_reward = $3, updated_at = now()
+       where student_id = $1 and level_id = $2`,
+      [student.id, stored.levelId, bonus.bonus_reward],
+    )
+    return ok({ ok: true, reward: bonus.bonus_reward })
+  }
+  if (action === 'drill') {
+    const decision = await decideStudentLevel(student.id, requestedLevelId)
+    if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
+    const playable = buildPlayableLevel(decision.levelId)
+    const stored = await resolveStoredLevel(decision.levelId)
+    const storedCopy = await findCourseLevel(decision.levelId)
+    const chunk = readDrillChunk(bodyDrill(storedCopy?.body)) ?? playable?.drill_chunk
+    if (!stored || !chunk) return fail(400, '这一关没有要打的组块')
+    await q(
+      `insert into public.learning_record
+         (student_id, level_id, completed, stars, change_done, error_taps, runs, drill_reps, drill_chunk)
+       values ($1, $2, false, 0, false, 0, 0, 4, $3)
+       on conflict (student_id, level_id) do update set
+         drill_reps = 4,
+         drill_chunk = excluded.drill_chunk,
+         updated_at = now()`,
+      [student.id, stored.levelId, chunk],
+    )
+    return ok({ ok: true })
+  }
+  if (action === 'recent-keywords') {
+    const rows = await q<{ sort_order: number; body: unknown }>(
+      `select cl.sort_order, cl.body
+       from public.learning_record lr
+       join public.course_level cl on cl.level_id = lr.level_id
+       where lr.student_id = $1 and lr.completed = true
+       order by lr.updated_at desc
+       limit 5`,
+      [student.id],
+    )
+    const items = rows.map((row) => {
+      const order = Number(row.sort_order)
+      const fromBody = bodyKeywords(row.body)
+      const playable = fromBody.length ? undefined : buildPlayableLevel(`L${String(order).padStart(4, '0')}`)
+      return {
+        order,
+        keywords: fromBody.length ? fromBody : (playable?.keywords ?? []),
+        drillChunk: readDrillChunk(bodyDrill(row.body)) ?? drillForOrder(order) ?? null,
+      }
+    })
+    return ok({ items })
+  }
   if (action === 'level') {
     const decision = await decideStudentLevel(student.id, requestedLevelId)
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
@@ -763,7 +876,8 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
     if (!playable) return fail(404, '没有找到这一关')
     const storedCopy = await findCourseLevel(decision.levelId)
     const hints = await q('select pattern, friendly_message from public.error_hint')
-    return ok({ level: withStoredGoal(playable, storedCopy?.goal), hints })
+    const level = withStoredDrill(withStoredBonus(withStoredGoal(playable, storedCopy?.goal), storedCopy?.body), storedCopy?.body)
+    return ok({ level, reviewChunk: await reviewChunkFor(playable.order, level.drill_chunk ?? null), hints })
   }
 
   const access = await loadStudentAccess(student)
@@ -1570,6 +1684,7 @@ async function adminDashboard(req: ApiRequest): Promise<ApiResult> {
     seat_fee_total: number
     rebate_due: number
     platform_net: number
+    account: string | null
   }>('select * from public.list_agent_commissions()')
   return ok({
     revenue,
@@ -1585,6 +1700,7 @@ async function adminDashboard(req: ApiRequest): Promise<ApiResult> {
       seatFeeTotal: Number(row.seat_fee_total),
       rebateDue: Number(row.rebate_due),
       platformNet: Number(row.platform_net),
+      account: row.account,
     })),
   })
 }
@@ -1696,7 +1812,22 @@ async function adminOps(req: ApiRequest): Promise<ApiResult> {
   const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote' || action === 'detail' || action === 'settings'
   const staff = await requireStaff(req, financeOk ? ['ops', 'finance'] : ['ops'])
   if ('status' in staff) return staff
-  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成']
+  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成', '区域服务商不存在', '区域服务商已停用', '密码哈希无效']
+  if (action === 'issue-agent-account') {
+    const agentId = typeof req.body.agentId === 'string' ? req.body.agentId : ''
+    try {
+      const plain = generateInitialPassword()
+      const created = await one<{ admin_id: string; account: string; reset: boolean }>(
+        'select * from public.issue_agent_account($1, $2, $3)',
+        [staff.id, agentId, await hashPassword(plain)],
+      )
+      if (!created) return fail(500, '发放失败')
+      await q(`update public.app_session set expires_at = now() where role = 'agent' and subject_id = $1`, [created.admin_id])
+      return ok({ account: created.account, initialPassword: plain, reset: created.reset })
+    } catch (error) {
+      return friendly(error, known, '发放失败')
+    }
+  }
   if (action === 'settings' || action === 'save-settings') {
     try {
       if (action === 'save-settings') {
@@ -1870,12 +2001,12 @@ async function provisionOrg(req: ApiRequest): Promise<ApiResult> {
 const COPY_FIELDS = ['goal', 'teaching_intent', 'parent_brief', 'teacher_guide'] as const
 type CopyField = (typeof COPY_FIELDS)[number]
 
-async function findCourseLevel(levelId: string): Promise<{ level_id: string; preview_frozen: boolean; goal: string } | null> {
+async function findCourseLevel(levelId: string): Promise<{ level_id: string; preview_frozen: boolean; goal: string; body: unknown } | null> {
   if (!levelId) return null
   const matched = /^L(\d+)$/i.exec(levelId)
   const order = matched ? Number(matched[1]) : null
-  return one<{ level_id: string; preview_frozen: boolean; goal: string }>(
-    `select level_id, preview_frozen, goal
+  return one<{ level_id: string; preview_frozen: boolean; goal: string; body: unknown }>(
+    `select level_id, preview_frozen, goal, body
      from public.course_level
      where level_id = $1 or ($2::int is not null and sort_order = $2)
      order by case when level_id = $1 then 0 else 1 end
@@ -1884,10 +2015,56 @@ async function findCourseLevel(levelId: string): Promise<{ level_id: string; pre
   )
 }
 
+function bodyRecord(body: unknown): Record<string, unknown> | undefined {
+  const record = typeof body === 'string' ? safeJson(body) : body
+  if (!record || typeof record !== 'object') return undefined
+  return record as Record<string, unknown>
+}
+
+function bodyBonus(body: unknown): unknown {
+  return bodyRecord(body)?.bonus_challenge
+}
+
+function bodyDrill(body: unknown): unknown {
+  return bodyRecord(body)?.drill_chunk
+}
+
+function bodyKeywords(body: unknown): string[] {
+  const value = bodyRecord(body)?.keywords
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim())
+}
+
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
 function withStoredGoal<T extends { goal: string }>(level: T, goal: string | null | undefined): T {
   const next = goal?.trim()
   if (!next) return level
   return { ...level, goal: next }
+}
+
+function withStoredBonus<T extends { bonus_challenge?: unknown }>(level: T, body: unknown): T {
+  const bonus = readBonusChallenge(bodyBonus(body))
+  if (!bonus) return level
+  return { ...level, bonus_challenge: bonus }
+}
+
+function withStoredDrill<T extends { drill_chunk?: string }>(level: T, body: unknown): T {
+  const drill = readDrillChunk(bodyDrill(body))
+  if (!drill) return level
+  return { ...level, drill_chunk: drill }
+}
+
+async function reviewChunkFor(order: number, currentDrill: string | null): Promise<string | null> {
+  if (!currentDrill || !Number.isInteger(order) || order <= 1) return null
+  const prev = await one<{ body: unknown }>('select body from public.course_level where sort_order = $1 limit 1', [order - 1])
+  return reviewChunkOf(currentDrill, order, prev?.body)
 }
 
 async function courseCatalog(req: ApiRequest): Promise<ApiResult> {
@@ -1915,7 +2092,8 @@ async function courseCatalog(req: ApiRequest): Promise<ApiResult> {
     const playable = buildPlayableLevel(levelId) ?? buildPlayableLevel(stored.level_id)
     if (!playable) return fail(404, '没有找到这一关')
     const hints = await q('select pattern, friendly_message from public.error_hint')
-    return ok({ level: withStoredGoal(playable, stored.goal), hints })
+    const level = withStoredDrill(withStoredBonus(withStoredGoal(playable, stored.goal), stored.body), stored.body)
+    return ok({ level, reviewChunk: await reviewChunkFor(playable.order, level.drill_chunk ?? null), hints })
   }
   if (action === 'copy-save' || action === 'copy-history') {
     const raw = req.body.levelId

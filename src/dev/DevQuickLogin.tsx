@@ -7,6 +7,7 @@ const TITLE: Record<DemoRole, string> = {
   org: '机构',
   parent: '家长',
   platform: '平台',
+  agent: '区域服务商',
 }
 
 export function DevQuickLogin({

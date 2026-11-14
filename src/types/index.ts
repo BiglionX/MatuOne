@@ -93,6 +93,28 @@ export interface LevelQuiz {
   explain: string
 }
 
+/** 课后巩固。缺省表示这节没有副本，学生做完三回合就可以走。 */
+export type BonusChallengeType = 'param_edit' | 'code_fill' | 'typing'
+
+export interface BonusChallenge {
+  type: BonusChallengeType
+  /** 给学生看的那一句任务 */
+  instruction: string
+  /** param_edit：对应 challenge_params.name，用课内闲着的那个参数 */
+  target_param_name?: string
+  /** param_edit：要改成的值。code_fill：空里要填的词。 */
+  target_value?: string
+  /** code_fill：带空的那一行，空位写成 ____ */
+  prompt_line?: string
+  /**
+   * 做完后告诉学生「这是什么」。
+   * 不拿它和 print 的原文逐字比对。
+   */
+  expected_output: string
+  /** 做完后记下的奖励，例如「皇冠」。不做不扣。 */
+  bonus_reward: string
+}
+
 export interface Level {
   level_id: string
   order: number
@@ -114,9 +136,13 @@ export interface Level {
   /** 与 teach_code_lines 一一对应的“这一行在做什么”，给第一次见代码的孩子看 */
   line_notes?: string[]
   keywords: string[]
+  /** 这一节要反复打的短组块。没有这个字段时，C 回合仍打关键词。 */
+  drill_chunk?: string
   challenge_params: ChallengeParam[]
   error_mappings: ErrorMapping[]
   quiz: LevelQuiz
+  /** 学完三回合之后的可选副本。没有这个字段，结束页不出现「巩固一下」。 */
+  bonus_challenge?: BonusChallenge
   estimated_minutes: number
   is_review?: boolean
   /** 课文还在制作。地图和课时页用它提示「内容制作中」。 */
@@ -136,26 +162,33 @@ export interface TurtleArt {
   bounds: { minX: number; minY: number; maxX: number; maxY: number }
 }
 
-export interface RunError {
-  line: number
-  pattern: string
-  message: string
+/** 自定义海龟交回的一条线段。前端用 Canvas 2D 把它画出来。 */
+export interface CanvasCommand {
+  action: 'line'
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  color: string
+  pensize: number
 }
 
-export interface RunResult {
-  ok: boolean
-  kind: 'text' | 'turtle'
-  /** print 输出（kind=text 或同时有文字） */
-  text?: string
-  art?: TurtleArt
-  error?: RunError
-  /** 实际执行的代码行数 */
-  lineCount: number
-  /** 抖动量，让"再跑一次"可感知 */
-  runId: string
-  elapsedMs: number
-  source: 'mock'
-}
+/**
+ * 页面只看 ok / output，或失败时的行号和人话。
+ * loading 为 true 时 Pyodide 还在下载，不是代码写错了。
+ * 海龟关卡的 output.text 是同时 print 出来的字，没有就是空串。
+ */
+export type RunResult =
+  | {
+      ok: true
+      output: { kind: 'text'; text: string } | { kind: 'canvas'; commands: CanvasCommand[]; text: string }
+    }
+  | {
+      ok: false
+      line: number
+      message: string
+      loading?: boolean
+    }
 
 /** 海龟此刻的位置。分步执行时画在画布上，转弯才看得见。 */
 export interface RunCursor {
@@ -171,7 +204,7 @@ export interface RunStep {
   /** 给孩子看的这一步说明 */
   note: string
   text: string
-  art: TurtleArt
+  commands: CanvasCommand[]
   cursor: RunCursor
 }
 

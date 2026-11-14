@@ -20,6 +20,8 @@ import { readOrgStudentById, readStudentSession } from './orgStore'
 import { presentParentProgress } from './parentProgress'
 import { resolveStudentStanding } from './standing'
 import { readJSON, writeJSON } from './storage'
+import { bonusChallengeError, readBonusChallenge } from './bonusChallenge'
+import { drillChunkError, readDrillChunk } from './drillChunk'
 
 export type { StudentStanding } from '@/types/curriculum'
 
@@ -576,6 +578,12 @@ export function validateCoursePackage(text: string): { report: ImportReport; lev
       push('challenge_params', 'challenge_params 需要是数组')
     if (raw.error_mappings !== undefined && !Array.isArray(raw.error_mappings))
       push('error_mappings', 'error_mappings 需要是数组')
+    const bonusError = bonusChallengeError(raw.bonus_challenge)
+    if (bonusError) push('bonus_challenge', bonusError)
+    const bonus = readBonusChallenge(raw.bonus_challenge)
+    const drillError = drillChunkError(raw.drill_chunk)
+    if (drillError) push('drill_chunk', drillError)
+    const drill = readDrillChunk(raw.drill_chunk)
     if (typeof raw.estimated_minutes !== 'number') push('estimated_minutes', '缺少 estimated_minutes（数字）')
     const levelType: LevelType =
       raw.level_type === 'fill_blank' || raw.level_type === 'debug' ? raw.level_type : 'normal'
@@ -624,6 +632,8 @@ export function validateCoursePackage(text: string): { report: ImportReport; lev
           },
         estimated_minutes: raw.estimated_minutes!,
         is_review: Boolean(raw.is_review),
+        ...(bonus ? { bonus_challenge: bonus } : {}),
+        ...(drill ? { drill_chunk: drill } : {}),
       })
     }
   })

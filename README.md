@@ -10,7 +10,6 @@ npm install
 npm run dev        # 开发，默认 http://localhost:5173
 npm run build      # tsc --noEmit + vite build，产物在 dist/
 npm run preview    # 预览已构建产物，默认 http://localhost:4173
-npm run smoke      # 不依赖浏览器：12 关标准代码 + 参数改写 + 四类报错
 npm run typecheck  # 只做类型检查
 ```
 
@@ -49,7 +48,6 @@ src/
   types/index.ts        # 全部类型集中定义
   lib/
     runner.ts           # 页面唯一的 Python 执行入口 runCode(code, levelId)
-    python-sim.ts       # 原型用的轻量 turtle/print 解释器（可替换为 Pyodide）
     usePageMeta.ts      # 页面级 title/description/og/canonical（SPA 共用一份 index.html）
     api.ts              # 页面唯一数据入口（localStorage + mock）
     storage.ts lineCheck.ts format.ts
@@ -58,14 +56,13 @@ src/
   mock/org.ts           # 机构 / 学生 / 打字 / 家长种子数据
   components/           # BrandMark SiteFooter TurtleCanvas RunPreview Toast TypingTrainer WpmChart
   pages/                # 营销站、入口、学生端、机构端、家长端、平台后台、法务页、404
-scripts/smoke-sim.ts    # 冒烟测试
 scripts/brand-build.py  # 由 _brand/logo-src.jpg 生成 logo 与 favicon
 scripts/og-cover.py     # 生成 1200×630 社交分享卡 public/og-cover.png
 ```
 
 ## 关键实现约定
 
-- **执行适配层**：页面不直接碰 mock 或解释器，只调 `src/lib/runner.ts` 的 `runCode(code, levelId)`；返回值是统一的 `RunResult`（笔迹、文字、错误行与「人话提示」）。接 Pyodide 时只改这一层。
+- **执行适配层**：页面不直接碰 Pyodide，只调 `src/lib/runner.ts` 的 `runCode(code, levelId)`；返回值是统一的 `RunResult`（笔迹、文字、错误行与「人话提示」）。真正执行在 `src/lib/pyodide.worker.ts`。
 - **课程数据**：`src/mock/levels.ts` 的 12 关均可真实运行，`teach_code_lines` 就是学生抄的代码，抄对 = 跑得起来。
 - **进关先看小绘本**：每关进入时先出 3—6 页图文卡（这一关要做什么 + 每条新命令一页），每页一句说明、一个扁平插图、一行真实代码，并用系统语音（Web Speech API，`zh-CN`）朗读；可翻页、重听、跳过，最后一页「看懂了，开始猜一猜」进入 A 回合。插图全部是内联 SVG，不依赖外部素材或网络。
 - **代码说明**：`getLineNotes(level)` 提供逐行说明（优先用课程包自带的 `Level.line_notes`，否则取 `mock/lineNotes.ts`）。A 回合「要运行的代码」每行下方都写一句人话，B 回合正在抄的那一行上方也显示「这一行：…」，学生不是盲抄。

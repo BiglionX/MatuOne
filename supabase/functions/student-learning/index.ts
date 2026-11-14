@@ -4,6 +4,7 @@ import { toCurriculumPosition, type CurriculumPositionRow } from '../_shared/cur
 import { decideEnterLevel } from '../_shared/enterLevel.ts'
 import { normalizeTypingScore } from '../_shared/typingScore.ts'
 import { empty, json } from '../_shared/http.ts'
+import { drillForLevel, reviewChunkOf } from '../_shared/drill_chunks.ts'
 import { isLevelEntitled, levelOrderOf } from '../_shared/orgStatus.ts'
 
 function weekStart(date: Date): Date {
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
   const action = typeof body.action === 'string' ? body.action : 'map'
   if (
     (body.preview === true || body.preview === 'true' || body.sandbox === true) &&
-    (action === 'typing' || action === 'touch' || action === 'complete')
+    (action === 'typing' || action === 'touch' || action === 'complete' || action === 'bonus' || action === 'drill')
   ) {
     return json(403, { message: '预览模式不会记录学习进度' })
   }
@@ -141,6 +142,59 @@ Deno.serve(async (req) => {
     return json(200, { ok: true })
   }
 
+  if (action === 'bonus') {
+    const decision = await decideEnterLevel(db, student.id, requestedLevelId)
+    if (!decision.result.allowed) return json(decision.httpStatus, decision.result)
+    const stored = await findStoredLevel(db, decision.levelId)
+    const lesson = stored?.body && typeof stored.body === 'object' ? (stored.body as { bonus_challenge?: { bonus_reward?: unknown } }) : null
+    const reward = lesson?.bonus_challenge?.bonus_reward
+    if (!stored || typeof reward !== 'string' || !reward.trim()) return json(400, { message: '这一关没有巩固练习' })
+    const { data: existing } = await db
+      .from('learning_record')
+      .select('completed')
+      .eq('student_id', student.id)
+      .eq('level_id', stored.level_id)
+      .maybeSingle()
+    if (!existing?.completed) return json(400, { message: '先完成这一关，再做巩固' })
+    await db
+      .from('learning_record')
+      .update({ bonus_completed: true, bonus_reward: reward.trim(), updated_at: new Date().toISOString() })
+      .eq('student_id', student.id)
+      .eq('level_id', stored.level_id)
+    return json(200, { ok: true, reward: reward.trim() })
+  }
+
+  if (action === 'drill') {
+    const decision = await decideEnterLevel(db, student.id, requestedLevelId)
+    if (!decision.result.allowed) return json(decision.httpStatus, decision.result)
+    const stored = await findStoredLevel(db, decision.levelId)
+    const chunk = stored ? drillForLevel(stored.body, Number(stored.sort_order)) : null
+    if (!stored || !chunk) return json(400, { message: '这一关没有要打的组块' })
+    const now = new Date().toISOString()
+    const { data: existing } = await db
+      .from('learning_record')
+      .select('student_id')
+      .eq('student_id', student.id)
+      .eq('level_id', stored.level_id)
+      .maybeSingle()
+    if (existing) {
+      await db
+        .from('learning_record')
+        .update({ drill_reps: 4, drill_chunk: chunk, updated_at: now })
+        .eq('student_id', student.id)
+        .eq('level_id', stored.level_id)
+    } else {
+      await db.from('learning_record').insert({
+        student_id: student.id,
+        level_id: stored.level_id,
+        completed: false,
+        drill_reps: 4,
+        drill_chunk: chunk,
+      })
+    }
+    return json(200, { ok: true })
+  }
+
   if (action === 'level') {
     const decision = await decideEnterLevel(db, student.id, requestedLevelId)
     if (!decision.result.allowed) return json(decision.httpStatus, decision.result)
@@ -149,8 +203,44 @@ Deno.serve(async (req) => {
       db.from('error_hint').select('pattern, friendly_message'),
     ])
     if (!found?.body || typeof found.body !== 'object') return json(404, { message: '没有找到这一关' })
+    const order = Number(found.sort_order)
+    const drill = drillForLevel(found.body, order)
     const goal = typeof found.goal === 'string' && found.goal.trim() ? found.goal : (found.body as { goal?: string }).goal
-    return json(200, { level: { ...(found.body as Record<string, unknown>), goal }, hints: levelHints ?? [] })
+    let reviewChunk: string | null = null
+    if (drill && order > 1) {
+      const { data: prevRows } = await db.from('course_level').select('body').eq('sort_order', order - 1).limit(1)
+      reviewChunk = reviewChunkOf(drill, order, prevRows?.[0]?.body)
+    }
+    const { drill_chunk: _storedDrill, ...rest } = found.body as Record<string, unknown>
+    return json(200, {
+      level: { ...rest, goal, ...(drill ? { drill_chunk: drill } : {}) },
+      reviewChunk,
+      hints: levelHints ?? [],
+    })
+  }
+
+  if (action === 'recent-keywords') {
+    const { data: records, error: recordError } = await db
+      .from('learning_record')
+      .select('level_id, updated_at')
+      .eq('student_id', student.id)
+      .eq('completed', true)
+      .order('updated_at', { ascending: false })
+      .limit(5)
+    if (recordError) return json(500, { message: '读取失败' })
+    const ids = (records ?? []).map((row) => row.level_id as string)
+    const { data: levels, error: levelError } = ids.length
+      ? await db.from('course_level').select('level_id, sort_order, body').in('level_id', ids)
+      : { data: [] as { level_id: string; sort_order: number; body: unknown }[], error: null }
+    if (levelError) return json(500, { message: '读取失败' })
+    const byId = new Map((levels ?? []).map((row) => [row.level_id as string, row]))
+    const items = (records ?? []).flatMap((record) => {
+      const level = byId.get(record.level_id as string)
+      if (!level) return []
+      const order = Number(level.sort_order)
+      return [{ order, keywords: readKeywords(level.body), drillChunk: drillForLevel(level.body, order) }]
+    })
+    return json(200, { items })
   }
 
   const position = await curriculumPosition(db, student.id)
@@ -306,6 +396,13 @@ interface LevelRow {
   unit_id: string
   level_type?: string
   body?: unknown
+}
+
+function readKeywords(body: unknown): string[] {
+  if (!body || typeof body !== 'object') return []
+  const value = (body as { keywords?: unknown }).keywords
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim())
 }
 
 async function findStoredLevel(

@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 
-export function loginEmail(kind: 'org' | 'student' | 'staff' | 'parent', account: string): string {
+export function loginEmail(kind: 'org' | 'student' | 'staff' | 'parent' | 'agent', account: string): string {
   const local = account.trim().toLowerCase().replace(/[^a-z0-9._+-]/g, '.')
   return `${kind}.${local}@users.daima-chuangguan.com`
 }

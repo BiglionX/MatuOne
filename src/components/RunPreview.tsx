@@ -1,5 +1,5 @@
 import type { RunCursor, RunResult } from '@/types'
-import { TurtleCanvas } from './TurtleCanvas'
+import { CanvasPreview } from './CanvasPreview'
 
 /** 左边的输出区：一块屏幕。字和线都直接出现在画面上，不再加说明。 */
 function OutputScreen({ flash, children }: { flash?: boolean; children: React.ReactNode }) {
@@ -34,11 +34,21 @@ export function RunPreview({
     )
   }
 
-  if (!result.ok) return null
+  if (!result.ok) {
+    if (!result.loading) return null
+    return (
+      <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed border-line text-ink-soft">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-brand" aria-hidden="true" />
+        <span>引擎准备中...</span>
+        <span className="h-1 w-40 overflow-hidden rounded-full bg-line" aria-hidden="true">
+          <span className="engine-bar block h-full w-1/3 bg-brand" />
+        </span>
+      </div>
+    )
+  }
 
-  const printed = result.kind === 'text' || result.text?.trim() ? result.text?.trim() ?? '' : ''
-
-  if (result.kind === 'text') {
+  if (result.output.kind === 'text') {
+    const printed = result.output.text
     return (
       <OutputScreen flash={flash}>
         <pre className="code-font h-full overflow-auto whitespace-pre-wrap px-5 py-5 text-lg text-ink">
@@ -49,14 +59,14 @@ export function RunPreview({
     )
   }
 
+  const printed = result.output.text
   return (
     <OutputScreen flash={flash}>
       {printed && <pre className="code-font shrink-0 whitespace-pre-wrap px-5 pt-5 text-lg text-ink">{printed}</pre>}
-      <TurtleCanvas
-        art={result.art}
+      <CanvasPreview
+        commands={result.output.commands}
         frame={frame}
         cursor={cursor}
-        embedded
         className="min-h-0 flex-1"
         placeholder={printed || cursor ? '' : '这条代码还没有画出线来'}
       />

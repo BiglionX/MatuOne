@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import type { Level, RunResult } from '@/types'
-import { runCode } from '@/lib/runner'
+import { runCode, type PythonPhase } from '@/lib/runner'
 import { RunPreview } from '@/components/RunPreview'
+import { RunButton } from '@/components/RunButton'
 
 interface Props {
   level: Level
+  envPhase: PythonPhase
   onNext: () => void
 }
 
 /** 第 6 关：先看 8 行重复，一键折叠成 for，不用从零把循环敲出来。 */
-export function LoopFold({ level, onNext }: Props) {
+export function LoopFold({ level, envPhase, onNext }: Props) {
   const unfolded = level.unfolded_lines ?? []
   const [phase, setPhase] = useState<'open' | 'folding' | 'done'>('open')
   const [result, setResult] = useState<RunResult | null>(null)
@@ -28,7 +30,7 @@ export function LoopFold({ level, onNext }: Props) {
   const run = async () => {
     if (running || phase !== 'done') return
     setRunning(true)
-    const res = await runCode(code, level.level_id)
+    const res = await runCode(code, level.level_id, setResult)
     setResult(res)
     setRunning(false)
     if (res.ok) {
@@ -74,11 +76,17 @@ export function LoopFold({ level, onNext }: Props) {
               folded ? 'max-h-48 translate-y-0 opacity-100' : 'invisible h-0'
             }`}
           >
-            {level.teach_code_lines.map((line, index) => (
-              <pre key={`fold-${index}`} className="code-font text-sm text-ink">
-                {line || ' '}
-              </pre>
-            ))}
+            {level.teach_code_lines.map((line, index) => {
+              const failed = !!result && !result.ok && !result.loading && result.line === index + 1
+              return (
+                <pre
+                  key={`fold-${index}`}
+                  className={`code-font rounded-md px-1 text-sm text-ink ${failed ? 'bg-danger-soft ring-1 ring-danger' : ''}`}
+                >
+                  {line || ' '}
+                </pre>
+              )
+            })}
           </div>
         </div>
 
@@ -105,9 +113,13 @@ export function LoopFold({ level, onNext }: Props) {
           )}
           {phase === 'folding' && <span className="text-sm text-ink-soft">正在收成循环…</span>}
           {phase === 'done' && (
-            <button type="button" className="btn-primary px-8" onClick={run} disabled={running}>
-              {running ? '运行中…' : '运行折叠后的代码'}
-            </button>
+            <RunButton
+              textLevel
+              envPhase={envPhase}
+              busy={running}
+              idleLabel="运行折叠后的代码"
+              onRun={run}
+            />
           )}
         </div>
       </div>

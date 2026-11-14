@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Level, RunResult } from '@/types'
-import { buildDemoCode, runCode } from '@/lib/runner'
+import { buildDemoCode, runCode, type PythonPhase } from '@/lib/runner'
+import { RunButton } from '@/components/RunButton'
 import { checkTypedLine } from '@/lib/lineCheck'
 import { getLineNotes } from '@/lib/lineNotes'
 import { RunPreview } from '@/components/RunPreview'
@@ -8,12 +9,13 @@ import { useToast } from '@/components/Toast'
 
 interface Props {
   level: Level
+  envPhase: PythonPhase
   onNext: () => void
   onErrorTap: () => void
 }
 
 /** B 回合：逐行抄代码 + 逐行校验 + 防粘贴 */
-export function RoundB({ level, onNext, onErrorTap }: Props) {
+export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
   const lines = level.teach_code_lines
   const [locked, setLocked] = useState(0)
   const [input, setInput] = useState('')
@@ -49,6 +51,11 @@ export function RoundB({ level, onNext, onErrorTap }: Props) {
     }
   }, [])
 
+  useEffect(() => {
+    if (!result || result.ok || result.loading || result.line < 1) return
+    document.getElementById(`code-line-${result.line}`)?.scrollIntoView({ block: 'nearest' })
+  }, [result])
+
   const noteError = () => {
     onErrorTap()
     const line = locked
@@ -75,18 +82,22 @@ export function RoundB({ level, onNext, onErrorTap }: Props) {
 
   const run = async () => {
     if (running) return
-    if (locked === 0) {
+    const indent = current ? indentOf(current) : ''
+    const hasDraft = !!current && input !== indent && input.trim().length > 0
+    const pieces = lines.slice(0, locked)
+    if (hasDraft) pieces.push(input)
+    const code = pieces.join('\n')
+    if (!code.trim()) {
       toast('先打对一行，再运行看看')
       inputRef.current?.focus()
       return
     }
     setRunning(true)
     setResult(null)
-    const code = lines.slice(0, locked).join('\n')
-    const res = await runCode(code, level.level_id)
+    const res = await runCode(code, level.level_id, setResult)
     setResult(res)
     setRunning(false)
-    // 只有整段 8 行都打完、整段跑通，才算“跑通了”；打到一半只画图，不弹成功标记
+    // 只有整段都打完、整段跑通，才算“跑通了”；打到一半只出结果，不弹成功标记
     if (res.ok && locked >= lines.length) {
       setFlash(true)
       window.setTimeout(() => setFlash(false), 1400)
@@ -138,8 +149,9 @@ export function RoundB({ level, onNext, onErrorTap }: Props) {
           <div className="space-y-1">
             {lines.map((line, i) => {
               const state = i < locked ? 'done' : i === locked ? 'current' : 'todo'
+              const failed = !!result && !result.ok && !result.loading && result.line === i + 1
               return (
-                <div key={i} className="flex items-start gap-3">
+                <div key={i} id={`code-line-${i + 1}`} className="flex items-start gap-3">
                   <span
                     className={`code-font w-6 shrink-0 select-none pt-1 text-right text-sm ${
                       state === 'done' ? 'text-success' : 'text-ink-soft/70'
@@ -151,11 +163,13 @@ export function RoundB({ level, onNext, onErrorTap }: Props) {
                   <div className="min-w-0 flex-1">
                     <div
                       className={`code-font whitespace-pre rounded-field px-3 py-1.5 transition-colors ${
-                        state === 'done'
-                          ? 'bg-success-soft text-success'
-                          : state === 'current'
-                            ? 'bg-brand-soft text-ink ring-1 ring-brand/40'
-                            : 'text-ink-soft/60'
+                        failed
+                          ? 'bg-danger-soft text-ink ring-1 ring-danger'
+                          : state === 'done'
+                            ? 'bg-success-soft text-success'
+                            : state === 'current'
+                              ? 'bg-brand-soft text-ink ring-1 ring-brand/40'
+                              : 'text-ink-soft/60'
                       }`}
                     >
                       {line || ' '}
@@ -230,12 +244,12 @@ export function RoundB({ level, onNext, onErrorTap }: Props) {
           )}
         </div>
 
-        {result && !result.ok && result.error && (
+        {result && !result.ok && !result.loading && (
           <div className="mt-4 rounded-card border border-danger/40 bg-danger-soft p-4">
             <p className="font-semibold text-danger">
-              第 {result.error.line} 行出了点小问题
+              {result.line > 0 ? `第 ${result.line} 行出了点小问题` : result.message}
             </p>
-            <p className="mt-1 text-ink">{result.error.message}</p>
+            {result.line > 0 && <p className="mt-1 text-ink">{result.message}</p>}
             <button
               type="button"
               className="mt-3 rounded-field border border-danger/40 bg-white px-4 py-2 text-sm font-medium text-danger"
@@ -267,9 +281,13 @@ export function RoundB({ level, onNext, onErrorTap }: Props) {
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" className="btn-primary px-8" onClick={run} disabled={running}>
-            {running ? '运行中…' : '运行'}
-          </button>
+          <RunButton
+            textLevel
+            envPhase={envPhase}
+            busy={running}
+            idleLabel="运行"
+            onRun={run}
+          />
           <button type="button" className="btn-secondary" onClick={() => setShowCode((v) => !v)}>
             查看整段代码
           </button>

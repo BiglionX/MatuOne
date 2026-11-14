@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { loadPreviewLevel } from '@/api/catalog'
 import { completeLevel, loadLevel, touchLevel } from '@/api/learning'
+import { BonusRound } from './BonusRound'
+import { ChunkDrill } from '@/components/ChunkDrill'
 import { getPlatformProfile } from '@/api/adminOrgs'
 import { curriculumLevelById, isPlaceholderLevel, nextLevelId } from '@/data/fullCurriculum'
 import { enterLevel, type EnterLevelReason } from '@/api/studentLevel'
 import { getCurrentStudent } from '@/api/studentAuth'
 import type { Level, RunResult } from '@/types'
 import { buildDemoCode, runCode } from '@/lib/runner'
+import { usePythonEnv } from '@/lib/usePythonEnv'
 import { Stars } from '@/components/WpmChart'
 import { CommandStory } from '@/components/CommandStory'
 import { BrandMark } from '@/components/BrandMark'
@@ -80,6 +83,12 @@ export function Lesson() {
   const [breakOverlay, setBreakOverlay] = useState<{ next: Round; line: string } | null>(null)
   const [storyOpen, setStoryOpen] = useState(true)
   const [finished, setFinished] = useState(false)
+  const [bonusOpen, setBonusOpen] = useState(false)
+  const [bonusReward, setBonusReward] = useState('')
+  const [reviewChunk, setReviewChunk] = useState<string | null>(null)
+  const [recallDone, setRecallDone] = useState(true)
+  // 页面从 A 回合打开。趁学生看效果、猜答案，后台把 Pyodide 下好。
+  const pythonPhase = usePythonEnv(round === 'A')
 
   useEffect(() => {
     if (!levelId) return
@@ -92,9 +101,14 @@ export function Lesson() {
       setGate({ allowed: true, reason: 'ok' })
       setFinished(false)
       setRound('A')
+      setReviewChunk(null)
+      setRecallDone(true)
       loadPreviewLevel(levelId)
         .then((next) => {
-          if (alive) setLevel(next)
+          if (!alive) return
+          setLevel(next.level)
+          setReviewChunk(next.reviewChunk)
+          setRecallDone(!next.reviewChunk)
         })
         .catch((err: unknown) => {
           if (!alive) return
@@ -111,6 +125,8 @@ export function Lesson() {
     setGate(null)
     setFinished(false)
     setRound('A')
+    setReviewChunk(null)
+    setRecallDone(true)
     enterLevel(levelId)
       .then(async (result) => {
         if (!alive) return
@@ -119,7 +135,10 @@ export function Lesson() {
         void touchLevel(levelId)
         try {
           const next = await loadLevel(levelId)
-          if (alive) setLevel(next)
+          if (!alive) return
+          setLevel(next.level)
+          setReviewChunk(next.reviewChunk)
+          setRecallDone(!next.reviewChunk)
         } catch {
           if (alive) setMissing(true)
         }
@@ -209,6 +228,22 @@ export function Lesson() {
     )
   }
 
+  if (!recallDone && reviewChunk) {
+    return (
+      <div className={`student-shell min-h-screen bg-canvas ${preview ? 'pt-12' : ''}`}>
+        {preview && <PreviewBanner />}
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-8 py-12">
+          <div>
+            <p className="text-sm font-medium text-brand-strong">上一节</p>
+            <h1 className="mt-2 text-2xl font-bold text-ink">先把上一节的这一串遮住打一遍</h1>
+            <p className="mt-2 text-sm text-ink-soft">打对了再开始今天的课。</p>
+          </div>
+          <ChunkDrill chunk={reviewChunk} reps={1} hideFrom={1} onComplete={() => setRecallDone(true)} />
+        </div>
+      </div>
+    )
+  }
+
   const stars: 0 | 1 | 2 | 3 = errorTaps <= 2 ? 3 : errorTaps <= 5 ? 2 : 1
   const nextId = nextLevelId(level.order)
 
@@ -218,6 +253,25 @@ export function Lesson() {
       return
     }
     void completeLevel(level.level_id, stars, errorTaps).finally(() => setFinished(true))
+  }
+
+  if (finished && bonusOpen && level.bonus_challenge) {
+    return (
+      <div className={`student-shell min-h-screen bg-canvas ${preview ? 'pt-12' : ''}`}>
+        {preview && <PreviewBanner />}
+        <BonusRound
+          level={level}
+          challenge={level.bonus_challenge}
+          envPhase={pythonPhase}
+          sandbox={preview}
+          onDone={(reward) => {
+            setBonusReward(reward)
+            setBonusOpen(false)
+          }}
+          onSkip={() => setBonusOpen(false)}
+        />
+      </div>
+    )
   }
 
   if (finished) {
@@ -237,16 +291,25 @@ export function Lesson() {
           <div className="mt-5 flex justify-center">
             <Stars count={stars} size={28} />
           </div>
+          {bonusReward && <p className="mt-4 font-semibold text-brand-strong">拿到了{bonusReward}</p>}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link to={preview ? '/admin/levels' : '/student'} className="btn-secondary">
               {preview ? '回到课程管理' : '回到课程地图'}
             </Link>
+            {level.bonus_challenge && !bonusReward && (
+              <button type="button" className="btn-secondary" onClick={() => setBonusOpen(true)}>
+                巩固一下
+              </button>
+            )}
             {!preview && nextId && (
               <button type="button" className="btn-primary px-8" onClick={() => navigate(`/student/lesson/${nextId}`)}>
                 下一关
               </button>
             )}
           </div>
+          {level.bonus_challenge && !bonusReward && (
+            <p className="mt-4 text-sm text-ink-soft">还有力气可以巩固一下，不做也能去下一关。</p>
+          )}
         </div>
       </div>
     )
@@ -293,17 +356,31 @@ export function Lesson() {
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-8 py-7">
         {round === 'A' && (
-          <RoundA level={level} targetResult={targetResult} onNext={() => setBreakOverlay({ next: 'B', line: ENCOURAGE[0] })} />
+          <RoundA
+            level={level}
+            targetResult={targetResult}
+            envPhase={pythonPhase}
+            onNext={() => setBreakOverlay({ next: 'B', line: ENCOURAGE[0] })}
+          />
         )}
         {round === 'B' && level.level_type === 'fill_blank' && (
-          <FillBlank level={level} onNext={() => setBreakOverlay({ next: 'C', line: ENCOURAGE[1] })} />
+          <FillBlank
+            level={level}
+            envPhase={pythonPhase}
+            onNext={() => setBreakOverlay({ next: 'C', line: ENCOURAGE[1] })}
+          />
         )}
         {round === 'B' && level.level_type !== 'fill_blank' && !!level.unfolded_lines?.length && (
-          <LoopFold level={level} onNext={() => setBreakOverlay({ next: 'C', line: ENCOURAGE[1] })} />
+          <LoopFold
+            level={level}
+            envPhase={pythonPhase}
+            onNext={() => setBreakOverlay({ next: 'C', line: ENCOURAGE[1] })}
+          />
         )}
         {round === 'B' && level.level_type !== 'fill_blank' && !level.unfolded_lines?.length && (
           <RoundB
             level={level}
+            envPhase={pythonPhase}
             onErrorTap={() => setErrorTaps((n) => n + 1)}
             onNext={() => setBreakOverlay({ next: 'C', line: ENCOURAGE[1] })}
           />
@@ -313,6 +390,7 @@ export function Lesson() {
             level={level}
             studentId={student?.id ?? ''}
             targetResult={targetResult}
+            envPhase={pythonPhase}
             onComplete={finish}
             sandbox={preview}
           />

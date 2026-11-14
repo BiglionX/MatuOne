@@ -15,6 +15,8 @@ export interface ProgressMark {
   order: number
   completed: boolean
   stars: number
+  /** 这节的巩固副本已经完成。旧数据没有这一列时当作没做。 */
+  bonusCompleted?: boolean
 }
 
 export interface AccessContext {
@@ -48,6 +50,7 @@ export interface UnitLevelView {
   unlocked: boolean
   current: boolean
   stars: 0 | 1 | 2 | 3
+  bonusCompleted?: boolean
 }
 
 export interface SemesterHome {
@@ -126,6 +129,7 @@ export function projectUnit(unitId: string, marks: ProgressMark[], access: Acces
   if (!unit) return null
   const focus = focusOrder(marks)
   const stars = new Map(marks.map((mark) => [mark.order, mark.stars]))
+  const bonuses = new Set(marks.filter((mark) => mark.bonusCompleted).map((mark) => mark.order))
   const completed = new Set(marks.filter((mark) => mark.completed).map((mark) => mark.order))
   return levelsOfUnit(unitId).map((level) => {
     const done = completed.has(level.order)
@@ -143,6 +147,7 @@ export function projectUnit(unitId: string, marks: ProgressMark[], access: Acces
       unlocked,
       current: unlocked && !done && level.order === focus,
       stars: starOf(stars.get(level.order) ?? 0),
+      bonusCompleted: bonuses.has(level.order),
     }
   })
 }

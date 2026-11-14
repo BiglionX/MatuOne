@@ -19,6 +19,7 @@ export interface AgentCommission {
   seatFeeTotal: number
   rebateDue: number
   platformNet: number
+  account: string | null
 }
 
 export interface AdminDashboard {

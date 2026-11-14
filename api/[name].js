@@ -30,6 +30,49 @@ function normalizeTypingScore(wpm, accuracy) {
 
 // supabase/functions/_shared/coursePackage.ts
 var LEGACY_STAGE_ROW = ["G3-fall", "G3-spring", "G4-fall", "G4-spring", "G5-fall", "G5-spring", "G2-fall", "G2-spring"];
+function readDrill(value, push) {
+  if (value == null) return void 0;
+  if (typeof value !== "string" || !value.trim() || value.trim().length > 40 || /[\r\n]/.test(value)) {
+    push("drill_chunk", "drill_chunk \u9700\u8981\u662F\u4E00\u884C\u4EE5\u5185\u3001\u4E0D\u8D85\u8FC7 40 \u4E2A\u5B57\u7B26\u7684\u5B57\u7B26\u4E32");
+    return void 0;
+  }
+  return value.trim();
+}
+function readBonus(value, push) {
+  if (value == null) return void 0;
+  if (!value || typeof value !== "object") {
+    push("bonus_challenge", "bonus_challenge \u9700\u8981\u662F\u5BF9\u8C61");
+    return void 0;
+  }
+  const row = value;
+  const type = row.type;
+  if (type !== "param_edit" && type !== "code_fill" && type !== "typing") {
+    push("bonus_challenge", "type \u53EA\u80FD\u662F param_edit\u3001code_fill\u3001typing");
+    return void 0;
+  }
+  if (typeof row.instruction !== "string" || !row.instruction.trim()) push("bonus_challenge", "\u7F3A\u5C11 instruction");
+  if (typeof row.expected_output !== "string" || !row.expected_output.trim()) push("bonus_challenge", "\u7F3A\u5C11 expected_output");
+  if (typeof row.bonus_reward !== "string" || !row.bonus_reward.trim()) push("bonus_challenge", "\u7F3A\u5C11 bonus_reward");
+  const targetValue = row.target_value == null ? "" : String(row.target_value).trim();
+  if ((type === "param_edit" || type === "code_fill") && !targetValue) {
+    push("bonus_challenge", "param_edit \u548C code_fill \u9700\u8981 target_value");
+  }
+  if (type === "param_edit" && (typeof row.target_param_name !== "string" || !row.target_param_name.trim())) {
+    push("bonus_challenge", "param_edit \u9700\u8981 target_param_name");
+  }
+  if (type === "code_fill" && (typeof row.prompt_line !== "string" || !row.prompt_line.trim())) {
+    push("bonus_challenge", "code_fill \u9700\u8981 prompt_line");
+  }
+  return {
+    type,
+    instruction: typeof row.instruction === "string" ? row.instruction.trim() : "",
+    target_param_name: typeof row.target_param_name === "string" ? row.target_param_name.trim() : void 0,
+    target_value: targetValue || void 0,
+    prompt_line: typeof row.prompt_line === "string" ? row.prompt_line.trim() : void 0,
+    expected_output: typeof row.expected_output === "string" ? row.expected_output.trim() : "",
+    bonus_reward: typeof row.bonus_reward === "string" ? row.bonus_reward.trim() : ""
+  };
+}
 function readBlankLines(value) {
   if (!Array.isArray(value)) return void 0;
   const groups = [];
@@ -179,6 +222,8 @@ function validateCoursePackage(text) {
     const teachingIntent = readCopy(raw.teaching_intent, "teaching_intent", push);
     const parentBrief = readCopy(raw.parent_brief, "parent_brief", push);
     const teacherGuide = readCopy(raw.teacher_guide, "teacher_guide", push);
+    const bonus = readBonus(raw.bonus_challenge, push);
+    const drill = readDrill(raw.drill_chunk, push);
     const blankLines = readBlankLines(raw.blank_lines);
     if (levelType === "fill_blank" && (!blankLines || blankLines.length === 0)) {
       push("blank_lines", "fill_blank \u5173\u5361\u9700\u8981 blank_lines\uFF0C\u5199\u660E\u54EA\u51E0\u884C\u8981\u586B\u7A7A");
@@ -226,7 +271,9 @@ function validateCoursePackage(text) {
         unit_id: placement?.unit.unit_id,
         ...teachingIntent !== void 0 ? { teaching_intent: teachingIntent } : {},
         ...parentBrief !== void 0 ? { parent_brief: parentBrief } : {},
-        ...teacherGuide !== void 0 ? { teacher_guide: teacherGuide } : {}
+        ...teacherGuide !== void 0 ? { teacher_guide: teacherGuide } : {},
+        ...bonus ? { bonus_challenge: bonus } : {},
+        ...drill ? { drill_chunk: drill } : {}
       });
     }
   });
@@ -1499,6 +1546,204 @@ var LEVELS = [
 ];
 var getLevelById = (id) => LEVELS.find((l) => l.level_id === id);
 
+// src/data/bonusChallenges.ts
+var BONUS = {
+  1: {
+    type: "typing",
+    instruction: "\u8FD8\u6709\u529B\u6C14\u7684\u8BDD\uFF0C\u628A\u8FD9\u8282\u7684\u8BCD\u518D\u6253\u4E00\u904D\u3002",
+    expected_output: "\u4E09\u4E2A\u8BCD",
+    bonus_reward: "\u7687\u51A0"
+  },
+  2: {
+    type: "param_edit",
+    instruction: "\u628A\u62D0\u5F2F\u6539\u6210 120 \u5EA6\uFF0C\u770B\u770B\u7B2C\u4E8C\u6761\u7EBF\u5F80\u54EA\u8FB9\u53BB\u3002",
+    target_param_name: "turn",
+    target_value: "120",
+    expected_output: "\u66F4\u5F00\u7684\u62D0\u89D2",
+    bonus_reward: "\u7687\u51A0"
+  },
+  3: {
+    type: "param_edit",
+    instruction: "\u628A\u56DB\u4E2A\u89D2\u90FD\u6539\u6210 120 \u5EA6\uFF0C\u770B\u770B\u8FD8\u662F\u4E0D\u662F\u6B63\u65B9\u5F62\u3002",
+    target_param_name: "corner",
+    target_value: "120",
+    expected_output: "\u4E0D\u518D\u662F\u6B63\u65B9\u5F62",
+    bonus_reward: "\u7687\u51A0"
+  },
+  4: {
+    type: "param_edit",
+    instruction: "\u628A\u62D0\u5F2F\u6539\u6210 45 \u5EA6\uFF0C\u56DB\u6761\u8FB9\u8FD8\u4E00\u6837\u957F\uFF0C\u5F62\u72B6\u4F1A\u53D8\u3002",
+    target_param_name: "corner",
+    target_value: "45",
+    expected_output: "\u659C\u8FC7\u53BB\u7684\u56DB\u8FB9\u5F62",
+    bonus_reward: "\u7687\u51A0"
+  },
+  5: {
+    type: "param_edit",
+    instruction: "\u628A\u6BCF\u6B21\u8F6C\u5F2F\u6539\u6210 90 \u5EA6\uFF0C\u770B\u770B\u8FD8\u662F\u4E0D\u662F\u4E09\u89D2\u5F62\u3002",
+    target_param_name: "angle",
+    target_value: "90",
+    expected_output: "\u76F4\u89D2\u62D0\u5F2F",
+    bonus_reward: "\u7687\u51A0"
+  },
+  6: {
+    type: "param_edit",
+    instruction: "\u628A\u6BCF\u6B21\u8F6C\u5F2F\u6539\u6210 60 \u5EA6\uFF0C\u5FAA\u73AF\u8FD8\u662F\u8D70 4 \u6B21\u3002",
+    target_param_name: "corner",
+    target_value: "60",
+    expected_output: "\u66F4\u5C16\u7684\u5F2F",
+    bonus_reward: "\u7687\u51A0"
+  },
+  7: {
+    type: "param_edit",
+    instruction: "\u8FB9\u6570\u5148\u522B\u52A8\uFF0C\u628A\u6BCF\u6761\u8FB9\u6539\u6210 160\u3002",
+    target_param_name: "edge",
+    target_value: "160",
+    expected_output: "\u66F4\u5927\u7684\u591A\u8FB9\u5F62",
+    bonus_reward: "\u7687\u51A0"
+  },
+  8: {
+    type: "param_edit",
+    instruction: "\u989C\u8272\u5224\u65AD\u5148\u522B\u52A8\uFF0C\u628A\u6BCF\u6761\u8FB9\u6539\u6210 40\u3002",
+    target_param_name: "edge",
+    target_value: "40",
+    expected_output: "\u66F4\u5C0F\u7684\u56FE\u5F62",
+    bonus_reward: "\u7687\u51A0"
+  },
+  9: {
+    type: "param_edit",
+    instruction: "\u4E24\u79CD\u989C\u8272\u5148\u522B\u52A8\uFF0C\u628A\u6BCF\u6761\u8FB9\u6539\u6210 40\u3002",
+    target_param_name: "edge",
+    target_value: "40",
+    expected_output: "\u66F4\u5C0F\u7684\u53CC\u8272\u56FE\u5F62",
+    bonus_reward: "\u7687\u51A0"
+  },
+  10: {
+    type: "param_edit",
+    instruction: "\u628A\u6BCF\u6B21\u8F6C\u5F2F\u6539\u6210 30 \u5EA6\uFF0C\u7EBF\u4F1A\u6324\u5F97\u66F4\u7D27\u3002",
+    target_param_name: "angle",
+    target_value: "30",
+    expected_output: "\u66F4\u7D27\u7684\u87BA\u65CB",
+    bonus_reward: "\u7687\u51A0"
+  },
+  11: {
+    type: "param_edit",
+    instruction: "\u628A\u6BCF\u6B21\u8F6C\u5F2F\u6539\u6210 90 \u5EA6\uFF0C\u82B1\u8FB9\u4F1A\u5F20\u5F00\u5F97\u4E0D\u4E00\u6837\u3002",
+    target_param_name: "angle",
+    target_value: "90",
+    expected_output: "\u76F4\u89D2\u82B1\u8FB9",
+    bonus_reward: "\u7687\u51A0"
+  },
+  12: {
+    type: "param_edit",
+    instruction: "\u82B1\u74E3\u6570\u91CF\u5148\u522B\u52A8\uFF0C\u628A\u6BCF\u7247\u82B1\u74E3\u6539\u6210 140\u3002",
+    target_param_name: "size",
+    target_value: "140",
+    expected_output: "\u66F4\u5927\u7684\u661F\u82B1",
+    bonus_reward: "\u7687\u51A0"
+  },
+  13: {
+    type: "code_fill",
+    instruction: "\u5F15\u53F7\u91CC\u518D\u586B\u4E00\u6B21\u8FD9\u8282\u6253\u5370\u8FC7\u7684\u90A3\u53E5\u3002",
+    target_value: "\u4F60\u597D",
+    prompt_line: 'print("____")',
+    expected_output: "\u4F60\u597D",
+    bonus_reward: "\u7687\u51A0"
+  },
+  14: {
+    type: "code_fill",
+    instruction: "\u6B63\u65B9\u5F62\u6BCF\u4E2A\u89D2\u8981\u8F6C\u591A\u5C11\u5EA6\uFF1F\u628A\u7A7A\u586B\u4E0A\u3002",
+    target_value: "90",
+    prompt_line: "t.right(____)",
+    expected_output: "\u76F4\u89D2",
+    bonus_reward: "\u7687\u51A0"
+  },
+  15: {
+    type: "typing",
+    instruction: "\u628A\u5FAA\u73AF\u90A3\u51E0\u4E2A\u8BCD\u518D\u6253\u51C6\u786E\u3002",
+    expected_output: "\u5FAA\u73AF\u7684\u8BCD",
+    bonus_reward: "\u7687\u51A0"
+  },
+  16: {
+    type: "typing",
+    instruction: "\u95EE\u5019\u548C\u6B63\u65B9\u5F62\u7528\u5230\u7684\u8BCD\uFF0C\u518D\u6253\u4E00\u904D\u3002",
+    expected_output: "\u95EE\u5019\u548C\u6B63\u65B9\u5F62",
+    bonus_reward: "\u7687\u51A0"
+  },
+  17: {
+    type: "typing",
+    instruction: "\u53D8\u91CF\u548C print \u8FD9\u51E0\u4E2A\u8BCD\uFF0C\u518D\u6253\u4E00\u904D\u3002",
+    expected_output: "\u53D8\u91CF\u548C print",
+    bonus_reward: "\u7687\u51A0"
+  },
+  18: {
+    type: "param_edit",
+    instruction: "\u95EE\u5019\u5148\u522B\u52A8\uFF0C\u628A\u8FB9\u957F\u6539\u6210 140\uFF0C\u6B63\u65B9\u5F62\u4F1A\u4E00\u8D77\u53D8\u5927\u3002",
+    target_param_name: "side",
+    target_value: "140",
+    expected_output: "\u66F4\u5927\u7684\u6B63\u65B9\u5F62",
+    bonus_reward: "\u7687\u51A0"
+  },
+  19: {
+    type: "code_fill",
+    instruction: "\u5411\u524D\u8D70\u7684\u90A3\u4E00\u6B65\u662F\u591A\u5C11\uFF1F\u628A\u7A7A\u586B\u4E0A\u3002",
+    target_value: "80",
+    prompt_line: "t.forward(____)",
+    expected_output: "\u4E00\u6761\u8FB9",
+    bonus_reward: "\u7687\u51A0"
+  },
+  20: {
+    type: "code_fill",
+    instruction: "\u4F5C\u54C1\u5F00\u5934\u6253\u5370\u7684\u90A3\u53E5\u662F\u4EC0\u4E48\uFF1F\u628A\u7A7A\u586B\u4E0A\u3002",
+    target_value: "\u9001\u7ED9\u4F60",
+    prompt_line: 'print("____")',
+    expected_output: "\u9001\u7ED9\u4F60",
+    bonus_reward: "\u7687\u51A0"
+  }
+};
+function bonusForOrder(order) {
+  return BONUS[order];
+}
+
+// supabase/functions/_shared/drill_chunks.ts
+var DRILL = {
+  1: 'print("',
+  2: "t.forward(",
+  3: "t.forward(",
+  4: "t.forward(",
+  5: "t.right(",
+  6: "for i in range(",
+  7: "for i in range(",
+  8: "if",
+  9: "for i in range(",
+  10: "step = step +",
+  11: "length = length +",
+  12: "for i in range(",
+  13: 'print("',
+  14: "t.forward(",
+  15: "for i in range(",
+  16: "for i in range(",
+  17: 'print("',
+  18: "t.forward(",
+  19: "t.forward(",
+  20: "for i in range("
+};
+function drillForOrder(order) {
+  return DRILL[order];
+}
+function readStoredDrill(body) {
+  if (!body || typeof body !== "object") return null;
+  const value = body.drill_chunk;
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  if (!text || text.length > 40 || /[\r\n]/.test(value)) return null;
+  return text;
+}
+function reviewChunkOf(currentDrill, order, previousBody) {
+  if (!currentDrill || !Number.isInteger(order) || order <= 1) return null;
+  return readStoredDrill(previousBody) ?? drillForOrder(order - 1) ?? null;
+}
+
 // src/lib/lessonMaterial.ts
 function orderOf(levelId) {
   const matched = /^L(\d+)$/i.exec(levelId.trim());
@@ -1514,7 +1759,14 @@ function buildPlayableLevel(levelId) {
   if (!meta) return void 0;
   const level = playableBody(meta);
   if (!level) return void 0;
-  return { ...level, is_placeholder: isPlaceholderLevel(meta) };
+  const bonus = bonusForOrder(meta.order);
+  const drill = drillForOrder(meta.order);
+  return {
+    ...level,
+    ...bonus ? { bonus_challenge: bonus } : {},
+    ...drill ? { drill_chunk: drill } : {},
+    is_placeholder: isPlaceholderLevel(meta)
+  };
 }
 function playableBody(meta) {
   const authored = meta.legacyLevelId ? getLevelById(meta.legacyLevelId) : void 0;
@@ -1885,17 +2137,32 @@ function missingRelation(error) {
   return message.includes("does not exist");
 }
 async function readProgressMarks(studentId) {
-  const sql = (table) => `select cl.sort_order, src.completed, src.stars
+  const sql = (table, withBonus) => `select cl.sort_order, src.completed, src.stars${withBonus ? ", src.bonus_completed" : ""}
      from public.${table} src
      join public.course_level cl on cl.level_id = src.level_id
      where src.student_id = $1`;
+  const mapRows = (rows) => rows.map((row) => ({
+    order: Number(row.sort_order),
+    completed: Boolean(row.completed),
+    stars: Number(row.stars) || 0,
+    bonusCompleted: row.bonus_completed === true
+  }));
   try {
-    const rows = await q(sql("learning_record"), [studentId]);
-    return rows.map((row) => ({ order: Number(row.sort_order), completed: Boolean(row.completed), stars: Number(row.stars) || 0 }));
+    const rows = await q(
+      sql("learning_record", true),
+      [studentId]
+    );
+    return mapRows(rows);
   } catch (error) {
     if (!missingRelation(error)) throw error;
-    const rows = await q(sql("level_progress"), [studentId]);
-    return rows.map((row) => ({ order: Number(row.sort_order), completed: Boolean(row.completed), stars: Number(row.stars) || 0 }));
+    try {
+      const rows = await q(sql("learning_record", false), [studentId]);
+      return mapRows(rows);
+    } catch (again) {
+      if (!missingRelation(again)) throw again;
+      const rows = await q(sql("level_progress", false), [studentId]);
+      return mapRows(rows);
+    }
   }
 }
 async function resolveStoredLevel(requested) {
@@ -1937,6 +2204,42 @@ async function resolveStoredLevel(requested) {
     [meta.levelId, meta.order]
   );
   return created ? { levelId: created.level_id, order: Number(created.sort_order) } : null;
+}
+
+// src/lib/bonusChallenge.ts
+var TYPES = ["param_edit", "code_fill", "typing"];
+function isType(value) {
+  return typeof value === "string" && TYPES.includes(value);
+}
+function readBonusChallenge(value) {
+  if (value == null) return void 0;
+  if (!value || typeof value !== "object") return void 0;
+  const row = value;
+  if (!isType(row.type)) return void 0;
+  if (typeof row.instruction !== "string" || !row.instruction.trim()) return void 0;
+  if (typeof row.expected_output !== "string" || !row.expected_output.trim()) return void 0;
+  if (typeof row.bonus_reward !== "string" || !row.bonus_reward.trim()) return void 0;
+  const targetValue = row.target_value == null ? "" : String(row.target_value).trim();
+  if ((row.type === "param_edit" || row.type === "code_fill") && !targetValue) return void 0;
+  if (row.type === "param_edit" && (typeof row.target_param_name !== "string" || !row.target_param_name.trim())) return void 0;
+  if (row.type === "code_fill" && (typeof row.prompt_line !== "string" || !row.prompt_line.trim())) return void 0;
+  return {
+    type: row.type,
+    instruction: row.instruction.trim(),
+    target_param_name: typeof row.target_param_name === "string" ? row.target_param_name.trim() : void 0,
+    target_value: targetValue || void 0,
+    prompt_line: typeof row.prompt_line === "string" ? row.prompt_line.trim() : void 0,
+    expected_output: row.expected_output.trim(),
+    bonus_reward: row.bonus_reward.trim()
+  };
+}
+
+// src/lib/drillChunk.ts
+function readDrillChunk(value) {
+  if (typeof value !== "string") return void 0;
+  const text = value.trim();
+  if (!text || text.length > 40 || /[\r\n]/.test(value)) return void 0;
+  return text;
 }
 
 // src/lib/curriculumState.ts
@@ -1998,6 +2301,7 @@ function projectUnit(unitId, marks, access) {
   if (!unit) return null;
   const focus = focusOrder(marks);
   const stars = new Map(marks.map((mark) => [mark.order, mark.stars]));
+  const bonuses = new Set(marks.filter((mark) => mark.bonusCompleted).map((mark) => mark.order));
   const completed = new Set(marks.filter((mark) => mark.completed).map((mark) => mark.order));
   return levelsOfUnit(unitId).map((level) => {
     const done = completed.has(level.order);
@@ -2014,7 +2318,8 @@ function projectUnit(unitId, marks, access) {
       completed: done,
       unlocked,
       current: unlocked && !done && level.order === focus,
-      stars: starOf(stars.get(level.order) ?? 0)
+      stars: starOf(stars.get(level.order) ?? 0),
+      bonusCompleted: bonuses.has(level.order)
     };
   });
 }
@@ -2136,6 +2441,10 @@ async function dispatch(req) {
     switch (req.name) {
       case "org-login":
         return await orgLogin(req);
+      case "agent-login":
+        return await agentLogin(req);
+      case "agent-portal":
+        return await agentPortal(req);
       case "student-login":
         return await studentLogin(req);
       case "platform-login":
@@ -2177,6 +2486,41 @@ async function dispatch(req) {
     const message = publicError(error);
     console.error("api failed", req.name, dbMessage(error));
     return fail(500, message);
+  }
+}
+async function agentLogin(req) {
+  const account = typeof req.body.account === "string" ? req.body.account.trim() : "";
+  const password = typeof req.body.password === "string" ? req.body.password : "";
+  if (!account || !password) return fail(401, "\u8D26\u53F7\u6216\u5BC6\u7801\u4E0D\u6B63\u786E");
+  const row = await one("select * from public.agent_login_lookup($1)", [account]);
+  if (!row) {
+    await hashPassword("timing-pad");
+    return fail(401, "\u8D26\u53F7\u6216\u5BC6\u7801\u4E0D\u6B63\u786E");
+  }
+  if (!await verifyPassword(password, row.password_hash)) return fail(401, "\u8D26\u53F7\u6216\u5BC6\u7801\u4E0D\u6B63\u786E");
+  if (row.agent_status !== "active") return fail(403, "\u533A\u57DF\u670D\u52A1\u5546\u5DF2\u505C\u7528\uFF0C\u65E0\u6CD5\u767B\u5F55");
+  await q("select public.mark_agent_admin_login($1)", [row.admin_id]);
+  const session = await issueSession("agent", row.admin_id);
+  return ok({
+    ...session,
+    adminId: row.admin_id,
+    account,
+    agentName: row.agent_name,
+    region: row.region
+  });
+}
+async function agentPortal(req) {
+  const auth = await requireRole(req, "agent");
+  if ("status" in auth) return auth;
+  try {
+    const row = await one("select public.agent_home($1) as agent_home", [auth.subjectId]);
+    if (!row?.agent_home) return fail(401, "\u672A\u767B\u5F55");
+    return ok(row.agent_home);
+  } catch (error) {
+    const line = dbMessage(error);
+    if (line.includes("\u5DF2\u505C\u7528")) return fail(403, "\u533A\u57DF\u670D\u52A1\u5546\u5DF2\u505C\u7528\uFF0C\u65E0\u6CD5\u767B\u5F55");
+    if (line.includes("\u672A\u767B\u5F55")) return fail(401, "\u672A\u767B\u5F55");
+    throw error;
   }
 }
 async function orgLogin(req) {
@@ -2632,7 +2976,7 @@ async function studentLearning(req) {
   ]);
   if (!student || student.status !== "active") return fail(401, "\u8BF7\u5148\u767B\u5F55");
   const action = typeof req.body.action === "string" ? req.body.action : "map";
-  if (previewBlocksProgress(req.body) && (action === "typing" || action === "touch" || action === "complete")) {
+  if (previewBlocksProgress(req.body) && (action === "typing" || action === "touch" || action === "complete" || action === "bonus" || action === "drill")) {
     return fail(403, "\u9884\u89C8\u6A21\u5F0F\u4E0D\u4F1A\u8BB0\u5F55\u5B66\u4E60\u8FDB\u5EA6");
   }
   const levelRaw = req.body.levelId;
@@ -2684,6 +3028,69 @@ async function studentLearning(req) {
     }
     return ok({ ok: true });
   }
+  if (action === "bonus") {
+    const decision = await decideStudentLevel(student.id, requestedLevelId);
+    if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result };
+    const playable = buildPlayableLevel(decision.levelId);
+    const stored = await resolveStoredLevel(decision.levelId);
+    const storedCopy = await findCourseLevel(decision.levelId);
+    const bonus = readBonusChallenge(bodyBonus(storedCopy?.body)) ?? playable?.bonus_challenge;
+    if (!stored || !bonus) return fail(400, "\u8FD9\u4E00\u5173\u6CA1\u6709\u5DE9\u56FA\u7EC3\u4E60");
+    const done = await one("select completed from public.learning_record where student_id = $1 and level_id = $2", [
+      student.id,
+      stored.levelId
+    ]);
+    if (!done?.completed) return fail(400, "\u5148\u5B8C\u6210\u8FD9\u4E00\u5173\uFF0C\u518D\u505A\u5DE9\u56FA");
+    await q(
+      `update public.learning_record
+       set bonus_completed = true, bonus_reward = $3, updated_at = now()
+       where student_id = $1 and level_id = $2`,
+      [student.id, stored.levelId, bonus.bonus_reward]
+    );
+    return ok({ ok: true, reward: bonus.bonus_reward });
+  }
+  if (action === "drill") {
+    const decision = await decideStudentLevel(student.id, requestedLevelId);
+    if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result };
+    const playable = buildPlayableLevel(decision.levelId);
+    const stored = await resolveStoredLevel(decision.levelId);
+    const storedCopy = await findCourseLevel(decision.levelId);
+    const chunk = readDrillChunk(bodyDrill(storedCopy?.body)) ?? playable?.drill_chunk;
+    if (!stored || !chunk) return fail(400, "\u8FD9\u4E00\u5173\u6CA1\u6709\u8981\u6253\u7684\u7EC4\u5757");
+    await q(
+      `insert into public.learning_record
+         (student_id, level_id, completed, stars, change_done, error_taps, runs, drill_reps, drill_chunk)
+       values ($1, $2, false, 0, false, 0, 0, 4, $3)
+       on conflict (student_id, level_id) do update set
+         drill_reps = 4,
+         drill_chunk = excluded.drill_chunk,
+         updated_at = now()`,
+      [student.id, stored.levelId, chunk]
+    );
+    return ok({ ok: true });
+  }
+  if (action === "recent-keywords") {
+    const rows = await q(
+      `select cl.sort_order, cl.body
+       from public.learning_record lr
+       join public.course_level cl on cl.level_id = lr.level_id
+       where lr.student_id = $1 and lr.completed = true
+       order by lr.updated_at desc
+       limit 5`,
+      [student.id]
+    );
+    const items = rows.map((row) => {
+      const order = Number(row.sort_order);
+      const fromBody = bodyKeywords(row.body);
+      const playable = fromBody.length ? void 0 : buildPlayableLevel(`L${String(order).padStart(4, "0")}`);
+      return {
+        order,
+        keywords: fromBody.length ? fromBody : playable?.keywords ?? [],
+        drillChunk: readDrillChunk(bodyDrill(row.body)) ?? drillForOrder(order) ?? null
+      };
+    });
+    return ok({ items });
+  }
   if (action === "level") {
     const decision = await decideStudentLevel(student.id, requestedLevelId);
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result };
@@ -2691,7 +3098,8 @@ async function studentLearning(req) {
     if (!playable) return fail(404, "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173");
     const storedCopy = await findCourseLevel(decision.levelId);
     const hints2 = await q("select pattern, friendly_message from public.error_hint");
-    return ok({ level: withStoredGoal(playable, storedCopy?.goal), hints: hints2 });
+    const level = withStoredDrill(withStoredBonus(withStoredGoal(playable, storedCopy?.goal), storedCopy?.body), storedCopy?.body);
+    return ok({ level, reviewChunk: await reviewChunkFor(playable.order, level.drill_chunk ?? null), hints: hints2 });
   }
   const access = await loadStudentAccess(student);
   const marks = await readProgressMarks(student.id);
@@ -3384,7 +3792,8 @@ async function adminDashboard(req) {
       orgCount: Number(row.org_count),
       seatFeeTotal: Number(row.seat_fee_total),
       rebateDue: Number(row.rebate_due),
-      platformNet: Number(row.platform_net)
+      platformNet: Number(row.platform_net),
+      account: row.account
     }))
   });
 }
@@ -3478,7 +3887,22 @@ async function adminOps(req) {
   const financeOk = action === "ledger" || action === "overview" || action === "billing" || action === "invoice" || action === "quote" || action === "detail" || action === "settings";
   const staff = await requireStaff(req, financeOk ? ["ops", "finance"] : ["ops"]);
   if ("status" in staff) return staff;
-  const known = ["\u8BB0\u5F55\u7C7B\u578B", "\u5E2D\u4F4D\u6570", "\u673A\u6784\u4E0D\u5B58\u5728", "\u8BD5\u7528\u8BB0\u5F55", "\u624B\u5DE5\u6539\u4EF7", "\u91D1\u989D", "\u8BF7\u586B\u5199\u670D\u52A1\u671F", "\u5F00\u7968\u72B6\u6001", "\u6536\u8D39\u8BB0\u5F55", "\u53EA\u80FD\u505C\u7528", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8FD9\u4E2A\u72B6\u6001", "\u6700\u4F4E\u5E2D\u4F4D", "\u5E73\u53F0\u5E95\u4EF7", "\u8BD5\u7528\u5929\u6570", "\u5206\u6210\u6BD4\u4F8B", "\u7F3A\u5C11\u5E73\u53F0\u5E95\u4EF7", "\u7F3A\u5C11\u4EE3\u7406\u5206\u6210"];
+  const known = ["\u8BB0\u5F55\u7C7B\u578B", "\u5E2D\u4F4D\u6570", "\u673A\u6784\u4E0D\u5B58\u5728", "\u8BD5\u7528\u8BB0\u5F55", "\u624B\u5DE5\u6539\u4EF7", "\u91D1\u989D", "\u8BF7\u586B\u5199\u670D\u52A1\u671F", "\u5F00\u7968\u72B6\u6001", "\u6536\u8D39\u8BB0\u5F55", "\u53EA\u80FD\u505C\u7528", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8FD9\u4E2A\u72B6\u6001", "\u6700\u4F4E\u5E2D\u4F4D", "\u5E73\u53F0\u5E95\u4EF7", "\u8BD5\u7528\u5929\u6570", "\u5206\u6210\u6BD4\u4F8B", "\u7F3A\u5C11\u5E73\u53F0\u5E95\u4EF7", "\u7F3A\u5C11\u4EE3\u7406\u5206\u6210", "\u533A\u57DF\u670D\u52A1\u5546\u4E0D\u5B58\u5728", "\u533A\u57DF\u670D\u52A1\u5546\u5DF2\u505C\u7528", "\u5BC6\u7801\u54C8\u5E0C\u65E0\u6548"];
+  if (action === "issue-agent-account") {
+    const agentId = typeof req.body.agentId === "string" ? req.body.agentId : "";
+    try {
+      const plain = generateInitialPassword();
+      const created = await one(
+        "select * from public.issue_agent_account($1, $2, $3)",
+        [staff.id, agentId, await hashPassword(plain)]
+      );
+      if (!created) return fail(500, "\u53D1\u653E\u5931\u8D25");
+      await q(`update public.app_session set expires_at = now() where role = 'agent' and subject_id = $1`, [created.admin_id]);
+      return ok({ account: created.account, initialPassword: plain, reset: created.reset });
+    } catch (error) {
+      return friendly(error, known, "\u53D1\u653E\u5931\u8D25");
+    }
+  }
   if (action === "settings" || action === "save-settings") {
     try {
       if (action === "save-settings") {
@@ -3653,7 +4077,7 @@ async function findCourseLevel(levelId) {
   const matched = /^L(\d+)$/i.exec(levelId);
   const order = matched ? Number(matched[1]) : null;
   return one(
-    `select level_id, preview_frozen, goal
+    `select level_id, preview_frozen, goal, body
      from public.course_level
      where level_id = $1 or ($2::int is not null and sort_order = $2)
      order by case when level_id = $1 then 0 else 1 end
@@ -3661,10 +4085,48 @@ async function findCourseLevel(levelId) {
     [levelId, order]
   );
 }
+function bodyRecord(body) {
+  const record = typeof body === "string" ? safeJson(body) : body;
+  if (!record || typeof record !== "object") return void 0;
+  return record;
+}
+function bodyBonus(body) {
+  return bodyRecord(body)?.bonus_challenge;
+}
+function bodyDrill(body) {
+  return bodyRecord(body)?.drill_chunk;
+}
+function bodyKeywords(body) {
+  const value = bodyRecord(body)?.keywords;
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => typeof item === "string" && item.trim().length > 0).map((item) => item.trim());
+}
+function safeJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return void 0;
+  }
+}
 function withStoredGoal(level, goal) {
   const next = goal?.trim();
   if (!next) return level;
   return { ...level, goal: next };
+}
+function withStoredBonus(level, body) {
+  const bonus = readBonusChallenge(bodyBonus(body));
+  if (!bonus) return level;
+  return { ...level, bonus_challenge: bonus };
+}
+function withStoredDrill(level, body) {
+  const drill = readDrillChunk(bodyDrill(body));
+  if (!drill) return level;
+  return { ...level, drill_chunk: drill };
+}
+async function reviewChunkFor(order, currentDrill) {
+  if (!currentDrill || !Number.isInteger(order) || order <= 1) return null;
+  const prev = await one("select body from public.course_level where sort_order = $1 limit 1", [order - 1]);
+  return reviewChunkOf(currentDrill, order, prev?.body);
 }
 async function courseCatalog(req) {
   const staff = await requireStaff(req, ["ops"]);
@@ -3691,7 +4153,8 @@ async function courseCatalog(req) {
     const playable = buildPlayableLevel(levelId) ?? buildPlayableLevel(stored.level_id);
     if (!playable) return fail(404, "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173");
     const hints = await q("select pattern, friendly_message from public.error_hint");
-    return ok({ level: withStoredGoal(playable, stored.goal), hints });
+    const level = withStoredDrill(withStoredBonus(withStoredGoal(playable, stored.goal), stored.body), stored.body);
+    return ok({ level, reviewChunk: await reviewChunkFor(playable.order, level.drill_chunk ?? null), hints });
   }
   if (action === "copy-save" || action === "copy-history") {
     const raw = req.body.levelId;

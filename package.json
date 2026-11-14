@@ -9,7 +9,6 @@
     "build": "tsc --noEmit && vite build && node scripts/bundle-api.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "smoke": "tsx scripts/smoke-sim.ts",
     "verify:remote": "node scripts/verify-remote.mjs",
     "e2e": "playwright test"
   },

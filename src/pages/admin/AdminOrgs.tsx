@@ -247,7 +247,7 @@ export function AdminOrgs() {
             <table className="w-full min-w-[1100px] text-left text-sm">
               <thead className="text-ink-soft">
                 <tr className="border-b border-line">
-                  {['机构编号', '名称', '所属代理', '联系人电话', '校区', '席位（额度/已用）', '开通日', '试用到期', '正式到期', '状态', ''].map(
+                  {['机构编号', '名称', '所属服务商', '联系人电话', '校区', '席位（额度/已用）', '开通日', '试用到期', '正式到期', '状态', ''].map(
                     (label) => (
                       <th key={label} className="px-4 py-3 font-medium">
                         {label}

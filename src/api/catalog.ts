@@ -13,18 +13,19 @@ export interface PublishedLevel {
 }
 
 /** 后台试课。只读课文，不走学生会话，也不写 learning_record / typing_record。 */
-export async function loadPreviewLevel(levelId: string): Promise<Level> {
+export async function loadPreviewLevel(levelId: string): Promise<{ level: Level; reviewChunk: string | null }> {
   const request: StaffCoursePreview = { levelId, sandbox: true }
-  const result = await callFunction<{ level: Level; hints?: { pattern: string; friendly_message: string }[] }>(
-    'course-catalog',
-    { action: 'preview', levelId: request.levelId, sandbox: request.sandbox },
-    { role: 'platform' },
-  )
+  const result = await callFunction<{
+    level: Level
+    reviewChunk?: string | null
+    hints?: { pattern: string; friendly_message: string }[]
+  }>('course-catalog', { action: 'preview', levelId: request.levelId, sandbox: request.sandbox }, { role: 'platform' })
   const level = result.level?.quiz && result.level.teach_code_lines?.length ? result.level : buildPlayableLevel(levelId)
   if (!level) throw new ApiError(404, '没有找到这一关')
   rememberLevels([level])
   rememberHints((result.hints ?? []).map((row) => ({ pattern: row.pattern, friendlyMessage: row.friendly_message })))
-  return level
+  const reviewChunk = typeof result.reviewChunk === 'string' && result.reviewChunk.trim() ? result.reviewChunk : null
+  return { level, reviewChunk }
 }
 
 /** 冻结后试课入口和预览接口都不再打开这一关。levelId 用库内编号。 */

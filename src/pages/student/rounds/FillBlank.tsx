@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react'
 import type { BlankLine, Level, RunResult } from '@/types'
-import { runCode } from '@/lib/runner'
+import { runCode, type PythonPhase } from '@/lib/runner'
 import { RunPreview } from '@/components/RunPreview'
+import { RunButton } from '@/components/RunButton'
 
 interface Props {
   level: Level
+  envPhase: PythonPhase
   onNext: () => void
 }
 
@@ -22,7 +24,7 @@ function groupsOf(level: Level): BlankLine[] {
 }
 
 /** B 回合的完形填空：整段代码都在，指定的词留成输入框。全部填上才能运行。 */
-export function FillBlank({ level, onNext }: Props) {
+export function FillBlank({ level, envPhase, onNext }: Props) {
   const groups = groupsOf(level)
   const [values, setValues] = useState<Record<string, string>>({})
   const [result, setResult] = useState<RunResult | null>(null)
@@ -55,7 +57,7 @@ export function FillBlank({ level, onNext }: Props) {
   const run = async () => {
     if (running || !allFilled) return
     setRunning(true)
-    const res = await runCode(compose(), level.level_id)
+    const res = await runCode(compose(), level.level_id, setResult)
     setResult(res)
     setRunning(false)
     if (res.ok) {
@@ -83,8 +85,9 @@ export function FillBlank({ level, onNext }: Props) {
         <div className="mt-5 space-y-2 rounded-card border border-line bg-code-bg px-4 py-4">
           {level.teach_code_lines.map((line, lineNo) => {
             const group = groups.find((item) => item.line === lineNo)
+            const failed = !!result && !result.ok && !result.loading && result.line === lineNo + 1
             return (
-              <div key={lineNo} className="flex items-start gap-3">
+              <div key={lineNo} className={`flex items-start gap-3 rounded-md px-1 ${failed ? 'bg-danger-soft ring-1 ring-danger' : ''}`}>
                 <span className="code-font w-6 shrink-0 pt-1 text-right text-sm text-ink-soft">{lineNo + 1}</span>
                 <div className="code-font min-w-0 flex-1 text-sm leading-8 text-ink">
                   <LineParts
@@ -103,10 +106,12 @@ export function FillBlank({ level, onNext }: Props) {
           })}
         </div>
 
-        {result && !result.ok && result.error && (
+        {result && !result.ok && !result.loading && (
           <div className="mt-4 rounded-card border border-danger/40 bg-danger-soft p-4">
-            <p className="font-semibold text-danger">第 {result.error.line} 行出了点小问题</p>
-            <p className="mt-1 text-ink">{result.error.message}</p>
+            <p className="font-semibold text-danger">
+              {result.line > 0 ? `第 ${result.line} 行出了点小问题` : result.message}
+            </p>
+            {result.line > 0 && <p className="mt-1 text-ink">{result.message}</p>}
           </div>
         )}
 
@@ -126,9 +131,14 @@ export function FillBlank({ level, onNext }: Props) {
         )}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button type="button" className="btn-primary px-8" onClick={run} disabled={running || !allFilled}>
-            {running ? '运行中…' : '运行'}
-          </button>
+          <RunButton
+            textLevel
+            envPhase={envPhase}
+            busy={running}
+            disabled={!allFilled}
+            idleLabel="运行"
+            onRun={run}
+          />
           {!allFilled && <span className="text-sm text-ink-soft">还有空没填</span>}
         </div>
       </div>

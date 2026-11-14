@@ -1,16 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChallengeParam, Level, RunResult, TypingStats } from '@/types'
-import { applyParam, runCode } from '@/lib/runner'
-import { frameForLevel } from '@/lib/canvasFrame'
-import { addTypingRecord } from '@/api/learning'
+import { applyParam, lockPreview, readRunText, runCode, warmupPython, pythonEnvPhase, type PythonPhase } from '@/lib/runner'
+import { RunButton } from '@/components/RunButton'
+import { addTypingRecord, recordDrill } from '@/api/learning'
 import { normalizeTypingScore, typingFeedback } from '@/lib/typingStats'
 import { RunPreview } from '@/components/RunPreview'
 import { TypingTrainer } from '@/components/TypingTrainer'
+import { ChunkDrill } from '@/components/ChunkDrill'
+import { useToast } from '@/components/Toast'
 
 interface Props {
   level: Level
   studentId: string
   targetResult: RunResult | null
+  envPhase: PythonPhase
   onComplete: () => void
   /** 试课沙盒：打字成绩只留在页面上，不写 typing_record。 */
   sandbox?: boolean
@@ -64,7 +67,7 @@ function ParamControl({
 }
 
 /** C 回合：改一改 → 再跑一次 → 本节关键词打字 → 完成 */
-export function RoundC({ level, studentId: _studentId, targetResult, onComplete, sandbox = false }: Props) {
+export function RoundC({ level, studentId: _studentId, targetResult, envPhase, onComplete, sandbox = false }: Props) {
   const defaults = useMemo(() => {
     const init: Record<string, string | number> = {}
     for (const param of level.challenge_params) init[param.name] = param.default
@@ -73,14 +76,18 @@ export function RoundC({ level, studentId: _studentId, targetResult, onComplete,
 
   const [values, setValues] = useState<Record<string, string | number>>(defaults)
   const [result, setResult] = useState<RunResult | null>(null)
+  const [live, setLive] = useState<RunResult | null>(null)
+  const [frame, setFrame] = useState<{ minX: number; minY: number; maxX: number; maxY: number } | null>(null)
+  const [frameState, setFrameState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [flash, setFlash] = useState(false)
   const [running, setRunning] = useState(false)
+  const previewedCode = useRef<string | null>(null)
   const [typingStats, setTypingStats] = useState<TypingStats | null>(null)
   const [pulse, setPulse] = useState(0)
+  const { show: showToast, toast } = useToast()
 
   const changed = level.challenge_params.some((p) => String(values[p.name]) !== String(p.default))
   const consoleMode = level.preview_kind === 'text' || level.challenge_params.length === 0
-  const frame = useMemo(() => (consoleMode ? null : frameForLevel(level)), [consoleMode, level])
 
   const code = useMemo(() => {
     let text = level.teach_code_lines.join('\n')
@@ -94,6 +101,49 @@ export function RoundC({ level, studentId: _studentId, targetResult, onComplete,
   useEffect(() => {
     setPulse((n) => n + 1)
   }, [code])
+
+  useEffect(() => {
+    if (consoleMode) return
+    let cancelled = false
+    setFrameState('loading')
+    setFrame(null)
+    setLive(null)
+    previewedCode.current = null
+    void (async () => {
+      try {
+        if (pythonEnvPhase() !== 'ready') await warmupPython()
+      } catch {
+        if (!cancelled) setFrameState('error')
+        return
+      }
+      const locked = await lockPreview(level)
+      if (cancelled) return
+      setFrame(locked.frame)
+      setLive(locked.preview)
+      previewedCode.current = locked.code
+      setFrameState('ready')
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [consoleMode, level])
+
+  useEffect(() => {
+    if (consoleMode || frameState !== 'ready') return
+    if (previewedCode.current === code) return
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      void runCode(code, level.level_id).then((res) => {
+        if (cancelled) return
+        previewedCode.current = code
+        setLive(res)
+      })
+    }, 300)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [code, consoleMode, frameState, level.level_id])
 
   /** 逐行和原始代码比对，标出改动的那一小段 */
   const marks = useMemo(() => {
@@ -122,7 +172,7 @@ export function RoundC({ level, studentId: _studentId, targetResult, onComplete,
   const run = async () => {
     if (running) return
     setRunning(true)
-    const res = await runCode(code, level.level_id)
+    const res = await runCode(code, level.level_id, setResult)
     setResult(res)
     setRunning(false)
     if (res.ok) {
@@ -160,12 +210,14 @@ export function RoundC({ level, studentId: _studentId, targetResult, onComplete,
             <div className="min-h-[340px] flex-1">
               {consoleMode ? (
                 <ConsoleCompare
-                  before={targetResult?.ok ? targetResult.text ?? '' : ''}
-                  after={result?.ok ? result.text ?? '' : null}
+                  before={readRunText(targetResult)}
+                  after={result?.ok ? readRunText(result) : null}
                   flash={flash && ranOk}
                 />
+              ) : frameState !== 'ready' ? (
+                <PreviewSkeleton failed={frameState === 'error'} />
               ) : (
-                <RunPreview result={result ?? targetResult} flash={flash && ranOk} frame={frame ?? undefined} />
+                <RunPreview result={result ?? live ?? targetResult} flash={flash && ranOk} frame={frame ?? undefined} />
               )}
             </div>
             {changed && !ranOk && (
@@ -203,8 +255,12 @@ export function RoundC({ level, studentId: _studentId, targetResult, onComplete,
               <pre className="code-font overflow-x-auto text-ink">
                 {code.split('\n').map((line, i) => {
                   const mark = marks[i]
+                  const failed = !!result && !result.ok && !result.loading && result.line === i + 1
                   return (
-                    <div key={`${pulse}-${i}`} className="whitespace-pre">
+                    <div
+                      key={`${pulse}-${i}`}
+                      className={`whitespace-pre rounded-md px-1 ${failed ? 'bg-danger-soft ring-1 ring-danger' : ''}`}
+                    >
                       {mark ? (
                         <>
                           {line.slice(0, mark.start)}
@@ -221,16 +277,22 @@ export function RoundC({ level, studentId: _studentId, targetResult, onComplete,
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <button type="button" className="btn-primary px-8" onClick={run} disabled={running}>
-                {running ? '运行中…' : '再跑一次'}
-              </button>
+              <RunButton
+                textLevel
+                envPhase={envPhase}
+                busy={running}
+                idleLabel="再跑一次"
+                onRun={run}
+              />
               {!changed && <span className="text-sm text-ink-soft">先把上面的值改一改</span>}
             </div>
 
-            {result && !result.ok && result.error && (
+            {result && !result.ok && !result.loading && (
               <div className="mt-4 rounded-card border border-danger/40 bg-danger-soft p-4">
-                <p className="font-semibold text-danger">第 {result.error.line} 行出了点小问题</p>
-                <p className="mt-1 text-ink">{result.error.message}</p>
+                <p className="font-semibold text-danger">
+                  {result.line > 0 ? `第 ${result.line} 行出了点小问题` : result.message}
+                </p>
+                {result.line > 0 && <p className="mt-1 text-ink">{result.message}</p>}
               </div>
             )}
           </div>
@@ -252,7 +314,11 @@ export function RoundC({ level, studentId: _studentId, targetResult, onComplete,
           <div>
             <h2 className="text-lg font-semibold text-ink">打字巩固</h2>
             <p className="text-sm text-ink-soft">
-              {typingUnlocked ? '本节关键词，一个词一个词地打。' : '改好参数并运行成功后，这里才会打开。'}
+              {typingUnlocked
+                ? level.drill_chunk
+                  ? '把这一串打四次。前两次看着，后两次遮住。'
+                  : '本节关键词，一个词一个词地打。'
+                : '改好参数并运行成功后，这里才会打开。'}
             </p>
           </div>
         </div>
@@ -269,21 +335,41 @@ export function RoundC({ level, studentId: _studentId, targetResult, onComplete,
           </div>
         ) : typingUnlocked ? (
           <div className="mt-4">
-            <TypingTrainer
-              targets={level.keywords}
-              hint="一个词一个词地打，不用赶"
-              onComplete={(stats) => {
-                setTypingStats(stats)
-                if (sandbox) return
-                const score = normalizeTypingScore(stats.wpm, stats.accuracy)
-                if (!score) return
-                void addTypingRecord({
-                  practiceType: 'lesson_embedded',
-                  wpm: score.wpm,
-                  accuracy: score.accuracy,
-                }).catch(() => undefined)
-              }}
-            />
+            {level.drill_chunk ? (
+              <ChunkDrill
+                chunk={level.drill_chunk}
+                reps={4}
+                hideFrom={3}
+                onComplete={(stats) => {
+                  setTypingStats(stats)
+                  if (sandbox) return
+                  void recordDrill(level.level_id).catch(() => showToast('网络波动，复习记录暂未同步'))
+                  const score = normalizeTypingScore(stats.wpm, stats.accuracy)
+                  if (!score) return
+                  void addTypingRecord({
+                    practiceType: 'lesson_embedded',
+                    wpm: score.wpm,
+                    accuracy: score.accuracy,
+                  }).catch(() => undefined)
+                }}
+              />
+            ) : (
+              <TypingTrainer
+                targets={level.keywords}
+                hint="一个词一个词地打，不用赶"
+                onComplete={(stats) => {
+                  setTypingStats(stats)
+                  if (sandbox) return
+                  const score = normalizeTypingScore(stats.wpm, stats.accuracy)
+                  if (!score) return
+                  void addTypingRecord({
+                    practiceType: 'lesson_embedded',
+                    wpm: score.wpm,
+                    accuracy: score.accuracy,
+                  }).catch(() => undefined)
+                }}
+              />
+            )}
           </div>
         ) : (
           <p className="mt-4 text-sm text-ink-soft">打字练习还锁着。</p>
@@ -302,6 +388,26 @@ export function RoundC({ level, studentId: _studentId, targetResult, onComplete,
           完成这一关
         </button>
       </div>
+      {toast}
+    </div>
+  )
+}
+
+function PreviewSkeleton({ failed }: { failed: boolean }) {
+  return (
+    <div
+      className="flex h-full min-h-[280px] flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed border-line bg-white text-ink-soft"
+      aria-busy={failed ? undefined : true}
+    >
+      {failed ? (
+        <p>预览暂时打不开，点「再跑一次」试试。</p>
+      ) : (
+        <>
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-brand" aria-hidden="true" />
+          <span>预览加载中</span>
+          <span className="h-24 w-48 animate-pulse rounded-md bg-line" aria-hidden="true" />
+        </>
+      )}
     </div>
   )
 }

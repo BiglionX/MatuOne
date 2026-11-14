@@ -1,12 +1,18 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
+import { LEVELS } from '../src/mock/levels'
+import { reportApi, watchApi } from './api-log'
+import { expectCanvasDrawn } from './canvasInk'
 import { prepareOrgSwitch } from './org-progress'
 import { restoreParentBinding, restoreStudentPassword } from './restore'
 
 /**
  * 仓库里原先没有这份脚本。下面 R1–R11 是上线后必须保持为绿的业务链路，
  * 断言按当前路由写：平台登录进 /admin/dashboard，机构进度在 /org/dashboard，
- * 课程包从 /admin/courses 进 /admin/levels。默认打到本地最新前端和真实数据库，不拦截成假数据。
+ * 课程包从 /admin/courses 进 /admin/levels。默认打到本机最新前端和真实数据库，不拦截成假数据。
+ *
+ * 默认 baseURL 是 http://127.0.0.1:5173。
+ * 若需跑远程环境，通过环境变量 E2E_BASE_URL 覆盖，以此绕过部分网络限制问题。
  */
 
 const ORG_ACCOUNT = 'adminorg0001@daima-chuangguan.local'
@@ -14,7 +20,12 @@ const ORG_PASSWORD = 'TrialDemo1234'
 const PARENT_ACCOUNT = 'parent.demo'
 const PARENT_PASSWORD = 'ParentDemo1234'
 
+test.beforeEach(async ({ page }) => {
+  watchApi(page)
+})
+
 test.afterEach(async ({ page }, info) => {
+  reportApi(page, info)
   if (info.status === info.expectedStatus) return
   await mkdir('e2e/screenshots', { recursive: true })
   const name = info.title.replace(/[\\/:*?"<>|]/g, '-')
@@ -63,7 +74,7 @@ async function loginOps(page: Page) {
   await expect(page).toHaveURL(/\/admin\/dashboard$/)
 }
 
-test('R1 入口能进四个端', async ({ page }) => {
+test('R1 入口能进五个端', async ({ page }) => {
   await page.goto('/enter')
   await expect(page.getByRole('heading', { name: '代码闯关' })).toBeVisible()
   for (const [title, href] of [
@@ -71,6 +82,7 @@ test('R1 入口能进四个端', async ({ page }) => {
     ['机构端', '/org/login'],
     ['家长端', '/parent/login'],
     ['平台后台', '/admin/login'],
+    ['区域服务商', '/agent/login'],
   ] as const) {
     await expect(page.getByRole('link', { name: new RegExp(title) })).toHaveAttribute('href', href)
   }
@@ -182,7 +194,7 @@ test('R11 旧课程路由进课程树，没有可视化编辑器', async ({ page
   await expect(page.getByRole('button', { name: /^单元 1/ })).toBeVisible()
   const detail = page.getByRole('region', { name: '关卡详情' })
   await expect(detail.getByRole('heading', { name: /L0001/ })).toBeVisible()
-  await expect(detail.getByText('教学设计意图')).toBeVisible()
+  await expect(detail.getByRole('heading', { name: '教学设计意图' })).toBeVisible()
   await page.getByRole('button', { name: /L0002/ }).click()
   await expect(detail.getByRole('heading', { name: /L0002/ })).toBeVisible()
   await page.getByRole('button', { name: '显示冻结关卡' }).click()
@@ -444,4 +456,363 @@ test('S3 家长 token 调 admin-users 返回 403', async ({ request }) => {
   expect(response.status()).toBe(403)
   expect(text).not.toContain('chenxiaoman')
   expect(text).not.toContain('"students"')
+})
+
+interface Lesson2Snapshot {
+  studentId: string
+  currentLevelOrder: number
+  levelId: string
+  record: {
+    completed: boolean
+    stars: number
+    change_done: boolean
+    error_taps: number
+    runs: number
+    drill_reps: number
+    drill_chunk: string | null
+    bonus_completed: boolean
+    bonus_reward: string | null
+  } | null
+}
+
+async function readLesson2(): Promise<Lesson2Snapshot> {
+  const { q } = await import('../server/db.ts')
+  const rows = await q<{
+    id: string
+    current_level_order: number
+    level_id: string | null
+    completed: boolean | null
+    stars: number | null
+    change_done: boolean | null
+    error_taps: number | null
+    runs: number | null
+    drill_reps: number | null
+    drill_chunk: string | null
+    bonus_completed: boolean | null
+    bonus_reward: string | null
+  }>(
+    `select s.id, s.current_level_order, cl.level_id,
+            lr.completed, lr.stars, lr.change_done, lr.error_taps, lr.runs,
+            lr.drill_reps, lr.drill_chunk, lr.bonus_completed, lr.bonus_reward
+     from public.student s
+     join public.course_level cl on cl.sort_order = 2
+     left join public.learning_record lr on lr.student_id = s.id and lr.level_id = cl.level_id
+     where s.account = $1`,
+    ['chenxiaoman'],
+  )
+  const row = rows[0]
+  if (!row?.id || !row.level_id) throw new Error('没有找到陈小满或第 2 关')
+  const missing = row.completed === null || row.completed === undefined
+  return {
+    studentId: row.id,
+    currentLevelOrder: Number(row.current_level_order),
+    levelId: row.level_id,
+    record: missing
+      ? null
+      : {
+          completed: Boolean(row.completed),
+          stars: Number(row.stars ?? 0),
+          change_done: Boolean(row.change_done),
+          error_taps: Number(row.error_taps ?? 0),
+          runs: Number(row.runs ?? 0),
+          drill_reps: Number(row.drill_reps ?? 0),
+          drill_chunk: row.drill_chunk,
+          bonus_completed: Boolean(row.bonus_completed),
+          bonus_reward: row.bonus_reward,
+        },
+  }
+}
+
+async function restoreLesson2(snap: Lesson2Snapshot): Promise<void> {
+  const { q } = await import('../server/db.ts')
+  await q('update public.student set current_level_order = $2 where id = $1', [snap.studentId, snap.currentLevelOrder])
+  if (!snap.record) {
+    await q('delete from public.learning_record where student_id = $1 and level_id = $2', [snap.studentId, snap.levelId])
+    return
+  }
+  const row = snap.record
+  await q(
+    `update public.learning_record
+     set completed = $3, stars = $4, change_done = $5, error_taps = $6, runs = $7,
+         drill_reps = $8, drill_chunk = $9, bonus_completed = $10, bonus_reward = $11, updated_at = now()
+     where student_id = $1 and level_id = $2`,
+    [
+      snap.studentId,
+      snap.levelId,
+      row.completed,
+      row.stars,
+      row.change_done,
+      row.error_taps,
+      row.runs,
+      row.drill_reps,
+      row.drill_chunk,
+      row.bonus_completed,
+      row.bonus_reward,
+    ],
+  )
+}
+
+async function readDrillReps(studentId: string, levelId: string): Promise<number | null> {
+  const { q } = await import('../server/db.ts')
+  const rows = await q<{ drill_reps: number | null }>(
+    'select drill_reps from public.learning_record where student_id = $1 and level_id = $2',
+    [studentId, levelId],
+  )
+  const value = rows[0]?.drill_reps
+  return value === null || value === undefined ? null : Number(value)
+}
+
+test.describe('课内复习与热身', () => {
+  test.describe.configure({ mode: 'serial' })
+  let studentPage: Page
+  let snap: Lesson2Snapshot
+
+  test.beforeAll(async ({ browser }) => {
+    snap = await readLesson2()
+    studentPage = await browser.newPage()
+    watchApi(studentPage)
+  })
+
+  test.afterAll(async () => {
+    await studentPage?.close().catch(() => undefined)
+    if (snap) await restoreLesson2(snap)
+  })
+
+  test.afterEach(async ({}, info) => {
+    reportApi(studentPage, info)
+    if (info.status === info.expectedStatus || !studentPage) return
+    await mkdir('e2e/screenshots', { recursive: true })
+    const name = info.title.replace(/[\\/:*?"<>|]/g, '-')
+    await studentPage.screenshot({ path: `e2e/screenshots/${name}.png`, fullPage: true }).catch(() => undefined)
+  })
+
+  test('T1 遮字组块复习打满四次并写入 drill_reps', async () => {
+    test.setTimeout(120_000)
+    await loginStudent(studentPage, 'chenxiaoman', '123456')
+    await studentPage.goto('/student/lesson/L0002')
+    await expect(studentPage.getByRole('heading', { name: '先把上一节的这一串遮住打一遍' })).toBeVisible()
+    await studentPage.getByLabel('组块打字').fill('print("')
+    await studentPage.getByRole('button', { name: '跳过' }).click()
+    await studentPage.getByRole('button', { name: '向右转 90 度' }).click()
+    await studentPage.getByRole('button', { name: '运行看看' }).click()
+    await studentPage.getByRole('button', { name: '开始抄代码' }).click()
+    await studentPage.getByRole('button', { name: '准备好了' }).click()
+
+    const lines = ['t.forward(200)', 't.right(90)', 't.forward(120)', 't.done()']
+    for (let i = 0; i < lines.length; i++) {
+      const input = studentPage.getByRole('textbox', { name: `第 ${i + 1} 行代码` })
+      await input.fill(lines[i])
+      await expect(input).toHaveValue(lines[i])
+      await input.press('Enter')
+    }
+    await studentPage.getByRole('button', { name: '运行', exact: true }).click()
+    await studentPage.getByRole('button', { name: '下一回合' }).click()
+    await studentPage.getByRole('button', { name: '准备好了' }).click()
+    await studentPage.getByRole('button', { name: '120 度（拐得更大）' }).click()
+    await studentPage.getByRole('button', { name: '再跑一次' }).click()
+
+    const drill = studentPage.locator('section[aria-label="打字巩固"]')
+    const guide = drill.locator('.code-font').first()
+    const box = drill.getByLabel('组块打字')
+    await expect(drill.getByText('第 1 / 4 次')).toBeVisible()
+    await expect(drill.getByText('看着打')).toBeVisible()
+    await expect(guide).toHaveText('t.forward(')
+    await box.fill('t.forward(')
+
+    await expect(drill.getByText('第 2 / 4 次')).toBeVisible()
+    await expect(drill.getByText('看着打')).toBeVisible()
+    await expect(guide).toHaveText('t.forward(')
+    await box.fill('t.forward(')
+
+    await expect(drill.getByText('第 3 / 4 次')).toBeVisible()
+    await expect(drill.getByText('遮住了，凭手打')).toBeVisible()
+    await expect(guide).toHaveText('__________')
+    await box.fill('t.forward(')
+
+    await expect(drill.getByText('第 4 / 4 次')).toBeVisible()
+    await expect(drill.getByText('遮住了，凭手打')).toBeVisible()
+    await expect(guide).toHaveText('__________')
+    const saved = studentPage.waitForResponse((response) => {
+      const data = response.request().postData() ?? ''
+      return response.url().includes('/api/student-learning') && data.includes('"action":"drill"')
+    })
+    await box.fill('t.forward(')
+    const savedResponse = await saved
+    const savedBody = await savedResponse.text()
+    expect(savedResponse.ok(), `${savedResponse.status()} ${savedBody}`).toBe(true)
+
+    const finished = studentPage.waitForResponse((response) => {
+      const data = response.request().postData() ?? ''
+      return response.url().includes('/api/student-learning') && data.includes('"action":"complete"')
+    })
+    await expect(studentPage.getByRole('button', { name: '完成这一关' })).toBeEnabled()
+    await studentPage.getByRole('button', { name: '完成这一关' }).click()
+    const finishedResponse = await finished
+    const finishedBody = await finishedResponse.text()
+    expect(finishedResponse.ok(), `${finishedResponse.status()} ${finishedBody}`).toBe(true)
+    await expect(studentPage.getByRole('heading', { name: '这一关完成了' })).toBeVisible()
+    expect(await readDrillReps(snap.studentId, snap.levelId)).toBe(4)
+  })
+
+  test('T2 刚学完第 2 关，热身立刻能打到这一关的关键词', async () => {
+    const recent = studentPage.waitForResponse((response) => {
+      const data = response.request().postData() ?? ''
+      return response.url().includes('/api/student-learning') && data.includes('"action":"recent-keywords"')
+    })
+    await studentPage.getByRole('link', { name: '回到课程地图' }).click()
+    await studentPage.getByRole('link', { name: '打字热身' }).click()
+    await expect(studentPage).toHaveURL(/\/student\/typing$/)
+    const recentResponse = await recent
+    const recentBody = await recentResponse.text()
+    expect(recentResponse.ok(), `${recentResponse.status()} ${recentBody}`).toBe(true)
+    const payload = JSON.parse(recentBody) as { items?: { order: number; keywords: string[] }[] }
+    const lesson2 = payload.items?.find((item) => item.order === 2)
+    expect(lesson2?.keywords).toEqual(expect.arrayContaining(['t.forward', 't.right', 't.done']))
+    await studentPage.locator('.ml-auto').getByRole('button', { name: '编程关键词' }).click()
+    await expect(studentPage.getByRole('heading', { name: '编程关键词' })).toBeVisible()
+    await expect(studentPage.locator('.code-font').first()).toContainText('t.forward')
+    await expect(studentPage.getByText('先去上课，这里会留下最近打过的那几串。')).toHaveCount(0)
+  })
+})
+
+test('T3 第 21 关没有上一关的复习组块', async ({ page }) => {
+  const { q } = await import('../server/db.ts')
+  const before = await q<{ preview_frozen: boolean }>('select preview_frozen from public.course_level where sort_order = 21', [])
+  const frozen = before[0]?.preview_frozen === true
+  await q('update public.course_level set preview_frozen = false where sort_order = 21', [])
+  const writes: string[] = []
+  page.on('request', (request) => {
+    const data = request.postData() ?? ''
+    if (data.includes('"action":"drill"') || data.includes('"action":"complete"') || data.includes('"action":"typing"')) writes.push(data)
+  })
+  try {
+    await loginOps(page)
+    await page.goto('/student/lesson/L0021?preview=true')
+    await expect(page.getByRole('button', { name: '跳过' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '先把上一节的这一串遮住打一遍' })).toHaveCount(0)
+    await expect(page.locator('body')).not.toContainText('for i in range(')
+    await expect(page.getByText('网络波动，复习记录暂未同步')).toHaveCount(0)
+    await page.getByRole('button', { name: '跳过' }).click()
+    await expect(page.getByRole('heading', { name: /第 21 关/ })).toBeVisible()
+    await expect(page.locator('body')).not.toContainText('for i in range(')
+    await expect(page.getByText('网络波动，复习记录暂未同步')).toHaveCount(0)
+    expect(writes).toEqual([])
+  } finally {
+    await q('update public.course_level set preview_frozen = $1 where sort_order = 21', [frozen])
+  }
+})
+
+async function openRoundB(page: Page, levelId: string, answer: string) {
+  await loginStudent(page, 'chenxiaoman', '123456')
+  await page.goto(`/student/lesson/${levelId}`)
+  await expect(page.getByRole('heading', { name: /第 \d+ 关|遮住打一遍/ })).toBeVisible()
+  const recall = page.getByRole('heading', { name: '先把上一节的这一串遮住打一遍' })
+  if (await recall.isVisible()) await page.getByLabel('组块打字').fill('print("')
+  const skip = page.getByRole('button', { name: '跳过' })
+  if (await skip.isVisible()) await skip.click()
+  await page.getByRole('button', { name: answer }).click()
+  await page.getByRole('button', { name: '运行看看' }).click()
+  await page.getByRole('button', { name: '开始抄代码' }).click()
+  await page.getByRole('button', { name: '准备好了' }).click()
+}
+
+test('T-Py1 运行第 2 关代码，画布有像素且不报错', async ({ page }) => {
+  test.setTimeout(180_000)
+  await loginStudent(page, 'chenxiaoman', '123456')
+  await page.goto('/student/lesson/L0002')
+  const recall = page.getByRole('heading', { name: '先把上一节的这一串遮住打一遍' })
+  const skip = page.getByRole('button', { name: '跳过' })
+  const choice = page.getByRole('button', { name: '向右转 90 度' })
+  await expect(recall.or(skip).or(choice)).toBeVisible()
+  if (await recall.isVisible()) await page.getByLabel('组块打字').fill('print("')
+  if (await skip.isVisible()) await skip.click()
+  await choice.click()
+  await page.getByRole('button', { name: '运行看看' }).click()
+  await expect(page.getByRole('button', { name: '开始抄代码' })).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByText('出了点小问题')).toHaveCount(0)
+  const ink = await expectCanvasDrawn(page)
+  expect(ink.ink).toBeGreaterThan(20)
+  expect(ink.bw).toBeGreaterThan(10)
+  expect(ink.bh).toBeGreaterThan(10)
+})
+
+test('T-Py2 少一个括号时显示人话，并高亮出错的那一行', async ({ page }) => {
+  test.setTimeout(180_000)
+  await openRoundB(page, 'L0001', '一个三角形')
+  await page.getByRole('textbox', { name: '第 1 行代码' }).fill('print("hello"')
+  await page.getByRole('button', { name: '运行', exact: true }).click()
+  await expect(page.getByText('第 1 行出了点小问题')).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByText('这里的括号没有闭合哦')).toBeVisible()
+  await expect(page.locator('#code-line-1 .ring-danger')).toBeVisible()
+})
+
+test('T-Py3 进入 A 回合两秒后 Worker 已经启动', async ({ page }) => {
+  await loginStudent(page, 'chenxiaoman', '123456')
+  await page.goto('/student/lesson/L0001')
+  await expect(page.getByRole('heading', { name: /第 1 关|遮住打一遍/ })).toBeVisible()
+  await page.waitForTimeout(2_000)
+  const started = await page.evaluate(() =>
+    performance.getEntriesByType('resource').some((entry) => entry.name.includes('pyodide.worker')),
+  )
+  expect(started).toBe(true)
+})
+
+test('T-Py4 分步走超过 500 步就停下，并改为直接运行', async ({ page }) => {
+  test.setTimeout(180_000)
+  const base = LEVELS.find((item) => item.level_id === 'L01')
+  if (!base) throw new Error('缺少 L01')
+  const level = {
+    ...base,
+    demo_code: 'for i in range(2000):\n    pass',
+    teach_code_lines: ['for i in range(2000):', '    pass'],
+    challenge_params: [],
+    unfolded_lines: undefined,
+  }
+
+  await page.addInitScript(() => {
+    localStorage.setItem('cdg.auth.student', 'e2e-token')
+    localStorage.setItem(
+      'cdg.session.student',
+      JSON.stringify({
+        id: 'S-e2e',
+        orgId: 'org-e2e',
+        groupId: 'g-e2e',
+        name: '测试同学',
+        account: 'e2e',
+        status: 'active',
+        currentLevelOrder: 1,
+        lastActiveAt: '2026-11-13T00:00:00.000Z',
+        bindCode: 'E2E',
+        password: '',
+      }),
+    )
+  })
+
+  await page.route((url) => url.pathname.startsWith('/api/'), async (route) => {
+    let body: { action?: string } = {}
+    try {
+      body = route.request().postDataJSON() as { action?: string }
+    } catch {
+      body = {}
+    }
+    const url = route.request().url()
+    if (url.includes('student-enter-level')) {
+      await route.fulfill({ json: { allowed: true, reason: 'ok' } })
+      return
+    }
+    if (url.includes('student-learning') && body.action === 'level') {
+      await route.fulfill({ json: { level, hints: [] } })
+      return
+    }
+    await route.fulfill({ json: { ok: true, hints: [] } })
+  })
+
+  await page.goto('/student/lesson/L01')
+  await page.getByRole('button', { name: '跳过' }).click()
+  await page.getByRole('button', { name: '一个三角形' }).click()
+  await page.getByRole('button', { name: '分步执行' }).click()
+  await page.getByRole('button', { name: '下一步' }).click()
+  await expect(page.getByRole('status').filter({ hasText: '代码太长啦，我们直接看结果吧' })).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByRole('button', { name: '下一步' })).toHaveCount(0)
+  await expect(page.getByText('代码执行时间太长啦，检查一下有没有死循环？')).toHaveCount(0)
 })

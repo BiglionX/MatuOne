@@ -1,5 +1,6 @@
 // 课程包：学生读已发布关卡，平台运营校验并导入。不做可视化编辑。
 import { validateCoursePackage } from '../_shared/coursePackage.ts'
+import { drillForLevel, reviewChunkOf } from '../_shared/drill_chunks.ts'
 import { groupCourseTree, sourceRowsFromTables, type CourseTreeTableLevel, type CourseTreeTableUnit } from '../_shared/courseTree.ts'
 import { empty, json } from '../_shared/http.ts'
 import { requireOps } from '../_shared/staff.ts'
@@ -25,11 +26,11 @@ Deno.serve(async (req) => {
     const orderMatch = /^L(\d+)$/i.exec(levelId)
     const order = orderMatch ? Number(orderMatch[1]) : null
     const direct = levelId
-      ? await auth.db.from('course_level').select('level_id, body, goal, preview_frozen').eq('level_id', levelId).maybeSingle()
+      ? await auth.db.from('course_level').select('level_id, sort_order, body, goal, preview_frozen').eq('level_id', levelId).maybeSingle()
       : { data: null, error: null }
     const byOrder =
       !direct.data && order
-        ? await auth.db.from('course_level').select('level_id, body, goal, preview_frozen').eq('sort_order', order).maybeSingle()
+        ? await auth.db.from('course_level').select('level_id, sort_order, body, goal, preview_frozen').eq('sort_order', order).maybeSingle()
         : { data: null, error: null }
     if (direct.error || byOrder.error) return json(500, { message: '读取失败' })
     const row = direct.data ?? byOrder.data
@@ -42,8 +43,21 @@ Deno.serve(async (req) => {
     }
     if (row.preview_frozen === true) return json(403, { message: '这一关已冻结，不能试课预览' })
     const hints = await auth.db.from('error_hint').select('pattern, friendly_message')
+    const sortOrder = Number(row.sort_order)
+    const drill = drillForLevel(row.body, sortOrder)
+    let reviewChunk: string | null = null
+    if (drill && sortOrder > 1) {
+      const prev = await auth.db.from('course_level').select('body').eq('sort_order', sortOrder - 1).maybeSingle()
+      if (prev.error) return json(500, { message: '读取失败' })
+      reviewChunk = reviewChunkOf(drill, sortOrder, prev.data?.body)
+    }
     const goal = typeof row.goal === 'string' && row.goal.trim() ? row.goal : (row.body as { goal?: string }).goal
-    return json(200, { level: { ...(row.body as Record<string, unknown>), goal }, hints: hints.data ?? [] })
+    const { drill_chunk: _storedDrill, ...rest } = row.body as Record<string, unknown>
+    return json(200, {
+      level: { ...rest, goal, ...(drill ? { drill_chunk: drill } : {}) },
+      reviewChunk,
+      hints: hints.data ?? [],
+    })
   }
 
   if (action === 'copy-save' || action === 'copy-history') {

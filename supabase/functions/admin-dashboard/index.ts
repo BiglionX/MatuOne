@@ -123,6 +123,7 @@ Deno.serve(async (req) => {
       seat_fee_total: number
       rebate_due: number
       platform_net: number
+      account: string | null
     }[]).map((row) => ({
       agentId: row.agent_id,
       agentName: row.agent_name,
@@ -130,6 +131,7 @@ Deno.serve(async (req) => {
       seatFeeTotal: Number(row.seat_fee_total),
       rebateDue: Number(row.rebate_due),
       platformNet: Number(row.platform_net),
+      account: row.account,
     })),
   })
 })

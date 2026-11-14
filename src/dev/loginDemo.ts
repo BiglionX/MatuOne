@@ -1,3 +1,4 @@
+import { loginAgent } from '@/api/agentAuth'
 import { loginPlatform } from '@/api/adminOrgs'
 import { loginOrgAdmin } from '@/api/orgAuth'
 import { loginParent } from '@/api/parent'
@@ -20,6 +21,10 @@ export async function loginDemo(role: DemoRole): Promise<string> {
   if (role === 'parent') {
     await loginParent(demo.account, demo.password)
     return '/parent'
+  }
+  if (role === 'agent') {
+    await loginAgent(demo.account, demo.password)
+    return '/agent'
   }
   await loginPlatform(demo.account, demo.password)
   return '/admin/dashboard'

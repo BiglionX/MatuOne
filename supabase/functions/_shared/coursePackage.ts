@@ -47,6 +47,18 @@ export interface PackageLevel {
   teaching_intent?: string | null
   parent_brief?: string | null
   teacher_guide?: string | null
+  /** 这一节反复打的短组块。缺省表示不覆盖课文自带的组块。 */
+  drill_chunk?: string
+  /** 课后可选副本。缺省表示这节没有巩固练习。 */
+  bonus_challenge?: {
+    type: 'param_edit' | 'code_fill' | 'typing'
+    instruction: string
+    target_param_name?: string
+    target_value?: string
+    prompt_line?: string
+    expected_output: string
+    bonus_reward: string
+  }
 }
 
 export type PedagogyKind = 'new' | 'practice' | 'project' | 'typing'
@@ -59,6 +71,54 @@ export interface CurriculumPlacement {
   unit: { unit_id: string; title: string; sort_order: number }
   /** 单元表仍引用旧行，导入时按 stage_level 对上，页面不展示这串编号。 */
   legacySemesterId: string
+}
+
+function readDrill(value: unknown, push: (field: string, message: string) => void): string | undefined {
+  if (value == null) return undefined
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > 40 || /[\r\n]/.test(value)) {
+    push('drill_chunk', 'drill_chunk 需要是一行以内、不超过 40 个字符的字符串')
+    return undefined
+  }
+  return value.trim()
+}
+
+function readBonus(
+  value: unknown,
+  push: (field: string, message: string) => void,
+): PackageLevel['bonus_challenge'] {
+  if (value == null) return undefined
+  if (!value || typeof value !== 'object') {
+    push('bonus_challenge', 'bonus_challenge 需要是对象')
+    return undefined
+  }
+  const row = value as Record<string, unknown>
+  const type = row.type
+  if (type !== 'param_edit' && type !== 'code_fill' && type !== 'typing') {
+    push('bonus_challenge', 'type 只能是 param_edit、code_fill、typing')
+    return undefined
+  }
+  if (typeof row.instruction !== 'string' || !row.instruction.trim()) push('bonus_challenge', '缺少 instruction')
+  if (typeof row.expected_output !== 'string' || !row.expected_output.trim()) push('bonus_challenge', '缺少 expected_output')
+  if (typeof row.bonus_reward !== 'string' || !row.bonus_reward.trim()) push('bonus_challenge', '缺少 bonus_reward')
+  const targetValue = row.target_value == null ? '' : String(row.target_value).trim()
+  if ((type === 'param_edit' || type === 'code_fill') && !targetValue) {
+    push('bonus_challenge', 'param_edit 和 code_fill 需要 target_value')
+  }
+  if (type === 'param_edit' && (typeof row.target_param_name !== 'string' || !row.target_param_name.trim())) {
+    push('bonus_challenge', 'param_edit 需要 target_param_name')
+  }
+  if (type === 'code_fill' && (typeof row.prompt_line !== 'string' || !row.prompt_line.trim())) {
+    push('bonus_challenge', 'code_fill 需要 prompt_line')
+  }
+  return {
+    type,
+    instruction: typeof row.instruction === 'string' ? row.instruction.trim() : '',
+    target_param_name: typeof row.target_param_name === 'string' ? row.target_param_name.trim() : undefined,
+    target_value: targetValue || undefined,
+    prompt_line: typeof row.prompt_line === 'string' ? row.prompt_line.trim() : undefined,
+    expected_output: typeof row.expected_output === 'string' ? row.expected_output.trim() : '',
+    bonus_reward: typeof row.bonus_reward === 'string' ? row.bonus_reward.trim() : '',
+  }
 }
 
 function readBlankLines(value: unknown): PackageBlank[] | undefined {
@@ -223,6 +283,8 @@ export function validateCoursePackage(text: string): { report: ImportReport; lev
     const teachingIntent = readCopy(raw.teaching_intent, 'teaching_intent', push)
     const parentBrief = readCopy(raw.parent_brief, 'parent_brief', push)
     const teacherGuide = readCopy(raw.teacher_guide, 'teacher_guide', push)
+    const bonus = readBonus(raw.bonus_challenge, push)
+    const drill = readDrill(raw.drill_chunk, push)
     const blankLines = readBlankLines(raw.blank_lines)
     if (levelType === 'fill_blank' && (!blankLines || blankLines.length === 0)) {
       push('blank_lines', 'fill_blank 关卡需要 blank_lines，写明哪几行要填空')
@@ -277,6 +339,8 @@ export function validateCoursePackage(text: string): { report: ImportReport; lev
         ...(teachingIntent !== undefined ? { teaching_intent: teachingIntent } : {}),
         ...(parentBrief !== undefined ? { parent_brief: parentBrief } : {}),
         ...(teacherGuide !== undefined ? { teacher_guide: teacherGuide } : {}),
+        ...(bonus ? { bonus_challenge: bonus } : {}),
+        ...(drill ? { drill_chunk: drill } : {}),
       })
     }
   })

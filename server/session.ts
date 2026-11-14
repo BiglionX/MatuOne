@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { one, q } from './db'
 
-export type SessionRole = 'org' | 'student' | 'platform' | 'parent'
+export type SessionRole = 'org' | 'student' | 'platform' | 'parent' | 'agent'
 
 export interface Session {
   role: SessionRole

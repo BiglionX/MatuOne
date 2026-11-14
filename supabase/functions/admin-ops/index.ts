@@ -1,12 +1,13 @@
 // 平台台账、线索、收费、看板。身份从 platform_staff 读取。
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { empty, json } from '../_shared/http.ts'
+import { generateInitialPassword, hashPassword } from '../_shared/password.ts'
 import { requireStaff } from '../_shared/staff.ts'
 
 function fail(error: { message: string }): Response {
   const line = error.message.split('\n')[0]?.replace(/^ERROR:\s*/, '') ?? ''
   if (line.includes('forbidden') || line.includes('42501')) return json(403, { message: '需要平台权限' })
-  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成']
+  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成', '区域服务商不存在', '区域服务商已停用', '密码哈希无效']
   if (known.some((item) => line.includes(item))) return json(400, { message: line })
   return json(500, { message: '操作失败' })
 }
@@ -117,6 +118,27 @@ Deno.serve(async (req) => {
   const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote' || action === 'detail' || action === 'settings'
   const auth = await requireStaff(req, financeOk ? ['ops', 'finance'] : ['ops'])
   if ('error' in auth) return auth.error
+
+  if (action === 'issue-agent-account') {
+    const agentId = typeof body.agentId === 'string' ? body.agentId : ''
+    const plain = generateInitialPassword()
+    const { data, error } = await auth.db.rpc('issue_agent_account', {
+      p_staff_id: auth.staff.id,
+      p_agent_id: agentId,
+      p_password_hash: await hashPassword(plain),
+    })
+    if (error) return fail(error)
+    const row = (Array.isArray(data) ? data[0] : data) as { admin_id: string; account: string; reset: boolean } | undefined
+    if (!row) return json(500, { message: '发放失败' })
+    if (row.reset) {
+      const { data: admin } = await auth.db.from('agent_admin').select('auth_user_id').eq('id', row.admin_id).maybeSingle()
+      if (admin?.auth_user_id) {
+        const { error: updateError } = await auth.db.auth.admin.updateUserById(String(admin.auth_user_id), { password: plain })
+        if (updateError) return json(500, { message: '发放失败' })
+      }
+    }
+    return json(200, { account: row.account, initialPassword: plain, reset: row.reset })
+  }
 
   if (action === 'settings' || action === 'save-settings') {
     if (action === 'save-settings') {

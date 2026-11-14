@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError, loadAdminDashboard, type AdminDashboard } from '@/api/adminDashboard'
+import { ApiError, issueAgentAccount, loadAdminDashboard, type AdminDashboard } from '@/api/adminDashboard'
+import { getPlatformProfile } from '@/api/adminOrgs'
+import type { IssuedAgentAccount } from '@/types/agentPortal'
 
 function money(amount: number): string {
   return `¥${amount.toLocaleString('zh-CN')}`
@@ -9,6 +11,9 @@ function money(amount: number): string {
 export function AdminDashboard() {
   const [data, setData] = useState<AdminDashboard | null>(null)
   const [error, setError] = useState('')
+  const [issuingId, setIssuingId] = useState('')
+  const [issued, setIssued] = useState<(IssuedAgentAccount & { agentName: string }) | null>(null)
+  const canIssue = getPlatformProfile()?.role !== 'finance'
 
   useEffect(() => {
     let cancelled = false
@@ -23,6 +28,27 @@ export function AdminDashboard() {
       cancelled = true
     }
   }, [])
+
+  const issue = async (agentId: string, agentName: string) => {
+    setIssuingId(agentId)
+    setError('')
+    try {
+      const next = await issueAgentAccount(agentId)
+      setIssued({ ...next, agentName })
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              commissions: prev.commissions.map((row) => (row.agentId === agentId ? { ...row, account: next.account } : row)),
+            }
+          : prev,
+      )
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : '发放失败')
+    } finally {
+      setIssuingId('')
+    }
+  }
 
   const cards = data
     ? [
@@ -99,15 +125,15 @@ export function AdminDashboard() {
 
             <section className="card mt-6 p-5">
               <h2 className="text-lg font-semibold text-ink">分账看板</h2>
-              <p className="mt-1 text-sm text-ink-soft">席位费是机构实付。代理应发按平台底价乘分成比例。平台净收入 = 席位费 − 代理应发。</p>
+              <p className="mt-1 text-sm text-ink-soft">席位费是机构实付。服务商应发按平台底价乘分成比例。平台净收入 = 席位费 − 服务商应发。</p>
               {(data.commissions ?? []).length === 0 ? (
-                <p className="mt-4 text-sm text-ink-soft">还没有代理商。</p>
+                <p className="mt-4 text-sm text-ink-soft">还没有区域服务商。</p>
               ) : (
                 <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-left text-sm">
+                  <table className="w-full min-w-[860px] text-left text-sm">
                     <thead className="text-ink-soft">
                       <tr className="border-b border-line">
-                        {['代理', '名下机构数', '席位费总额', '代理应发', '平台净收入'].map((label) => (
+                        {['区域服务商', '名下机构数', '席位费总额', '服务商应发', '平台净收入', '登录账号', ''].map((label) => (
                           <th key={label} className="px-3 py-3 font-medium">
                             {label}
                           </th>
@@ -122,11 +148,29 @@ export function AdminDashboard() {
                           <td className="px-3 py-3 text-ink">{money(row.seatFeeTotal)}</td>
                           <td className="px-3 py-3 text-ink">{money(row.rebateDue)}</td>
                           <td className="px-3 py-3 text-ink">{money(row.platformNet)}</td>
+                          <td className="px-3 py-3 text-ink">{row.account || '未发放'}</td>
+                          <td className="px-3 py-3">
+                            {canIssue && (
+                              <button
+                                type="button"
+                                className="text-brand-strong"
+                                disabled={issuingId === row.agentId}
+                                onClick={() => issue(row.agentId, row.agentName)}
+                              >
+                                {issuingId === row.agentId ? '正在发放…' : row.account ? '重置密码' : '发放账号'}
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+              )}
+              {issued && (
+                <p className="mt-4 rounded-field bg-warning-soft px-4 py-3 text-sm text-ink">
+                  {issued.reset ? '已重置' : '已发放'} {issued.agentName} 的账号 {issued.account}，初始密码 {issued.initialPassword}。此密码只显示这一次。
+                </p>
               )}
             </section>
           </>

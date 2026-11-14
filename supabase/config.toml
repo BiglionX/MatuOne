@@ -13,6 +13,14 @@ verify_jwt = false
 [functions.platform-login]
 verify_jwt = false
 
+# 调用时还没有 Supabase 会话，账号密码在函数体内校验。
+[functions.agent-login]
+verify_jwt = false
+
+# 区域服务商会话，从 JWT 对应的 agent_admin 取身份。
+[functions.agent-portal]
+verify_jwt = true
+
 # 定价和试用申请对匿名访客开放，函数内不读会话。
 [functions.public-site]
 verify_jwt = false

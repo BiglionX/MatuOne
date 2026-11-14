@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import type { TypingStats } from '@/types'
-import { addTypingRecord, loadTypingSeries } from '@/api/learning'
+import { addTypingRecord, getRecentKeywords, loadTypingSeries } from '@/api/learning'
 import { normalizeTypingScore, typingFeedback } from '@/lib/typingStats'
 import { getCurrentStudent } from '@/api/studentAuth'
 import { TypingTrainer } from '@/components/TypingTrainer'
@@ -19,9 +19,9 @@ const PRACTICE: Record<Mode, { label: string; sub: string; hint: string; targets
   },
   keywords: {
     label: '编程关键词',
-    sub: '课程里最常出现的几个词',
+    sub: '最近学过的那几串',
     hint: '一个词一个词打，别抢',
-    targets: ['print', 'print()', 'range', 't.forward', 'print("")'],
+    targets: [],
   },
 }
 
@@ -32,15 +32,41 @@ export function TypingWarmup() {
   const [stats, setStats] = useState<TypingStats | null>(null)
   const [roundKey, setRoundKey] = useState(0)
   const [series, setSeries] = useState<{ label: string; wpm: number | null; accuracy: number | null }[]>([])
+  const [keywordTargets, setKeywordTargets] = useState<string[] | null>(null)
 
   useEffect(() => {
     if (!student) return
     loadTypingSeries().then(setSeries).catch(() => setSeries([]))
   }, [student?.id, stats])
 
+  useEffect(() => {
+    if (!student) return
+    let alive = true
+    getRecentKeywords()
+      .then((items) => {
+        if (!alive) return
+        const words: string[] = []
+        for (const item of items) {
+          const extra = item.drillChunk ? [item.drillChunk] : []
+          for (const word of [...item.keywords, ...extra]) {
+            if (word && !words.includes(word)) words.push(word)
+          }
+        }
+        setKeywordTargets(words)
+      })
+      .catch(() => {
+        if (alive) setKeywordTargets([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [student?.id])
+
   if (!student) return <Navigate to="/student/login" replace />
 
   const practice = PRACTICE[mode]
+  const targets = mode === 'keywords' ? (keywordTargets ?? []) : practice.targets
+  const keywordsReady = mode !== 'keywords' || keywordTargets !== null
 
   return (
     <div className="student-shell min-h-screen min-w-[1024px] bg-canvas pb-16">
@@ -82,7 +108,9 @@ export function TypingWarmup() {
             <span className="text-sm text-ink-soft">{practice.sub}</span>
           </div>
 
-          {stats ? (
+          {mode === 'keywords' && !keywordsReady ? null : mode === 'keywords' && targets.length === 0 ? (
+            <p className="mt-6 text-ink-soft">先去上课，这里会留下最近打过的那几串。</p>
+          ) : stats ? (
             <div className={`mt-6 rounded-card px-6 py-8 text-center ${stats.accuracy >= 60 ? 'bg-success-soft' : 'bg-danger-soft'}`}>
               <p className={`text-lg font-semibold ${stats.accuracy >= 60 ? 'text-success' : 'text-danger'}`}>
                 {typingFeedback(stats.accuracy)}
@@ -111,7 +139,7 @@ export function TypingWarmup() {
           ) : (
             <div className="mt-6" key={`${mode}-${roundKey}`}>
               <TypingTrainer
-                targets={practice.targets}
+                targets={targets}
                 hint={practice.hint}
                 onComplete={(result) => {
                   setStats(result)

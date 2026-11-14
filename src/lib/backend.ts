@@ -1,6 +1,6 @@
 import { ApiError } from './apiError'
 
-export type AuthRole = 'org' | 'student' | 'platform' | 'parent'
+export type AuthRole = 'org' | 'student' | 'platform' | 'parent' | 'agent'
 
 const tokenKey = (role: AuthRole) => `cdg.auth.${role}`
 

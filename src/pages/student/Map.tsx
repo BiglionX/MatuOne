@@ -214,6 +214,7 @@ function LevelNode({ level, onOpen }: { level: UnitLevel; onOpen: () => void }) 
       </span>
       <span className={`mt-2 block truncate text-sm font-medium ${bright ? 'text-ink' : 'text-ink-soft'}`}>{level.title}</span>
       <span className="mt-1 block text-xs text-ink-soft">{LEVEL_KIND_LABEL[level.levelType]}</span>
+      {level.bonusCompleted && <span className="mt-1 block text-xs font-medium text-brand-strong">皇冠</span>}
     </button>
   )
 }

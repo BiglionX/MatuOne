@@ -39,6 +39,13 @@ const ROLES: Array<{
     to: '/admin/login',
     note: '内部使用',
   },
+  {
+    key: 'agent',
+    title: '区域服务商',
+    desc: '查看名下机构与待发佣金',
+    to: '/agent/login',
+    note: '使用平台发放的服务商账号',
+  },
 ]
 
 export function EntryPage() {

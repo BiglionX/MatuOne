@@ -65,7 +65,7 @@ export function AdminSettings() {
     <div className="px-8 py-8">
       <div className="mx-auto max-w-3xl">
         <h1 className="text-2xl font-bold text-ink">运营配置</h1>
-        <p className="mt-1 text-sm text-ink-soft">开户席位、平台底价、试用天数和代理分成都从这里读取。续费金额按底价计算，不在页面里写死。</p>
+        <p className="mt-1 text-sm text-ink-soft">开户席位、平台底价、试用天数和区域服务商分成都从这里读取。续费金额按底价计算，不在页面里写死。</p>
         {loading && <p className="mt-6 text-sm text-ink-soft">正在读取配置…</p>}
         {!loading && (
           <form className="card mt-6 p-6" onSubmit={submit}>
@@ -104,7 +104,7 @@ export function AdminSettings() {
                 <span className="mt-1 block text-xs">新开机构的试用期按这个天数计算。</span>
               </label>
               <label className="text-sm text-ink-soft">
-                代理分成比例
+                区域服务商分成比例
                 <input
                   className="field mt-1"
                   inputMode="decimal"
@@ -112,7 +112,7 @@ export function AdminSettings() {
                   value={form.agentCommissionRate}
                   onChange={(event) => setForm((prev) => ({ ...prev, agentCommissionRate: event.target.value }))}
                 />
-                <span className="mt-1 block text-xs">0.40 表示代理拿底价的 40%，平台拿剩下的 60%。</span>
+                <span className="mt-1 block text-xs">0.40 表示区域服务商拿底价的 40%，平台拿剩下的 60%。</span>
               </label>
             </div>
             {updatedAt && <p className="mt-4 text-xs text-ink-soft">最近更新 {updatedAt.replace('T', ' ').slice(0, 16)}</p>}

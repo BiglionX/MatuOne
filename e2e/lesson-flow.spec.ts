@@ -1,11 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import { LEVELS } from '../src/mock/levels'
+import { expectCanvasDrawn, readCanvasInk } from './canvasInk'
+import { reportApi, watchApi } from './api-log'
 
 /**
- * 通关流程走本地前端，接口用课程夹具挡掉。
- * 试用学生在真实环境进不了第 5 关，这里只验证页面怎么把 fill_blank / 折叠循环跑完。
+ * 试用学生进不了第 5、6 关，这两项仍用课程夹具挡住接口。
+ * 画图已经走真实 Pyodide，画布是 Canvas，不再断言 SVG。
  */
-test.use({ baseURL: 'http://127.0.0.1:5173' })
 
 const STUDENT = {
   id: 'S-e2e',
@@ -52,7 +53,16 @@ async function openLevel(page: Page, levelId: string) {
   await page.getByRole('button', { name: '跳过' }).click()
 }
 
+test.beforeEach(async ({ page }) => {
+  watchApi(page)
+})
+
+test.afterEach(async ({ page }, info) => {
+  reportApi(page, info)
+})
+
 test('第 5 关填空后才能运行，改边长时画布不重新缩放', async ({ page }) => {
+  test.setTimeout(180_000)
   await openLevel(page, 'L05')
   await page.getByRole('button', { name: '120 度', exact: true }).click()
   await page.getByRole('button', { name: '运行看看' }).click()
@@ -73,15 +83,15 @@ test('第 5 关填空后才能运行，改边长时画布不重新缩放', async
   await page.getByRole('button', { name: '下一回合' }).click()
   await page.getByRole('button', { name: '准备好了' }).click()
 
-  const svg = page.getByRole('img', { name: '程序运行结果' })
-  const viewBefore = await svg.getAttribute('viewBox')
-  const pointsBefore = await svg.locator('polyline').first().getAttribute('points')
+  const before = await expectCanvasDrawn(page)
   await page.getByRole('slider', { name: '三角形边长' }).fill('200')
   await page.getByRole('button', { name: '再跑一次' }).click()
-  await expect(page.getByText('改完的样子')).toBeVisible()
-  await expect(svg).toHaveAttribute('viewBox', viewBefore ?? '')
-  const pointsAfter = await svg.locator('polyline').first().getAttribute('points')
-  expect(pointsAfter).not.toBe(pointsBefore)
+  await expect(page.getByText('改完的样子')).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByText('出了点小问题')).toHaveCount(0)
+  const after = await readCanvasInk(page)
+  expect(after.ink).toBeGreaterThan(20)
+  // 视野锁住时，边长变大，线段占画布的比例变大，而不是重新缩放到同一块。
+  expect(after.bw / after.w).toBeGreaterThan((before.bw / before.w) * 1.2)
 
   const typing = page.getByLabel('打字练习输入框')
   for (const word of ['size', 'angle', 't.right(angle)']) {
@@ -92,6 +102,7 @@ test('第 5 关填空后才能运行，改边长时画布不重新缩放', async
 })
 
 test('第 6 关用折叠看到 8 行变成 for，循环次数改完代码跟着变', async ({ page }) => {
+  test.setTimeout(180_000)
   await openLevel(page, 'L06')
   await page.getByRole('button', { name: '4 次', exact: true }).click()
   await page.getByRole('button', { name: '运行看看' }).click()
@@ -104,6 +115,8 @@ test('第 6 关用折叠看到 8 行变成 for，循环次数改完代码跟着�
   await expect(page.getByText('循环替你把重复的事做完')).toBeVisible()
   await expect(page.locator('pre', { hasText: 'for i in range(4):' })).toBeVisible()
   await page.getByRole('button', { name: '运行折叠后的代码' }).click()
+  await expect(page.getByText('出了点小问题')).toHaveCount(0)
+  await expectCanvasDrawn(page)
   await page.getByRole('button', { name: '下一回合' }).click()
   await page.getByRole('button', { name: '准备好了' }).click()
 
