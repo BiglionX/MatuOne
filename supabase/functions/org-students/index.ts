@@ -1,6 +1,8 @@
 // 机构学生列表、分组与导入。orgId 只来自 withOrgScope，请求体里的 orgId 不一致会直接 403。
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { ensureAuthUser, loginEmail } from '../_shared/authUser.ts'
 import { empty, json } from '../_shared/http.ts'
+import { lessonIsAuthorized, openMaxLevel, type OrgStatus } from '../_shared/orgStatus.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
 import { generateBindCode } from '../_shared/bindCode.ts'
 import { generateInitialPassword, hashPassword } from '../_shared/password.ts'
@@ -25,7 +27,8 @@ Deno.serve(async (req) => {
 
   const action = req.headers.get('x-action') ?? 'list'
   // 代解除不算机构写入：宽限期内机构端只读，仍要能切断家长可见范围。
-  const writing = action === 'import' || action === 'create-group'
+  const writing =
+    action === 'import' || action === 'create-group' || action === 'reset-password' || action === 'set-status' || action === 'set-group'
   return withOrgScope(req, { write: writing, importStudents: action === 'import' }, async (ctx) => {
     if (action === 'groups' || action === 'create-group') {
       if (action === 'create-group') {
@@ -70,12 +73,27 @@ Deno.serve(async (req) => {
       if (currentLevel?.level_id) ids.add(currentLevel.level_id as string)
       const idList = [...ids]
       if (!idList.length) return json(200, { name: student.name, lessons: [] })
-      const { data: levels, error: levelError } = await ctx.db
-        .from('course_level')
-        .select('level_id, sort_order, title, teaching_intent, teacher_guide')
-        .in('level_id', idList)
-        .order('sort_order', { ascending: true })
+      const [{ data: levels, error: levelError }, { data: units }, { data: semesters }, { data: stages }, { data: org }, { data: grant }] =
+        await Promise.all([
+          ctx.db
+            .from('course_level')
+            .select('level_id, sort_order, title, teaching_intent, teacher_guide, unit_id')
+            .in('level_id', idList)
+            .order('sort_order', { ascending: true }),
+          ctx.db.from('curriculum_unit').select('unit_id, semester_id'),
+          ctx.db.from('curriculum_semester').select('semester_id, stage_id'),
+          ctx.db.from('curriculum_stage').select('stage_id, sort_order'),
+          ctx.db.from('org').select('status').eq('id', ctx.orgId).maybeSingle(),
+          ctx.db.from('org_entitlement').select('max_level, valid_until').eq('org_id', ctx.orgId).maybeSingle(),
+        ])
       if (levelError) return json(500, { message: '读取失败' })
+      const stageSort = new Map((stages ?? []).map((stage) => [stage.stage_id as string, Number(stage.sort_order)]))
+      const semesterStage = new Map(
+        (semesters ?? []).map((semester) => [semester.semester_id as string, stageSort.get(semester.stage_id as string) ?? 0]),
+      )
+      const stageByUnit = new Map((units ?? []).map((unit) => [unit.unit_id as string, semesterStage.get(unit.semester_id as string) ?? 0]))
+      const access: OrgStatus = org?.status === 'trial' || ctx.status === 'trial' ? 'trial' : ctx.status
+      const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null)
       const completed = new Map((records ?? []).map((row) => [row.level_id as string, row.completed === true]))
       return json(200, {
         name: student.name,
@@ -85,6 +103,7 @@ Deno.serve(async (req) => {
           title: row.title,
           completed: completed.get(row.level_id as string) === true,
           current: row.sort_order === student.current_level_order,
+          authorized: lessonIsAuthorized(access, maxStage, Number(row.sort_order), stageByUnit.get(row.unit_id as string) ?? 0),
           teachingIntent: row.teaching_intent,
           teacherGuide: row.teacher_guide,
         })),
@@ -110,6 +129,72 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, boundParentCount: 0 })
     }
 
+    if (action === 'reset-password') {
+      const studentId = typeof ctx.body.studentId === 'string' ? ctx.body.studentId.trim() : ''
+      const { data: existing, error: readError } = await ctx.db
+        .from('student')
+        .select('id, account, auth_user_id')
+        .eq('id', studentId)
+        .eq('org_id', ctx.orgId)
+        .maybeSingle()
+      if (readError) return json(500, { message: '重置失败' })
+      if (!existing) return json(404, { message: '没有这名学生' })
+      const plain = generateInitialPassword(8)
+      const passwordHash = await hashPassword(plain)
+      const { error: updateError } = await ctx.db
+        .from('student')
+        .update({ password_hash: passwordHash })
+        .eq('id', existing.id)
+        .eq('org_id', ctx.orgId)
+      if (updateError) return json(500, { message: '重置失败' })
+      try {
+        await ensureAuthUser(ctx.db, loginEmail('student', String(existing.account)), plain)
+      } catch (error) {
+        console.error('sync student auth failed', error instanceof Error ? error.message : error)
+      }
+      return json(200, { password: plain })
+    }
+
+    if (action === 'set-status') {
+      const studentId = typeof ctx.body.studentId === 'string' ? ctx.body.studentId.trim() : ''
+      const status = ctx.body.status === 'active' || ctx.body.status === 'disabled' ? ctx.body.status : ''
+      if (!status) return json(400, { message: '学生状态不正确' })
+      const { data: updated, error: updateError } = await ctx.db
+        .from('student')
+        .update({ status })
+        .eq('id', studentId)
+        .eq('org_id', ctx.orgId)
+        .select('id')
+        .maybeSingle()
+      if (updateError) return json(500, { message: '更新状态失败' })
+      if (!updated) return json(404, { message: '没有这名学生' })
+      return json(200, { ok: true, status })
+    }
+
+    if (action === 'set-group') {
+      const studentId = typeof ctx.body.studentId === 'string' ? ctx.body.studentId.trim() : ''
+      const groupId = typeof ctx.body.groupId === 'string' ? ctx.body.groupId.trim() : ''
+      if (!studentId || !groupId) return json(400, { message: '请指定学生和分组' })
+      const { data: group, error: groupError } = await ctx.db
+        .from('student_group')
+        .select('id')
+        .eq('id', groupId)
+        .eq('org_id', ctx.orgId)
+        .maybeSingle()
+      if (groupError) return json(500, { message: '调整分组失败' })
+      if (!group) return json(400, { message: '分组不存在' })
+      const { data: updated, error: updateError } = await ctx.db
+        .from('student')
+        .update({ group_id: groupId })
+        .eq('id', studentId)
+        .eq('org_id', ctx.orgId)
+        .select('id')
+        .maybeSingle()
+      if (updateError) return json(500, { message: '调整分组失败' })
+      if (!updated) return json(404, { message: '没有这名学生' })
+      return json(200, { ok: true, groupId })
+    }
+
     if (action !== 'import') {
       const { data, error } = await ctx.db
         .from('student')
@@ -130,8 +215,20 @@ Deno.serve(async (req) => {
           counts.set(id, (counts.get(id) ?? 0) + 1)
         }
       }
+      const extras = await studentListExtras(ctx.db, ctx.orgId, ctx.status, data ?? [])
       return json(200, {
-        students: (data ?? []).map((row) => ({ ...row, bound_parent_count: counts.get(row.id as string) ?? 0 })),
+        authorizedLevels: extras.authorizedLevels,
+        students: (data ?? []).map((row) => {
+          const id = row.id as string
+          const typing = extras.typing.get(id)
+          return {
+            ...row,
+            bound_parent_count: counts.get(id) ?? 0,
+            completed_count: extras.completed.get(id) ?? 0,
+            typing_wpm: typing?.wpm ?? null,
+            typing_accuracy: typing?.accuracy ?? null,
+          }
+        }),
       })
     }
 
@@ -221,3 +318,54 @@ Deno.serve(async (req) => {
     return json(200, { added, rows })
   })
 })
+
+async function studentListExtras(
+  db: SupabaseClient,
+  orgId: string,
+  effective: OrgStatus,
+  students: { id: string }[],
+) {
+  const ids = students.map((student) => student.id)
+  const [{ data: org }, { data: grant }, { data: published }, { data: units }, { data: semesters }, { data: stages }] = await Promise.all([
+    db.from('org').select('status').eq('id', orgId).maybeSingle(),
+    db.from('org_entitlement').select('max_level, valid_until').eq('org_id', orgId).maybeSingle(),
+    db.from('course_level').select('sort_order, unit_id').eq('published', true),
+    db.from('curriculum_unit').select('unit_id, semester_id'),
+    db.from('curriculum_semester').select('semester_id, stage_id'),
+    db.from('curriculum_stage').select('stage_id, sort_order'),
+  ])
+  const stageSort = new Map((stages ?? []).map((stage) => [stage.stage_id as string, stage.sort_order as number]))
+  const semesterStage = new Map((semesters ?? []).map((semester) => [semester.semester_id as string, stageSort.get(semester.stage_id as string) ?? 0]))
+  const stageByUnit = new Map((units ?? []).map((unit) => [unit.unit_id as string, semesterStage.get(unit.semester_id as string) ?? 0]))
+  const access: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
+  const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null)
+  const authorizedLevels = (published ?? []).filter((row) =>
+    lessonIsAuthorized(access, maxStage, row.sort_order as number, stageByUnit.get(row.unit_id as string) ?? 0),
+  ).length
+  const completed = new Map<string, number>()
+  const typing = new Map<string, { wpm: number; accuracy: number }>()
+  if (!ids.length) return { authorizedLevels, completed, typing }
+  const [{ data: progress }, { data: typingRows }, { data: levels }] = await Promise.all([
+    db.from('learning_record').select('student_id, level_id, completed').in('student_id', ids).eq('completed', true),
+    db.from('typing_record').select('student_id, wpm, accuracy, created_at').in('student_id', ids),
+    db.from('course_level').select('level_id, sort_order, unit_id'),
+  ])
+  const levelById = new Map(
+    (levels ?? []).map((row) => [row.level_id as string, { sortOrder: row.sort_order as number, stageSort: stageByUnit.get(row.unit_id as string) ?? 0 }]),
+  )
+  for (const row of progress ?? []) {
+    const level = levelById.get(row.level_id as string)
+    if (!level || !lessonIsAuthorized(access, maxStage, level.sortOrder, level.stageSort)) continue
+    const id = row.student_id as string
+    completed.set(id, (completed.get(id) ?? 0) + 1)
+  }
+  const latest = new Map<string, { wpm: number; accuracy: number; at: string }>()
+  for (const row of typingRows ?? []) {
+    const prev = latest.get(row.student_id as string)
+    if (!prev || String(row.created_at) > prev.at) {
+      latest.set(row.student_id as string, { wpm: Number(row.wpm), accuracy: Number(row.accuracy), at: String(row.created_at) })
+    }
+  }
+  for (const [id, row] of latest) typing.set(id, { wpm: row.wpm, accuracy: row.accuracy })
+  return { authorizedLevels, completed, typing }
+}

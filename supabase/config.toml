@@ -45,12 +45,24 @@ verify_jwt = true
 [functions.org-dashboard]
 verify_jwt = true
 
+# 机构管理员会话，withOrgScope 从 JWT 取 orgId。素材只落在该机构目录。
+[functions.org-materials]
+verify_jwt = true
+
+# 机构管理员会话，withOrgScope 从 JWT 取 orgId。组装只使用本机构素材和已授权关卡。
+[functions.org-custom-courses]
+verify_jwt = true
+
 # 学生会话，从 JWT 解析学生后再进关卡。
 [functions.student-enter-level]
 verify_jwt = true
 
 # 学生会话，从 JWT 解析学生后再读写学习记录。
 [functions.student-learning]
+verify_jwt = true
+
+# 学生会话。机构专属课的身份、停用和进关校验都在函数里，不信请求体里的学生 id。
+[functions.student-custom-courses]
 verify_jwt = true
 
 # 平台运营会话，requireOps 从 JWT 取 platform_staff。

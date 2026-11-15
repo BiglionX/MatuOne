@@ -135,8 +135,8 @@ test('R5 机构管理员进入进度看板', async ({ page }) => {
   await loginOrg(page)
   await expect(page.getByRole('heading', { name: '进度看板' })).toBeVisible()
   await expect(page.getByText('在读学生')).toBeVisible()
-  await expect(page.getByRole('heading', { name: '学生明细' })).toBeVisible()
-  await expect(page.getByText('陈小满')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '需要跟进' })).toBeVisible()
+  await expect(page.getByText('共 960')).toHaveCount(0)
 })
 
 test('R6 机构学生页只有批量导入', async ({ page }) => {

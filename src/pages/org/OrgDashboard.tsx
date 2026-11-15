@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
-import { ApiError, loadOrgDashboard, type OrgDashboardView } from '@/api/orgPortal'
+import { Link } from 'react-router-dom'
+import { getOrgSession } from '@/api/orgAuth'
+import { ApiError, loadOrgDashboard, type OrgAttention, type OrgDashboardView } from '@/api/orgPortal'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
-import { OrgStudentProgress } from '@/components/OrgStudentProgress'
 import { formatDate } from '@/lib/format'
 
+const ATTENTION_LABEL: Record<OrgAttention, string> = {
+  inactive: '本周未学',
+  stuck: '停在当前关',
+  disabled: '已停用',
+}
+
 export function OrgDashboard() {
+  const session = getOrgSession()
   const [dashboard, setDashboard] = useState<OrgDashboardView | null>(null)
   const [notice, setNotice] = useState('')
-  const [detailId, setDetailId] = useState('')
-  const totalLevels = dashboard?.totalLevels ?? 0
 
   useEffect(() => {
     loadOrgDashboard()
@@ -27,19 +33,41 @@ export function OrgDashboard() {
     )
   }
 
+  const authorized = dashboard.authorizedLevels
+  const until = session?.serviceEndAt ?? session?.trialExpireAt
+
   return (
     <div className="px-8 py-8">
       <OrgAccessNotice message={notice} />
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-ink">进度看板</h1>
-        <p className="mt-1 text-sm text-ink-soft">看一眼就知道谁在学、谁卡住了。</p>
+        <p className="mt-1 text-sm text-ink-soft">本周从周一开始。还没学，或当前关超过 3 天没有推进，会出现在下面。</p>
       </header>
+
+      {session?.status === 'trial' && (
+        <section className="card mb-6 flex flex-wrap items-center justify-between gap-4 p-6">
+          <div>
+            <h2 className="text-lg font-semibold text-ink">试用机构的下一步</h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              导入学生，把家长绑定码交给家长。试用只能进入前 {authorized || 3} 关，席位 {session.usedSeats}/{session.seatQuota}
+              {until ? `，试用到期 ${until.slice(0, 10)}` : ''}。
+            </p>
+          </div>
+          <Link to="/org/students" className="btn-primary">
+            去学生管理
+          </Link>
+        </section>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: '在读学生', value: dashboard.reading, unit: '人' },
-          { label: '本周活跃', value: dashboard.weeklyActive, unit: '人' },
-          { label: '平均完成关卡', value: dashboard.avgCompleted, unit: `关 / 共 ${totalLevels} 关` },
+          { label: '在读学生', value: String(dashboard.reading), unit: '人' },
+          { label: '本周活跃', value: String(dashboard.weeklyActive), unit: '人' },
+          {
+            label: '平均完成关卡',
+            value: String(dashboard.avgCompleted),
+            unit: authorized > 0 ? `关 / 共 ${authorized} 关` : '尚未开通',
+          },
         ].map((card) => (
           <div key={card.label} className="card p-6">
             <p className="text-sm text-ink-soft">{card.label}</p>
@@ -53,8 +81,7 @@ export function OrgDashboard() {
 
       <section className="card mt-6 p-6">
         <h2 className="text-lg font-semibold text-ink">分组完成率</h2>
-        <p className="mt-1 text-sm text-ink-soft">按组看整体推进，条形长度是完成关卡占应有进度的比例。</p>
-
+        <p className="mt-1 text-sm text-ink-soft">条形是已完成占已授权关卡的比例。没有学生的分组不计算完成率。</p>
         <div className="mt-5 space-y-5">
           {dashboard.groupRows.map((group) => (
             <div key={group.groupId}>
@@ -63,65 +90,58 @@ export function OrgDashboard() {
                   {group.name}
                   <span className="ml-2 text-ink-soft">{group.students} 人</span>
                 </span>
-                <span className="text-ink-soft">{group.rate}%</span>
+                <span className="text-ink-soft">{group.students === 0 ? '还没有学生' : `${group.rate ?? 0}%`}</span>
               </div>
-              <div className="h-3 overflow-hidden rounded-full bg-canvas">
-                <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${group.rate}%` }} />
-              </div>
+              {group.students > 0 && (
+                <div className="h-3 overflow-hidden rounded-full bg-canvas">
+                  <div className="h-full rounded-full bg-brand" style={{ width: `${group.rate ?? 0}%` }} />
+                </div>
+              )}
             </div>
           ))}
         </div>
       </section>
 
       <section className="card mt-6 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5">
-          <div>
-            <h2 className="text-lg font-semibold text-ink">学生明细</h2>
-            <p className="mt-1 text-sm text-ink-soft">点名字查看关卡明细。关卡旁的「话术」是教学设计意图和上课引导。</p>
-          </div>
+        <div className="px-6 py-5">
+          <h2 className="text-lg font-semibold text-ink">需要跟进</h2>
+          <p className="mt-1 text-sm text-ink-soft">点名字打开学生档案，账号、绑定码和关卡明细都在那里。</p>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-y border-line bg-canvas text-left text-ink-soft">
-                <th className="px-6 py-3 font-medium">姓名</th>
-                <th className="px-6 py-3 font-medium">分组</th>
-                <th className="px-6 py-3 font-medium">当前关卡</th>
-                <th className="px-6 py-3 font-medium">已完成</th>
-                <th className="px-6 py-3 font-medium">打字 WPM / 准确率</th>
-                <th className="px-6 py-3 font-medium">最近学习</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboard.studentRows.map((row) => (
-                <tr key={row.student.id} className="border-b border-line last:border-0">
-                  <td className="px-6 py-3.5 font-medium text-ink">
-                    <button type="button" className="text-brand-strong hover:underline" onClick={() => setDetailId(row.student.id)}>
-                      {row.student.name}
-                    </button>
-                    {row.student.status === 'disabled' && (
-                      <span className="ml-2 chip bg-canvas text-ink-soft">已停用</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-3.5 text-ink-soft">{row.groupName}</td>
-                  <td className="px-6 py-3.5 text-ink-soft">第 {row.currentOrder} 关</td>
-                  <td className="px-6 py-3.5 text-ink-soft">
-                    {row.completedCount} / {totalLevels}
-                  </td>
-                  <td className="px-6 py-3.5 text-ink-soft">
-                    {row.typing ? `${row.typing.wpm} WPM · ${row.typing.accuracy}%` : '还没有记录'}
-                  </td>
-                  <td className="px-6 py-3.5 text-ink-soft">{formatDate(row.lastActiveAt)}</td>
+        {dashboard.attentionRows.length === 0 ? (
+          <p className="border-t border-line px-6 py-8 text-sm text-ink-soft">这周没有需要跟进的学生。</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-y border-line bg-canvas text-left text-ink-soft">
+                  <th className="px-6 py-3 font-medium">姓名</th>
+                  <th className="px-6 py-3 font-medium">分组</th>
+                  <th className="px-6 py-3 font-medium">情况</th>
+                  <th className="px-6 py-3 font-medium">进度</th>
+                  <th className="px-6 py-3 font-medium">最近学习</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {dashboard.attentionRows.map((row) => (
+                  <tr key={row.student.id} className="border-b border-line last:border-0">
+                    <td className="px-6 py-3.5 font-medium text-ink">
+                      <Link to={`/org/students?student=${row.student.id}`} className="text-brand-strong hover:underline">
+                        {row.student.name}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-3.5 text-ink-soft">{row.groupName}</td>
+                    <td className="px-6 py-3.5 text-ink">{ATTENTION_LABEL[row.reason]}</td>
+                    <td className="px-6 py-3.5 text-ink-soft">
+                      {authorized > 0 ? `第 ${row.currentOrder} 关 · ${row.completedCount}/${authorized}` : '尚未开通'}
+                    </td>
+                    <td className="px-6 py-3.5 text-ink-soft">{formatDate(row.lastActiveAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
-
-      <p className="mt-6 text-xs text-ink-soft">1.0 只统计：完成节数、当前关卡、打字 WPM/准确率、最近活跃时间。</p>
-      {detailId && <OrgStudentProgress studentId={detailId} onClose={() => setDetailId('')} />}
     </div>
   )
 }

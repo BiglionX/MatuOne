@@ -21,20 +21,24 @@ export function saveOrgStudentPrice(studentMonthlyPrice: number): Promise<OrgCou
   return callFunction('org-course', { studentMonthlyPrice }, { role: 'org', headers: { 'x-action': 'save-price' } })
 }
 
+export type OrgAttention = 'disabled' | 'inactive' | 'stuck'
+
+export interface OrgDashboardStudent {
+  student: Omit<Student, 'password'>
+  groupName: string
+  completedCount: number
+  currentOrder: number
+  typing: { wpm: number; accuracy: number } | null
+  lastActiveAt: string
+}
+
 export interface OrgDashboardView {
   reading: number
   weeklyActive: number
   avgCompleted: number
-  totalLevels: number
-  groupRows: { groupId: string; name: string; rate: number; students: number }[]
-  studentRows: {
-    student: Omit<Student, 'password'>
-    groupName: string
-    completedCount: number
-    currentOrder: number
-    typing: { wpm: number; accuracy: number } | null
-    lastActiveAt: string
-  }[]
+  authorizedLevels: number
+  groupRows: { groupId: string; name: string; rate: number | null; students: number }[]
+  attentionRows: (OrgDashboardStudent & { reason: OrgAttention })[]
 }
 
 function asStudent(row: Omit<Student, 'password'>): Student {
@@ -61,10 +65,14 @@ export async function createOrgGroup(name: string): Promise<Group[]> {
 
 export interface OrgStudentListItem extends Student {
   boundParentCount: number
+  completedCount: number
+  authorizedLevels: number
+  typing: { wpm: number; accuracy: number } | null
 }
 
 export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
   const result = await callFunction<{
+    authorizedLevels?: number
     students: {
       id: string
       name: string
@@ -75,8 +83,12 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       current_level_order: number
       last_active_at: string | null
       bound_parent_count?: number
+      completed_count?: number
+      typing_wpm?: number | null
+      typing_accuracy?: number | null
     }[]
   }>('org-students', {}, { role: 'org', headers: { 'x-action': 'list' } })
+  const authorizedLevels = result.authorizedLevels ?? 0
   return result.students.map((row) => ({
     ...asStudent({
       id: row.id,
@@ -90,6 +102,9 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       bindCode: row.bind_code ?? '',
     }),
     boundParentCount: row.bound_parent_count ?? 0,
+    completedCount: row.completed_count ?? 0,
+    authorizedLevels,
+    typing: row.typing_wpm == null ? null : { wpm: row.typing_wpm, accuracy: row.typing_accuracy ?? 0 },
   }))
 }
 
@@ -100,6 +115,24 @@ export async function loadOrgStudentProgress(studentId: string): Promise<OrgStud
 
 export async function unbindOrgStudent(studentId: string): Promise<void> {
   await callFunction('org-students', { studentId }, { role: 'org', headers: { 'x-action': 'unbind-parent' } })
+}
+
+/** studentId 只用来点名本机构的一名学生。新密码只返回这一次。 */
+export function resetOrgStudentPassword(studentId: string): Promise<{ password: string }> {
+  return callFunction('org-students', { studentId }, { role: 'org', headers: { 'x-action': 'reset-password' } })
+}
+
+/** 停用只改状态，不删除学生、学习记录和席位占用。 */
+export function setOrgStudentStatus(
+  studentId: string,
+  status: 'active' | 'disabled',
+): Promise<{ ok: true; status: 'active' | 'disabled' }> {
+  return callFunction('org-students', { studentId, status }, { role: 'org', headers: { 'x-action': 'set-status' } })
+}
+
+/** groupId 只用来点名本机构已有分组。 */
+export function setOrgStudentGroup(studentId: string, groupId: string): Promise<{ ok: true; groupId: string }> {
+  return callFunction('org-students', { studentId, groupId }, { role: 'org', headers: { 'x-action': 'set-group' } })
 }
 
 export async function importOrgStudents(csv: string): Promise<{ rows: ImportRowResult[]; added: number }> {
@@ -113,10 +146,6 @@ export function importTemplate(groups: Group[]): string {
 
 export function getOrgCourse(): Promise<OrgCourseSettings> {
   return callFunction('org-course', {}, { role: 'org', headers: { 'x-action': 'read' } })
-}
-
-export function saveOrgCourse(input: { groupId: string; seats: number; expiresAt: string }): Promise<OrgCourseSettings> {
-  return callFunction('org-course', input, { role: 'org', headers: { 'x-action': 'save' } })
 }
 
 export function loadOrgDashboard(): Promise<OrgDashboardView> {

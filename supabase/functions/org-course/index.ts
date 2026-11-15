@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return empty(204)
   if (req.method !== 'POST') return json(405, { message: '只接受 POST' })
   const action = req.headers.get('x-action') ?? 'read'
-  return withOrgScope(req, { write: action === 'save' || action === 'save-price' }, async (ctx) => {
+  return withOrgScope(req, { write: action === 'save-price' }, async (ctx) => {
     const { count } = await ctx.db.from('course_level').select('level_id', { count: 'exact', head: true }).eq('published', true)
 
     if (action === 'save-price') {
@@ -19,67 +19,7 @@ Deno.serve(async (req) => {
       if (error) return json(500, { message: '保存失败' })
     }
 
-    if (action === 'save') {
-      const groupId = typeof ctx.body.groupId === 'string' && ctx.body.groupId ? ctx.body.groupId : 'all'
-      const seats = Number(ctx.body.seats)
-      const expiresAt = typeof ctx.body.expiresAt === 'string' ? ctx.body.expiresAt : ''
-      if (!Number.isInteger(seats) || seats < 1) return json(400, { message: '名额至少为 1' })
-      if (seats > ctx.seatLimit) return json(409, { message: '席位已满' })
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)) return json(400, { message: '请填写有效期' })
-      if (groupId !== 'all') {
-        const { data: group } = await ctx.db
-          .from('student_group')
-          .select('id')
-          .eq('org_id', ctx.orgId)
-          .eq('id', groupId)
-          .maybeSingle()
-        if (!group) return json(400, { message: '分组不存在' })
-      }
-
-      const activatedAt = new Date().toISOString()
-      const { error } = await ctx.db.from('course_activation').upsert({
-        org_id: ctx.orgId,
-        group_id: groupId,
-        seats,
-        expires_at: expiresAt,
-        activated_at: activatedAt,
-      })
-      if (error) return json(500, { message: '保存失败' })
-
-      const expires = new Date(`${expiresAt}T23:59:59`)
-      await ctx.db
-        .from('level_entitlement')
-        .update({ expires_at: expires.toISOString() })
-        .eq('org_id', ctx.orgId)
-        .eq('subject_type', 'org')
-
-      if (groupId !== 'all') {
-        const { data: existing } = await ctx.db
-          .from('level_entitlement')
-          .select('id')
-          .eq('org_id', ctx.orgId)
-          .eq('subject_type', 'group')
-          .eq('subject_id', groupId)
-          .maybeSingle()
-        const span = { level_order_min: 1, level_order_max: ctx.status === 'trial' ? 3 : 999, expires_at: expires.toISOString() }
-        if (existing) {
-          await ctx.db.from('level_entitlement').update(span).eq('id', existing.id)
-        } else {
-          await ctx.db.from('level_entitlement').insert({
-            org_id: ctx.orgId,
-            subject_type: 'group',
-            subject_id: groupId,
-            ...span,
-          })
-        }
-      }
-
-      const maxLevel = await packageLevel(ctx.db, ctx.orgId)
-      if (maxLevel instanceof Response) return maxLevel
-      const pricing = await orgPricing(ctx.db, ctx.orgId)
-      if (pricing instanceof Response) return pricing
-      return json(200, { groupId, seats, expiresAt, activatedAt, levelCount: count ?? 0, maxLevel, ...pricing })
-    }
+    if (action === 'save') return json(403, { message: '名额和有效期由平台合同决定，请联系客服' })
 
     const { data } = await ctx.db.from('course_activation').select('group_id, seats, expires_at, activated_at').eq('org_id', ctx.orgId).maybeSingle()
     const { data: org } = await ctx.db

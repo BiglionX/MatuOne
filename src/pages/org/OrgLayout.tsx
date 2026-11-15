@@ -1,12 +1,13 @@
-import { NavLink, Outlet, Link, Navigate, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, Link, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { getOrgSession, logoutOrgAdmin } from '@/api/orgAuth'
 import { BrandMark } from '@/components/BrandMark'
 import type { OrgStatus } from '@/types/orgAdmin'
 
 const NAV = [
-  { to: '/org/students', label: '学生管理' },
-  { to: '/org/courses', label: '课程开通' },
   { to: '/org/dashboard', label: '进度看板' },
+  { to: '/org/students', label: '学生管理' },
+  { to: '/org/courses', label: '课程管理' },
+  { to: '/org/finance', label: '财务' },
 ]
 
 const STATUS_LABEL: Record<OrgStatus, string> = {
@@ -34,6 +35,7 @@ function day(iso: string | null): string {
 
 export function OrgLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const session = getOrgSession()
   if (!session) return <Navigate to="/org/login" replace />
 
@@ -61,11 +63,14 @@ export function OrgLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) =>
-                `rounded-field px-4 py-3 text-sm font-medium transition ${
-                  isActive ? 'bg-brand-soft text-brand-strong' : 'text-ink-soft hover:bg-canvas hover:text-ink'
+              className={({ isActive }) => {
+                const assembling =
+                  item.to === '/org/courses' &&
+                  (location.pathname.startsWith('/org/custom-courses') || location.pathname.startsWith('/org/materials'))
+                return `rounded-field px-4 py-3 text-sm font-medium transition ${
+                  isActive || assembling ? 'bg-brand-soft text-brand-strong' : 'text-ink-soft hover:bg-canvas hover:text-ink'
                 }`
-              }
+              }}
             >
               {item.label}
             </NavLink>
@@ -93,13 +98,15 @@ export function OrgLayout() {
         </div>
       </aside>
 
-      <div className="min-w-0 flex-1">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         {session.readOnly && (
           <p className="border-b border-line bg-warning-soft px-8 py-3 text-sm text-ink">
             服务已到期，当前仅可查看。数据仍保留。
           </p>
         )}
-        <Outlet />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <Outlet />
+        </div>
       </div>
     </div>
   )

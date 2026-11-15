@@ -20,6 +20,7 @@ import { AdminGate, AdminLayout } from '@/pages/admin/AdminLayout'
 const StudentLogin = lazy(() => import('@/pages/student/StudentLogin').then((m) => ({ default: m.StudentLogin })))
 const CourseMap = lazy(() => import('@/pages/student/Map').then((m) => ({ default: m.Map })))
 const Lesson = lazy(() => import('@/pages/student/Lesson').then((m) => ({ default: m.Lesson })))
+const CustomSection = lazy(() => import('@/pages/student/CustomSection').then((m) => ({ default: m.CustomSection })))
 const TypingWarmup = lazy(() => import('@/pages/student/TypingWarmup').then((m) => ({ default: m.TypingWarmup })))
 const StudentProfile = lazy(() => import('@/pages/student/StudentProfile').then((m) => ({ default: m.StudentProfile })))
 
@@ -27,7 +28,10 @@ const OrgLayout = lazy(() => import('@/pages/org/OrgLayout').then((m) => ({ defa
 const OrgLogin = lazy(() => import('@/pages/org/OrgLogin').then((m) => ({ default: m.OrgLogin })))
 const OrgStudents = lazy(() => import('@/pages/org/OrgStudents').then((m) => ({ default: m.OrgStudents })))
 const OrgCourses = lazy(() => import('@/pages/org/OrgCourses').then((m) => ({ default: m.OrgCourses })))
+const OrgFinance = lazy(() => import('@/pages/org/OrgFinance').then((m) => ({ default: m.OrgFinance })))
 const OrgDashboard = lazy(() => import('@/pages/org/OrgDashboard').then((m) => ({ default: m.OrgDashboard })))
+const OrgMaterials = lazy(() => import('@/pages/org/OrgMaterials').then((m) => ({ default: m.OrgMaterials })))
+const OrgCustomCourseEdit = lazy(() => import('@/pages/org/OrgCustomCourseEdit').then((m) => ({ default: m.OrgCustomCourseEdit })))
 
 const ParentLogin = lazy(() => import('@/pages/parent/ParentLogin').then((m) => ({ default: m.ParentLogin })))
 const ParentHome = lazy(() => import('@/pages/parent/ParentHome').then((m) => ({ default: m.ParentHome })))
@@ -68,6 +72,7 @@ export default function App() {
           <Route path="/student/login" element={<StudentLogin />} />
           <Route path="/student" element={<CourseMap />} />
           <Route path="/student/lesson/:levelId" element={<Lesson />} />
+          <Route path="/student/custom/:courseId/:sectionIndex" element={<CustomSection />} />
           <Route path="/student/typing" element={<TypingWarmup />} />
           <Route path="/student/profile" element={<StudentProfile />} />
 
@@ -76,6 +81,9 @@ export default function App() {
             <Route index element={<Navigate to="/org/dashboard" replace />} />
             <Route path="students" element={<OrgStudents />} />
             <Route path="courses" element={<OrgCourses />} />
+            <Route path="finance" element={<OrgFinance />} />
+            <Route path="custom-courses/:courseId/edit" element={<OrgCustomCourseEdit />} />
+            <Route path="materials" element={<OrgMaterials />} />
             <Route path="dashboard" element={<OrgDashboard />} />
           </Route>
 

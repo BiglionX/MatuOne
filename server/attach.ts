@@ -1,12 +1,17 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Connect } from 'vite'
 import { dispatch } from './routes'
+import { serveMaterialFile } from './materialStorage'
 
 export function attachApi(middlewares: Connect.Server) {
   middlewares.use(async (req, res, next) => {
     const url = req.url ?? ''
     if (!url.startsWith('/api/')) {
       next()
+      return
+    }
+    if ((req.method ?? 'GET') === 'GET' && url.startsWith('/api/org-material-file/')) {
+      await serveMaterialFile(req as IncomingMessage, res as ServerResponse)
       return
     }
     const name = url.slice('/api/'.length).split('?')[0] ?? ''

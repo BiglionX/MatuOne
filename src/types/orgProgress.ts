@@ -5,6 +5,8 @@ export interface OrgLessonCue {
   title: string
   completed: boolean
   current: boolean
+  /** 不在已授权范围内的关卡仍可展示，但不计入进度分母。 */
+  authorized?: boolean
   teachingIntent: string | null
   teacherGuide: string | null
 }

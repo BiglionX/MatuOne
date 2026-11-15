@@ -68,6 +68,51 @@ export type EnterLevelReason =
 /** 与课程目录一致：每个 Level 120 节。库里没有 stage_level 时用关卡序号推。 */
 export const LESSONS_PER_STAGE = 120
 
+/** 看板用：已停用、本周没学、当前关超过 3 天没有新进度。本周从北京时间周一开始。 */
+export type OrgAttention = 'disabled' | 'inactive' | 'stuck'
+
+/** 对不上课程阶段时不要当成第 0 阶段放行。阶段序号从 1 起。 */
+export function lessonIsAuthorized(status: OrgStatus, maxStage: number, sortOrder: number, stageSort: number): boolean {
+  if (!Number.isInteger(maxStage) || maxStage < 1) return false
+  if (!Number.isInteger(sortOrder) || sortOrder < 1) return false
+  if (!Number.isInteger(stageSort) || stageSort < 1 || stageSort > maxStage) return false
+  if (status === 'trial' && sortOrder > TRIAL_LEVEL_MAX) return false
+  return true
+}
+
+/** 本周周一 00:00（北京时间）的时间戳。 */
+export function calendarWeekStart(now = Date.now()): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(now))
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? ''
+  const daysFromMonday = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }[value('weekday')] ?? 0
+  const midnight = Date.UTC(Number(value('year')), Number(value('month')) - 1, Number(value('day'))) - 8 * 60 * 60 * 1000
+  return midnight - daysFromMonday * DAY_MS
+}
+
+export function orgAttention(input: {
+  status: string
+  lastActiveAt: string | null
+  currentLevelUpdatedAt: string | null
+  currentLevelCompleted: boolean
+  now?: number
+}): OrgAttention | null {
+  if (input.status === 'disabled') return 'disabled'
+  const now = input.now ?? Date.now()
+  const last = input.lastActiveAt ? new Date(input.lastActiveAt).getTime() : NaN
+  if (!Number.isFinite(last) || last < calendarWeekStart(now)) return 'inactive'
+  if (!input.currentLevelCompleted && input.currentLevelUpdatedAt) {
+    const touched = new Date(input.currentLevelUpdatedAt).getTime()
+    if (Number.isFinite(touched) && now - touched >= 3 * DAY_MS) return 'stuck'
+  }
+  return null
+}
+
 export function stageLevelOfOrder(order: number): number | null {
   if (!Number.isInteger(order) || order < 1) return null
   return Math.floor((order - 1) / LESSONS_PER_STAGE) + 1

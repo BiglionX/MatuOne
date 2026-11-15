@@ -12,6 +12,8 @@ dist-ssr
 .env.*
 !.env.example
 
+data/
+
 *.log
 npm-debug.log*
 .DS_Store

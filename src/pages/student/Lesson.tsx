@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { loadPreviewLevel } from '@/api/catalog'
 import { completeLevel, loadLevel, touchLevel } from '@/api/learning'
+import { completeStudentCustomSection } from '@/api/studentCustomCourses'
 import { BonusRound } from './BonusRound'
 import { ChunkDrill } from '@/components/ChunkDrill'
 import { getPlatformProfile } from '@/api/adminOrgs'
 import { curriculumLevelById, isPlaceholderLevel, nextLevelId } from '@/data/fullCurriculum'
 import { enterLevel, type EnterLevelReason } from '@/api/studentLevel'
 import { getCurrentStudent } from '@/api/studentAuth'
+import { ApiError } from '@/lib/apiError'
+import type { CustomLessonContext } from '@/types/studentCustomCourse'
 import type { Level, RunResult } from '@/types'
 import { buildDemoCode, runCode } from '@/lib/runner'
 import { usePythonEnv } from '@/lib/usePythonEnv'
@@ -66,8 +69,10 @@ const ENCOURAGE = [
   '接下来这一步，只是改一个数字。',
 ]
 
-export function Lesson() {
-  const { levelId } = useParams()
+export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
+  const params = useParams()
+  const levelId = custom?.levelId ?? params.levelId
+  const mapHref = custom ? '/student?tab=custom' : '/student'
   const [searchParams] = useSearchParams()
   const preview = searchParams.get('preview') === 'true'
   const navigate = useNavigate()
@@ -87,6 +92,7 @@ export function Lesson() {
   const [bonusReward, setBonusReward] = useState('')
   const [reviewChunk, setReviewChunk] = useState<string | null>(null)
   const [recallDone, setRecallDone] = useState(true)
+  const [finishError, setFinishError] = useState('')
   // 页面从 A 回合打开。趁学生看效果、猜答案，后台把 Pyodide 下好。
   const pythonPhase = usePythonEnv(round === 'A')
 
@@ -198,7 +204,7 @@ export function Lesson() {
       <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas pt-12">
         {preview && <PreviewBanner />}
         <p className="text-xl text-ink">没有找到这一关</p>
-        <Link to={preview ? '/admin/levels' : '/student'} className="btn-primary">
+        <Link to={preview ? '/admin/levels' : mapHref} className="btn-primary">
           {preview ? '回到课程管理' : '回到课程地图'}
         </Link>
       </div>
@@ -211,7 +217,7 @@ export function Lesson() {
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
           <p className="text-xl text-ink">{ENTER_COPY[gate.reason]}</p>
           {gate.reason === 'course_locked' && <p className="max-w-md text-base text-ink-soft">请联系平台升级课程包。</p>}
-          <Link to="/student" className="btn-primary">
+          <Link to={mapHref} className="btn-primary">
             回到课程地图
           </Link>
         </div>
@@ -252,7 +258,13 @@ export function Lesson() {
       setFinished(true)
       return
     }
-    void completeLevel(level.level_id, stars, errorTaps).finally(() => setFinished(true))
+    setFinishError('')
+    const task = custom
+      ? completeStudentCustomSection({ courseId: custom.courseId, sectionIndex: custom.sectionIndex, stars, errorTaps })
+      : completeLevel(level.level_id, stars, errorTaps)
+    void task.then(() => setFinished(true)).catch((err: unknown) => {
+      setFinishError(err instanceof ApiError ? err.message : '这一关没有记下来')
+    })
   }
 
   if (finished && bonusOpen && level.bonus_challenge) {
@@ -293,7 +305,7 @@ export function Lesson() {
           </div>
           {bonusReward && <p className="mt-4 font-semibold text-brand-strong">拿到了{bonusReward}</p>}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link to={preview ? '/admin/levels' : '/student'} className="btn-secondary">
+            <Link to={preview ? '/admin/levels' : mapHref} className="btn-secondary">
               {preview ? '回到课程管理' : '回到课程地图'}
             </Link>
             {level.bonus_challenge && !bonusReward && (
@@ -301,7 +313,16 @@ export function Lesson() {
                 巩固一下
               </button>
             )}
-            {!preview && nextId && (
+            {!preview && custom && custom.nextIndex != null && (
+              <button
+                type="button"
+                className="btn-primary px-8"
+                onClick={() => navigate(`/student/custom/${custom.courseId}/${custom.nextIndex}`)}
+              >
+                下一步
+              </button>
+            )}
+            {!preview && !custom && nextId && (
               <button type="button" className="btn-primary px-8" onClick={() => navigate(`/student/lesson/${nextId}`)}>
                 下一关
               </button>
@@ -321,7 +342,7 @@ export function Lesson() {
       <PlaceholderBanner show={level.is_placeholder || placeholderLesson} />
       <div className={`sticky z-20 border-b border-line bg-white ${preview ? 'top-12' : 'top-0'}`}>
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-8 py-3.5">
-          <Link to={preview ? '/admin/levels' : '/student'} className="btn-ghost px-2" aria-label={preview ? '返回课程管理' : '返回课程地图'}>
+          <Link to={preview ? '/admin/levels' : mapHref} className="btn-ghost px-2" aria-label={preview ? '返回课程管理' : '返回课程地图'}>
             ←
           </Link>
           <BrandMark size={30} />
@@ -355,6 +376,7 @@ export function Lesson() {
       </div>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-8 py-7">
+        {finishError && <p className="mb-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{finishError}</p>}
         {round === 'A' && (
           <RoundA
             level={level}

@@ -3,7 +3,7 @@ import { normalizeTypingScore } from '../supabase/functions/_shared/typingScore'
 import { validateCoursePackage } from '../supabase/functions/_shared/coursePackage'
 import { COURSE_TREE_SQL, groupCourseTree, type CourseTreeSourceRow } from '../supabase/functions/_shared/courseTree'
 import { toCurriculumPosition, type CurriculumPositionRow } from '../supabase/functions/_shared/curriculumPosition'
-import { seatLimit, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
+import { calendarWeekStart, lessonIsAuthorized, openMaxLevel, orgAttention, seatLimit, type OrgAttention, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
 import { generateInitialPassword, hashPassword, verifyPassword } from '../supabase/functions/_shared/password'
 import { planStudentImport } from '../supabase/functions/_shared/studentImport'
 import { dbMessage, one, q } from './db'
@@ -15,6 +15,9 @@ import { drillForOrder, reviewChunkOf } from '../supabase/functions/_shared/dril
 import { buildPlayableLevel } from '../src/lib/lessonMaterial'
 import { presentLearningHome, projectUnit, type AccessContext } from '../src/lib/curriculumState'
 import { curriculumUnitById } from '../src/data/fullCurriculum'
+import { handleOrgCustomCourses } from './orgCustomCourses'
+import { handleOrgMaterials } from './orgMaterials'
+import { handleStudentCustomCourses } from './studentCustomCourses'
 import { issueSession, readSession, type SessionRole } from './session'
 
 export interface ApiResult {
@@ -145,10 +148,16 @@ export async function dispatch(req: ApiRequest): Promise<ApiResult> {
         return await orgStudents(req)
       case 'org-course':
         return await orgCourse(req)
+      case 'org-materials':
+        return await orgMaterials(req)
+      case 'org-custom-courses':
+        return await orgCustomCourses(req)
       case 'org-dashboard':
         return await orgDashboard(req)
       case 'student-learning':
         return await studentLearning(req)
+      case 'student-custom-courses':
+        return await studentCustomCourses(req)
       case 'student-enter-level':
         return await studentEnter(req)
       case 'public-site':
@@ -383,9 +392,24 @@ async function orgContext(req: ApiRequest, options: { write?: boolean; importStu
   return { orgId: org.id, status, seatLimit: limit, usedSeats: org.used_seats }
 }
 
+async function orgCustomCourses(req: ApiRequest): Promise<ApiResult> {
+  const action = req.header('x-action') ?? 'list'
+  const write = action === 'create' || action === 'save' || action === 'assign' || action === 'unassign' || action === 'remove'
+  const ctx = await orgContext(req, { write })
+  if (!('orgId' in ctx)) return ctx
+  return handleOrgCustomCourses(req.body, ctx.orgId, action)
+}
+
+async function orgMaterials(req: ApiRequest): Promise<ApiResult> {
+  const action = req.header('x-action') ?? 'list'
+  const ctx = await orgContext(req, { write: action === 'upload' || action === 'remove' })
+  if (!('orgId' in ctx)) return ctx
+  return handleOrgMaterials(req.body, ctx.orgId, action)
+}
+
 async function orgStudents(req: ApiRequest): Promise<ApiResult> {
   const action = req.header('x-action') ?? 'list'
-  const writing = action === 'import' || action === 'create-group'
+  const writing = action === 'import' || action === 'create-group' || action === 'reset-password' || action === 'set-status' || action === 'set-group'
   const ctx = await orgContext(req, { write: writing, importStudents: action === 'import' })
   if (!('orgId' in ctx)) return ctx
   if (action === 'groups' || action === 'create-group') {
@@ -409,23 +433,36 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
       [studentId, ctx.orgId],
     )
     if (!student) return fail(404, '没有这名学生')
-    const lessons = await q<{
-      level_id: string
-      sort_order: number
-      title: string
-      teaching_intent: string | null
-      teacher_guide: string | null
-      completed: boolean
-    }>(
-      `select cl.level_id, cl.sort_order, cl.title, cl.teaching_intent, cl.teacher_guide,
-              coalesce(lr.completed, false) as completed
-       from public.course_level cl
-       left join public.learning_record lr
-         on lr.level_id = cl.level_id and lr.student_id = $1
-       where lr.student_id is not null or cl.sort_order = $2
-       order by cl.sort_order`,
-      [studentId, student.current_level_order],
-    )
+    const [org, grant, lessons] = await Promise.all([
+      one<{ status: string }>('select status from public.org where id = $1', [ctx.orgId]),
+      one<{ max_level: number; valid_until: string | null }>(
+        'select max_level, valid_until from public.org_entitlement where org_id = $1',
+        [ctx.orgId],
+      ),
+      q<{
+        level_id: string
+        sort_order: number
+        stage_sort: number | null
+        title: string
+        teaching_intent: string | null
+        teacher_guide: string | null
+        completed: boolean
+      }>(
+        `select cl.level_id, cl.sort_order, st.sort_order as stage_sort, cl.title, cl.teaching_intent, cl.teacher_guide,
+                coalesce(lr.completed, false) as completed
+         from public.course_level cl
+         left join public.learning_record lr
+           on lr.level_id = cl.level_id and lr.student_id = $1
+         left join public.curriculum_unit u on u.unit_id = cl.unit_id
+         left join public.curriculum_semester se on se.semester_id = u.semester_id
+         left join public.curriculum_stage st on st.stage_id = se.stage_id
+         where lr.student_id is not null or cl.sort_order = $2
+         order by cl.sort_order`,
+        [studentId, student.current_level_order],
+      ),
+    ])
+    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
+    const access: OrgStatus = org?.status === 'trial' || ctx.status === 'trial' ? 'trial' : ctx.status
     return ok({
       name: student.name,
       lessons: lessons.map((row) => ({
@@ -434,6 +471,7 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
         title: row.title,
         completed: row.completed === true,
         current: row.sort_order === student.current_level_order,
+        authorized: lessonIsAuthorized(access, maxStage, row.sort_order, Number(row.stage_sort)),
         teachingIntent: row.teaching_intent,
         teacherGuide: row.teacher_guide,
       })),
@@ -446,14 +484,71 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
     await q('update public.parent_binding set revoked_at = now() where student_id = $1 and revoked_at is null', [studentId])
     return ok({ ok: true, boundParentCount: 0 })
   }
+  if (action === 'reset-password') {
+    const studentId = typeof req.body.studentId === 'string' ? req.body.studentId.trim() : ''
+    if (!studentId) return fail(400, '请指定学生')
+    const plain = generateInitialPassword(8)
+    const updated = await one<{ id: string }>(
+      'update public.student set password_hash = $1 where id = $2 and org_id = $3 returning id',
+      [await hashPassword(plain), studentId, ctx.orgId],
+    )
+    if (!updated) return fail(404, '没有这名学生')
+    return ok({ password: plain })
+  }
+  if (action === 'set-status') {
+    const studentId = typeof req.body.studentId === 'string' ? req.body.studentId.trim() : ''
+    const status = req.body.status === 'active' || req.body.status === 'disabled' ? req.body.status : ''
+    if (!studentId || !status) return fail(400, '学生状态不正确')
+    const updated = await one<{ id: string }>(
+      'update public.student set status = $1 where id = $2 and org_id = $3 returning id',
+      [status, studentId, ctx.orgId],
+    )
+    if (!updated) return fail(404, '没有这名学生')
+    return ok({ ok: true, status })
+  }
+  if (action === 'set-group') {
+    const studentId = typeof req.body.studentId === 'string' ? req.body.studentId.trim() : ''
+    const groupId = typeof req.body.groupId === 'string' ? req.body.groupId.trim() : ''
+    if (!studentId || !groupId) return fail(400, '请指定学生和分组')
+    const group = await one('select id from public.student_group where id = $1 and org_id = $2', [groupId, ctx.orgId])
+    if (!group) return fail(400, '分组不存在')
+    const updated = await one<{ id: string }>(
+      'update public.student set group_id = $1 where id = $2 and org_id = $3 returning id',
+      [groupId, studentId, ctx.orgId],
+    )
+    if (!updated) return fail(404, '没有这名学生')
+    return ok({ ok: true, groupId })
+  }
   if (action !== 'import') {
-    const students = await q(
+    const students = await q<{
+      id: string
+      name: string
+      account: string
+      group_id: string
+      status: string
+      bind_code: string | null
+      current_level_order: number
+      last_active_at: string | null
+      bound_parent_count: number
+    }>(
       `select s.id, s.name, s.account, s.group_id, s.status, s.bind_code, s.current_level_order, s.last_active_at,
         (select count(*)::int from public.parent_binding b where b.student_id = s.id and b.revoked_at is null) as bound_parent_count
        from public.student s where s.org_id = $1`,
       [ctx.orgId],
     )
-    return ok({ students })
+    const facts = await orgLessonFacts(ctx.orgId, ctx.status, students.map((student) => student.id))
+    return ok({
+      authorizedLevels: facts.authorizedLevels,
+      students: students.map((student) => {
+        const typing = facts.typing.get(student.id)
+        return {
+          ...student,
+          completed_count: facts.completed.get(student.id) ?? 0,
+          typing_wpm: typing?.wpm ?? null,
+          typing_accuracy: typing?.accuracy ?? null,
+        }
+      }),
+    })
   }
   const groups = await q<{ id: string; name: string }>('select id, name from public.student_group where org_id = $1', [ctx.orgId])
   const groupByName = new Map(groups.map((group) => [group.name, group.id]))
@@ -547,7 +642,7 @@ async function orgPricing(orgId: string): Promise<{ studentMonthlyPrice: number;
 
 async function orgCourse(req: ApiRequest): Promise<ApiResult> {
   const action = req.header('x-action') ?? 'read'
-  const ctx = await orgContext(req, { write: action === 'save' || action === 'save-price' })
+  const ctx = await orgContext(req, { write: action === 'save-price' })
   if (!('orgId' in ctx)) return ctx
   const countRow = await one<{ n: number }>("select count(*)::int as n from public.course_level where published = true")
   const levelCount = countRow?.n ?? 0
@@ -558,49 +653,7 @@ async function orgCourse(req: ApiRequest): Promise<ApiResult> {
     }
     await q('update public.org set student_monthly_price = $2 where id = $1', [ctx.orgId, studentMonthlyPrice])
   }
-  if (action === 'save') {
-    const groupId = typeof req.body.groupId === 'string' && req.body.groupId ? req.body.groupId : 'all'
-    const seats = Number(req.body.seats)
-    const expiresAt = typeof req.body.expiresAt === 'string' ? req.body.expiresAt : ''
-    if (!Number.isInteger(seats) || seats < 1) return fail(400, '名额至少为 1')
-    if (seats > ctx.seatLimit) return fail(409, '席位已满')
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)) return fail(400, '请填写有效期')
-    if (groupId !== 'all') {
-      const group = await one('select id from public.student_group where org_id = $1 and id = $2', [ctx.orgId, groupId])
-      if (!group) return fail(400, '分组不存在')
-    }
-    const activatedAt = new Date().toISOString()
-    await q(
-      `insert into public.course_activation (org_id, group_id, seats, expires_at, activated_at)
-       values ($1, $2, $3, $4, $5)
-       on conflict (org_id) do update set group_id = excluded.group_id, seats = excluded.seats, expires_at = excluded.expires_at, activated_at = excluded.activated_at`,
-      [ctx.orgId, groupId, seats, expiresAt, activatedAt],
-    )
-    const expires = new Date(`${expiresAt}T23:59:59`).toISOString()
-    await q("update public.level_entitlement set expires_at = $2 where org_id = $1 and subject_type = 'org'", [ctx.orgId, expires])
-    if (groupId !== 'all') {
-      const existing = await one<{ id: string }>(
-        "select id from public.level_entitlement where org_id = $1 and subject_type = 'group' and subject_id = $2",
-        [ctx.orgId, groupId],
-      )
-      const max = ctx.status === 'trial' ? 3 : 999
-      if (existing) {
-        await q('update public.level_entitlement set level_order_min = 1, level_order_max = $2, expires_at = $3 where id = $1', [
-          existing.id,
-          max,
-          expires,
-        ])
-      } else {
-        await q(
-          `insert into public.level_entitlement (org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at)
-           values ($1, 'group', $2, 1, $3, $4)`,
-          [ctx.orgId, groupId, max, expires],
-        )
-      }
-    }
-    const pricing = await orgPricing(ctx.orgId)
-    return ok({ groupId, seats, expiresAt, activatedAt, levelCount, maxLevel: await orgPackageLevel(ctx.orgId), ...pricing })
-  }
+  if (action === 'save') return fail(403, '名额和有效期由平台合同决定，请联系客服')
   const data = await one<{ group_id: string; seats: number; expires_at: string; activated_at: string }>(
     'select group_id, seats, expires_at, activated_at from public.course_activation where org_id = $1',
     [ctx.orgId],
@@ -622,6 +675,70 @@ async function orgCourse(req: ApiRequest): Promise<ApiResult> {
   })
 }
 
+async function orgLessonFacts(orgId: string, effective: OrgStatus, studentIds: string[]) {
+  const [org, grant] = await Promise.all([
+    one<{ status: string }>('select status from public.org where id = $1', [orgId]),
+    one<{ max_level: number; valid_until: string | null }>('select max_level, valid_until from public.org_entitlement where org_id = $1', [orgId]),
+  ])
+  const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
+  const access: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
+  const published = await q<{ sort_order: number; stage_sort: number }>(
+    `select cl.sort_order, st.sort_order as stage_sort
+     from public.course_level cl
+     join public.curriculum_unit u on u.unit_id = cl.unit_id
+     join public.curriculum_semester se on se.semester_id = u.semester_id
+     join public.curriculum_stage st on st.stage_id = se.stage_id
+     where cl.published = true`,
+  )
+  const lessons = studentIds.length
+    ? await q<{ student_id: string; sort_order: number; stage_sort: number; completed: boolean; updated_at: string }>(
+        `select lr.student_id, cl.sort_order, st.sort_order as stage_sort, lr.completed, lr.updated_at
+         from public.learning_record lr
+         join public.course_level cl on cl.level_id = lr.level_id
+         join public.curriculum_unit u on u.unit_id = cl.unit_id
+         join public.curriculum_semester se on se.semester_id = u.semester_id
+         join public.curriculum_stage st on st.stage_id = se.stage_id
+         where lr.student_id = any($1::uuid[])`,
+        [studentIds],
+      )
+    : []
+  const typingRows = studentIds.length
+    ? await q<{ student_id: string; wpm: number; accuracy: number; created_at: string }>(
+        'select student_id, wpm, accuracy, created_at from public.typing_record where student_id = any($1::uuid[])',
+        [studentIds],
+      )
+    : []
+  const typing = new Map<string, { wpm: number; accuracy: number; at: string }>()
+  for (const row of typingRows) {
+    const prev = typing.get(row.student_id)
+    if (!prev || row.created_at > prev.at) typing.set(row.student_id, { wpm: Number(row.wpm), accuracy: Number(row.accuracy), at: row.created_at })
+  }
+  const completed = new Map<string, number>()
+  for (const lesson of lessons) {
+    if (lesson.completed !== true || !lessonIsAuthorized(access, maxStage, lesson.sort_order, lesson.stage_sort)) continue
+    completed.set(lesson.student_id, (completed.get(lesson.student_id) ?? 0) + 1)
+  }
+  return {
+    authorizedLevels: published.filter((row) => lessonIsAuthorized(access, maxStage, row.sort_order, row.stage_sort)).length,
+    lessons,
+    completed,
+    typing,
+  }
+}
+
+function presentAttention(
+  student: { id: string; status: string; current_level_order: number; last_active_at: string | null },
+  facts: Awaited<ReturnType<typeof orgLessonFacts>>,
+): OrgAttention | null {
+  const current = facts.lessons.find((lesson) => lesson.student_id === student.id && lesson.sort_order === student.current_level_order)
+  return orgAttention({
+    status: student.status,
+    lastActiveAt: student.last_active_at,
+    currentLevelUpdatedAt: current?.updated_at ?? null,
+    currentLevelCompleted: current?.completed === true,
+  })
+}
+
 async function orgDashboard(req: ApiRequest): Promise<ApiResult> {
   const ctx = await orgContext(req, {})
   if (!('orgId' in ctx)) return ctx
@@ -638,46 +755,33 @@ async function orgDashboard(req: ApiRequest): Promise<ApiResult> {
     ctx.orgId,
   ])
   const groups = await q<{ id: string; name: string }>('select id, name from public.student_group where org_id = $1', [ctx.orgId])
-  const countRow = await one<{ n: number }>('select count(*)::int as n from public.course_level where published = true')
-  const ids = students.map((student) => student.id)
-  const progress = ids.length
-    ? await q<{ student_id: string }>('select student_id from public.learning_record where completed = true and student_id = any($1::uuid[])', [ids]).catch(async (error: unknown) => {
-        if (!missingRelation(error)) throw error
-        return q<{ student_id: string }>('select student_id from public.level_progress where completed = true and student_id = any($1::uuid[])', [ids])
-      })
-    : []
-  const typing = ids.length
-    ? await q<{ student_id: string; wpm: number; accuracy: number; created_at: string }>(
-        'select student_id, wpm, accuracy, created_at from public.typing_record where student_id = any($1::uuid[])',
-        [ids],
-      )
-    : []
-  const completed = new Map<string, number>()
-  for (const row of progress) completed.set(row.student_id, (completed.get(row.student_id) ?? 0) + 1)
-  const latestTyping = new Map<string, { wpm: number; accuracy: number; at: string }>()
-  for (const row of typing) {
-    const prev = latestTyping.get(row.student_id)
-    if (!prev || row.created_at > prev.at) latestTyping.set(row.student_id, { wpm: Number(row.wpm), accuracy: Number(row.accuracy), at: row.created_at })
-  }
-  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+  const facts = await orgLessonFacts(ctx.orgId, ctx.status, students.map((student) => student.id))
+  const weekStart = calendarWeekStart()
   const activeStudents = students.filter((student) => student.status === 'active')
-  const totalLevels = countRow?.n ?? 0
-  const avg = activeStudents.reduce((sum, student) => sum + (completed.get(student.id) ?? 0), 0) / Math.max(1, activeStudents.length)
+  const avg = activeStudents.reduce((sum, student) => sum + (facts.completed.get(student.id) ?? 0), 0) / Math.max(1, activeStudents.length)
   const groupName = new Map(groups.map((group) => [group.id, group.name]))
   return ok({
     reading: activeStudents.length,
-    weeklyActive: activeStudents.filter((student) => student.last_active_at && new Date(student.last_active_at).getTime() >= weekAgo).length,
+    weeklyActive: activeStudents.filter((student) => student.last_active_at && new Date(student.last_active_at).getTime() >= weekStart).length,
     avgCompleted: Math.round(avg * 10) / 10,
-    totalLevels,
+    authorizedLevels: facts.authorizedLevels,
     groupRows: groups.map((group) => {
       const inGroup = activeStudents.filter((student) => student.group_id === group.id)
-      const done = inGroup.reduce((sum, student) => sum + (completed.get(student.id) ?? 0), 0)
-      const denom = totalLevels * Math.max(1, inGroup.length)
-      return { groupId: group.id, name: group.name, rate: inGroup.length && totalLevels ? Math.round((done / denom) * 100) : 0, students: inGroup.length }
-    }),
-    studentRows: students.map((student) => {
-      const typingRow = latestTyping.get(student.id)
+      const done = inGroup.reduce((sum, student) => sum + (facts.completed.get(student.id) ?? 0), 0)
+      const denom = facts.authorizedLevels * inGroup.length
       return {
+        groupId: group.id,
+        name: group.name,
+        rate: inGroup.length && denom ? Math.round((done / denom) * 100) : null,
+        students: inGroup.length,
+      }
+    }),
+    attentionRows: students.flatMap((student) => {
+      const reason = presentAttention(student, facts)
+      if (!reason) return []
+      const typingRow = facts.typing.get(student.id)
+      return [{
+        reason,
         student: {
           id: student.id,
           orgId: ctx.orgId,
@@ -690,11 +794,11 @@ async function orgDashboard(req: ApiRequest): Promise<ApiResult> {
           bindCode: student.bind_code ?? '',
         },
         groupName: groupName.get(student.group_id) ?? '未分组',
-        completedCount: completed.get(student.id) ?? 0,
+        completedCount: facts.completed.get(student.id) ?? 0,
         currentOrder: student.current_level_order,
         typing: typingRow ? { wpm: typingRow.wpm, accuracy: typingRow.accuracy } : null,
         lastActiveAt: student.last_active_at ?? '',
-      }
+      }]
     }),
   })
 }
@@ -970,6 +1074,15 @@ async function loadStudentAccess(student: { id: string; org_id: string; group_id
       levelOrderMax: row.level_order_max,
     })),
   }
+}
+
+async function studentCustomCourses(req: ApiRequest): Promise<ApiResult> {
+  const auth = await requireRole(req, 'student')
+  if ('status' in auth) return { status: auth.status, body: auth.status === 401 ? { message: '请先登录' } : auth.body }
+  const student = await one<{ status: string }>('select status from public.student where id = $1', [auth.subjectId])
+  if (!student || student.status !== 'active') return fail(401, '请先登录')
+  const action = typeof req.body.action === 'string' ? req.body.action : 'list'
+  return handleStudentCustomCourses(req.body, auth.subjectId, action)
 }
 
 async function studentEnter(req: ApiRequest): Promise<ApiResult> {
