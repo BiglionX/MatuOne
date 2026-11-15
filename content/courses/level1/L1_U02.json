@@ -90,15 +90,15 @@
         "question": "这条线有多长？",
         "options": [
           "side 里的 80 步",
-          "一个正方形",
-          "一个三角形"
+          "80 条分开的线",
+          "和 side 无关，长度是写死的"
         ],
         "answerIndex": 0,
         "explain": "forward 用的是 side 里的数。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把边长改长」改一下，看看线变长。",
+        "instruction": "把「把边长改长」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "140",
         "expected_output": "线变长",
@@ -135,7 +135,7 @@
       ],
       "line_notes": [
         "先记住边长是 70",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 90 度"
       ],
@@ -201,7 +201,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把正方形改大」改一下，看看正方形变大。",
+        "instruction": "把「把正方形改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "120",
         "expected_output": "正方形变大",
@@ -235,7 +235,7 @@
         "    t.right(60)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 6 遍",
         "小海龟向前走 50 步",
         "向右转 60 度"
       ],
@@ -295,15 +295,15 @@
         "question": "走 6 次、每次转 60 度，是什么？",
         "options": [
           "一个六边形",
-          "一个正方形",
-          "一个三角形"
+          "还是正方形，因为每次转的角度一样",
+          "边太多，看起来是一个圆"
         ],
         "answerIndex": 0,
         "explain": "六条边、每次转 60 度，正好围上。"
       },
       "bonus_challenge": {
         "type": "add_color",
-        "instruction": "给六边形的边框加上蓝色。",
+        "instruction": "选蓝色。你猜六条边会一起变蓝，还是只蓝一条？",
         "target_value": "blue",
         "expected_output": "六边形的边变成蓝色",
         "bonus_reward": "皇冠"
@@ -338,7 +338,7 @@
       ],
       "line_notes": [
         "先记住边长是 100",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 90 度"
       ],
@@ -404,7 +404,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把大正方形改小」改一下，看看正方形变小。",
+        "instruction": "把「把大正方形改小」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "50",
         "expected_output": "正方形变小",
@@ -440,7 +440,7 @@
       ],
       "line_notes": [
         "先记住边长是 80",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 3 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 120 度"
       ],
@@ -506,7 +506,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把三角形改大」改一下，看看三角形变大。",
+        "instruction": "把「把三角形改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "120",
         "expected_output": "三角形变大",
@@ -543,7 +543,7 @@
       ],
       "line_notes": [
         "先记住转弯的度数是 90",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 60 步",
         "向右转 盒子 turn 里的数"
       ],
@@ -609,7 +609,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把转角改成 60 度」改一下，看看角变了，不再是正方形。",
+        "instruction": "把「把转角改成 60 度」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "60",
         "expected_output": "角变了，不再是正方形",
@@ -645,7 +645,7 @@
       ],
       "line_notes": [
         "先记住转弯的度数是 60",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 6 遍",
         "小海龟向前走 50 步",
         "向右转 盒子 turn 里的数"
       ],
@@ -711,7 +711,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把 60 度改成直角」改一下，看看角变大，六边形散开。",
+        "instruction": "把「把 60 度改成直角」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "90",
         "expected_output": "角变大，六边形散开",
@@ -845,7 +845,7 @@
         "    t.right(72)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 5 遍",
         "小海龟向前走 50 步",
         "向右转 72 度"
       ],
@@ -913,7 +913,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把 72 度改成直角」改一下，看看角变了，五边形封不上。",
+        "instruction": "把「把 72 度改成直角」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "90",
         "expected_output": "角变了，五边形封不上",
@@ -947,7 +947,7 @@
         "    t.right(45)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 8 遍",
         "小海龟向前走 40 步",
         "向右转 45 度"
       ],
@@ -1015,7 +1015,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把 45 度改成 60 度」改一下，看看角变大，八边形散开。",
+        "instruction": "把「把 45 度改成 60 度」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "60",
         "expected_output": "角变大，八边形散开",
@@ -1052,7 +1052,7 @@
       ],
       "line_notes": [
         "先记住转弯的度数是 120",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 3 遍",
         "小海龟向前走 70 步",
         "向右转 盒子 turn 里的数"
       ],
@@ -1118,7 +1118,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把 120 度改成直角」改一下，看看角变成直角，三角形散开。",
+        "instruction": "把「把 120 度改成直角」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "90",
         "expected_output": "角变成直角，三角形散开",
@@ -1154,7 +1154,7 @@
       ],
       "line_notes": [
         "先记住边长是 40",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 6 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 60 度"
       ],
@@ -1220,7 +1220,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把六边形改大」改一下，看看六边形变大。",
+        "instruction": "把「把六边形改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "80",
         "expected_output": "六边形变大",
@@ -1334,7 +1334,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把长边改短」改一下，看看长边变短，长方形变矮。",
+        "instruction": "把「把长边改短」改一下。你猜它会变成什么样？",
         "target_param_name": "long",
         "target_value": "60",
         "expected_output": "长边变短，长方形变矮",
@@ -1435,15 +1435,15 @@
         "question": "两条线中间的空档由谁决定？",
         "options": [
           "gap 里的步数",
-          "一个三角形",
-          "一个六边形"
+          "两段都是 40，空档也是 40",
+          "抬笔之后就停住，中间没有空档"
         ],
         "answerIndex": 0,
         "explain": "抬笔之后走的是 gap。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把空档拉宽」改一下，看看空档变宽。",
+        "instruction": "把「把空档拉宽」改一下。你猜它会变成什么样？",
         "target_param_name": "gap",
         "target_value": "80",
         "expected_output": "空档变宽",
@@ -1482,7 +1482,7 @@
       "line_notes": [
         "先记住边长是 60",
         "先记住转弯的度数是 90",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 盒子 turn 里的数"
       ],
@@ -1548,7 +1548,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把转角改成 120 度」改一下，看看角变了，不再是正方形。",
+        "instruction": "把「把转角改成 120 度」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "120",
         "expected_output": "角变了，不再是正方形",
@@ -1682,7 +1682,7 @@
       ],
       "line_notes": [
         "先记住边长是 45",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 5 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 72 度"
       ],
@@ -1748,7 +1748,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把五边形改大」改一下，看看五边形变大。",
+        "instruction": "把「把五边形改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "80",
         "expected_output": "五边形变大",
@@ -1862,7 +1862,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把长边再加长」改一下，看看长方形变得更长。",
+        "instruction": "把「把长边再加长」改一下。你猜它会变成什么样？",
         "target_param_name": "long",
         "target_value": "130",
         "expected_output": "长方形变得更长",
@@ -1898,7 +1898,7 @@
       ],
       "line_notes": [
         "先记住边长是 50",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 3 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 120 度"
       ],
@@ -1964,7 +1964,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把三角形改大」改一下，看看三角形变大。",
+        "instruction": "把「把三角形改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "100",
         "expected_output": "三角形变大",
@@ -2003,7 +2003,7 @@
       "line_notes": [
         "先记住边长是 50",
         "先记住转弯的度数是 60",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 6 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 盒子 turn 里的数"
       ],
@@ -2069,7 +2069,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把 60 度改成直角」改一下，看看角变了，徽章不再是六边形。",
+        "instruction": "把「把 60 度改成直角」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "90",
         "expected_output": "角变了，徽章不再是六边形",

@@ -37,6 +37,31 @@ export function readBonusChallenge(value: unknown): BonusChallenge | undefined {
   }
 }
 
+const GROW = /变长|变大|更长|更大|长出|两倍|角度变大|改长|改大/
+const SHRINK = /变短|变小|更短|更小|收回|改小|改细/
+
+/**
+ * 改参数副本：变长、变大、角度变大时，拖过目标值仍算通过；变短、变小则拖得更小也算。
+ * 没有这类目标时仍要正好等于 target。
+ */
+export function paramEditAccepted(
+  current: string | number,
+  target: string,
+  baseline: string | number | undefined,
+  goalText: string,
+): boolean {
+  if (String(current) === target) return true
+  const currentN = Number(current)
+  const targetN = Number(target)
+  const baseN = baseline == null || baseline === '' ? Number.NaN : Number(baseline)
+  if (!Number.isFinite(currentN) || !Number.isFinite(targetN) || !Number.isFinite(baseN)) return false
+  const grow = GROW.test(goalText)
+  const shrink = SHRINK.test(goalText)
+  if (grow && !shrink && targetN > baseN) return currentN >= targetN
+  if (shrink && !grow && targetN < baseN) return currentN <= targetN
+  return false
+}
+
 /** 学生写了掉头或倒退，才会拿去和画面比。 */
 export function mentionsTurnAround(code: string): boolean {
   return /t\.(backward|back)\s*\(/.test(code) || /t\.(left|right)\s*\(\s*180\s*\)/.test(code)

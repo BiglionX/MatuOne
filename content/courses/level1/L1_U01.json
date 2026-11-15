@@ -90,15 +90,15 @@
         "question": "小海龟会画出什么？",
         "options": [
           "一条直线",
-          "一个正方形",
-          "一个三角形"
+          "走出 80 条线",
+          "一条比 80 更粗的线"
         ],
         "answerIndex": 0,
         "explain": "forward 是往前走，所以先出现一条线。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把这条线改长」改一下，看看线变得更长。",
+        "instruction": "把线拖到 140。你猜它会变成现在的差不多两倍，还是只长出一小截？",
         "target_param_name": "long",
         "target_value": "140",
         "expected_output": "线变得更长",
@@ -320,7 +320,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「左转的角度」改一下，看看左边的拐角张开。",
+        "instruction": "把「左转的角度」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "120",
         "expected_output": "左边的拐角张开",
@@ -425,7 +425,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把第一条边改短」改一下，看看长的那条边变短，拐角还在。",
+        "instruction": "把「把第一条边改短」改一下。你猜它会变成什么样？",
         "target_param_name": "long",
         "target_value": "40",
         "expected_output": "长的那条边变短，拐角还在",
@@ -534,7 +534,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把门框改矮」改一下，看看门框变矮。",
+        "instruction": "把「把门框改矮」改一下。你猜它会变成什么样？",
         "target_param_name": "tall",
         "target_value": "40",
         "expected_output": "门框变矮",
@@ -637,15 +637,15 @@
         "question": "这个拐角和直角比，怎么样？",
         "options": [
           "比直角更开",
-          "还是一条直线",
-          "已经封成正方形"
+          "比直角更尖",
+          "还是一条直线"
         ],
         "answerIndex": 0,
         "explain": "120 比 90 大，所以拐得更开。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把大角改小」改一下，看看拐角收回来，变成直角。",
+        "instruction": "120 改成 90 之后，你猜这个角会张得更开，还是收回来？",
         "target_param_name": "turn",
         "target_value": "90",
         "expected_output": "拐角收回来，变成直角",
@@ -755,7 +755,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把每个角改成直角」改一下，看看三个角都变直角，不再是三角形。",
+        "instruction": "把「把每个角改成直角」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "90",
         "expected_output": "三个角都变直角，不再是三角形",
@@ -970,7 +970,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把直角改成 60 度」改一下，看看四个角都变了，不再方方正正。",
+        "instruction": "把「把直角改成 60 度」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "60",
         "expected_output": "四个角都变了，不再方方正正",
@@ -1005,7 +1005,7 @@
         "    t.right(90)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 70 步",
         "向右转 90 度"
       ],
@@ -1073,14 +1073,14 @@
         "options": [
           "走和转重复了 4 次",
           "只走了一次",
-          "画成了三角形"
+          "4 是边有多长，所以只走了一笔"
         ],
         "answerIndex": 0,
         "explain": "range(4) 让里面的两行做 4 遍。"
       },
       "bonus_challenge": {
         "type": "add_color",
-        "instruction": "给正方形的边框加上红色。",
+        "instruction": "选红色再跑。你猜是四条边一起变红，还是只有第一条？",
         "target_value": "red",
         "expected_output": "正方形的边变成红色",
         "bonus_reward": "皇冠"
@@ -1113,7 +1113,7 @@
         "    t.right(120)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 3 遍",
         "小海龟向前走 80 步",
         "向右转 120 度"
       ],
@@ -1188,7 +1188,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把 120 度改成直角」改一下，看看还是三笔，但变成了直角折线。",
+        "instruction": "把「把 120 度改成直角」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "90",
         "expected_output": "还是三笔，但变成了直角折线",
@@ -1222,7 +1222,7 @@
         "    t.right(90)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 50 步",
         "向右转 90 度"
       ],
@@ -1290,7 +1290,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把边长改长」改一下，看看正方形变大。",
+        "instruction": "把「把边长改长」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "110",
         "expected_output": "正方形变大",
@@ -1396,7 +1396,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「少退一点」改一下，看看没退回到起点，竖线的位置挪了。",
+        "instruction": "把「少退一点」改一下。你猜它会变成什么样？",
         "target_param_name": "back",
         "target_value": "20",
         "expected_output": "没退回到起点，竖线的位置挪了",
@@ -1505,7 +1505,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把空档拉宽」改一下，看看中间的空档变宽。",
+        "instruction": "把「把空档拉宽」改一下。你猜它会变成什么样？",
         "target_param_name": "gap",
         "target_value": "80",
         "expected_output": "中间的空档变宽",
@@ -1562,9 +1562,9 @@
             "argIndex": 0,
             "occurrence": 1
           },
-          "hint": "改成 1，线就细回去了。",
+          "hint": "改成 1，线就细回去了。数字越大，线越粗。",
           "min": 1,
-          "max": 12,
+          "max": 40,
           "step": 1
         }
       ],
@@ -1607,7 +1607,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把线改细」改一下，看看线变细。",
+        "instruction": "把「把线改细」改一下。你猜它会变成什么样？",
         "target_param_name": "wide",
         "target_value": "1",
         "expected_output": "线变细",
@@ -1739,7 +1739,7 @@
         "    t.right(120)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 3 遍",
         "小海龟向前走 60 步",
         "向右转 120 度"
       ],
@@ -1807,7 +1807,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把边长改长」改一下，看看三角形变大。",
+        "instruction": "把「把边长改长」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "110",
         "expected_output": "三角形变大",
@@ -1915,7 +1915,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把空档拉宽」改一下，看看空档变宽。",
+        "instruction": "把「把空档拉宽」改一下。你猜它会变成什么样？",
         "target_param_name": "gap",
         "target_value": "70",
         "expected_output": "空档变宽",
@@ -1949,7 +1949,7 @@
         "    t.right(90)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 60 步",
         "向右转 90 度"
       ],
@@ -2017,7 +2017,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把 90 度改成 60 度」改一下，看看角变了，不再是正方形。",
+        "instruction": "把「把 90 度改成 60 度」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "60",
         "expected_output": "角变了，不再是正方形",
@@ -2052,7 +2052,7 @@
         "t.done()"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 80 步",
         "向右转 90 度",
         "告诉小海龟，这一幅画完了"
@@ -2121,7 +2121,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把小窗改大」改一下，看看小窗变大。",
+        "instruction": "把「把小窗改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "130",
         "expected_output": "小窗变大",

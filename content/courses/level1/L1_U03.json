@@ -99,15 +99,15 @@
         "question": "这条线是什么颜色？",
         "options": [
           "红色",
-          "一个蓝色正方形",
-          "一个三角形"
+          "蓝色，因为没写颜色就是蓝的",
+          "没有颜色，ink 只是一个名字"
         ],
         "answerIndex": 0,
         "explain": "ink 里装着 red，color 就拿它来涂。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「换成蓝色」改一下，看看红线变成蓝线。",
+        "instruction": "把「换成蓝色」改一下。你猜它会变成什么样？",
         "target_param_name": "ink",
         "target_value": "blue",
         "expected_output": "红线变成蓝线",
@@ -222,7 +222,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「后半段换成绿色」改一下，看看后半段从蓝色变成绿色。",
+        "instruction": "把「后半段换成绿色」改一下。你猜它会变成什么样？",
         "target_param_name": "b",
         "target_value": "green",
         "expected_output": "后半段从蓝色变成绿色",
@@ -261,7 +261,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 0",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 4 行要连着做 4 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成红色",
         "小海龟向前走 60 步",
@@ -280,7 +280,7 @@
           "label": "换一条边涂红",
           "type": "number",
           "min": 0,
-          "max": 3,
+          "max": 20,
           "step": 1,
           "default": 0,
           "apply": {
@@ -334,7 +334,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「换一条边涂红」改一下，看看红边换到另一条边上。",
+        "instruction": "把「换一条边涂红」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "2",
         "expected_output": "红边换到另一条边上",
@@ -443,7 +443,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「换成橙色」改一下，看看绿线变成橙色。",
+        "instruction": "把「换成橙色」改一下。你猜它会变成什么样？",
         "target_param_name": "ink",
         "target_value": "orange",
         "expected_output": "绿线变成橙色",
@@ -484,7 +484,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 0",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 4 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -505,7 +505,7 @@
           "label": "把红边挪走",
           "type": "number",
           "min": 0,
-          "max": 3,
+          "max": 20,
           "step": 1,
           "default": 0,
           "apply": {
@@ -559,7 +559,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把红边挪走」改一下，看看红边换了位置。",
+        "instruction": "把「把红边挪走」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "2",
         "expected_output": "红边换了位置",
@@ -600,7 +600,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 2",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 4 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成红色",
         "这一圈的号如果和 n 一样，就做下面这行",
@@ -621,7 +621,7 @@
           "label": "让紫色早点出现",
           "type": "number",
           "min": 0,
-          "max": 3,
+          "max": 20,
           "step": 1,
           "default": 2,
           "apply": {
@@ -675,7 +675,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「让紫色早点出现」改一下，看看紫色提前出现。",
+        "instruction": "把「让紫色早点出现」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "1",
         "expected_output": "紫色提前出现",
@@ -716,7 +716,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 0",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 3 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -737,7 +737,7 @@
           "label": "把红边挪走",
           "type": "number",
           "min": 0,
-          "max": 2,
+          "max": 20,
           "step": 1,
           "default": 0,
           "apply": {
@@ -791,7 +791,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把红边挪走」改一下，看看红边换到另一条边上。",
+        "instruction": "把「把红边挪走」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "1",
         "expected_output": "红边换到另一条边上",
@@ -940,7 +940,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 0",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 6 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成绿色",
         "对不上的时候，走这边",
@@ -961,7 +961,7 @@
           "label": "把绿边挪走",
           "type": "number",
           "min": 0,
-          "max": 5,
+          "max": 20,
           "step": 1,
           "default": 0,
           "apply": {
@@ -1015,7 +1015,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把绿边挪走」改一下，看看绿边换了位置。",
+        "instruction": "把「把绿边挪走」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "3",
         "expected_output": "绿边换了位置",
@@ -1058,7 +1058,7 @@
       "line_notes": [
         "先记住边长是 60",
         "先记住要涂色的那一圈是 0",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 4 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -1133,7 +1133,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把正方形改大」改一下，看看正方形变大，颜色规律还在。",
+        "instruction": "把「把正方形改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "100",
         "expected_output": "正方形变大，颜色规律还在",
@@ -1174,7 +1174,7 @@
         "    t.right(90)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 8 行要连着做 4 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成红色",
         "把线改成 8 那么粗",
@@ -1203,9 +1203,9 @@
             "argIndex": 0,
             "occurrence": 1
           },
-          "hint": "红边的笔变细，粗细对比就弱了。",
+          "hint": "红边的笔变细，粗细对比就弱了。数字越大，红边越粗。",
           "min": 1,
-          "max": 10,
+          "max": 40,
           "step": 1
         }
       ],
@@ -1253,7 +1253,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把红边改细」改一下，看看红边变细。",
+        "instruction": "把「把红边改细」改一下。你猜它会变成什么样？",
         "target_param_name": "wide",
         "target_value": "2",
         "expected_output": "红边变细",
@@ -1294,7 +1294,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 0",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 4 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成橙色",
         "对不上的时候，走这边",
@@ -1315,7 +1315,7 @@
           "label": "把橙边挪走",
           "type": "number",
           "min": 0,
-          "max": 3,
+          "max": 20,
           "step": 1,
           "default": 0,
           "apply": {
@@ -1369,7 +1369,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把橙边挪走」改一下，看看橙边换了位置。",
+        "instruction": "把「把橙边挪走」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "2",
         "expected_output": "橙边换了位置",
@@ -1474,15 +1474,15 @@
         "question": "这两段线是怎样的？",
         "options": [
           "一红一蓝，中间断开",
-          "一个正方形",
-          "一个三角形"
+          "整段都是红色，后面的蓝色没换上",
+          "两段连在一起，抬笔不会留空"
         ],
         "answerIndex": 0,
         "explain": "抬笔的那一段没有画出来。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把空档拉宽」改一下，看看两段线离得更远。",
+        "instruction": "把「把空档拉宽」改一下。你猜它会变成什么样？",
         "target_param_name": "gap",
         "target_value": "70",
         "expected_output": "两段线离得更远",
@@ -1523,7 +1523,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 0",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 5 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成紫色",
         "对不上的时候，走这边",
@@ -1544,7 +1544,7 @@
           "label": "把紫边挪走",
           "type": "number",
           "min": 0,
-          "max": 4,
+          "max": 20,
           "step": 1,
           "default": 0,
           "apply": {
@@ -1598,7 +1598,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把紫边挪走」改一下，看看紫边换了位置。",
+        "instruction": "把「把紫边挪走」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "2",
         "expected_output": "紫边换了位置",
@@ -1639,7 +1639,7 @@
       ],
       "line_notes": [
         "先记住边长是 70",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 3 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -1714,7 +1714,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把三角形改大」改一下，看看三角形变大。",
+        "instruction": "把「把三角形改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "110",
         "expected_output": "三角形变大",
@@ -1858,7 +1858,7 @@
         "    t.right(120)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 3 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -1935,7 +1935,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把边长改长」改一下，看看三角形变大。",
+        "instruction": "把「把边长改长」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "100",
         "expected_output": "三角形变大",
@@ -1975,7 +1975,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 1",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 4 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成橙色",
         "对不上的时候，走这边",
@@ -1996,7 +1996,7 @@
           "label": "把橙边再挪一次",
           "type": "number",
           "min": 0,
-          "max": 3,
+          "max": 20,
           "step": 1,
           "default": 1,
           "apply": {
@@ -2050,7 +2050,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把橙边再挪一次」改一下，看看橙边又换了一条边。",
+        "instruction": "把「把橙边再挪一次」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "3",
         "expected_output": "橙边又换了一条边",
@@ -2089,7 +2089,7 @@
         "    t.right(60)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 6 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -2166,7 +2166,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把边长改长」改一下，看看六边形变大。",
+        "instruction": "把「把边长改长」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "60",
         "expected_output": "六边形变大",
@@ -2207,7 +2207,7 @@
       ],
       "line_notes": [
         "先记住边长是 70",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 4 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -2282,7 +2282,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把小窗改大」改一下，看看小窗变大。",
+        "instruction": "把「把小窗改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "110",
         "expected_output": "小窗变大",

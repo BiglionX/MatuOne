@@ -35,10 +35,10 @@
       ],
       "line_notes": [
         "先记住边长是 20",
-        "外面这一圈要重复做，做完再来一圈",
-        "小海龟向前走 盒子 side 里的数",
+        "下面 4 行要连着做 4 遍",
+        "这一笔是台阶的平边",
         "向右转 90 度",
-        "小海龟向前走 盒子 side 里的数",
+        "这一笔是往上的竖边",
         "向左转 90 度"
       ],
       "keywords": [
@@ -92,18 +92,18 @@
         }
       ],
       "quiz": {
-        "question": "这幅画像什么？",
+        "question": "台阶是靠哪两步走出来的？",
         "options": [
-          "一级级台阶",
-          "一个正方形",
-          "一个三角形"
+          "先向右转，再向左转扳回来",
+          "四次右转，围成正方形",
+          "只向左转，所以在倒着走"
         ],
         "answerIndex": 0,
-        "explain": "向右再向左，台阶就一级级走下去。"
+        "explain": "先向右转，再向左转扳回来，就走出一级台阶。"
       },
       "bonus_challenge": {
         "type": "code_fill",
-        "instruction": "台阶的步数空着，填上原来的数。",
+        "instruction": "空里填每一级走多少步。20 是步数，4 是有几级，别填成 4。",
         "prompt_line": "side = ____",
         "target_value": "20",
         "expected_output": "台阶的步数是 20",
@@ -214,7 +214,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把箭杆改长」改一下，看看箭杆变长。",
+        "instruction": "把「把箭杆改长」改一下。你猜它会变成什么样？",
         "target_param_name": "shaft",
         "target_value": "120",
         "expected_output": "箭杆变长",
@@ -329,7 +329,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把旗杆改高」改一下，看看旗杆变高。",
+        "instruction": "把「把旗杆改高」改一下。你猜它会变成什么样？",
         "target_param_name": "pole",
         "target_value": "110",
         "expected_output": "旗杆变高",
@@ -367,7 +367,7 @@
       ],
       "line_notes": [
         "先记住边长是 16",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 4 行要连着做 5 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 90 度",
         "小海龟向前走 盒子 side 里的数",
@@ -427,15 +427,15 @@
         "question": "这次有几级台阶？",
         "options": [
           "五级",
-          "一个三角形",
-          "一个六边形"
+          "四级，少算了一次循环",
+          "16 级，因为 side 是 16"
         ],
         "answerIndex": 0,
         "explain": "循环走了 5 次。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把台阶改大」改一下，看看台阶变大。",
+        "instruction": "把「把台阶改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "28",
         "expected_output": "台阶变大",
@@ -477,7 +477,7 @@
       ],
       "line_notes": [
         "先记住边长是 60",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 盒子 side 里的数",
         "向左转 90 度",
         "向左转 90 度",
@@ -549,7 +549,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把房子改大」改一下，看看房子整体变大。",
+        "instruction": "把「把房子改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "90",
         "expected_output": "房子整体变大",
@@ -592,7 +592,7 @@
         "把画笔换成绿色",
         "小海龟向前走 50 步",
         "把画笔换成红色",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 3 遍",
         "小海龟向前走 28 步",
         "向右转 120 度"
       ],
@@ -660,7 +660,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把花茎改长」改一下，看看花茎变长。",
+        "instruction": "把「把花茎改长」改一下。你猜它会变成什么样？",
         "target_param_name": "stem",
         "target_value": "90",
         "expected_output": "花茎变长",
@@ -772,7 +772,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把箭杆改长」改一下，看看箭杆变长。",
+        "instruction": "把「把箭杆改长」改一下。你猜它会变成什么样？",
         "target_param_name": "shaft",
         "target_value": "110",
         "expected_output": "箭杆变长",
@@ -917,7 +917,7 @@
       ],
       "line_notes": [
         "先记住边长是 18",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 8 行要连着做 4 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成橙色",
         "对不上的时候，走这边",
@@ -940,7 +940,7 @@
           "label": "把台阶改大",
           "type": "number",
           "min": 12,
-          "max": 30,
+          "max": 72,
           "step": 6,
           "default": 18,
           "apply": {
@@ -994,7 +994,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把台阶改大」改一下，看看台阶变大。",
+        "instruction": "把「把台阶改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "30",
         "expected_output": "台阶变大",
@@ -1110,7 +1110,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把旗杆改高」改一下，看看旗杆变高。",
+        "instruction": "把「把旗杆改高」改一下。你猜它会变成什么样？",
         "target_param_name": "pole",
         "target_value": "100",
         "expected_output": "旗杆变高",
@@ -1152,7 +1152,7 @@
       ],
       "line_notes": [
         "把画笔换成橙色",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 50 步",
         "向左转 90 度",
         "向左转 90 度",
@@ -1226,7 +1226,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把房子改大」改一下，看看房子变大。",
+        "instruction": "把「把房子改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "80",
         "expected_output": "房子变大",
@@ -1336,7 +1336,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把箭杆改长」改一下，看看箭杆变长。",
+        "instruction": "把「把箭杆改长」改一下。你猜它会变成什么样？",
         "target_param_name": "shaft",
         "target_value": "100",
         "expected_output": "箭杆变长",
@@ -1379,7 +1379,7 @@
       ],
       "line_notes": [
         "先记住边长是 14",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 8 行要连着做 5 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成绿色",
         "对不上的时候，走这边",
@@ -1402,7 +1402,7 @@
           "label": "把台阶改大",
           "type": "number",
           "min": 10,
-          "max": 26,
+          "max": 70,
           "step": 4,
           "default": 14,
           "apply": {
@@ -1456,7 +1456,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把台阶改大」改一下，看看台阶变大。",
+        "instruction": "把「把台阶改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "26",
         "expected_output": "台阶变大",
@@ -1499,7 +1499,7 @@
         "把画笔换成绿色",
         "小海龟向前走 40 步",
         "把画笔换成橙色",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 22 步",
         "向右转 90 度"
       ],
@@ -1567,7 +1567,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把花茎改长」改一下，看看花茎变长。",
+        "instruction": "把「把花茎改长」改一下。你猜它会变成什么样？",
         "target_param_name": "stem",
         "target_value": "80",
         "expected_output": "花茎变长",
@@ -1674,15 +1674,15 @@
         "question": "想让旗杆变高，改哪里？",
         "options": [
           "改 pole",
-          "一个正方形",
-          "一个六边形"
+          "改旗面那三条 30 步",
+          "改旗杆转弯的 90 度"
         ],
         "answerIndex": 0,
         "explain": "杆的长度就是 pole。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把旗杆改高」改一下，看看旗杆变高。",
+        "instruction": "把「把旗杆改高」改一下。你猜它会变成什么样？",
         "target_param_name": "pole",
         "target_value": "110",
         "expected_output": "旗杆变高",
@@ -1818,7 +1818,7 @@
       ],
       "line_notes": [
         "先记住边长是 22",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 4 行要连着做 4 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 90 度",
         "小海龟向前走 盒子 side 里的数",
@@ -1886,7 +1886,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把台阶改大」改一下，看看台阶变大。",
+        "instruction": "把「把台阶改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "34",
         "expected_output": "台阶变大",
@@ -1996,7 +1996,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把箭杆改长」改一下，看看箭杆变长。",
+        "instruction": "把「把箭杆改长」改一下。你猜它会变成什么样？",
         "target_param_name": "shaft",
         "target_value": "100",
         "expected_output": "箭杆变长",
@@ -2038,7 +2038,7 @@
         "把画笔换成绿色",
         "小海龟向前走 36 步",
         "把画笔换成紫色",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 3 遍",
         "小海龟向前走 24 步",
         "向右转 120 度"
       ],
@@ -2106,7 +2106,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把花茎改长」改一下，看看花茎变长。",
+        "instruction": "把「把花茎改长」改一下。你猜它会变成什么样？",
         "target_param_name": "stem",
         "target_value": "70",
         "expected_output": "花茎变长",
@@ -2149,7 +2149,7 @@
       ],
       "line_notes": [
         "先记住边长是 60",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 盒子 side 里的数",
         "向左转 90 度",
         "向左转 90 度",
@@ -2221,7 +2221,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把房子改大」改一下，看看房子整体变大。",
+        "instruction": "把「把房子改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "90",
         "expected_output": "房子整体变大",

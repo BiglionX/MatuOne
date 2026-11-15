@@ -15,7 +15,7 @@
       "level_id": "L0061",
       "order": 61,
       "title": "红蓝折线",
-      "goal": "长边涂红，短边涂蓝，折出三条边",
+      "goal": "先红后蓝，蓝色会留在最后一条长边上",
       "knowledge_tags": [
         "variable",
         "color"
@@ -48,7 +48,7 @@
         "把画笔换成蓝色",
         "小海龟向前走 盒子 short 里的数",
         "向右转 90 度",
-        "小海龟向前走 盒子 long 里的数"
+        "笔还是蓝的，再走一次长边"
       ],
       "keywords": [
         "long = 90",
@@ -103,16 +103,16 @@
       "quiz": {
         "question": "这三条边是什么颜色？",
         "options": [
+          "红、蓝、蓝",
           "红、蓝、红",
-          "一个三角形",
-          "一条直线"
+          "三条都是红色"
         ],
         "answerIndex": 0,
-        "explain": "换色之后，颜色会一直留着。"
+        "explain": "换色之后，颜色会一直留着，所以最后一条也是蓝的。"
       },
       "bonus_challenge": {
         "type": "code_fill",
-        "instruction": "长边的步数空着，填上原来的数。",
+        "instruction": "空里填长边的步数。90 是长边，40 是短边，别填反。",
         "prompt_line": "long = ____",
         "target_value": "90",
         "expected_output": "长边还是 90",
@@ -120,7 +120,7 @@
       },
       "estimated_minutes": 15,
       "is_review": false,
-      "teaching_intent": "长边涂红，短边涂蓝，折出三条边",
+      "teaching_intent": "先红后蓝，蓝色会留在最后一条长边上",
       "parent_brief": "孩子会画出红蓝折线。改一个数，红边变短。",
       "teacher_guide": "先看红蓝折线，再只改「把红边改短」，确认红边变短。"
     },
@@ -152,7 +152,7 @@
       "line_notes": [
         "先记住边长是 20",
         "先记住每次加长多少是 20",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 3 行要连着做 4 遍",
         "小海龟向前走 盒子 side 里的数",
         "把这个数再加上一截，下一圈就更长",
         "向右转 90 度"
@@ -212,14 +212,14 @@
         "options": [
           "一笔比一笔长",
           "四条边一样长的正方形",
-          "一个三角形"
+          "只有第一笔变长，后面三笔一样长"
         ],
         "answerIndex": 0,
         "explain": "每圈都把 side 加上 step。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「让它长得更快」改一下，看看后面几笔长得更快。",
+        "instruction": "把「让它长得更快」改一下。你猜它会变成什么样？",
         "target_param_name": "step",
         "target_value": "40",
         "expected_output": "后面几笔长得更快",
@@ -261,7 +261,7 @@
       ],
       "line_notes": [
         "先记住边长是 20",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 7 行要连着做 4 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -337,7 +337,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把起始边长改大」改一下，看看整条折线变大。",
+        "instruction": "把「把起始边长改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "40",
         "expected_output": "整条折线变大",
@@ -373,7 +373,7 @@
       ],
       "line_notes": [
         "先记住边长是 65",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 90 度"
       ],
@@ -439,7 +439,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把正方形改大」改一下，看看正方形变大。",
+        "instruction": "把「把正方形改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "110",
         "expected_output": "正方形变大",
@@ -480,13 +480,13 @@
         "    t.right(90)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 30 步",
         "向右转 90 度",
         "把笔抬起来，接着走先不画线",
         "小海龟向前走 50 步",
         "把笔放下，接着走就会画出线",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 4 遍",
         "小海龟向前走 30 步",
         "向右转 90 度"
       ],
@@ -554,7 +554,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把两个正方形拉开」改一下，看看两个正方形离得更远。",
+        "instruction": "把「把两个正方形拉开」改一下。你猜它会变成什么样？",
         "target_param_name": "gap",
         "target_value": "100",
         "expected_output": "两个正方形离得更远",
@@ -593,7 +593,7 @@
         "    t.right(120)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 3 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成紫色",
         "对不上的时候，走这边",
@@ -670,7 +670,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把边长改长」改一下，看看三角形变大。",
+        "instruction": "把「把边长改长」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "100",
         "expected_output": "三角形变大",
@@ -709,7 +709,7 @@
       "line_notes": [
         "先记住边长是 36",
         "先记住转弯的度数是 60",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 6 遍",
         "小海龟向前走 盒子 side 里的数",
         "向右转 盒子 turn 里的数"
       ],
@@ -775,7 +775,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把 60 度改成直角」改一下，看看角变了，不再是六边形。",
+        "instruction": "把「把 60 度改成直角」改一下。你猜它会变成什么样？",
         "target_param_name": "turn",
         "target_value": "90",
         "expected_output": "角变了，不再是六边形",
@@ -991,7 +991,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把红边改长」改一下，看看红边变长。",
+        "instruction": "把「把红边改长」改一下。你猜它会变成什么样？",
         "target_param_name": "long",
         "target_value": "120",
         "expected_output": "红边变长",
@@ -1029,7 +1029,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 2",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 4 行要连着做 4 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成绿色",
         "小海龟向前走 50 步",
@@ -1048,7 +1048,7 @@
           "label": "把绿边挪到第一条",
           "type": "number",
           "min": 0,
-          "max": 3,
+          "max": 20,
           "step": 1,
           "default": 2,
           "apply": {
@@ -1102,7 +1102,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把绿边挪到第一条」改一下，看看绿边挪到第一条。",
+        "instruction": "把「把绿边挪到第一条」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "0",
         "expected_output": "绿边挪到第一条",
@@ -1201,15 +1201,15 @@
         "question": "退回之后再转弯，留下什么？",
         "options": [
           "一个直角",
-          "一个三角形",
-          "一个六边形"
+          "什么都没留下，因为已经退回起点",
+          "两条朝同一个方向叠在一起"
         ],
         "answerIndex": 0,
         "explain": "退回起点后，第二条边从起点画出去。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把直角改大」改一下，看看直角变大。",
+        "instruction": "把「把直角改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "110",
         "expected_output": "直角变大",
@@ -1248,7 +1248,7 @@
         "    t.right(60)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 6 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -1325,7 +1325,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把边长改长」改一下，看看六边形变大。",
+        "instruction": "把「把边长改长」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "54",
         "expected_output": "六边形变大",
@@ -1365,7 +1365,7 @@
       "line_notes": [
         "先记住边长是 15",
         "先记住每次加长多少是 12",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 3 行要连着做 6 遍",
         "小海龟向前走 盒子 side 里的数",
         "把这个数再加上一截，下一圈就更长",
         "向右转 60 度"
@@ -1383,7 +1383,7 @@
           "label": "让螺旋张得更开",
           "type": "number",
           "min": 6,
-          "max": 24,
+          "max": 48,
           "step": 6,
           "default": 12,
           "apply": {
@@ -1432,7 +1432,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「让螺旋张得更开」改一下，看看螺旋张得更开。",
+        "instruction": "把「让螺旋张得更开」改一下。你猜它会变成什么样？",
         "target_param_name": "step",
         "target_value": "24",
         "expected_output": "螺旋张得更开",
@@ -1474,7 +1474,7 @@
       ],
       "line_notes": [
         "先记住边长是 15",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 7 行要连着做 5 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成橙色",
         "对不上的时候，走这边",
@@ -1550,7 +1550,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把螺旋改大」改一下，看看螺旋变大。",
+        "instruction": "把「把螺旋改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "30",
         "expected_output": "螺旋变大",
@@ -1593,7 +1593,7 @@
         "小海龟向前走 30 步",
         "把笔放下，接着走就会画出线",
         "把画笔换成蓝色",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 2 行要连着做 3 遍",
         "小海龟向前走 50 步",
         "向右转 120 度"
       ],
@@ -1661,7 +1661,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把三角形挪远」改一下，看看三角形离起点更远。",
+        "instruction": "把「把三角形挪远」改一下。你猜它会变成什么样？",
         "target_param_name": "gap",
         "target_value": "80",
         "expected_output": "三角形离起点更远",
@@ -1798,7 +1798,7 @@
       ],
       "line_notes": [
         "先记住边长是 25",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 3 行要连着做 4 遍",
         "小海龟向前走 盒子 side 里的数",
         "把这个数再加上一截，下一圈就更长",
         "向右转 90 度"
@@ -1865,7 +1865,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把起始边长改大」改一下，看看折线变大。",
+        "instruction": "把「把起始边长改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "50",
         "expected_output": "折线变大",
@@ -1904,7 +1904,7 @@
         "    t.right(90)"
       ],
       "line_notes": [
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 4 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成红色",
         "对不上的时候，走这边",
@@ -1981,7 +1981,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把边长改长」改一下，看看正方形变大。",
+        "instruction": "把「把边长改长」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "90",
         "expected_output": "正方形变大",
@@ -2022,7 +2022,7 @@
       ],
       "line_notes": [
         "先记住要涂色的那一圈是 0",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 5 遍",
         "这一圈的号如果和 n 一样，就做下面这行",
         "把画笔换成紫色",
         "对不上的时候，走这边",
@@ -2043,7 +2043,7 @@
           "label": "把紫边挪走",
           "type": "number",
           "min": 0,
-          "max": 4,
+          "max": 20,
           "step": 1,
           "default": 0,
           "apply": {
@@ -2089,15 +2089,15 @@
         "question": "紫边有几条？",
         "options": [
           "一条",
-          "一个正方形",
-          "一条直线"
+          "五条边全是紫的",
+          "一条也没有"
         ],
         "answerIndex": 0,
         "explain": "只有和 n 对上的那条边是紫色。"
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把紫边挪走」改一下，看看紫边换了位置。",
+        "instruction": "把「把紫边挪走」改一下。你猜它会变成什么样？",
         "target_param_name": "n",
         "target_value": "3",
         "expected_output": "紫边换了位置",
@@ -2139,7 +2139,7 @@
       ],
       "line_notes": [
         "先记住边长是 60",
-        "外面这一圈要重复做，做完再来一圈",
+        "下面 6 行要连着做 4 遍",
         "电脑从 0 开始数，0 就是第一笔",
         "把画笔换成橙色",
         "对不上的时候，走这边",
@@ -2214,7 +2214,7 @@
       },
       "bonus_challenge": {
         "type": "param_edit",
-        "instruction": "把「把小窗改大」改一下，看看小窗变大。",
+        "instruction": "把「把小窗改大」改一下。你猜它会变成什么样？",
         "target_param_name": "side",
         "target_value": "100",
         "expected_output": "小窗变大",

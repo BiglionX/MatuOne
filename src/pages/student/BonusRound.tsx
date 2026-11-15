@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { BonusChallenge, ChallengeParam, Level, RunResult } from '@/types'
-import { hasReverseSegment, mentionsTurnAround } from '@/lib/bonusChallenge'
+import { hasReverseSegment, mentionsTurnAround, paramEditAccepted } from '@/lib/bonusChallenge'
 import { applyParam, buildDemoCode, runCode, type PythonPhase } from '@/lib/runner'
 import { RunButton } from '@/components/RunButton'
 import { claimBonus } from '@/api/learning'
@@ -114,8 +114,9 @@ export function BonusRound({ level, challenge, envPhase, sandbox = false, onDone
       setNote(next.loading ? '引擎准备中...' : next.message)
       return
     }
-    if (String(value) !== challenge.target_value) {
-      setNote('跑通了，但还不是题目要的那个数。')
+    const goalText = `${challenge.instruction}\n${challenge.expected_output}`
+    if (!paramEditAccepted(value, challenge.target_value ?? '', param.default, goalText)) {
+      setNote('跑通了，但还没到题目要的程度。')
       return
     }
     setNote(`这就是${challenge.expected_output}。`)

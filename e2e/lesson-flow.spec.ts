@@ -1,5 +1,8 @@
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 import { LEVELS } from '../src/mock/levels'
+import type { Level } from '../src/types'
 import { expectCanvasDrawn, readCanvasInk } from './canvasInk'
 import { reportApi, watchApi } from './api-log'
 
@@ -21,8 +24,32 @@ const STUDENT = {
   password: '',
 }
 
-async function openLevel(page: Page, levelId: string) {
-  const level = LEVELS.find((item) => item.level_id === levelId)
+function courseLevel(order: number): Level {
+  const dir = join(process.cwd(), 'content', 'courses', 'level1')
+  for (const name of readdirSync(dir)) {
+    if (!name.endsWith('.json')) continue
+    const pack = JSON.parse(readFileSync(join(dir, name), 'utf8')) as { levels: Level[] }
+    const found = pack.levels.find((level) => level.order === order)
+    if (found) {
+      return {
+        ...found,
+        preview_kind: found.preview_kind === 'text' ? 'text' : 'turtle',
+        level_type: 'normal',
+        challenge_params: found.challenge_params ?? [],
+        error_mappings: found.error_mappings ?? [],
+      }
+    }
+  }
+  throw new Error(`缺少第 ${order} 关`)
+}
+
+async function openCourseLevel(page: Page, order: number) {
+  const level = courseLevel(order)
+  await openLevel(page, level.level_id, level)
+  return level
+}
+
+async function openLevel(page: Page, levelId: string, level: Level = LEVELS.find((item) => item.level_id === levelId)!) {
   if (!level) throw new Error(`缺少 ${levelId}`)
 
   await page.addInitScript((student) => {
@@ -43,7 +70,11 @@ async function openLevel(page: Page, levelId: string) {
       return
     }
     if (url.includes('student-learning') && body.action === 'level') {
-      await route.fulfill({ json: { level, hints: [] } })
+      await route.fulfill({ json: { level, hints: [], reviewChunk: null } })
+      return
+    }
+    if (url.includes('student-learning') && body.action === 'bonus') {
+      await route.fulfill({ json: { ok: true, reward: '皇冠' } })
       return
     }
     await route.fulfill({ json: { ok: true, hints: [] } })
@@ -122,4 +153,45 @@ test('第 6 关用折叠看到 8 行变成 for，循环次数改完代码跟着�
 
   await page.getByRole('button', { name: '2 次（一个拐角）' }).click()
   await expect(page.getByText('range(2)')).toBeVisible()
+})
+
+test('第 61 关猜颜色时，标准答案是红、蓝、蓝', async ({ page }) => {
+  await openCourseLevel(page, 61)
+  await expect(page.getByRole('button', { name: '红、蓝、红' })).toBeVisible()
+  await page.getByRole('button', { name: '红、蓝、蓝' }).click()
+  await expect(page.getByText('猜对了')).toBeVisible()
+  await expect(page.getByText('最后一条也是蓝的')).toBeVisible()
+})
+
+test('第 1 关副本拖过 140 也算把线变长', async ({ page }) => {
+  test.setTimeout(180_000)
+  await openCourseLevel(page, 1)
+  await page.getByRole('button', { name: '一条直线' }).click()
+  await page.getByRole('button', { name: '运行看看' }).click()
+  await page.getByRole('button', { name: '开始抄代码' }).click()
+  await page.getByRole('button', { name: '准备好了' }).click()
+
+  await page.getByRole('textbox', { name: '第 1 行代码' }).fill('t.forward(80)')
+  await page.getByRole('textbox', { name: '第 1 行代码' }).press('Enter')
+  await page.getByRole('textbox', { name: '第 2 行代码' }).fill('t.done()')
+  await page.getByRole('textbox', { name: '第 2 行代码' }).press('Enter')
+  await page.getByRole('button', { name: '运行', exact: true }).click()
+  await page.getByRole('button', { name: '下一回合' }).click()
+  await page.getByRole('button', { name: '准备好了' }).click()
+
+  await page.getByRole('slider', { name: '把这条线改长' }).fill('100')
+  await page.getByRole('button', { name: '再跑一次' }).click()
+  await expect(page.getByText('改完的样子')).toBeVisible({ timeout: 90_000 })
+  const drill = page.getByLabel('组块打字')
+  for (let i = 1; i <= 4; i += 1) {
+    await expect(page.getByText(`第 ${i} / 4 次`)).toBeVisible()
+    await drill.pressSequentially('t.forward(80)', { delay: 10 })
+  }
+  await page.getByRole('button', { name: '完成这一关' }).click()
+  await page.getByRole('button', { name: '巩固一下' }).click()
+
+  await page.getByRole('slider', { name: '把这条线改长' }).fill('160')
+  await page.getByRole('button', { name: '跑一下' }).click()
+  await expect(page.getByText('拿到了皇冠')).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByText('还没到题目要的程度')).toHaveCount(0)
 })

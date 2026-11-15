@@ -1961,15 +1961,15 @@ var L1_U01_default = {
         question: "\u5C0F\u6D77\u9F9F\u4F1A\u753B\u51FA\u4EC0\u4E48\uFF1F",
         options: [
           "\u4E00\u6761\u76F4\u7EBF",
-          "\u4E00\u4E2A\u6B63\u65B9\u5F62",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62"
+          "\u8D70\u51FA 80 \u6761\u7EBF",
+          "\u4E00\u6761\u6BD4 80 \u66F4\u7C97\u7684\u7EBF"
         ],
         answerIndex: 0,
         explain: "forward \u662F\u5F80\u524D\u8D70\uFF0C\u6240\u4EE5\u5148\u51FA\u73B0\u4E00\u6761\u7EBF\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8FD9\u6761\u7EBF\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EBF\u53D8\u5F97\u66F4\u957F\u3002",
+        instruction: "\u628A\u7EBF\u62D6\u5230 140\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u73B0\u5728\u7684\u5DEE\u4E0D\u591A\u4E24\u500D\uFF0C\u8FD8\u662F\u53EA\u957F\u51FA\u4E00\u5C0F\u622A\uFF1F",
         target_param_name: "long",
         target_value: "140",
         expected_output: "\u7EBF\u53D8\u5F97\u66F4\u957F",
@@ -2191,7 +2191,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u5DE6\u8F6C\u7684\u89D2\u5EA6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u5DE6\u8FB9\u7684\u62D0\u89D2\u5F20\u5F00\u3002",
+        instruction: "\u628A\u300C\u5DE6\u8F6C\u7684\u89D2\u5EA6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "120",
         expected_output: "\u5DE6\u8FB9\u7684\u62D0\u89D2\u5F20\u5F00",
@@ -2296,7 +2296,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7B2C\u4E00\u6761\u8FB9\u6539\u77ED\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u957F\u7684\u90A3\u6761\u8FB9\u53D8\u77ED\uFF0C\u62D0\u89D2\u8FD8\u5728\u3002",
+        instruction: "\u628A\u300C\u628A\u7B2C\u4E00\u6761\u8FB9\u6539\u77ED\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "long",
         target_value: "40",
         expected_output: "\u957F\u7684\u90A3\u6761\u8FB9\u53D8\u77ED\uFF0C\u62D0\u89D2\u8FD8\u5728",
@@ -2405,7 +2405,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u95E8\u6846\u6539\u77EE\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u95E8\u6846\u53D8\u77EE\u3002",
+        instruction: "\u628A\u300C\u628A\u95E8\u6846\u6539\u77EE\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "tall",
         target_value: "40",
         expected_output: "\u95E8\u6846\u53D8\u77EE",
@@ -2508,15 +2508,15 @@ var L1_U01_default = {
         question: "\u8FD9\u4E2A\u62D0\u89D2\u548C\u76F4\u89D2\u6BD4\uFF0C\u600E\u4E48\u6837\uFF1F",
         options: [
           "\u6BD4\u76F4\u89D2\u66F4\u5F00",
-          "\u8FD8\u662F\u4E00\u6761\u76F4\u7EBF",
-          "\u5DF2\u7ECF\u5C01\u6210\u6B63\u65B9\u5F62"
+          "\u6BD4\u76F4\u89D2\u66F4\u5C16",
+          "\u8FD8\u662F\u4E00\u6761\u76F4\u7EBF"
         ],
         answerIndex: 0,
         explain: "120 \u6BD4 90 \u5927\uFF0C\u6240\u4EE5\u62D0\u5F97\u66F4\u5F00\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5927\u89D2\u6539\u5C0F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u62D0\u89D2\u6536\u56DE\u6765\uFF0C\u53D8\u6210\u76F4\u89D2\u3002",
+        instruction: "120 \u6539\u6210 90 \u4E4B\u540E\uFF0C\u4F60\u731C\u8FD9\u4E2A\u89D2\u4F1A\u5F20\u5F97\u66F4\u5F00\uFF0C\u8FD8\u662F\u6536\u56DE\u6765\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u62D0\u89D2\u6536\u56DE\u6765\uFF0C\u53D8\u6210\u76F4\u89D2",
@@ -2626,7 +2626,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u6BCF\u4E2A\u89D2\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u4E2A\u89D2\u90FD\u53D8\u76F4\u89D2\uFF0C\u4E0D\u518D\u662F\u4E09\u89D2\u5F62\u3002",
+        instruction: "\u628A\u300C\u628A\u6BCF\u4E2A\u89D2\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u4E09\u4E2A\u89D2\u90FD\u53D8\u76F4\u89D2\uFF0C\u4E0D\u518D\u662F\u4E09\u89D2\u5F62",
@@ -2841,7 +2841,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u76F4\u89D2\u6539\u6210 60 \u5EA6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u56DB\u4E2A\u89D2\u90FD\u53D8\u4E86\uFF0C\u4E0D\u518D\u65B9\u65B9\u6B63\u6B63\u3002",
+        instruction: "\u628A\u300C\u628A\u76F4\u89D2\u6539\u6210 60 \u5EA6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "60",
         expected_output: "\u56DB\u4E2A\u89D2\u90FD\u53D8\u4E86\uFF0C\u4E0D\u518D\u65B9\u65B9\u6B63\u6B63",
@@ -2876,7 +2876,7 @@ var L1_U01_default = {
         "    t.right(90)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 70 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
       ],
@@ -2944,14 +2944,14 @@ var L1_U01_default = {
         options: [
           "\u8D70\u548C\u8F6C\u91CD\u590D\u4E86 4 \u6B21",
           "\u53EA\u8D70\u4E86\u4E00\u6B21",
-          "\u753B\u6210\u4E86\u4E09\u89D2\u5F62"
+          "4 \u662F\u8FB9\u6709\u591A\u957F\uFF0C\u6240\u4EE5\u53EA\u8D70\u4E86\u4E00\u7B14"
         ],
         answerIndex: 0,
         explain: "range(4) \u8BA9\u91CC\u9762\u7684\u4E24\u884C\u505A 4 \u904D\u3002"
       },
       bonus_challenge: {
         type: "add_color",
-        instruction: "\u7ED9\u6B63\u65B9\u5F62\u7684\u8FB9\u6846\u52A0\u4E0A\u7EA2\u8272\u3002",
+        instruction: "\u9009\u7EA2\u8272\u518D\u8DD1\u3002\u4F60\u731C\u662F\u56DB\u6761\u8FB9\u4E00\u8D77\u53D8\u7EA2\uFF0C\u8FD8\u662F\u53EA\u6709\u7B2C\u4E00\u6761\uFF1F",
         target_value: "red",
         expected_output: "\u6B63\u65B9\u5F62\u7684\u8FB9\u53D8\u6210\u7EA2\u8272",
         bonus_reward: "\u7687\u51A0"
@@ -2984,7 +2984,7 @@ var L1_U01_default = {
         "    t.right(120)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 80 \u6B65",
         "\u5411\u53F3\u8F6C 120 \u5EA6"
       ],
@@ -3059,7 +3059,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A 120 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u8FD8\u662F\u4E09\u7B14\uFF0C\u4F46\u53D8\u6210\u4E86\u76F4\u89D2\u6298\u7EBF\u3002",
+        instruction: "\u628A\u300C\u628A 120 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u8FD8\u662F\u4E09\u7B14\uFF0C\u4F46\u53D8\u6210\u4E86\u76F4\u89D2\u6298\u7EBF",
@@ -3093,7 +3093,7 @@ var L1_U01_default = {
         "    t.right(90)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 50 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
       ],
@@ -3161,7 +3161,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6B63\u65B9\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "110",
         expected_output: "\u6B63\u65B9\u5F62\u53D8\u5927",
@@ -3267,7 +3267,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u5C11\u9000\u4E00\u70B9\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6CA1\u9000\u56DE\u5230\u8D77\u70B9\uFF0C\u7AD6\u7EBF\u7684\u4F4D\u7F6E\u632A\u4E86\u3002",
+        instruction: "\u628A\u300C\u5C11\u9000\u4E00\u70B9\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "back",
         target_value: "20",
         expected_output: "\u6CA1\u9000\u56DE\u5230\u8D77\u70B9\uFF0C\u7AD6\u7EBF\u7684\u4F4D\u7F6E\u632A\u4E86",
@@ -3376,7 +3376,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7A7A\u6863\u62C9\u5BBD\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E2D\u95F4\u7684\u7A7A\u6863\u53D8\u5BBD\u3002",
+        instruction: "\u628A\u300C\u628A\u7A7A\u6863\u62C9\u5BBD\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "gap",
         target_value: "80",
         expected_output: "\u4E2D\u95F4\u7684\u7A7A\u6863\u53D8\u5BBD",
@@ -3433,9 +3433,9 @@ var L1_U01_default = {
             argIndex: 0,
             occurrence: 1
           },
-          hint: "\u6539\u6210 1\uFF0C\u7EBF\u5C31\u7EC6\u56DE\u53BB\u4E86\u3002",
+          hint: "\u6539\u6210 1\uFF0C\u7EBF\u5C31\u7EC6\u56DE\u53BB\u4E86\u3002\u6570\u5B57\u8D8A\u5927\uFF0C\u7EBF\u8D8A\u7C97\u3002",
           min: 1,
-          max: 12,
+          max: 40,
           step: 1
         }
       ],
@@ -3478,7 +3478,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7EBF\u6539\u7EC6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EBF\u53D8\u7EC6\u3002",
+        instruction: "\u628A\u300C\u628A\u7EBF\u6539\u7EC6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "wide",
         target_value: "1",
         expected_output: "\u7EBF\u53D8\u7EC6",
@@ -3610,7 +3610,7 @@ var L1_U01_default = {
         "    t.right(120)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 60 \u6B65",
         "\u5411\u53F3\u8F6C 120 \u5EA6"
       ],
@@ -3678,7 +3678,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u89D2\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "110",
         expected_output: "\u4E09\u89D2\u5F62\u53D8\u5927",
@@ -3786,7 +3786,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7A7A\u6863\u62C9\u5BBD\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7A7A\u6863\u53D8\u5BBD\u3002",
+        instruction: "\u628A\u300C\u628A\u7A7A\u6863\u62C9\u5BBD\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "gap",
         target_value: "70",
         expected_output: "\u7A7A\u6863\u53D8\u5BBD",
@@ -3820,7 +3820,7 @@ var L1_U01_default = {
         "    t.right(90)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 60 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
       ],
@@ -3888,7 +3888,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A 90 \u5EA6\u6539\u6210 60 \u5EA6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u89D2\u53D8\u4E86\uFF0C\u4E0D\u518D\u662F\u6B63\u65B9\u5F62\u3002",
+        instruction: "\u628A\u300C\u628A 90 \u5EA6\u6539\u6210 60 \u5EA6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "60",
         expected_output: "\u89D2\u53D8\u4E86\uFF0C\u4E0D\u518D\u662F\u6B63\u65B9\u5F62",
@@ -3923,7 +3923,7 @@ var L1_U01_default = {
         "t.done()"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 80 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u544A\u8BC9\u5C0F\u6D77\u9F9F\uFF0C\u8FD9\u4E00\u5E45\u753B\u5B8C\u4E86"
@@ -3992,7 +3992,7 @@ var L1_U01_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5C0F\u7A97\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u5C0F\u7A97\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u5C0F\u7A97\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "130",
         expected_output: "\u5C0F\u7A97\u53D8\u5927",
@@ -4100,15 +4100,15 @@ var L1_U02_default = {
         question: "\u8FD9\u6761\u7EBF\u6709\u591A\u957F\uFF1F",
         options: [
           "side \u91CC\u7684 80 \u6B65",
-          "\u4E00\u4E2A\u6B63\u65B9\u5F62",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62"
+          "80 \u6761\u5206\u5F00\u7684\u7EBF",
+          "\u548C side \u65E0\u5173\uFF0C\u957F\u5EA6\u662F\u5199\u6B7B\u7684"
         ],
         answerIndex: 0,
         explain: "forward \u7528\u7684\u662F side \u91CC\u7684\u6570\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EBF\u53D8\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "140",
         expected_output: "\u7EBF\u53D8\u957F",
@@ -4145,7 +4145,7 @@ var L1_U02_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 70",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
       ],
@@ -4211,7 +4211,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u6B63\u65B9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6B63\u65B9\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u6B63\u65B9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "120",
         expected_output: "\u6B63\u65B9\u5F62\u53D8\u5927",
@@ -4245,7 +4245,7 @@ var L1_U02_default = {
         "    t.right(60)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 50 \u6B65",
         "\u5411\u53F3\u8F6C 60 \u5EA6"
       ],
@@ -4305,15 +4305,15 @@ var L1_U02_default = {
         question: "\u8D70 6 \u6B21\u3001\u6BCF\u6B21\u8F6C 60 \u5EA6\uFF0C\u662F\u4EC0\u4E48\uFF1F",
         options: [
           "\u4E00\u4E2A\u516D\u8FB9\u5F62",
-          "\u4E00\u4E2A\u6B63\u65B9\u5F62",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62"
+          "\u8FD8\u662F\u6B63\u65B9\u5F62\uFF0C\u56E0\u4E3A\u6BCF\u6B21\u8F6C\u7684\u89D2\u5EA6\u4E00\u6837",
+          "\u8FB9\u592A\u591A\uFF0C\u770B\u8D77\u6765\u662F\u4E00\u4E2A\u5706"
         ],
         answerIndex: 0,
         explain: "\u516D\u6761\u8FB9\u3001\u6BCF\u6B21\u8F6C 60 \u5EA6\uFF0C\u6B63\u597D\u56F4\u4E0A\u3002"
       },
       bonus_challenge: {
         type: "add_color",
-        instruction: "\u7ED9\u516D\u8FB9\u5F62\u7684\u8FB9\u6846\u52A0\u4E0A\u84DD\u8272\u3002",
+        instruction: "\u9009\u84DD\u8272\u3002\u4F60\u731C\u516D\u6761\u8FB9\u4F1A\u4E00\u8D77\u53D8\u84DD\uFF0C\u8FD8\u662F\u53EA\u84DD\u4E00\u6761\uFF1F",
         target_value: "blue",
         expected_output: "\u516D\u8FB9\u5F62\u7684\u8FB9\u53D8\u6210\u84DD\u8272",
         bonus_reward: "\u7687\u51A0"
@@ -4348,7 +4348,7 @@ var L1_U02_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 100",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
       ],
@@ -4414,7 +4414,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5927\u6B63\u65B9\u5F62\u6539\u5C0F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6B63\u65B9\u5F62\u53D8\u5C0F\u3002",
+        instruction: "\u628A\u300C\u628A\u5927\u6B63\u65B9\u5F62\u6539\u5C0F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "50",
         expected_output: "\u6B63\u65B9\u5F62\u53D8\u5C0F",
@@ -4450,7 +4450,7 @@ var L1_U02_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 80",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 120 \u5EA6"
       ],
@@ -4516,7 +4516,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u4E09\u89D2\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u89D2\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u4E09\u89D2\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "120",
         expected_output: "\u4E09\u89D2\u5F62\u53D8\u5927",
@@ -4553,7 +4553,7 @@ var L1_U02_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8F6C\u5F2F\u7684\u5EA6\u6570\u662F 90",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 60 \u6B65",
         "\u5411\u53F3\u8F6C \u76D2\u5B50 turn \u91CC\u7684\u6570"
       ],
@@ -4619,7 +4619,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8F6C\u89D2\u6539\u6210 60 \u5EA6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u89D2\u53D8\u4E86\uFF0C\u4E0D\u518D\u662F\u6B63\u65B9\u5F62\u3002",
+        instruction: "\u628A\u300C\u628A\u8F6C\u89D2\u6539\u6210 60 \u5EA6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "60",
         expected_output: "\u89D2\u53D8\u4E86\uFF0C\u4E0D\u518D\u662F\u6B63\u65B9\u5F62",
@@ -4655,7 +4655,7 @@ var L1_U02_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8F6C\u5F2F\u7684\u5EA6\u6570\u662F 60",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 50 \u6B65",
         "\u5411\u53F3\u8F6C \u76D2\u5B50 turn \u91CC\u7684\u6570"
       ],
@@ -4721,7 +4721,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A 60 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u89D2\u53D8\u5927\uFF0C\u516D\u8FB9\u5F62\u6563\u5F00\u3002",
+        instruction: "\u628A\u300C\u628A 60 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u89D2\u53D8\u5927\uFF0C\u516D\u8FB9\u5F62\u6563\u5F00",
@@ -4855,7 +4855,7 @@ var L1_U02_default = {
         "    t.right(72)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 5 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 50 \u6B65",
         "\u5411\u53F3\u8F6C 72 \u5EA6"
       ],
@@ -4923,7 +4923,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A 72 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u89D2\u53D8\u4E86\uFF0C\u4E94\u8FB9\u5F62\u5C01\u4E0D\u4E0A\u3002",
+        instruction: "\u628A\u300C\u628A 72 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u89D2\u53D8\u4E86\uFF0C\u4E94\u8FB9\u5F62\u5C01\u4E0D\u4E0A",
@@ -4957,7 +4957,7 @@ var L1_U02_default = {
         "    t.right(45)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 8 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 40 \u6B65",
         "\u5411\u53F3\u8F6C 45 \u5EA6"
       ],
@@ -5025,7 +5025,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A 45 \u5EA6\u6539\u6210 60 \u5EA6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u89D2\u53D8\u5927\uFF0C\u516B\u8FB9\u5F62\u6563\u5F00\u3002",
+        instruction: "\u628A\u300C\u628A 45 \u5EA6\u6539\u6210 60 \u5EA6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "60",
         expected_output: "\u89D2\u53D8\u5927\uFF0C\u516B\u8FB9\u5F62\u6563\u5F00",
@@ -5062,7 +5062,7 @@ var L1_U02_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8F6C\u5F2F\u7684\u5EA6\u6570\u662F 120",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 70 \u6B65",
         "\u5411\u53F3\u8F6C \u76D2\u5B50 turn \u91CC\u7684\u6570"
       ],
@@ -5128,7 +5128,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A 120 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u89D2\u53D8\u6210\u76F4\u89D2\uFF0C\u4E09\u89D2\u5F62\u6563\u5F00\u3002",
+        instruction: "\u628A\u300C\u628A 120 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u89D2\u53D8\u6210\u76F4\u89D2\uFF0C\u4E09\u89D2\u5F62\u6563\u5F00",
@@ -5164,7 +5164,7 @@ var L1_U02_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 40",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 60 \u5EA6"
       ],
@@ -5230,7 +5230,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u516D\u8FB9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u516D\u8FB9\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u516D\u8FB9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "80",
         expected_output: "\u516D\u8FB9\u5F62\u53D8\u5927",
@@ -5344,7 +5344,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u957F\u8FB9\u6539\u77ED\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u957F\u8FB9\u53D8\u77ED\uFF0C\u957F\u65B9\u5F62\u53D8\u77EE\u3002",
+        instruction: "\u628A\u300C\u628A\u957F\u8FB9\u6539\u77ED\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "long",
         target_value: "60",
         expected_output: "\u957F\u8FB9\u53D8\u77ED\uFF0C\u957F\u65B9\u5F62\u53D8\u77EE",
@@ -5445,15 +5445,15 @@ var L1_U02_default = {
         question: "\u4E24\u6761\u7EBF\u4E2D\u95F4\u7684\u7A7A\u6863\u7531\u8C01\u51B3\u5B9A\uFF1F",
         options: [
           "gap \u91CC\u7684\u6B65\u6570",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62",
-          "\u4E00\u4E2A\u516D\u8FB9\u5F62"
+          "\u4E24\u6BB5\u90FD\u662F 40\uFF0C\u7A7A\u6863\u4E5F\u662F 40",
+          "\u62AC\u7B14\u4E4B\u540E\u5C31\u505C\u4F4F\uFF0C\u4E2D\u95F4\u6CA1\u6709\u7A7A\u6863"
         ],
         answerIndex: 0,
         explain: "\u62AC\u7B14\u4E4B\u540E\u8D70\u7684\u662F gap\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7A7A\u6863\u62C9\u5BBD\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7A7A\u6863\u53D8\u5BBD\u3002",
+        instruction: "\u628A\u300C\u628A\u7A7A\u6863\u62C9\u5BBD\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "gap",
         target_value: "80",
         expected_output: "\u7A7A\u6863\u53D8\u5BBD",
@@ -5492,7 +5492,7 @@ var L1_U02_default = {
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 60",
         "\u5148\u8BB0\u4F4F\u8F6C\u5F2F\u7684\u5EA6\u6570\u662F 90",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C \u76D2\u5B50 turn \u91CC\u7684\u6570"
       ],
@@ -5558,7 +5558,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8F6C\u89D2\u6539\u6210 120 \u5EA6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u89D2\u53D8\u4E86\uFF0C\u4E0D\u518D\u662F\u6B63\u65B9\u5F62\u3002",
+        instruction: "\u628A\u300C\u628A\u8F6C\u89D2\u6539\u6210 120 \u5EA6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "120",
         expected_output: "\u89D2\u53D8\u4E86\uFF0C\u4E0D\u518D\u662F\u6B63\u65B9\u5F62",
@@ -5692,7 +5692,7 @@ var L1_U02_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 45",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 5 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 72 \u5EA6"
       ],
@@ -5758,7 +5758,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u4E94\u8FB9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E94\u8FB9\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u4E94\u8FB9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "80",
         expected_output: "\u4E94\u8FB9\u5F62\u53D8\u5927",
@@ -5872,7 +5872,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u957F\u8FB9\u518D\u52A0\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u957F\u65B9\u5F62\u53D8\u5F97\u66F4\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u957F\u8FB9\u518D\u52A0\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "long",
         target_value: "130",
         expected_output: "\u957F\u65B9\u5F62\u53D8\u5F97\u66F4\u957F",
@@ -5908,7 +5908,7 @@ var L1_U02_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 50",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 120 \u5EA6"
       ],
@@ -5974,7 +5974,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u4E09\u89D2\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u89D2\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u4E09\u89D2\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "100",
         expected_output: "\u4E09\u89D2\u5F62\u53D8\u5927",
@@ -6013,7 +6013,7 @@ var L1_U02_default = {
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 50",
         "\u5148\u8BB0\u4F4F\u8F6C\u5F2F\u7684\u5EA6\u6570\u662F 60",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C \u76D2\u5B50 turn \u91CC\u7684\u6570"
       ],
@@ -6079,7 +6079,7 @@ var L1_U02_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A 60 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u89D2\u53D8\u4E86\uFF0C\u5FBD\u7AE0\u4E0D\u518D\u662F\u516D\u8FB9\u5F62\u3002",
+        instruction: "\u628A\u300C\u628A 60 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u89D2\u53D8\u4E86\uFF0C\u5FBD\u7AE0\u4E0D\u518D\u662F\u516D\u8FB9\u5F62",
@@ -6196,15 +6196,15 @@ var L1_U03_default = {
         question: "\u8FD9\u6761\u7EBF\u662F\u4EC0\u4E48\u989C\u8272\uFF1F",
         options: [
           "\u7EA2\u8272",
-          "\u4E00\u4E2A\u84DD\u8272\u6B63\u65B9\u5F62",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62"
+          "\u84DD\u8272\uFF0C\u56E0\u4E3A\u6CA1\u5199\u989C\u8272\u5C31\u662F\u84DD\u7684",
+          "\u6CA1\u6709\u989C\u8272\uFF0Cink \u53EA\u662F\u4E00\u4E2A\u540D\u5B57"
         ],
         answerIndex: 0,
         explain: "ink \u91CC\u88C5\u7740 red\uFF0Ccolor \u5C31\u62FF\u5B83\u6765\u6D82\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u6362\u6210\u84DD\u8272\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EA2\u7EBF\u53D8\u6210\u84DD\u7EBF\u3002",
+        instruction: "\u628A\u300C\u6362\u6210\u84DD\u8272\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "ink",
         target_value: "blue",
         expected_output: "\u7EA2\u7EBF\u53D8\u6210\u84DD\u7EBF",
@@ -6319,7 +6319,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u540E\u534A\u6BB5\u6362\u6210\u7EFF\u8272\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u540E\u534A\u6BB5\u4ECE\u84DD\u8272\u53D8\u6210\u7EFF\u8272\u3002",
+        instruction: "\u628A\u300C\u540E\u534A\u6BB5\u6362\u6210\u7EFF\u8272\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "b",
         target_value: "green",
         expected_output: "\u540E\u534A\u6BB5\u4ECE\u84DD\u8272\u53D8\u6210\u7EFF\u8272",
@@ -6358,7 +6358,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 0",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 60 \u6B65",
@@ -6377,7 +6377,7 @@ var L1_U03_default = {
           label: "\u6362\u4E00\u6761\u8FB9\u6D82\u7EA2",
           type: "number",
           min: 0,
-          max: 3,
+          max: 20,
           step: 1,
           default: 0,
           apply: {
@@ -6431,7 +6431,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u6362\u4E00\u6761\u8FB9\u6D82\u7EA2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EA2\u8FB9\u6362\u5230\u53E6\u4E00\u6761\u8FB9\u4E0A\u3002",
+        instruction: "\u628A\u300C\u6362\u4E00\u6761\u8FB9\u6D82\u7EA2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "2",
         expected_output: "\u7EA2\u8FB9\u6362\u5230\u53E6\u4E00\u6761\u8FB9\u4E0A",
@@ -6540,7 +6540,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u6362\u6210\u6A59\u8272\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EFF\u7EBF\u53D8\u6210\u6A59\u8272\u3002",
+        instruction: "\u628A\u300C\u6362\u6210\u6A59\u8272\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "ink",
         target_value: "orange",
         expected_output: "\u7EFF\u7EBF\u53D8\u6210\u6A59\u8272",
@@ -6581,7 +6581,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 0",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -6602,7 +6602,7 @@ var L1_U03_default = {
           label: "\u628A\u7EA2\u8FB9\u632A\u8D70",
           type: "number",
           min: 0,
-          max: 3,
+          max: 20,
           step: 1,
           default: 0,
           apply: {
@@ -6656,7 +6656,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7EA2\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EA2\u8FB9\u6362\u4E86\u4F4D\u7F6E\u3002",
+        instruction: "\u628A\u300C\u628A\u7EA2\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "2",
         expected_output: "\u7EA2\u8FB9\u6362\u4E86\u4F4D\u7F6E",
@@ -6697,7 +6697,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 2",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
@@ -6718,7 +6718,7 @@ var L1_U03_default = {
           label: "\u8BA9\u7D2B\u8272\u65E9\u70B9\u51FA\u73B0",
           type: "number",
           min: 0,
-          max: 3,
+          max: 20,
           step: 1,
           default: 2,
           apply: {
@@ -6772,7 +6772,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u8BA9\u7D2B\u8272\u65E9\u70B9\u51FA\u73B0\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7D2B\u8272\u63D0\u524D\u51FA\u73B0\u3002",
+        instruction: "\u628A\u300C\u8BA9\u7D2B\u8272\u65E9\u70B9\u51FA\u73B0\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "1",
         expected_output: "\u7D2B\u8272\u63D0\u524D\u51FA\u73B0",
@@ -6813,7 +6813,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 0",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -6834,7 +6834,7 @@ var L1_U03_default = {
           label: "\u628A\u7EA2\u8FB9\u632A\u8D70",
           type: "number",
           min: 0,
-          max: 2,
+          max: 20,
           step: 1,
           default: 0,
           apply: {
@@ -6888,7 +6888,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7EA2\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EA2\u8FB9\u6362\u5230\u53E6\u4E00\u6761\u8FB9\u4E0A\u3002",
+        instruction: "\u628A\u300C\u628A\u7EA2\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "1",
         expected_output: "\u7EA2\u8FB9\u6362\u5230\u53E6\u4E00\u6761\u8FB9\u4E0A",
@@ -7037,7 +7037,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 0",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u7EFF\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -7058,7 +7058,7 @@ var L1_U03_default = {
           label: "\u628A\u7EFF\u8FB9\u632A\u8D70",
           type: "number",
           min: 0,
-          max: 5,
+          max: 20,
           step: 1,
           default: 0,
           apply: {
@@ -7112,7 +7112,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7EFF\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EFF\u8FB9\u6362\u4E86\u4F4D\u7F6E\u3002",
+        instruction: "\u628A\u300C\u628A\u7EFF\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "3",
         expected_output: "\u7EFF\u8FB9\u6362\u4E86\u4F4D\u7F6E",
@@ -7155,7 +7155,7 @@ var L1_U03_default = {
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 60",
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 0",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -7230,7 +7230,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u6B63\u65B9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6B63\u65B9\u5F62\u53D8\u5927\uFF0C\u989C\u8272\u89C4\u5F8B\u8FD8\u5728\u3002",
+        instruction: "\u628A\u300C\u628A\u6B63\u65B9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "100",
         expected_output: "\u6B63\u65B9\u5F62\u53D8\u5927\uFF0C\u989C\u8272\u89C4\u5F8B\u8FD8\u5728",
@@ -7271,7 +7271,7 @@ var L1_U03_default = {
         "    t.right(90)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 8 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u628A\u7EBF\u6539\u6210 8 \u90A3\u4E48\u7C97",
@@ -7300,9 +7300,9 @@ var L1_U03_default = {
             argIndex: 0,
             occurrence: 1
           },
-          hint: "\u7EA2\u8FB9\u7684\u7B14\u53D8\u7EC6\uFF0C\u7C97\u7EC6\u5BF9\u6BD4\u5C31\u5F31\u4E86\u3002",
+          hint: "\u7EA2\u8FB9\u7684\u7B14\u53D8\u7EC6\uFF0C\u7C97\u7EC6\u5BF9\u6BD4\u5C31\u5F31\u4E86\u3002\u6570\u5B57\u8D8A\u5927\uFF0C\u7EA2\u8FB9\u8D8A\u7C97\u3002",
           min: 1,
-          max: 10,
+          max: 40,
           step: 1
         }
       ],
@@ -7350,7 +7350,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7EA2\u8FB9\u6539\u7EC6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EA2\u8FB9\u53D8\u7EC6\u3002",
+        instruction: "\u628A\u300C\u628A\u7EA2\u8FB9\u6539\u7EC6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "wide",
         target_value: "2",
         expected_output: "\u7EA2\u8FB9\u53D8\u7EC6",
@@ -7391,7 +7391,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 0",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u6A59\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -7412,7 +7412,7 @@ var L1_U03_default = {
           label: "\u628A\u6A59\u8FB9\u632A\u8D70",
           type: "number",
           min: 0,
-          max: 3,
+          max: 20,
           step: 1,
           default: 0,
           apply: {
@@ -7466,7 +7466,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u6A59\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6A59\u8FB9\u6362\u4E86\u4F4D\u7F6E\u3002",
+        instruction: "\u628A\u300C\u628A\u6A59\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "2",
         expected_output: "\u6A59\u8FB9\u6362\u4E86\u4F4D\u7F6E",
@@ -7571,15 +7571,15 @@ var L1_U03_default = {
         question: "\u8FD9\u4E24\u6BB5\u7EBF\u662F\u600E\u6837\u7684\uFF1F",
         options: [
           "\u4E00\u7EA2\u4E00\u84DD\uFF0C\u4E2D\u95F4\u65AD\u5F00",
-          "\u4E00\u4E2A\u6B63\u65B9\u5F62",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62"
+          "\u6574\u6BB5\u90FD\u662F\u7EA2\u8272\uFF0C\u540E\u9762\u7684\u84DD\u8272\u6CA1\u6362\u4E0A",
+          "\u4E24\u6BB5\u8FDE\u5728\u4E00\u8D77\uFF0C\u62AC\u7B14\u4E0D\u4F1A\u7559\u7A7A"
         ],
         answerIndex: 0,
         explain: "\u62AC\u7B14\u7684\u90A3\u4E00\u6BB5\u6CA1\u6709\u753B\u51FA\u6765\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7A7A\u6863\u62C9\u5BBD\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E24\u6BB5\u7EBF\u79BB\u5F97\u66F4\u8FDC\u3002",
+        instruction: "\u628A\u300C\u628A\u7A7A\u6863\u62C9\u5BBD\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "gap",
         target_value: "70",
         expected_output: "\u4E24\u6BB5\u7EBF\u79BB\u5F97\u66F4\u8FDC",
@@ -7620,7 +7620,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 0",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 5 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u7D2B\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -7641,7 +7641,7 @@ var L1_U03_default = {
           label: "\u628A\u7D2B\u8FB9\u632A\u8D70",
           type: "number",
           min: 0,
-          max: 4,
+          max: 20,
           step: 1,
           default: 0,
           apply: {
@@ -7695,7 +7695,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7D2B\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7D2B\u8FB9\u6362\u4E86\u4F4D\u7F6E\u3002",
+        instruction: "\u628A\u300C\u628A\u7D2B\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "2",
         expected_output: "\u7D2B\u8FB9\u6362\u4E86\u4F4D\u7F6E",
@@ -7736,7 +7736,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 70",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -7811,7 +7811,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u4E09\u89D2\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u89D2\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u4E09\u89D2\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "110",
         expected_output: "\u4E09\u89D2\u5F62\u53D8\u5927",
@@ -7955,7 +7955,7 @@ var L1_U03_default = {
         "    t.right(120)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -8032,7 +8032,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u89D2\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "100",
         expected_output: "\u4E09\u89D2\u5F62\u53D8\u5927",
@@ -8072,7 +8072,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 1",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u6A59\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -8093,7 +8093,7 @@ var L1_U03_default = {
           label: "\u628A\u6A59\u8FB9\u518D\u632A\u4E00\u6B21",
           type: "number",
           min: 0,
-          max: 3,
+          max: 20,
           step: 1,
           default: 1,
           apply: {
@@ -8147,7 +8147,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u6A59\u8FB9\u518D\u632A\u4E00\u6B21\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6A59\u8FB9\u53C8\u6362\u4E86\u4E00\u6761\u8FB9\u3002",
+        instruction: "\u628A\u300C\u628A\u6A59\u8FB9\u518D\u632A\u4E00\u6B21\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "3",
         expected_output: "\u6A59\u8FB9\u53C8\u6362\u4E86\u4E00\u6761\u8FB9",
@@ -8186,7 +8186,7 @@ var L1_U03_default = {
         "    t.right(60)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -8263,7 +8263,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u516D\u8FB9\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "60",
         expected_output: "\u516D\u8FB9\u5F62\u53D8\u5927",
@@ -8304,7 +8304,7 @@ var L1_U03_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 70",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -8379,7 +8379,7 @@ var L1_U03_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5C0F\u7A97\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u5C0F\u7A97\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u5C0F\u7A97\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "110",
         expected_output: "\u5C0F\u7A97\u53D8\u5927",
@@ -8412,7 +8412,7 @@ var L1_U04_default = {
       level_id: "L0061",
       order: 61,
       title: "\u7EA2\u84DD\u6298\u7EBF",
-      goal: "\u957F\u8FB9\u6D82\u7EA2\uFF0C\u77ED\u8FB9\u6D82\u84DD\uFF0C\u6298\u51FA\u4E09\u6761\u8FB9",
+      goal: "\u5148\u7EA2\u540E\u84DD\uFF0C\u84DD\u8272\u4F1A\u7559\u5728\u6700\u540E\u4E00\u6761\u957F\u8FB9\u4E0A",
       knowledge_tags: [
         "variable",
         "color"
@@ -8445,7 +8445,7 @@ var L1_U04_default = {
         "\u628A\u753B\u7B14\u6362\u6210\u84DD\u8272",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 short \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
-        "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 long \u91CC\u7684\u6570"
+        "\u7B14\u8FD8\u662F\u84DD\u7684\uFF0C\u518D\u8D70\u4E00\u6B21\u957F\u8FB9"
       ],
       keywords: [
         "long = 90",
@@ -8500,16 +8500,16 @@ var L1_U04_default = {
       quiz: {
         question: "\u8FD9\u4E09\u6761\u8FB9\u662F\u4EC0\u4E48\u989C\u8272\uFF1F",
         options: [
+          "\u7EA2\u3001\u84DD\u3001\u84DD",
           "\u7EA2\u3001\u84DD\u3001\u7EA2",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62",
-          "\u4E00\u6761\u76F4\u7EBF"
+          "\u4E09\u6761\u90FD\u662F\u7EA2\u8272"
         ],
         answerIndex: 0,
-        explain: "\u6362\u8272\u4E4B\u540E\uFF0C\u989C\u8272\u4F1A\u4E00\u76F4\u7559\u7740\u3002"
+        explain: "\u6362\u8272\u4E4B\u540E\uFF0C\u989C\u8272\u4F1A\u4E00\u76F4\u7559\u7740\uFF0C\u6240\u4EE5\u6700\u540E\u4E00\u6761\u4E5F\u662F\u84DD\u7684\u3002"
       },
       bonus_challenge: {
         type: "code_fill",
-        instruction: "\u957F\u8FB9\u7684\u6B65\u6570\u7A7A\u7740\uFF0C\u586B\u4E0A\u539F\u6765\u7684\u6570\u3002",
+        instruction: "\u7A7A\u91CC\u586B\u957F\u8FB9\u7684\u6B65\u6570\u300290 \u662F\u957F\u8FB9\uFF0C40 \u662F\u77ED\u8FB9\uFF0C\u522B\u586B\u53CD\u3002",
         prompt_line: "long = ____",
         target_value: "90",
         expected_output: "\u957F\u8FB9\u8FD8\u662F 90",
@@ -8517,7 +8517,7 @@ var L1_U04_default = {
       },
       estimated_minutes: 15,
       is_review: false,
-      teaching_intent: "\u957F\u8FB9\u6D82\u7EA2\uFF0C\u77ED\u8FB9\u6D82\u84DD\uFF0C\u6298\u51FA\u4E09\u6761\u8FB9",
+      teaching_intent: "\u5148\u7EA2\u540E\u84DD\uFF0C\u84DD\u8272\u4F1A\u7559\u5728\u6700\u540E\u4E00\u6761\u957F\u8FB9\u4E0A",
       parent_brief: "\u5B69\u5B50\u4F1A\u753B\u51FA\u7EA2\u84DD\u6298\u7EBF\u3002\u6539\u4E00\u4E2A\u6570\uFF0C\u7EA2\u8FB9\u53D8\u77ED\u3002",
       teacher_guide: "\u5148\u770B\u7EA2\u84DD\u6298\u7EBF\uFF0C\u518D\u53EA\u6539\u300C\u628A\u7EA2\u8FB9\u6539\u77ED\u300D\uFF0C\u786E\u8BA4\u7EA2\u8FB9\u53D8\u77ED\u3002"
     },
@@ -8549,7 +8549,7 @@ var L1_U04_default = {
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 20",
         "\u5148\u8BB0\u4F4F\u6BCF\u6B21\u52A0\u957F\u591A\u5C11\u662F 20",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 3 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u628A\u8FD9\u4E2A\u6570\u518D\u52A0\u4E0A\u4E00\u622A\uFF0C\u4E0B\u4E00\u5708\u5C31\u66F4\u957F",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
@@ -8609,14 +8609,14 @@ var L1_U04_default = {
         options: [
           "\u4E00\u7B14\u6BD4\u4E00\u7B14\u957F",
           "\u56DB\u6761\u8FB9\u4E00\u6837\u957F\u7684\u6B63\u65B9\u5F62",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62"
+          "\u53EA\u6709\u7B2C\u4E00\u7B14\u53D8\u957F\uFF0C\u540E\u9762\u4E09\u7B14\u4E00\u6837\u957F"
         ],
         answerIndex: 0,
         explain: "\u6BCF\u5708\u90FD\u628A side \u52A0\u4E0A step\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u8BA9\u5B83\u957F\u5F97\u66F4\u5FEB\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u540E\u9762\u51E0\u7B14\u957F\u5F97\u66F4\u5FEB\u3002",
+        instruction: "\u628A\u300C\u8BA9\u5B83\u957F\u5F97\u66F4\u5FEB\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "step",
         target_value: "40",
         expected_output: "\u540E\u9762\u51E0\u7B14\u957F\u5F97\u66F4\u5FEB",
@@ -8658,7 +8658,7 @@ var L1_U04_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 20",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 7 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -8734,7 +8734,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8D77\u59CB\u8FB9\u957F\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6574\u6761\u6298\u7EBF\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u8D77\u59CB\u8FB9\u957F\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "40",
         expected_output: "\u6574\u6761\u6298\u7EBF\u53D8\u5927",
@@ -8770,7 +8770,7 @@ var L1_U04_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 65",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
       ],
@@ -8836,7 +8836,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u6B63\u65B9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6B63\u65B9\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u6B63\u65B9\u5F62\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "110",
         expected_output: "\u6B63\u65B9\u5F62\u53D8\u5927",
@@ -8877,13 +8877,13 @@ var L1_U04_default = {
         "    t.right(90)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 30 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u628A\u7B14\u62AC\u8D77\u6765\uFF0C\u63A5\u7740\u8D70\u5148\u4E0D\u753B\u7EBF",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 50 \u6B65",
         "\u628A\u7B14\u653E\u4E0B\uFF0C\u63A5\u7740\u8D70\u5C31\u4F1A\u753B\u51FA\u7EBF",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 30 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
       ],
@@ -8951,7 +8951,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u4E24\u4E2A\u6B63\u65B9\u5F62\u62C9\u5F00\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E24\u4E2A\u6B63\u65B9\u5F62\u79BB\u5F97\u66F4\u8FDC\u3002",
+        instruction: "\u628A\u300C\u628A\u4E24\u4E2A\u6B63\u65B9\u5F62\u62C9\u5F00\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "gap",
         target_value: "100",
         expected_output: "\u4E24\u4E2A\u6B63\u65B9\u5F62\u79BB\u5F97\u66F4\u8FDC",
@@ -8990,7 +8990,7 @@ var L1_U04_default = {
         "    t.right(120)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7D2B\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -9067,7 +9067,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u89D2\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "100",
         expected_output: "\u4E09\u89D2\u5F62\u53D8\u5927",
@@ -9106,7 +9106,7 @@ var L1_U04_default = {
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 36",
         "\u5148\u8BB0\u4F4F\u8F6C\u5F2F\u7684\u5EA6\u6570\u662F 60",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C \u76D2\u5B50 turn \u91CC\u7684\u6570"
       ],
@@ -9172,7 +9172,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A 60 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u89D2\u53D8\u4E86\uFF0C\u4E0D\u518D\u662F\u516D\u8FB9\u5F62\u3002",
+        instruction: "\u628A\u300C\u628A 60 \u5EA6\u6539\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u89D2\u53D8\u4E86\uFF0C\u4E0D\u518D\u662F\u516D\u8FB9\u5F62",
@@ -9388,7 +9388,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7EA2\u8FB9\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EA2\u8FB9\u53D8\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u7EA2\u8FB9\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "long",
         target_value: "120",
         expected_output: "\u7EA2\u8FB9\u53D8\u957F",
@@ -9426,7 +9426,7 @@ var L1_U04_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 2",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u7EFF\u8272",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 50 \u6B65",
@@ -9445,7 +9445,7 @@ var L1_U04_default = {
           label: "\u628A\u7EFF\u8FB9\u632A\u5230\u7B2C\u4E00\u6761",
           type: "number",
           min: 0,
-          max: 3,
+          max: 20,
           step: 1,
           default: 2,
           apply: {
@@ -9499,7 +9499,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7EFF\u8FB9\u632A\u5230\u7B2C\u4E00\u6761\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7EFF\u8FB9\u632A\u5230\u7B2C\u4E00\u6761\u3002",
+        instruction: "\u628A\u300C\u628A\u7EFF\u8FB9\u632A\u5230\u7B2C\u4E00\u6761\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "0",
         expected_output: "\u7EFF\u8FB9\u632A\u5230\u7B2C\u4E00\u6761",
@@ -9598,15 +9598,15 @@ var L1_U04_default = {
         question: "\u9000\u56DE\u4E4B\u540E\u518D\u8F6C\u5F2F\uFF0C\u7559\u4E0B\u4EC0\u4E48\uFF1F",
         options: [
           "\u4E00\u4E2A\u76F4\u89D2",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62",
-          "\u4E00\u4E2A\u516D\u8FB9\u5F62"
+          "\u4EC0\u4E48\u90FD\u6CA1\u7559\u4E0B\uFF0C\u56E0\u4E3A\u5DF2\u7ECF\u9000\u56DE\u8D77\u70B9",
+          "\u4E24\u6761\u671D\u540C\u4E00\u4E2A\u65B9\u5411\u53E0\u5728\u4E00\u8D77"
         ],
         answerIndex: 0,
         explain: "\u9000\u56DE\u8D77\u70B9\u540E\uFF0C\u7B2C\u4E8C\u6761\u8FB9\u4ECE\u8D77\u70B9\u753B\u51FA\u53BB\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u76F4\u89D2\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u76F4\u89D2\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u76F4\u89D2\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "110",
         expected_output: "\u76F4\u89D2\u53D8\u5927",
@@ -9645,7 +9645,7 @@ var L1_U04_default = {
         "    t.right(60)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -9722,7 +9722,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u516D\u8FB9\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "54",
         expected_output: "\u516D\u8FB9\u5F62\u53D8\u5927",
@@ -9762,7 +9762,7 @@ var L1_U04_default = {
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 15",
         "\u5148\u8BB0\u4F4F\u6BCF\u6B21\u52A0\u957F\u591A\u5C11\u662F 12",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 3 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u628A\u8FD9\u4E2A\u6570\u518D\u52A0\u4E0A\u4E00\u622A\uFF0C\u4E0B\u4E00\u5708\u5C31\u66F4\u957F",
         "\u5411\u53F3\u8F6C 60 \u5EA6"
@@ -9780,7 +9780,7 @@ var L1_U04_default = {
           label: "\u8BA9\u87BA\u65CB\u5F20\u5F97\u66F4\u5F00",
           type: "number",
           min: 6,
-          max: 24,
+          max: 48,
           step: 6,
           default: 12,
           apply: {
@@ -9829,7 +9829,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u8BA9\u87BA\u65CB\u5F20\u5F97\u66F4\u5F00\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u87BA\u65CB\u5F20\u5F97\u66F4\u5F00\u3002",
+        instruction: "\u628A\u300C\u8BA9\u87BA\u65CB\u5F20\u5F97\u66F4\u5F00\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "step",
         target_value: "24",
         expected_output: "\u87BA\u65CB\u5F20\u5F97\u66F4\u5F00",
@@ -9871,7 +9871,7 @@ var L1_U04_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 15",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 7 \u884C\u8981\u8FDE\u7740\u505A 5 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u6A59\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -9947,7 +9947,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u87BA\u65CB\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u87BA\u65CB\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u87BA\u65CB\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "30",
         expected_output: "\u87BA\u65CB\u53D8\u5927",
@@ -9990,7 +9990,7 @@ var L1_U04_default = {
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 30 \u6B65",
         "\u628A\u7B14\u653E\u4E0B\uFF0C\u63A5\u7740\u8D70\u5C31\u4F1A\u753B\u51FA\u7EBF",
         "\u628A\u753B\u7B14\u6362\u6210\u84DD\u8272",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 50 \u6B65",
         "\u5411\u53F3\u8F6C 120 \u5EA6"
       ],
@@ -10058,7 +10058,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u4E09\u89D2\u5F62\u632A\u8FDC\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u89D2\u5F62\u79BB\u8D77\u70B9\u66F4\u8FDC\u3002",
+        instruction: "\u628A\u300C\u628A\u4E09\u89D2\u5F62\u632A\u8FDC\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "gap",
         target_value: "80",
         expected_output: "\u4E09\u89D2\u5F62\u79BB\u8D77\u70B9\u66F4\u8FDC",
@@ -10195,7 +10195,7 @@ var L1_U04_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 25",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 3 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u628A\u8FD9\u4E2A\u6570\u518D\u52A0\u4E0A\u4E00\u622A\uFF0C\u4E0B\u4E00\u5708\u5C31\u66F4\u957F",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
@@ -10262,7 +10262,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8D77\u59CB\u8FB9\u957F\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6298\u7EBF\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u8D77\u59CB\u8FB9\u957F\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "50",
         expected_output: "\u6298\u7EBF\u53D8\u5927",
@@ -10301,7 +10301,7 @@ var L1_U04_default = {
         "    t.right(90)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -10378,7 +10378,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6B63\u65B9\u5F62\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u8FB9\u957F\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "90",
         expected_output: "\u6B63\u65B9\u5F62\u53D8\u5927",
@@ -10419,7 +10419,7 @@ var L1_U04_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8981\u6D82\u8272\u7684\u90A3\u4E00\u5708\u662F 0",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 5 \u904D",
         "\u8FD9\u4E00\u5708\u7684\u53F7\u5982\u679C\u548C n \u4E00\u6837\uFF0C\u5C31\u505A\u4E0B\u9762\u8FD9\u884C",
         "\u628A\u753B\u7B14\u6362\u6210\u7D2B\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -10440,7 +10440,7 @@ var L1_U04_default = {
           label: "\u628A\u7D2B\u8FB9\u632A\u8D70",
           type: "number",
           min: 0,
-          max: 4,
+          max: 20,
           step: 1,
           default: 0,
           apply: {
@@ -10486,15 +10486,15 @@ var L1_U04_default = {
         question: "\u7D2B\u8FB9\u6709\u51E0\u6761\uFF1F",
         options: [
           "\u4E00\u6761",
-          "\u4E00\u4E2A\u6B63\u65B9\u5F62",
-          "\u4E00\u6761\u76F4\u7EBF"
+          "\u4E94\u6761\u8FB9\u5168\u662F\u7D2B\u7684",
+          "\u4E00\u6761\u4E5F\u6CA1\u6709"
         ],
         answerIndex: 0,
         explain: "\u53EA\u6709\u548C n \u5BF9\u4E0A\u7684\u90A3\u6761\u8FB9\u662F\u7D2B\u8272\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7D2B\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7D2B\u8FB9\u6362\u4E86\u4F4D\u7F6E\u3002",
+        instruction: "\u628A\u300C\u628A\u7D2B\u8FB9\u632A\u8D70\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "n",
         target_value: "3",
         expected_output: "\u7D2B\u8FB9\u6362\u4E86\u4F4D\u7F6E",
@@ -10536,7 +10536,7 @@ var L1_U04_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 60",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u6A59\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -10611,7 +10611,7 @@ var L1_U04_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5C0F\u7A97\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u5C0F\u7A97\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u5C0F\u7A97\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "100",
         expected_output: "\u5C0F\u7A97\u53D8\u5927",
@@ -10664,11 +10664,11 @@ var L1_U05_default = {
         "    t.right(90)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 36 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 60 \u5EA6",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 36 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
       ],
@@ -10736,7 +10736,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u4E2D\u95F4\u7684\u8F6C\u89D2\u52A0\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7B2C\u4E8C\u4E2A\u6B63\u65B9\u5F62\u8F6C\u5F97\u66F4\u5F00\u3002",
+        instruction: "\u628A\u300C\u628A\u4E2D\u95F4\u7684\u8F6C\u89D2\u52A0\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "120",
         expected_output: "\u7B2C\u4E8C\u4E2A\u6B63\u65B9\u5F62\u8F6C\u5F97\u66F4\u5F00",
@@ -10772,8 +10772,8 @@ var L1_U05_default = {
         "    t.right(60)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 30 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 60 \u5EA6"
@@ -10842,7 +10842,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u8F6C\u5F97\u66F4\u5BC6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u74E3\u4E4B\u95F4\u7684\u89D2\u5EA6\u53D8\u5C0F\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u8F6C\u5F97\u66F4\u5BC6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "30",
         expected_output: "\u82B1\u74E3\u4E4B\u95F4\u7684\u89D2\u5EA6\u53D8\u5C0F",
@@ -10878,8 +10878,8 @@ var L1_U05_default = {
         "    t.right(30)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 36 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 30 \u5EA6"
@@ -10948,7 +10948,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u56DB\u7247\u53E0\u6210\u4E00\u4E2A\u65B9\u5757\u3002",
+        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u56DB\u7247\u53E0\u6210\u4E00\u4E2A\u65B9\u5757",
@@ -10984,8 +10984,8 @@ var L1_U05_default = {
         "    t.right(60)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 28 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 60 \u5EA6"
@@ -11054,7 +11054,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u8F6C\u5F97\u66F4\u5BC6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u74E3\u8F6C\u5F97\u66F4\u5BC6\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u8F6C\u5F97\u66F4\u5BC6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "30",
         expected_output: "\u82B1\u74E3\u8F6C\u5F97\u66F4\u5BC6",
@@ -11095,8 +11095,8 @@ var L1_U05_default = {
         "    t.right(40)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 8 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u6BCF\u4E00\u5C0F\u5757\u7684\u7B2C\u4E00\u6761\u8FB9\uFF0C\u8D70\u8FD9\u91CC",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -11174,7 +11174,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u8F6C\u5F00\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u74E3\u8F6C\u5F97\u66F4\u5F00\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u8F6C\u5F00\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "80",
         expected_output: "\u82B1\u74E3\u8F6C\u5F97\u66F4\u5F00",
@@ -11213,8 +11213,8 @@ var L1_U05_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 24",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 5 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 72 \u5EA6"
@@ -11273,15 +11273,15 @@ var L1_U05_default = {
         question: "\u60F3\u8BA9\u82B1\u74E3\u53D8\u5927\uFF0C\u6539\u54EA\u91CC\uFF1F",
         options: [
           "\u6539 side",
-          "\u6539\u6210\u4E00\u6761\u76F4\u7EBF",
-          "\u6539\u6210\u4E00\u4E2A\u4E09\u89D2\u5F62"
+          "\u6539\u5916\u9762\u8F6C\u7684 72 \u5EA6",
+          "\u6539\u91CC\u9762\u91CD\u590D\u7684 4 \u6B21"
         ],
         answerIndex: 0,
         explain: "\u91CC\u9762\u7684\u56DB\u6761\u8FB9\u90FD\u8BFB side\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u74E3\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "40",
         expected_output: "\u82B1\u74E3\u53D8\u5927",
@@ -11317,8 +11317,8 @@ var L1_U05_default = {
         "    t.right(120)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 32 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 120 \u5EA6"
@@ -11387,7 +11387,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u4E09\u7247\u8F6C\u5F97\u66F4\u8FD1\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u7247\u9760\u5F97\u66F4\u8FD1\u3002",
+        instruction: "\u628A\u300C\u628A\u4E09\u7247\u8F6C\u5F97\u66F4\u8FD1\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "60",
         expected_output: "\u4E09\u7247\u9760\u5F97\u66F4\u8FD1",
@@ -11523,8 +11523,8 @@ var L1_U05_default = {
         "    t.right(60)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 36 \u6B65",
         "\u5411\u53F3\u8F6C 120 \u5EA6",
         "\u5411\u53F3\u8F6C 60 \u5EA6"
@@ -11593,7 +11593,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u5F97\u66F4\u5BC6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u74E3\u4E4B\u95F4\u7684\u89D2\u5EA6\u53D8\u5C0F\u3002",
+        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u5F97\u66F4\u5BC6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "30",
         expected_output: "\u82B1\u74E3\u4E4B\u95F4\u7684\u89D2\u5EA6\u53D8\u5C0F",
@@ -11634,8 +11634,8 @@ var L1_U05_default = {
         "    t.right(90)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 8 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u6BCF\u4E00\u5C0F\u5757\u7684\u7B2C\u4E00\u6761\u8FB9\uFF0C\u8D70\u8FD9\u91CC",
         "\u628A\u753B\u7B14\u6362\u6210\u7EFF\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -11713,7 +11713,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u56DB\u7247\u8F6C\u5F97\u66F4\u5BC6\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u56DB\u7247\u8F6C\u5F97\u66F4\u5BC6\u3002",
+        instruction: "\u628A\u300C\u628A\u56DB\u7247\u8F6C\u5F97\u66F4\u5BC6\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "45",
         expected_output: "\u56DB\u7247\u8F6C\u5F97\u66F4\u5BC6",
@@ -11752,8 +11752,8 @@ var L1_U05_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8F6C\u5F2F\u7684\u5EA6\u6570\u662F 45",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 8 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 22 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C \u76D2\u5B50 turn \u91CC\u7684\u6570"
@@ -11820,7 +11820,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u516B\u7247\u53E0\u5F97\u66F4\u62E2\u3002",
+        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u516B\u7247\u53E0\u5F97\u66F4\u62E2",
@@ -11856,8 +11856,8 @@ var L1_U05_default = {
         "    t.right(45)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 30 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 45 \u5EA6"
@@ -11926,7 +11926,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u56DB\u7247\u53E0\u6210\u4E00\u4E2A\u65B9\u5757\u3002",
+        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u56DB\u7247\u53E0\u6210\u4E00\u4E2A\u65B9\u5757",
@@ -11969,8 +11969,8 @@ var L1_U05_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 26",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 8 \u884C\u8981\u8FDE\u7740\u505A 5 \u904D",
+        "\u4E0B\u9762 6 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u6BCF\u4E00\u5C0F\u5757\u7684\u7B2C\u4E00\u6761\u8FB9\uFF0C\u8D70\u8FD9\u91CC",
         "\u628A\u753B\u7B14\u6362\u6210\u6A59\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -12046,7 +12046,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u74E3\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "40",
         expected_output: "\u82B1\u74E3\u53D8\u5927",
@@ -12082,8 +12082,8 @@ var L1_U05_default = {
         "    t.right(120)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 40 \u6B65",
         "\u5411\u53F3\u8F6C 120 \u5EA6",
         "\u5411\u53F3\u8F6C 120 \u5EA6"
@@ -12152,7 +12152,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u4E09\u89D2\u82B1\u74E3\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "70",
         expected_output: "\u4E09\u89D2\u82B1\u74E3\u53D8\u5927",
@@ -12193,12 +12193,12 @@ var L1_U05_default = {
         "    t.right(30)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 8 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
         "\u628A\u753B\u7B14\u6362\u6210\u84DD\u8272",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 28 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 30 \u5EA6"
@@ -12272,7 +12272,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u8F6C\u5F00\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u74E3\u8F6C\u5F97\u66F4\u5F00\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u8F6C\u5F00\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "80",
         expected_output: "\u82B1\u74E3\u8F6C\u5F97\u66F4\u5F00",
@@ -12408,8 +12408,8 @@ var L1_U05_default = {
         "    t.right(60)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 24 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 60 \u5EA6"
@@ -12478,7 +12478,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u74E3\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u74E3\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "40",
         expected_output: "\u82B1\u74E3\u53D8\u5927",
@@ -12514,8 +12514,8 @@ var L1_U05_default = {
         "    t.right(60)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 30 \u6B65",
         "\u5411\u53F3\u8F6C 120 \u5EA6",
         "\u5411\u53F3\u8F6C 60 \u5EA6"
@@ -12584,7 +12584,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5C0F\u4E09\u89D2\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u5C0F\u4E09\u89D2\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u5C0F\u4E09\u89D2\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "50",
         expected_output: "\u5C0F\u4E09\u89D2\u53D8\u5927",
@@ -12620,8 +12620,8 @@ var L1_U05_default = {
         "    t.right(20)"
       ],
       line_notes: [
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 32 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 20 \u5EA6"
@@ -12690,7 +12690,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u56DB\u7247\u53E0\u5230\u4E00\u8D77\u3002",
+        instruction: "\u628A\u300C\u628A\u5916\u5C42\u8F6C\u6210\u76F4\u89D2\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "turn",
         target_value: "90",
         expected_output: "\u56DB\u7247\u53E0\u5230\u4E00\u8D77",
@@ -12729,8 +12729,8 @@ var L1_U05_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 28",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u91CC\u9762\u518D\u91CD\u590D\uFF0C\u628A\u4E00\u5C0F\u5757\u753B\u5B8C",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 6 \u904D",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5411\u53F3\u8F6C 60 \u5EA6"
@@ -12797,7 +12797,7 @@ var L1_U05_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u6574\u6735\u82B1\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "42",
         expected_output: "\u6574\u6735\u82B1\u53D8\u5927",
@@ -12850,10 +12850,10 @@ var L1_U06_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 20",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
-        "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
+        "\u8FD9\u4E00\u7B14\u662F\u53F0\u9636\u7684\u5E73\u8FB9",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
-        "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
+        "\u8FD9\u4E00\u7B14\u662F\u5F80\u4E0A\u7684\u7AD6\u8FB9",
         "\u5411\u5DE6\u8F6C 90 \u5EA6"
       ],
       keywords: [
@@ -12907,18 +12907,18 @@ var L1_U06_default = {
         }
       ],
       quiz: {
-        question: "\u8FD9\u5E45\u753B\u50CF\u4EC0\u4E48\uFF1F",
+        question: "\u53F0\u9636\u662F\u9760\u54EA\u4E24\u6B65\u8D70\u51FA\u6765\u7684\uFF1F",
         options: [
-          "\u4E00\u7EA7\u7EA7\u53F0\u9636",
-          "\u4E00\u4E2A\u6B63\u65B9\u5F62",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62"
+          "\u5148\u5411\u53F3\u8F6C\uFF0C\u518D\u5411\u5DE6\u8F6C\u6273\u56DE\u6765",
+          "\u56DB\u6B21\u53F3\u8F6C\uFF0C\u56F4\u6210\u6B63\u65B9\u5F62",
+          "\u53EA\u5411\u5DE6\u8F6C\uFF0C\u6240\u4EE5\u5728\u5012\u7740\u8D70"
         ],
         answerIndex: 0,
-        explain: "\u5411\u53F3\u518D\u5411\u5DE6\uFF0C\u53F0\u9636\u5C31\u4E00\u7EA7\u7EA7\u8D70\u4E0B\u53BB\u3002"
+        explain: "\u5148\u5411\u53F3\u8F6C\uFF0C\u518D\u5411\u5DE6\u8F6C\u6273\u56DE\u6765\uFF0C\u5C31\u8D70\u51FA\u4E00\u7EA7\u53F0\u9636\u3002"
       },
       bonus_challenge: {
         type: "code_fill",
-        instruction: "\u53F0\u9636\u7684\u6B65\u6570\u7A7A\u7740\uFF0C\u586B\u4E0A\u539F\u6765\u7684\u6570\u3002",
+        instruction: "\u7A7A\u91CC\u586B\u6BCF\u4E00\u7EA7\u8D70\u591A\u5C11\u6B65\u300220 \u662F\u6B65\u6570\uFF0C4 \u662F\u6709\u51E0\u7EA7\uFF0C\u522B\u586B\u6210 4\u3002",
         prompt_line: "side = ____",
         target_value: "20",
         expected_output: "\u53F0\u9636\u7684\u6B65\u6570\u662F 20",
@@ -13029,7 +13029,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7BAD\u6746\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7BAD\u6746\u53D8\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u7BAD\u6746\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "shaft",
         target_value: "120",
         expected_output: "\u7BAD\u6746\u53D8\u957F",
@@ -13144,7 +13144,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u65D7\u6746\u6539\u9AD8\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u65D7\u6746\u53D8\u9AD8\u3002",
+        instruction: "\u628A\u300C\u628A\u65D7\u6746\u6539\u9AD8\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "pole",
         target_value: "110",
         expected_output: "\u65D7\u6746\u53D8\u9AD8",
@@ -13182,7 +13182,7 @@ var L1_U06_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 16",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 5 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
@@ -13242,15 +13242,15 @@ var L1_U06_default = {
         question: "\u8FD9\u6B21\u6709\u51E0\u7EA7\u53F0\u9636\uFF1F",
         options: [
           "\u4E94\u7EA7",
-          "\u4E00\u4E2A\u4E09\u89D2\u5F62",
-          "\u4E00\u4E2A\u516D\u8FB9\u5F62"
+          "\u56DB\u7EA7\uFF0C\u5C11\u7B97\u4E86\u4E00\u6B21\u5FAA\u73AF",
+          "16 \u7EA7\uFF0C\u56E0\u4E3A side \u662F 16"
         ],
         answerIndex: 0,
         explain: "\u5FAA\u73AF\u8D70\u4E86 5 \u6B21\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u53F0\u9636\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u53F0\u9636\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u53F0\u9636\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "28",
         expected_output: "\u53F0\u9636\u53D8\u5927",
@@ -13292,7 +13292,7 @@ var L1_U06_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 60",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u5DE6\u8F6C 90 \u5EA6",
         "\u5411\u5DE6\u8F6C 90 \u5EA6",
@@ -13364,7 +13364,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u623F\u5B50\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u623F\u5B50\u6574\u4F53\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u623F\u5B50\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "90",
         expected_output: "\u623F\u5B50\u6574\u4F53\u53D8\u5927",
@@ -13407,7 +13407,7 @@ var L1_U06_default = {
         "\u628A\u753B\u7B14\u6362\u6210\u7EFF\u8272",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 50 \u6B65",
         "\u628A\u753B\u7B14\u6362\u6210\u7EA2\u8272",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 28 \u6B65",
         "\u5411\u53F3\u8F6C 120 \u5EA6"
       ],
@@ -13475,7 +13475,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u830E\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u830E\u53D8\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u830E\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "stem",
         target_value: "90",
         expected_output: "\u82B1\u830E\u53D8\u957F",
@@ -13587,7 +13587,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7BAD\u6746\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7BAD\u6746\u53D8\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u7BAD\u6746\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "shaft",
         target_value: "110",
         expected_output: "\u7BAD\u6746\u53D8\u957F",
@@ -13732,7 +13732,7 @@ var L1_U06_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 18",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 8 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u6A59\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -13755,7 +13755,7 @@ var L1_U06_default = {
           label: "\u628A\u53F0\u9636\u6539\u5927",
           type: "number",
           min: 12,
-          max: 30,
+          max: 72,
           step: 6,
           default: 18,
           apply: {
@@ -13809,7 +13809,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u53F0\u9636\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u53F0\u9636\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u53F0\u9636\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "30",
         expected_output: "\u53F0\u9636\u53D8\u5927",
@@ -13925,7 +13925,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u65D7\u6746\u6539\u9AD8\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u65D7\u6746\u53D8\u9AD8\u3002",
+        instruction: "\u628A\u300C\u628A\u65D7\u6746\u6539\u9AD8\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "pole",
         target_value: "100",
         expected_output: "\u65D7\u6746\u53D8\u9AD8",
@@ -13967,7 +13967,7 @@ var L1_U06_default = {
       ],
       line_notes: [
         "\u628A\u753B\u7B14\u6362\u6210\u6A59\u8272",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 50 \u6B65",
         "\u5411\u5DE6\u8F6C 90 \u5EA6",
         "\u5411\u5DE6\u8F6C 90 \u5EA6",
@@ -14041,7 +14041,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u623F\u5B50\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u623F\u5B50\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u623F\u5B50\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "80",
         expected_output: "\u623F\u5B50\u53D8\u5927",
@@ -14151,7 +14151,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7BAD\u6746\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7BAD\u6746\u53D8\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u7BAD\u6746\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "shaft",
         target_value: "100",
         expected_output: "\u7BAD\u6746\u53D8\u957F",
@@ -14194,7 +14194,7 @@ var L1_U06_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 14",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 8 \u884C\u8981\u8FDE\u7740\u505A 5 \u904D",
         "\u7535\u8111\u4ECE 0 \u5F00\u59CB\u6570\uFF0C0 \u5C31\u662F\u7B2C\u4E00\u7B14",
         "\u628A\u753B\u7B14\u6362\u6210\u7EFF\u8272",
         "\u5BF9\u4E0D\u4E0A\u7684\u65F6\u5019\uFF0C\u8D70\u8FD9\u8FB9",
@@ -14217,7 +14217,7 @@ var L1_U06_default = {
           label: "\u628A\u53F0\u9636\u6539\u5927",
           type: "number",
           min: 10,
-          max: 26,
+          max: 70,
           step: 4,
           default: 14,
           apply: {
@@ -14271,7 +14271,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u53F0\u9636\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u53F0\u9636\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u53F0\u9636\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "26",
         expected_output: "\u53F0\u9636\u53D8\u5927",
@@ -14314,7 +14314,7 @@ var L1_U06_default = {
         "\u628A\u753B\u7B14\u6362\u6210\u7EFF\u8272",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 40 \u6B65",
         "\u628A\u753B\u7B14\u6362\u6210\u6A59\u8272",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 22 \u6B65",
         "\u5411\u53F3\u8F6C 90 \u5EA6"
       ],
@@ -14382,7 +14382,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u830E\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u830E\u53D8\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u830E\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "stem",
         target_value: "80",
         expected_output: "\u82B1\u830E\u53D8\u957F",
@@ -14489,15 +14489,15 @@ var L1_U06_default = {
         question: "\u60F3\u8BA9\u65D7\u6746\u53D8\u9AD8\uFF0C\u6539\u54EA\u91CC\uFF1F",
         options: [
           "\u6539 pole",
-          "\u4E00\u4E2A\u6B63\u65B9\u5F62",
-          "\u4E00\u4E2A\u516D\u8FB9\u5F62"
+          "\u6539\u65D7\u9762\u90A3\u4E09\u6761 30 \u6B65",
+          "\u6539\u65D7\u6746\u8F6C\u5F2F\u7684 90 \u5EA6"
         ],
         answerIndex: 0,
         explain: "\u6746\u7684\u957F\u5EA6\u5C31\u662F pole\u3002"
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u65D7\u6746\u6539\u9AD8\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u65D7\u6746\u53D8\u9AD8\u3002",
+        instruction: "\u628A\u300C\u628A\u65D7\u6746\u6539\u9AD8\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "pole",
         target_value: "110",
         expected_output: "\u65D7\u6746\u53D8\u9AD8",
@@ -14633,7 +14633,7 @@ var L1_U06_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 22",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 4 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u53F3\u8F6C 90 \u5EA6",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
@@ -14701,7 +14701,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u53F0\u9636\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u53F0\u9636\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u53F0\u9636\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "34",
         expected_output: "\u53F0\u9636\u53D8\u5927",
@@ -14811,7 +14811,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u7BAD\u6746\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u7BAD\u6746\u53D8\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u7BAD\u6746\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "shaft",
         target_value: "100",
         expected_output: "\u7BAD\u6746\u53D8\u957F",
@@ -14853,7 +14853,7 @@ var L1_U06_default = {
         "\u628A\u753B\u7B14\u6362\u6210\u7EFF\u8272",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 36 \u6B65",
         "\u628A\u753B\u7B14\u6362\u6210\u7D2B\u8272",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 3 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 24 \u6B65",
         "\u5411\u53F3\u8F6C 120 \u5EA6"
       ],
@@ -14921,7 +14921,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u82B1\u830E\u6539\u957F\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u82B1\u830E\u53D8\u957F\u3002",
+        instruction: "\u628A\u300C\u628A\u82B1\u830E\u6539\u957F\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "stem",
         target_value: "70",
         expected_output: "\u82B1\u830E\u53D8\u957F",
@@ -14964,7 +14964,7 @@ var L1_U06_default = {
       ],
       line_notes: [
         "\u5148\u8BB0\u4F4F\u8FB9\u957F\u662F 60",
-        "\u5916\u9762\u8FD9\u4E00\u5708\u8981\u91CD\u590D\u505A\uFF0C\u505A\u5B8C\u518D\u6765\u4E00\u5708",
+        "\u4E0B\u9762 2 \u884C\u8981\u8FDE\u7740\u505A 4 \u904D",
         "\u5C0F\u6D77\u9F9F\u5411\u524D\u8D70 \u76D2\u5B50 side \u91CC\u7684\u6570",
         "\u5411\u5DE6\u8F6C 90 \u5EA6",
         "\u5411\u5DE6\u8F6C 90 \u5EA6",
@@ -15036,7 +15036,7 @@ var L1_U06_default = {
       },
       bonus_challenge: {
         type: "param_edit",
-        instruction: "\u628A\u300C\u628A\u623F\u5B50\u6539\u5927\u300D\u6539\u4E00\u4E0B\uFF0C\u770B\u770B\u623F\u5B50\u6574\u4F53\u53D8\u5927\u3002",
+        instruction: "\u628A\u300C\u628A\u623F\u5B50\u6539\u5927\u300D\u6539\u4E00\u4E0B\u3002\u4F60\u731C\u5B83\u4F1A\u53D8\u6210\u4EC0\u4E48\u6837\uFF1F",
         target_param_name: "side",
         target_value: "90",
         expected_output: "\u623F\u5B50\u6574\u4F53\u53D8\u5927",
