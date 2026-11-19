@@ -2,8 +2,6 @@ import type { Level, MapEntry, PracticeType } from '@/types'
 import type { CurriculumLevelKind } from '@/types/curriculum'
 import { ApiError } from '@/lib/apiError'
 import { callFunction } from '@/lib/backend'
-import { drillForOrder } from '@/data/drillChunks'
-import { buildPlayableLevel } from '@/lib/lessonMaterial'
 import { rememberHints, rememberLevels } from '@/lib/levelCatalog'
 import { normalizeTypingScore } from '@/lib/typingStats'
 
@@ -63,25 +61,17 @@ export async function getLevelsByUnit(unitId: string): Promise<{ unitId: string;
 }
 
 export async function loadLevel(levelId: string): Promise<{ level: Level; reviewChunk: string | null }> {
-  try {
-    const result = await callFunction<{
-      level: Level
-      reviewChunk?: string | null
-      hints: { pattern: string; friendly_message: string }[]
-    }>('student-learning', { action: 'level', levelId }, { role: 'student' })
-    const level = result.level?.quiz ? result.level : buildPlayableLevel(levelId)
-    if (!level) throw new ApiError(404, '没有找到这一关')
-    rememberLevels([level])
-    rememberHints(result.hints.map((row) => ({ pattern: row.pattern, friendlyMessage: row.friendly_message })))
-    const reviewChunk = typeof result.reviewChunk === 'string' && result.reviewChunk.trim() ? result.reviewChunk : null
-    return { level, reviewChunk }
-  } catch (error) {
-    const level = buildPlayableLevel(levelId)
-    if (!level) throw error
-    rememberLevels([level])
-    const reviewChunk = level.drill_chunk ? (drillForOrder(level.order - 1) ?? null) : null
-    return { level, reviewChunk }
-  }
+  const result = await callFunction<{
+    level: Level
+    reviewChunk?: string | null
+    hints: { pattern: string; friendly_message: string }[]
+  }>('student-learning', { action: 'level', levelId }, { role: 'student' })
+  const level = result.level
+  if (!level?.teach_code_lines?.length || !level.quiz) throw new ApiError(404, '没有找到这一关')
+  rememberLevels([level])
+  rememberHints(result.hints.map((row) => ({ pattern: row.pattern, friendlyMessage: row.friendly_message })))
+  const reviewChunk = typeof result.reviewChunk === 'string' && result.reviewChunk.trim() ? result.reviewChunk : null
+  return { level, reviewChunk }
 }
 
 export function touchLevel(levelId: string): Promise<{ ok: true }> {

@@ -14,6 +14,14 @@ function itemClass(active: boolean): string {
   }`
 }
 
+export function AdminShell() {
+  return (
+    <AdminGate>
+      <AdminLayout />
+    </AdminGate>
+  )
+}
+
 export function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -39,13 +47,13 @@ export function AdminLayout() {
           <span className="text-sm font-semibold text-ink">代码闯关</span>
         </Link>
         <div className="flex items-center gap-4 text-sm">
-          <Link to="/enter" className="text-ink-soft">
+          <Link to="/enter" className="btn-ghost">
             ← 返回入口
           </Link>
           {profile && <span className="text-ink">{profile.displayName}</span>}
           <button
             type="button"
-            className="text-ink-soft"
+            className="btn-ghost"
             onClick={() => {
               logoutPlatform()
               navigate('/admin/login')

@@ -5,6 +5,8 @@ import { getLevelsByUnit, loadLearningHome, type LearningHome, type UnitLevel, t
 import { listStudentCustomCourses } from '@/api/studentCustomCourses'
 import { LEVEL_KIND_LABEL } from '@/data/grade3Fall'
 import { BrandMark } from '@/components/BrandMark'
+import { FormError } from '@/components/FormError'
+import { LevelGridSkeleton, ListSkeleton } from '@/components/Skeleton'
 import type { StudentCustomCourse } from '@/types/studentCustomCourse'
 
 export function Map() {
@@ -66,7 +68,7 @@ export function Map() {
   const tab = showCustom && params.get('tab') === 'custom' ? 'custom' : 'platform'
 
   return (
-    <div className="student-shell min-h-screen min-w-[1024px] bg-canvas pb-16">
+    <div className="student-shell min-h-screen bg-canvas pb-16">
       <div className="sticky top-0 z-20 border-b border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-8 py-4">
           <div className="flex items-center gap-4">
@@ -107,7 +109,7 @@ export function Map() {
           <div className="mx-auto flex max-w-5xl gap-2 px-8 pb-3">
             <button
               type="button"
-              className={`rounded-field px-4 py-2 text-sm font-semibold ${tab === 'platform' ? 'bg-brand text-white' : 'bg-canvas text-ink-soft'}`}
+              className={`inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold ${tab === 'platform' ? 'bg-brand-action text-white' : 'bg-canvas text-ink'}`}
               aria-pressed={tab === 'platform'}
               onClick={() => setParams({}, { replace: true })}
             >
@@ -115,7 +117,7 @@ export function Map() {
             </button>
             <button
               type="button"
-              className={`rounded-field px-4 py-2 text-sm font-semibold ${tab === 'custom' ? 'bg-brand text-white' : 'bg-canvas text-ink-soft'}`}
+              className={`inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold ${tab === 'custom' ? 'bg-brand-action text-white' : 'bg-canvas text-ink'}`}
               aria-pressed={tab === 'custom'}
               onClick={() => setParams({ tab: 'custom' }, { replace: true })}
             >
@@ -138,9 +140,9 @@ export function Map() {
         <p className="text-sm text-ink-soft">当前阶段：{home?.stageTitle || 'Level 1'}</p>
         <h2 className="mt-1 text-3xl font-bold text-ink">{home?.heading || 'Level 1'}</h2>
         <p className="mt-2 text-ink-soft">每个阶段有 6 个单元。点开一个，里面是 20 节小课。</p>
-        {error && <p className="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
-        {customNote && !showCustom && <p className="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{customNote}</p>}
-        {!home && !error && <p className="mt-4 text-ink-soft">正在读取单元…</p>}
+        {error && <FormError className="mt-4">{error}</FormError>}
+        {customNote && !showCustom && <FormError className="mt-4">{customNote}</FormError>}
+        {!home && !error && <ListSkeleton rows={3} />}
 
         <div className="mt-6 space-y-8">
           {grouped.map((group) => (
@@ -212,7 +214,7 @@ function CustomCoursePanel({
                     >
                       <span
                         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                          section.completed ? 'bg-success text-white' : section.unlocked ? 'bg-brand text-white' : 'bg-line text-ink-soft'
+                          section.completed ? 'bg-success text-white' : section.unlocked ? 'bg-brand-action text-white' : 'bg-line text-ink-soft'
                         }`}
                       >
                         {section.completed ? '✓' : section.index + 1}
@@ -255,7 +257,7 @@ function UnitCard({
       <button type="button" className="flex w-full items-center gap-4 px-6 py-5 text-left" onClick={onToggle} aria-expanded={open}>
         <span
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-bold ${
-            current ? 'bg-brand text-white' : unit.state === 'past' ? 'bg-success-soft text-success' : 'bg-line text-ink-soft'
+            current ? 'bg-brand-action text-white' : unit.state === 'past' ? 'bg-success-soft text-success' : 'bg-line text-ink-soft'
           }`}
         >
           {unit.sortOrder}
@@ -282,7 +284,7 @@ function UnitCard({
           }}
         >
           <div className="border-t border-line px-6 py-5">
-            {loading && !levels && <p className="text-sm text-ink-soft">正在读取这 20 节…</p>}
+            {loading && !levels && <LevelGridSkeleton />}
             {levels && (
               <div className="grid grid-cols-4 gap-3">
                 {levels.map((level) => (
@@ -319,7 +321,7 @@ function LevelNode({ level, onOpen }: { level: UnitLevel; onOpen: () => void }) 
             : level.completed
               ? 'bg-success text-white'
               : level.current
-                ? 'bg-brand text-white'
+                ? 'bg-brand-action text-white'
                 : 'bg-brand-soft text-brand-strong'
         }`}
       >

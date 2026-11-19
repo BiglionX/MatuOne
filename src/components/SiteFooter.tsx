@@ -19,7 +19,7 @@ export function SiteFooter({ compact = false }: { compact?: boolean }) {
       <div className="mx-auto max-w-5xl px-5 py-8 text-sm text-ink-soft">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="min-w-[240px]">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/python" className="flex items-center gap-2">
               <BrandMark size={24} />
               <span className="font-semibold text-ink">代码闯关</span>
             </Link>
@@ -47,6 +47,9 @@ export function SiteFooter({ compact = false }: { compact?: boolean }) {
             </Link>
             <Link to="/enter" className="transition hover:text-brand-strong">
               进入系统
+            </Link>
+            <Link to="/" className="transition hover:text-brand-strong">
+              MatuOne 首页
             </Link>
           </nav>
         </div>

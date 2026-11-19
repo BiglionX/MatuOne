@@ -1,17 +1,21 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { EntryPage } from '@/pages/EntryPage'
+import { NoticeToast } from '@/components/NoticeToast'
+import { OfflineBanner } from '@/components/OfflineBanner'
 import { MarketingLayout } from '@/pages/marketing/MarketingLayout'
 import { HomePage } from '@/pages/marketing/HomePage'
-import { CurriculumPage } from '@/pages/marketing/CurriculumPage'
-import { PricingPage } from '@/pages/marketing/PricingPage'
-import { ApplyPage } from '@/pages/marketing/ApplyPage'
-import { AboutPage } from '@/pages/marketing/AboutPage'
-import { FaqPage } from '@/pages/marketing/FaqPage'
-import { PrivacyPage } from '@/pages/legal/PrivacyPage'
-import { TermsPage } from '@/pages/legal/TermsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { AdminGate, AdminLayout } from '@/pages/admin/AdminLayout'
+import { ListSkeleton } from '@/components/Skeleton'
+
+const EntryPage = lazy(() => import('@/pages/EntryPage').then((m) => ({ default: m.EntryPage })))
+const CurriculumPage = lazy(() => import('@/pages/marketing/CurriculumPage').then((m) => ({ default: m.CurriculumPage })))
+const PricingPage = lazy(() => import('@/pages/marketing/PricingPage').then((m) => ({ default: m.PricingPage })))
+const ApplyPage = lazy(() => import('@/pages/marketing/ApplyPage').then((m) => ({ default: m.ApplyPage })))
+const AboutPage = lazy(() => import('@/pages/marketing/AboutPage').then((m) => ({ default: m.AboutPage })))
+const FaqPage = lazy(() => import('@/pages/marketing/FaqPage').then((m) => ({ default: m.FaqPage })))
+const PrivacyPage = lazy(() => import('@/pages/legal/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
+const TermsPage = lazy(() => import('@/pages/legal/TermsPage').then((m) => ({ default: m.TermsPage })))
+const AdminShell = lazy(() => import('@/pages/admin/AdminLayout').then((m) => ({ default: m.AdminShell })))
 
 /**
  * 学生端 / 机构端 / 家长端 / 平台后台按路由懒加载：
@@ -47,27 +51,47 @@ const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then((m
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })))
 const AgentLogin = lazy(() => import('@/pages/agent/AgentLogin').then((m) => ({ default: m.AgentLogin })))
 const AgentHome = lazy(() => import('@/pages/agent/AgentHome').then((m) => ({ default: m.AgentHome })))
+const MatuPixLayout = lazy(() => import('@/pages/matupix/MatuPixLayout').then((m) => ({ default: m.MatuPixLayout })))
+const MatuPixHome = lazy(() => import('@/pages/matupix/MatuPixHome').then((m) => ({ default: m.MatuPixHome })))
+const MatuPixCreate = lazy(() => import('@/pages/matupix/MatuPixCreate').then((m) => ({ default: m.MatuPixCreate })))
+const BrickBuilder = lazy(() => import('@/pages/matupix/brick/BrickBuilder').then((m) => ({ default: m.BrickBuilder })))
+
+/** 项目总入口：MatuOne 启动器。独立布局，不套 MarketingLayout */
+const MatuOneLayout = lazy(() => import('@/pages/matuone/MatuOneLayout').then((m) => ({ default: m.MatuOneLayout })))
+const MatuOneHome = lazy(() => import('@/pages/matuone/MatuOneHome').then((m) => ({ default: m.MatuOneHome })))
 
 function RouteFallback() {
-  return <div className="grid min-h-[60vh] place-items-center text-sm text-ink-soft">正在加载…</div>
+  return (
+    <div className="p-8">
+      <ListSkeleton rows={4} />
+    </div>
+  )
 }
 
 export default function App() {
   return (
     <BrowserRouter>
+      <OfflineBanner />
+      <NoticeToast />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<MarketingLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="curriculum" element={<CurriculumPage />} />
-            <Route path="pricing" element={<PricingPage />} />
-            <Route path="apply" element={<ApplyPage />} />
-            <Route path="about" element={<AboutPage />} />
-            <Route path="faq" element={<FaqPage />} />
-            <Route path="privacy" element={<PrivacyPage />} />
-            <Route path="terms" element={<TermsPage />} />
+          <Route path="/" element={<MatuOneLayout />}>
+            <Route index element={<MatuOneHome />} />
           </Route>
-          <Route path="/enter" element={<EntryPage />} />
+
+          {/* 营销站各页共用 MarketingLayout。改用无 path 的布局路由，
+              好让根路径留给 MatuOne 启动器，URL 仍保持 /curriculum、/pricing 等原样。 */}
+          <Route element={<MarketingLayout />}>
+            <Route path="/python" element={<HomePage />} />
+            <Route path="/curriculum" element={<CurriculumPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/apply" element={<ApplyPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/faq" element={<FaqPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/enter" element={<EntryPage />} />
+          </Route>
 
           <Route path="/student/login" element={<StudentLogin />} />
           <Route path="/student" element={<CourseMap />} />
@@ -81,7 +105,8 @@ export default function App() {
             <Route index element={<Navigate to="/org/dashboard" replace />} />
             <Route path="students" element={<OrgStudents />} />
             <Route path="courses" element={<OrgCourses />} />
-            <Route path="finance" element={<OrgFinance />} />
+            <Route path="financial" element={<OrgFinance />} />
+            <Route path="finance" element={<Navigate to="/org/financial" replace />} />
             <Route path="custom-courses/:courseId/edit" element={<OrgCustomCourseEdit />} />
             <Route path="materials" element={<OrgMaterials />} />
             <Route path="dashboard" element={<OrgDashboard />} />
@@ -92,7 +117,7 @@ export default function App() {
           <Route path="/agent/login" element={<AgentLogin />} />
           <Route path="/agent" element={<AgentHome />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminGate><AdminLayout /></AdminGate>}>
+          <Route path="/admin" element={<AdminShell />}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="orgs" element={<AdminOrgs />} />
@@ -103,6 +128,12 @@ export default function App() {
             <Route path="levels" element={<AdminCourseImport />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="courses" element={<Navigate to="/admin/levels" replace />} />
+          </Route>
+
+          <Route path="/matupix" element={<MatuPixLayout />}>
+            <Route index element={<MatuPixHome />} />
+            <Route path="create" element={<MatuPixCreate />} />
+            <Route path="brick" element={<BrickBuilder />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />

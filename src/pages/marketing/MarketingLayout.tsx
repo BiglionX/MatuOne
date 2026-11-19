@@ -9,7 +9,6 @@ const LINKS = [
   { to: '/faq', label: '常见问题' },
   { to: '/about', label: '关于' },
 ]
-
 export function MarketingLayout() {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
@@ -22,11 +21,14 @@ export function MarketingLayout() {
     <div className="min-h-screen bg-canvas text-ink">
       <header className="sticky top-0 z-20 border-b border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-2 px-5 py-3">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/python" className="flex items-center gap-2">
             <BrandMark size={32} />
             <span className="text-lg font-bold text-ink">代码闯关</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-1 sm:flex">
+            <Link to="/" className="rounded-field px-3 py-2 text-sm text-ink-soft transition hover:text-brand-strong">
+              MatuOne 首页
+            </Link>
             {LINKS.map((link) => (
               <NavLink
                 key={link.to}
@@ -36,9 +38,12 @@ export function MarketingLayout() {
                 {link.label}
               </NavLink>
             ))}
-            <Link to="/enter" className="rounded-field px-3 py-2 text-sm text-ink-soft">
+            <NavLink
+              to="/enter"
+              className={({ isActive }) => `rounded-field px-3 py-2 text-sm ${isActive ? 'text-brand-strong' : 'text-ink-soft'}`}
+            >
               进入系统
-            </Link>
+            </NavLink>
             <Link to="/apply" className="btn-primary px-4 text-sm">
               申请试用
             </Link>
@@ -57,6 +62,9 @@ export function MarketingLayout() {
         </div>
         {open && (
           <nav className="mx-auto flex max-w-5xl flex-col gap-1 px-5 pb-3 sm:hidden">
+            <Link to="/" className="rounded-field px-3 py-2 text-sm text-ink-soft transition hover:text-brand-strong">
+              MatuOne 首页
+            </Link>
             {LINKS.map((link) => (
               <NavLink
                 key={link.to}
@@ -66,9 +74,12 @@ export function MarketingLayout() {
                 {link.label}
               </NavLink>
             ))}
-            <Link to="/enter" className="rounded-field px-3 py-2 text-sm text-ink-soft">
+            <NavLink
+              to="/enter"
+              className={({ isActive }) => `rounded-field px-3 py-2 text-sm ${isActive ? 'text-brand-strong' : 'text-ink-soft'}`}
+            >
               进入系统
-            </Link>
+            </NavLink>
           </nav>
         )}
       </header>

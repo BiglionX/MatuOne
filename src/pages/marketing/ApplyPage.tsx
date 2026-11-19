@@ -8,7 +8,7 @@ import { HAS_DIRECT_CONTACT, SITE } from '@/config/site'
 const EMPTY = { orgName: '', contact: '', phone: '', city: '', estStudents: '', note: '' }
 
 export function ApplyPage() {
-  usePageMeta('申请 14 天试用', '提交机构信息，运营人工开户：14 天试用、最多 10 个席位、开放前 3 关。不安装软件，不需要编程老师。')
+  usePageMeta('申请 14 天试用', '提交机构信息，运营人工开户：14 天试用、最多 10 个席位、Level 1 完整免费。不安装软件，不需要编程老师。')
   const [form, setForm] = useState(EMPTY)
   const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState('')
@@ -63,7 +63,7 @@ export function ApplyPage() {
               <span className="text-ink">2.</span> 电话确认后创建机构账号，发放管理员初始密码。
             </li>
             <li>
-              <span className="text-ink">3.</span> 你登录机构端批量导入学生，学生即可用账号进入前 3 关。
+              <span className="text-ink">3.</span> 你登录机构端批量导入学生，学生即可用账号学习完整的 Level 1。
             </li>
           </ol>
           {HAS_DIRECT_CONTACT && (

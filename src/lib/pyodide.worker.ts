@@ -81,6 +81,11 @@ const BOOT_SOURCE = [
   '            return "落笔，接下来会画出线"',
   '        if name == "done":',
   '            return "海龟画完了"',
+  '    if stripped.startswith("def "):',
+  '        return "给这一段做法起个名字"',
+  '    named = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\\((.*)\\)\\s*$", stripped)',
+  '    if named:',
+  '        return "去调用 " + named.group(1)',
   '    if stripped.startswith("import ") or stripped.startswith("from "):',
   '        return "准备好要用的工具"',
   '    return "执行这一行"',
@@ -353,8 +358,16 @@ self.onmessage = (event: MessageEvent<{ type?: string; buffer?: SharedArrayBuffe
 
 shareInterrupt()
 
+function friendlyBootError(err: unknown): string {
+  const text = err instanceof Error ? `${err.name} ${err.message}` : String(err)
+  if (/SyntaxError|Unexpected token|is not defined|not a constructor/i.test(text)) {
+    return '这台浏览器打不开 Python 运行环境。题目还能看，运行代码需要换用较新的 Chrome。'
+  }
+  return 'Python 运行环境没有下载下来。题目还能看，请检查网络后再试一次。'
+}
+
 void boot()
   .then(() => post({ type: 'ready' }))
-  .catch((err) => post({ type: 'fatal', message: err instanceof Error ? err.message : String(err) }))
+  .catch((err) => post({ type: 'fatal', message: friendlyBootError(err) }))
 
 export {}

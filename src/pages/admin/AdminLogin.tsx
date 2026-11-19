@@ -3,9 +3,12 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { getPlatformProfile, loginPlatform } from '@/api/adminOrgs'
 import { ApiError } from '@/lib/apiError'
 import { BrandMark } from '@/components/BrandMark'
+import { FormError } from '@/components/FormError'
 import { DemoLoginButton } from '@/dev/DemoLoginButton'
+import { usePageMeta } from '@/lib/usePageMeta'
 
 export function AdminLogin() {
+  usePageMeta('平台后台登录', '平台管理员登录，管理机构台账、线索与课程包。')
   const navigate = useNavigate()
   const [account, setAccount] = useState('')
   const [password, setPassword] = useState('')
@@ -46,7 +49,7 @@ export function AdminLogin() {
           密码
           <input className="field mt-2" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </label>
-        {error && <p className="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
+        {error && <FormError className="mt-4">{error}</FormError>}
         <button type="submit" className="btn-primary mt-6 w-full" disabled={pending}>
           {pending ? '正在登录…' : '进入后台'}
         </button>

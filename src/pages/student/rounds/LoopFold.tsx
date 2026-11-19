@@ -40,8 +40,8 @@ export function LoopFold({ level, envPhase, onNext }: Props) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(300px,40%)_minmax(0,1fr)]">
-      <div className="flex min-h-[420px] flex-col gap-4">
+    <div className="grid gap-6 lg:grid-cols-[minmax(280px,40%)_minmax(0,1fr)]">
+      <div className="flex min-h-[420px] min-w-0 flex-col gap-4">
         <div className="text-sm font-medium text-ink-soft">
           {result?.ok ? '折叠之后，正方形还在' : '先看重复的 8 行画出的正方形'}
         </div>
@@ -50,7 +50,7 @@ export function LoopFold({ level, envPhase, onNext }: Props) {
         </div>
       </div>
 
-      <div className="card flex flex-col p-6">
+      <div className="card flex min-w-0 flex-col p-6">
         <span className="chip w-fit bg-brand-soft text-brand-strong">收一收</span>
         <h2 className="mt-3 text-xl font-semibold text-ink">同样的正方形，不用写 8 行</h2>
         <p className="mt-1 text-sm text-ink-soft">这 8 行是「走一段、转 90 度」写了 4 遍。点一下，看它们收成循环。</p>
@@ -64,7 +64,7 @@ export function LoopFold({ level, envPhase, onNext }: Props) {
             {unfolded.map((line, index) => (
               <pre
                 key={`open-${index}`}
-                className={`code-font text-sm ${index >= 2 ? 'text-ink-soft' : 'text-ink'}`}
+                className={`code-font overflow-x-auto ${index >= 2 ? 'text-ink-soft' : 'text-ink'}`}
               >
                 {line}
               </pre>
@@ -81,7 +81,7 @@ export function LoopFold({ level, envPhase, onNext }: Props) {
               return (
                 <pre
                   key={`fold-${index}`}
-                  className={`code-font rounded-md px-1 text-sm text-ink ${failed ? 'bg-danger-soft ring-1 ring-danger' : ''}`}
+                  className={`code-font overflow-x-auto rounded-xl px-1 text-ink ${failed ? 'bg-danger-soft ring-1 ring-danger' : ''}`}
                 >
                   {line || ' '}
                 </pre>

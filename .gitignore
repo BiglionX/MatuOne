@@ -7,12 +7,14 @@ dist
 dist-ssr
 .vite
 *.tsbuildinfo
+__pycache__
+*.pyc
 
 .env
 .env.*
 !.env.example
 
-data/
+/data/
 
 *.log
 npm-debug.log*

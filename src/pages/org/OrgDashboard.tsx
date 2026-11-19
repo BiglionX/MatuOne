@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getOrgSession } from '@/api/orgAuth'
 import { ApiError, loadOrgDashboard, type OrgAttention, type OrgDashboardView } from '@/api/orgPortal'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
+import { CardGridSkeleton, TableSkeleton } from '@/components/Skeleton'
 import { formatDate } from '@/lib/format'
 
 const ATTENTION_LABEL: Record<OrgAttention, string> = {
@@ -26,9 +27,16 @@ export function OrgDashboard() {
 
   if (!dashboard) {
     return (
-      <div className="px-8 py-8">
+      <div className="p-8">
         <OrgAccessNotice message={notice} />
-        {!notice && <p className="text-sm text-ink-soft">正在加载本机构的进度…</p>}
+        {!notice && (
+          <div className="space-y-6">
+            <CardGridSkeleton />
+            <div className="card">
+              <TableSkeleton rows={5} cols={5} />
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -37,7 +45,7 @@ export function OrgDashboard() {
   const until = session?.serviceEndAt ?? session?.trialExpireAt
 
   return (
-    <div className="px-8 py-8">
+    <div className="p-8">
       <OrgAccessNotice message={notice} />
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-ink">进度看板</h1>
@@ -59,7 +67,7 @@ export function OrgDashboard() {
         </section>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-3">
         {[
           { label: '在读学生', value: String(dashboard.reading), unit: '人' },
           { label: '本周活跃', value: String(dashboard.weeklyActive), unit: '人' },
@@ -111,7 +119,7 @@ export function OrgDashboard() {
           <p className="border-t border-line px-6 py-8 text-sm text-ink-soft">这周没有需要跟进的学生。</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="data-table w-full text-sm">
               <thead>
                 <tr className="border-y border-line bg-canvas text-left text-ink-soft">
                   <th className="px-6 py-3 font-medium">姓名</th>

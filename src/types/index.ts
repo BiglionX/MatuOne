@@ -176,12 +176,15 @@ export interface CanvasCommand {
 /**
  * 页面只看 ok / output，或失败时的行号和人话。
  * loading 为 true 时 Pyodide 还在下载，不是代码写错了。
- * 海龟关卡的 output.text 是同时 print 出来的字，没有就是空串。
+ * output.text 是 print 出来的字，output.commands 是海龟线段。
+ * 同一段代码可以同时有字和线：有线段时 kind 为 canvas，文字仍留在 text 里。
  */
 export type RunResult =
   | {
       ok: true
-      output: { kind: 'text'; text: string } | { kind: 'canvas'; commands: CanvasCommand[]; text: string }
+      output:
+        | { kind: 'text'; text: string; commands: CanvasCommand[] }
+        | { kind: 'canvas'; commands: CanvasCommand[]; text: string }
     }
   | {
       ok: false

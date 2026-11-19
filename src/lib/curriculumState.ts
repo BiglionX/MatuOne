@@ -1,4 +1,4 @@
-import { isLevelEntitled, TRIAL_LEVEL_MAX, type EntitlementSpan, type OrgStatus } from '../../supabase/functions/_shared/orgStatus'
+import { isFreeLevel1, isLevelEntitled, stageLevelOfOrder, type EntitlementSpan, type OrgStatus } from '../../supabase/functions/_shared/orgStatus'
 import {
   CURRICULUM_LEVELS,
   curriculumLevelByOrder,
@@ -10,7 +10,7 @@ import {
   unitsOfStage,
   type CatalogLevel,
 } from '../data/fullCurriculum'
-import { level1Lesson } from '../data/level1Course'
+import { authoredLesson } from './lessonMaterial'
 
 export interface ProgressMark {
   order: number
@@ -79,8 +79,10 @@ function serviceOpen(status: OrgStatus): boolean {
 }
 
 function canOpen(order: number, completed: boolean, focus: number, access: AccessContext): boolean {
-  const entitled = isLevelEntitled(access.spans, access.orgId, access.groupId, access.studentId, order)
-  const trialOk = access.status !== 'trial' || order <= TRIAL_LEVEL_MAX
+  const stage = stageLevelOfOrder(order)
+  const free = (access.status === 'trial' || access.status === 'active') && stage != null && isFreeLevel1(order, stage)
+  const entitled = free || isLevelEntitled(access.spans, access.orgId, access.groupId, access.studentId, order)
+  const trialOk = access.status !== 'trial' || free
   return entitled && serviceOpen(access.status) && trialOk && (completed || order === focus)
 }
 
@@ -135,7 +137,7 @@ export function projectUnit(unitId: string, marks: ProgressMark[], access: Acces
   return levelsOfUnit(unitId).map((level) => {
     const done = completed.has(level.order)
     const unlocked = canOpen(level.order, done, focus, access)
-    const course = level.order >= 1 && level.order <= 120 ? level1Lesson(level.order) : undefined
+    const course = authoredLesson(level.order)
     return {
       levelId: level.levelId,
       order: level.order,

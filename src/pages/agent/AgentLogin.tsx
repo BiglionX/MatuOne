@@ -3,8 +3,10 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ApiError, getAgentSession, loginAgent } from '@/api/agentAuth'
 import { BrandMark } from '@/components/BrandMark'
 import { DemoLoginButton } from '@/dev/DemoLoginButton'
+import { usePageMeta } from '@/lib/usePageMeta'
 
 export function AgentLogin() {
+  usePageMeta('服务商登录', '区域服务商登录，管理辖下机构与结算。')
   const navigate = useNavigate()
   const existing = getAgentSession()
   const [account, setAccount] = useState('')

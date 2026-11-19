@@ -79,8 +79,7 @@ export function TypingTrainer({ targets, hint, onComplete, completeLabel = '完�
           onDrop={(e) => e.preventDefault()}
           spellCheck={false}
           autoComplete="off"
-          className="code-font mt-5 w-full rounded-field border border-line bg-white px-4 py-3 text-lg outline-none
-            focus:border-brand focus:ring-2 focus:ring-brand/20"
+          className="code-font mt-5 w-full rounded-xl border border-line bg-white px-4 py-3 outline-none focus:border-brand focus:ring-2 focus:ring-brand"
           placeholder="在这里照着打一遍"
           aria-label="打字练习输入框"
         />

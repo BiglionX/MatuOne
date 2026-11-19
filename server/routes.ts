@@ -11,9 +11,9 @@ import { decideStudentLevel } from './enter'
 import { readProgressMarks, resolveStoredLevel } from './curriculum'
 import { readBonusChallenge } from '../src/lib/bonusChallenge'
 import { readDrillChunk } from '../src/lib/drillChunk'
-import { drillForOrder, reviewChunkOf } from '../supabase/functions/_shared/drill_chunks'
-import { buildPlayableLevel } from '../src/lib/lessonMaterial'
-import { presentLearningHome, projectUnit, type AccessContext } from '../src/lib/curriculumState'
+import { reviewChunkOf } from '../supabase/functions/_shared/drill_chunks'
+import { presentLearningHome, projectUnit, type AccessContext, type UnitLevelView } from '../src/lib/curriculumState'
+import type { Level, LevelQuiz } from '../src/types'
 import { curriculumUnitById } from '../src/data/fullCurriculum'
 import { handleOrgCustomCourses } from './orgCustomCourses'
 import { handleOrgMaterials } from './orgMaterials'
@@ -148,6 +148,8 @@ export async function dispatch(req: ApiRequest): Promise<ApiResult> {
         return await orgStudents(req)
       case 'org-course':
         return await orgCourse(req)
+      case 'org-finance':
+        return await orgFinance(req)
       case 'org-materials':
         return await orgMaterials(req)
       case 'org-custom-courses':
@@ -255,6 +257,7 @@ async function orgLogin(req: ApiRequest): Promise<ApiResult> {
   if (status === 'disabled') return fail(403, '机构已停用，无法登录')
   await q('select public.mark_org_admin_login($1)', [row.admin_id])
   const session = await issueSession('org', row.admin_id)
+  const member = await one<{ role: string }>('select role from public.org_admin where id = $1', [row.admin_id])
   return ok({
     ...session,
     adminId: row.admin_id,
@@ -268,6 +271,7 @@ async function orgLogin(req: ApiRequest): Promise<ApiResult> {
     usedSeats: row.used_seats,
     trialExpireAt: row.trial_expire_at,
     serviceEndAt: row.service_end_at,
+    role: member?.role === 'teacher' ? 'teacher' : 'admin',
   })
 }
 
@@ -367,11 +371,16 @@ async function parentLogin(req: ApiRequest): Promise<ApiResult> {
   return ok({ ...(await issueSession('parent', row.parent_id)), account })
 }
 
-async function orgContext(req: ApiRequest, options: { write?: boolean; importStudents?: boolean }) {
+async function orgContext(req: ApiRequest, options: { write?: boolean; importStudents?: boolean; admin?: boolean }) {
   const auth = await requireRole(req, 'org')
   if ('status' in auth) return auth
-  const admin = await one<{ org_id: string; status: string }>('select org_id, status from public.org_admin where id = $1', [auth.subjectId])
+  const admin = await one<{ org_id: string; status: string; role: string }>(
+    'select org_id, status, role from public.org_admin where id = $1',
+    [auth.subjectId],
+  )
   if (!admin || admin.status !== 'active') return fail(401, '未登录')
+  const role = admin.role === 'teacher' ? 'teacher' : 'admin'
+  if (options.admin && role !== 'admin') return fail(403, '需要机构管理员')
   const requested = typeof req.body.orgId === 'string' ? req.body.orgId.trim() : ''
   if (requested && requested !== admin.org_id) return fail(403, '无权访问该机构')
   const org = await one<{
@@ -389,7 +398,7 @@ async function orgContext(req: ApiRequest, options: { write?: boolean; importStu
   if (status === 'expired' && (options.write || options.importStudents)) return fail(403, '服务已到期，仅可查看')
   const limit = seatLimit({ status: org.status as OrgStatus, seatQuota: org.seat_quota }, status)
   if (options.importStudents && org.used_seats >= limit) return fail(409, '席位已满')
-  return { orgId: org.id, status, seatLimit: limit, usedSeats: org.used_seats }
+  return { orgId: org.id, status, seatLimit: limit, usedSeats: org.used_seats, role }
 }
 
 async function orgCustomCourses(req: ApiRequest): Promise<ApiResult> {
@@ -642,7 +651,7 @@ async function orgPricing(orgId: string): Promise<{ studentMonthlyPrice: number;
 
 async function orgCourse(req: ApiRequest): Promise<ApiResult> {
   const action = req.header('x-action') ?? 'read'
-  const ctx = await orgContext(req, { write: action === 'save-price' })
+  const ctx = await orgContext(req, { write: action === 'save-price', admin: action === 'save-price' })
   if (!('orgId' in ctx)) return ctx
   const countRow = await one<{ n: number }>("select count(*)::int as n from public.course_level where published = true")
   const levelCount = countRow?.n ?? 0
@@ -672,6 +681,97 @@ async function orgCourse(req: ApiRequest): Promise<ApiResult> {
     levelCount,
     maxLevel: await orgPackageLevel(ctx.orgId),
     ...pricing,
+  })
+}
+
+const BILL_TYPES = new Set(['新购', '续费', '扩容'])
+const INVOICE_STATES = new Set(['未开票', '已申请', '已开票', '已寄出'])
+const TAX_NO = /^[0-9A-Z]{15,20}$/
+
+function billMonth(iso: string | null): string {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit' }).format(date).slice(0, 7)
+}
+
+async function orgFinance(req: ApiRequest): Promise<ApiResult> {
+  const action = req.header('x-action') ?? 'read'
+  const ctx = await orgContext(req, { write: action === 'save-price' || action === 'invoice', admin: true })
+  if (!('orgId' in ctx)) return ctx
+  if (action === 'save-price') {
+    const studentMonthlyPrice = Number(req.body.studentMonthlyPrice)
+    if (!Number.isInteger(studentMonthlyPrice) || studentMonthlyPrice < 150 || studentMonthlyPrice > 500) {
+      return fail(400, '家长定价需要在 150 到 500 元之间')
+    }
+    await q('update public.org set student_monthly_price = $2 where id = $1', [ctx.orgId, studentMonthlyPrice])
+  }
+  if (action === 'invoice') {
+    if (ctx.status === 'trial') return fail(403, '试用期无需付费')
+    const recordId = typeof req.body.recordId === 'string' ? req.body.recordId.trim() : ''
+    const title = typeof req.body.title === 'string' ? req.body.title.trim() : ''
+    const taxNo = typeof req.body.taxNo === 'string' ? req.body.taxNo.trim().toUpperCase() : ''
+    if (!recordId) return fail(400, '没有这张账单')
+    if (title.length < 2 || title.length > 80) return fail(400, '发票抬头需要 2–80 个字')
+    if (!TAX_NO.test(taxNo)) return fail(400, '纳税人识别号需要 15–20 位数字或大写字母')
+    const updated = await q<{ id: string }>(
+      `update public.billing_record
+       set invoice_status = '已申请', invoice_title = $3, invoice_tax_no = $4
+       where id = $1 and org_id = $2 and invoice_status = '未开票' and type in ('新购', '续费', '扩容')
+       returning id`,
+      [recordId, ctx.orgId, title, taxNo],
+    )
+    if (!updated.length) return fail(400, '这张账单不能申请开票')
+  }
+  const pricing = await orgPricing(ctx.orgId)
+  const counted = await one<{ n: number }>(
+    "select count(*)::int as n from public.student where org_id = $1 and status = 'active'",
+    [ctx.orgId],
+  )
+  const quota = await one<{ seat_quota: number }>('select seat_quota from public.org where id = $1', [ctx.orgId])
+  let bills: {
+    id: string
+    month: string
+    type: string
+    seats: number
+    amount: number
+    payStatus: '已支付'
+    invoiceStatus: string
+  }[] = []
+  if (ctx.status !== 'trial') {
+    const rows = await q<{
+      id: string
+      type: string
+      seats: number
+      amount: number
+      invoice_status: string
+      created_at: string
+      service_start: string | null
+    }>(
+      `select id, type, seats, amount, invoice_status, created_at, service_start
+       from public.billing_record
+       where org_id = $1 and type in ('新购', '续费', '扩容')
+       order by created_at desc`,
+      [ctx.orgId],
+    )
+    bills = rows
+      .filter((row) => BILL_TYPES.has(row.type))
+      .map((row) => ({
+        id: row.id,
+        month: billMonth(row.service_start ?? row.created_at),
+        type: row.type,
+        seats: row.seats,
+        amount: Number(row.amount),
+        payStatus: '已支付' as const,
+        invoiceStatus: INVOICE_STATES.has(row.invoice_status) ? row.invoice_status : '未开票',
+      }))
+  }
+  return ok({
+    trial: ctx.status === 'trial',
+    studentCount: counted?.n ?? 0,
+    seatQuota: quota?.seat_quota ?? ctx.seatLimit,
+    ...pricing,
+    bills,
   })
 }
 
@@ -913,10 +1013,9 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
   if (action === 'bonus') {
     const decision = await decideStudentLevel(student.id, requestedLevelId)
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
-    const playable = buildPlayableLevel(decision.levelId)
     const stored = await resolveStoredLevel(decision.levelId)
     const storedCopy = await findCourseLevel(decision.levelId)
-    const bonus = readBonusChallenge(bodyBonus(storedCopy?.body)) ?? playable?.bonus_challenge
+    const bonus = readBonusChallenge(bodyBonus(storedCopy?.body))
     if (!stored || !bonus) return fail(400, '这一关没有巩固练习')
     const done = await one<{ completed: boolean }>('select completed from public.learning_record where student_id = $1 and level_id = $2', [
       student.id,
@@ -934,10 +1033,9 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
   if (action === 'drill') {
     const decision = await decideStudentLevel(student.id, requestedLevelId)
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
-    const playable = buildPlayableLevel(decision.levelId)
     const stored = await resolveStoredLevel(decision.levelId)
     const storedCopy = await findCourseLevel(decision.levelId)
-    const chunk = readDrillChunk(bodyDrill(storedCopy?.body)) ?? playable?.drill_chunk
+    const chunk = readDrillChunk(bodyDrill(storedCopy?.body))
     if (!stored || !chunk) return fail(400, '这一关没有要打的组块')
     await q(
       `insert into public.learning_record
@@ -961,27 +1059,21 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
        limit 5`,
       [student.id],
     )
-    const items = rows.map((row) => {
-      const order = Number(row.sort_order)
-      const fromBody = bodyKeywords(row.body)
-      const playable = fromBody.length ? undefined : buildPlayableLevel(`L${String(order).padStart(4, '0')}`)
-      return {
-        order,
-        keywords: fromBody.length ? fromBody : (playable?.keywords ?? []),
-        drillChunk: readDrillChunk(bodyDrill(row.body)) ?? drillForOrder(order) ?? null,
-      }
-    })
+    const items = rows.map((row) => ({
+      order: Number(row.sort_order),
+      keywords: bodyKeywords(row.body),
+      drillChunk: readDrillChunk(bodyDrill(row.body)),
+    }))
     return ok({ items })
   }
   if (action === 'level') {
     const decision = await decideStudentLevel(student.id, requestedLevelId)
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
-    const playable = buildPlayableLevel(decision.levelId)
-    if (!playable) return fail(404, '没有找到这一关')
     const storedCopy = await findCourseLevel(decision.levelId)
+    const level = storedCopy ? lessonFromStored(storedCopy) : null
+    if (!level) return fail(404, '没有找到这一关')
     const hints = await q('select pattern, friendly_message from public.error_hint')
-    const level = withStoredDrill(withStoredBonus(withStoredGoal(playable, storedCopy?.goal), storedCopy?.body), storedCopy?.body)
-    return ok({ level, reviewChunk: await reviewChunkFor(playable.order, level.drill_chunk ?? null), hints })
+    return ok({ level, reviewChunk: await reviewChunkFor(level.order, level.drill_chunk ?? null), hints })
   }
 
   const access = await loadStudentAccess(student)
@@ -989,7 +1081,7 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
   if (action === 'unit') {
     const unitId = typeof req.body.unitId === 'string' ? req.body.unitId.trim() : ''
     const unit = curriculumUnitById(unitId)
-    const levels = unit ? projectUnit(unitId, marks, access) : null
+    const levels = unit ? await withDatabaseLessons(projectUnit(unitId, marks, access)) : null
     if (!unit || !levels) return fail(404, '没有这个单元')
     return ok({ unitId: unit.unitId, title: unit.title, levels })
   }
@@ -2156,22 +2248,64 @@ function safeJson(text: string): unknown {
   }
 }
 
-function withStoredGoal<T extends { goal: string }>(level: T, goal: string | null | undefined): T {
-  const next = goal?.trim()
-  if (!next) return level
-  return { ...level, goal: next }
+function isQuiz(value: unknown): value is LevelQuiz {
+  if (!value || typeof value !== 'object') return false
+  const quiz = value as LevelQuiz
+  return typeof quiz.question === 'string' && Array.isArray(quiz.options) && typeof quiz.answerIndex === 'number'
 }
 
-function withStoredBonus<T extends { bonus_challenge?: unknown }>(level: T, body: unknown): T {
-  const bonus = readBonusChallenge(bodyBonus(body))
-  if (!bonus) return level
-  return { ...level, bonus_challenge: bonus }
+/** 课文只来自 course_level.body。缺测验时补一句，避免骨架行把页面撑崩。 */
+function lessonFromStored(stored: { level_id: string; goal: string; body: unknown }): Level | null {
+  const row = bodyRecord(stored.body)
+  const lines = row?.teach_code_lines
+  if (!row || !Array.isArray(lines) || lines.length === 0 || lines.some((line) => typeof line !== 'string')) return null
+  const goal = typeof row.goal === 'string' && row.goal.trim() ? row.goal : stored.goal
+  const levelType = row.level_type === 'fill_blank' || row.level_type === 'debug' ? row.level_type : 'normal'
+  const quiz = isQuiz(row.quiz)
+    ? row.quiz
+    : { question: '这一关会画出什么？', options: ['一个图形', '一行文字', '什么都没有'], answerIndex: 0, explain: '运行一次就能看到结果。' }
+  return {
+    level_id: typeof row.level_id === 'string' ? row.level_id : stored.level_id,
+    order: Number(row.order),
+    title: typeof row.title === 'string' ? row.title : '',
+    goal,
+    demo_code: typeof row.demo_code === 'string' ? row.demo_code : (lines as string[]).join('\n'),
+    expected_output: typeof row.expected_output === 'string' ? row.expected_output : '',
+    preview_kind: row.preview_kind === 'text' ? 'text' : 'turtle',
+    level_type: levelType,
+    teach_code_lines: lines as string[],
+    blank_lines: Array.isArray(row.blank_lines) ? (row.blank_lines as Level['blank_lines']) : undefined,
+    unfolded_lines: Array.isArray(row.unfolded_lines) ? (row.unfolded_lines as string[]) : undefined,
+    line_notes: Array.isArray(row.line_notes) ? (row.line_notes as string[]) : undefined,
+    keywords: Array.isArray(row.keywords) ? row.keywords.filter((item): item is string => typeof item === 'string') : [],
+    drill_chunk: typeof row.drill_chunk === 'string' ? row.drill_chunk : undefined,
+    challenge_params: Array.isArray(row.challenge_params) ? (row.challenge_params as Level['challenge_params']) : [],
+    error_mappings: Array.isArray(row.error_mappings) ? (row.error_mappings as Level['error_mappings']) : [],
+    quiz,
+    bonus_challenge: readBonusChallenge(row.bonus_challenge) ?? undefined,
+    estimated_minutes: typeof row.estimated_minutes === 'number' ? row.estimated_minutes : 15,
+    is_review: row.is_review === true,
+    is_placeholder: goal.startsWith('这一节先熟悉'),
+  }
 }
 
-function withStoredDrill<T extends { drill_chunk?: string }>(level: T, body: unknown): T {
-  const drill = readDrillChunk(bodyDrill(body))
-  if (!drill) return level
-  return { ...level, drill_chunk: drill }
+async function withDatabaseLessons(levels: UnitLevelView[] | null): Promise<UnitLevelView[] | null> {
+  if (!levels?.length) return levels
+  const first = levels[0]?.order ?? 0
+  const last = levels[levels.length - 1]?.order ?? first
+  const rows = await q<{ level_id: string; title: string; goal: string }>(
+    `select level_id, title, goal
+     from public.course_level
+     where sort_order between $1 and $2`,
+    [first, last],
+  )
+  const byId = new Map(rows.map((row) => [row.level_id, row]))
+  return levels.map((level) => {
+    const row = byId.get(level.levelId)
+    if (!row) return level
+    const skeleton = row.goal.trim().startsWith('这一节先熟悉')
+    return { ...level, title: row.title, goal: row.goal, placeholder: skeleton, is_placeholder: skeleton }
+  })
 }
 
 async function reviewChunkFor(order: number, currentDrill: string | null): Promise<string | null> {
@@ -2202,11 +2336,10 @@ async function courseCatalog(req: ApiRequest): Promise<ApiResult> {
       return ok({ levelId: stored.level_id, previewFrozen: saved?.preview_frozen === true })
     }
     if (stored.preview_frozen === true) return fail(403, '这一关已冻结，不能试课预览')
-    const playable = buildPlayableLevel(levelId) ?? buildPlayableLevel(stored.level_id)
-    if (!playable) return fail(404, '没有找到这一关')
+    const level = lessonFromStored(stored)
+    if (!level) return fail(404, '没有找到这一关')
     const hints = await q('select pattern, friendly_message from public.error_hint')
-    const level = withStoredDrill(withStoredBonus(withStoredGoal(playable, stored.goal), stored.body), stored.body)
-    return ok({ level, reviewChunk: await reviewChunkFor(playable.order, level.drill_chunk ?? null), hints })
+    return ok({ level, reviewChunk: await reviewChunkFor(level.order, level.drill_chunk ?? null), hints })
   }
   if (action === 'copy-save' || action === 'copy-history') {
     const raw = req.body.levelId

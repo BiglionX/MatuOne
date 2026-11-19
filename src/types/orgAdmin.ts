@@ -1,3 +1,5 @@
+import type { OrgMemberRole } from '@/types/orgFinance'
+
 /** 运营后台机构开户。页面与 api 共用，不含密码字段。 */
 
 export type OrgStatus = 'trial' | 'active' | 'expired' | 'disabled'
@@ -87,4 +89,6 @@ export interface OrgSession {
   usedSeats: number
   trialExpireAt: string | null
   serviceEndAt: string | null
+  /** 缺省按管理员处理，兼容还没带角色的旧会话。老师登录后一定是 teacher。 */
+  role?: OrgMemberRole
 }

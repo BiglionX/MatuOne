@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { BrandMark } from '@/components/BrandMark'
 import { DemoLoginButton } from '@/dev/DemoLoginButton'
+import { usePageMeta } from '@/lib/usePageMeta'
 import type { DemoRole } from '@/dev/demoAccounts'
 
 const ROLES: Array<{
@@ -49,28 +49,25 @@ const ROLES: Array<{
 ]
 
 export function EntryPage() {
+  usePageMeta('进入系统', '选择要登录的一端：学生端、机构端、家长端、平台后台、区域服务商。')
   return (
-    <div className="min-h-screen bg-canvas px-8 py-14">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex items-center gap-4">
-          <BrandMark size={56} />
-          <div>
-            <h1 className="text-3xl font-bold text-ink">代码闯关</h1>
-            <p className="mt-1 text-ink-soft">Python 编程课外课</p>
-          </div>
-        </div>
+    <main className="mx-auto max-w-5xl px-5 py-12">
+      <Link to="/" className="text-sm text-ink-soft transition hover:text-brand-strong">
+        ← 返回 MatuOne
+      </Link>
+      <h1 className="mt-6 text-3xl font-bold text-ink">进入系统</h1>
+      <p className="mt-3 text-ink-soft">选择要登录的一端。</p>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2">
-          {ROLES.map((role) => (
-            <RoleCard key={role.key} role={role} />
-          ))}
-        </div>
-
-        <p className="mt-10 text-sm text-ink-soft">
-          先在平台后台开户，再用当次显示的管理员账号登录机构端。学生、进度和打字记录都在服务端。
-        </p>
+      <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        {ROLES.map((role) => (
+          <RoleCard key={role.key} role={role} />
+        ))}
       </div>
-    </div>
+
+      <p className="mt-8 text-sm text-ink-soft">
+        先在平台后台开户，再用当次显示的管理员账号登录机构端。学生、进度和打字记录都在服务端。
+      </p>
+    </main>
   )
 }
 

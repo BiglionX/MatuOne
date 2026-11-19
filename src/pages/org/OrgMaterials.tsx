@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, listOrgMaterials, removeOrgMaterial, uploadOrgMaterial } from '@/api/orgMaterials'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
+import { CardGridSkeleton } from '@/components/Skeleton'
 import { formatDate } from '@/lib/format'
 import type { OrgMaterial } from '@/types/orgMaterial'
 
@@ -120,7 +121,7 @@ export function OrgMaterials() {
       </section>
 
       <section className="mt-8">
-        {!ready && <p className="text-sm text-ink-soft">正在读取本机构的素材…</p>}
+        {!ready && <CardGridSkeleton count={2} />}
         {ready && materials.length === 0 && <p className="text-sm text-ink-soft">还没有素材。上传图片或 PDF 后会出现在这里。</p>}
         <ul className="grid gap-4 lg:grid-cols-2">
           {materials.map((material) => (

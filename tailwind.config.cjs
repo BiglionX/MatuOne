@@ -33,6 +33,8 @@ module.exports = {
         'code-bg': 'rgb(var(--code-bg-rgb) / <alpha-value>)',
       },
       borderRadius: {
+        xl: '12px',
+        '2xl': '16px',
         card: 'var(--radius-card)',
         field: 'var(--radius-field)',
       },

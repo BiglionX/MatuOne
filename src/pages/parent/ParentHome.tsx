@@ -3,10 +3,18 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { bindChild, getParentSession, loadParentHome, logoutParent, lookupChild, unbindChild } from '@/api/parent'
 import { WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
+import { FormError } from '@/components/FormError'
+import { ListSkeleton } from '@/components/Skeleton'
 import { LEARNING_ROADMAP } from '@/data/learningRoadmap'
 import { formatDay } from '@/lib/format'
 import type { ParentChildView, ParentLessonBrief, ParentStoppedChild } from '@/types'
 import { ApiError } from '@/lib/apiError'
+
+function FeedbackNote({ message, className = '' }: { message: string; className?: string }) {
+  const ok = message === '已绑定' || message === '已解除绑定'
+  if (ok) return <p className={`text-sm text-ink ${className}`}>{message}</p>
+  return <FormError className={className}>{message}</FormError>
+}
 
 function catalogId(order: number): string {
   return `L${String(order).padStart(4, '0')}`
@@ -23,7 +31,7 @@ function LessonBriefList({ lessons, empty }: { lessons: ParentLessonBrief[]; emp
           <li key={lesson.levelId} className="py-3">
             <button
               type="button"
-              className="flex w-full items-center justify-between gap-3 text-left"
+              className="flex min-h-11 w-full items-center justify-between gap-3 py-2 text-left"
               aria-expanded={open}
               onClick={() => setOpenId(open ? '' : lesson.levelId)}
             >
@@ -138,23 +146,23 @@ export function ParentHome() {
 
   return (
     <div className="min-h-screen bg-canvas pb-12">
-      <div className="h5-shell px-4 pt-4">
-        <header className="rounded-card bg-brand px-5 py-6 text-white">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <Link to="/enter" className="flex items-center gap-2 text-sm text-white/80">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
+      <div className="h5-shell min-w-0 p-6">
+        <header className="rounded-2xl border border-line bg-white p-6 shadow-card">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Link to="/enter" className="inline-flex min-h-11 items-center gap-2 text-sm text-ink-soft">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-soft">
                   <BrandMark size={22} />
                 </span>
                 代码闯关 · 家长端
               </Link>
-              <h1 className="mt-1 text-xl font-bold">看看孩子的学习</h1>
-              <p className="mt-1 text-sm text-white/80">{session.account}</p>
+              <h1 className="mt-2 text-xl font-bold text-ink">看看孩子的学习</h1>
+              <p className="mt-1 break-all text-sm text-ink-soft">{session.account}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className="rounded-full bg-white/15 px-3.5 py-2 text-sm"
+                className="btn-primary"
                 onClick={() => {
                   setBinding((value) => !value)
                   setFeedback('')
@@ -164,7 +172,7 @@ export function ParentHome() {
               </button>
               <button
                 type="button"
-                className="rounded-full bg-white/15 px-3.5 py-2 text-sm"
+                className="btn-secondary"
                 onClick={() => {
                   logoutParent()
                   navigate('/parent/login', { replace: true })
@@ -175,7 +183,7 @@ export function ParentHome() {
             </div>
           </div>
           {children.length > 0 && (
-            <div className="mt-5 flex gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               {children.map((child) => (
                 <button
                   key={child.student.id}
@@ -184,8 +192,8 @@ export function ParentHome() {
                     setActiveId(child.student.id)
                     setConfirmUnbind(false)
                   }}
-                  className={`rounded-full px-4 py-2 text-sm transition ${
-                    activeId === child.student.id ? 'bg-white font-semibold text-brand-strong' : 'bg-white/15 text-white'
+                  className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm transition ${
+                    activeId === child.student.id ? 'bg-brand-action font-semibold text-white' : 'bg-canvas text-ink'
                   }`}
                 >
                   {child.student.name}
@@ -226,7 +234,7 @@ export function ParentHome() {
                 </button>
               </div>
             )}
-            {feedback && <p className="mt-3 text-sm text-ink-soft">{feedback}</p>}
+            {feedback && <FeedbackNote message={feedback} className="mt-3" />}
           </section>
         )}
 
@@ -244,7 +252,7 @@ export function ParentHome() {
                 <h2 className="text-lg font-semibold text-ink">本周学习</h2>
                 <span className="text-sm text-ink-soft">{view.student.name}</span>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+              <div className="mt-4 grid grid-cols-1 gap-4 text-center sm:grid-cols-3">
                 <div className="rounded-field bg-canvas py-4">
                   <p className="text-2xl font-bold text-ink">{view.weekly.sessions}</p>
                   <p className="mt-1 text-sm text-ink-soft">学习次数</p>
@@ -327,7 +335,7 @@ export function ParentHome() {
                   </div>
                 </div>
               ) : (
-                <button type="button" className="text-sm text-ink-soft" onClick={() => setConfirmUnbind(true)}>
+                <button type="button" className="btn-ghost w-full" onClick={() => setConfirmUnbind(true)}>
                   解除绑定
                 </button>
               )}
@@ -351,15 +359,25 @@ export function ParentHome() {
               </div>
             </section>
           </div>
+        ) : ready && !feedback ? (
+          <section className="card mt-4 p-8 text-center">
+            <p className="text-ink">还没有绑定孩子</p>
+            <p className="mt-2 text-sm text-ink-soft">输入老师给的绑定码，就能看到学习记录。</p>
+            <button
+              type="button"
+              className="btn-primary mt-4"
+              onClick={() => {
+                setBinding(true)
+                setFeedback('')
+              }}
+            >
+              绑定孩子
+            </button>
+          </section>
         ) : (
-          ready && !feedback && (
-            <section className="card mt-4 p-8 text-center">
-              <p className="text-ink">还没有绑定孩子</p>
-              <p className="mt-2 text-sm text-ink-soft">点右上角「绑定孩子」，输入老师给的绑定码。</p>
-            </section>
-          )
+          !ready && <div className="mt-4"><ListSkeleton rows={3} /></div>
         )}
-        {!binding && feedback && <p className="mt-3 text-sm text-ink-soft">{feedback}</p>}
+        {!binding && feedback && <FeedbackNote message={feedback} className="mt-3" />}
         <p className="mt-6 text-center text-xs text-ink-soft">只显示自己孩子的记录，不做任何排名与对比。</p>
       </div>
       {roadmapOpen && (

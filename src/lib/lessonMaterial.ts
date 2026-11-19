@@ -9,6 +9,14 @@ import { getLevelById } from '../mock/levels'
 import { bonusForOrder } from '../data/bonusChallenges'
 import { drillForOrder } from '../data/drillChunks'
 import { level1Lesson } from '../data/level1Course'
+import { level2Lesson } from '../data/level2Course'
+
+/** 已经写好正文的课。Level 1 是 1–120，Level 2 是 121–240。 */
+export function authoredLesson(order: number): Level | undefined {
+  if (order >= 1 && order <= 120) return level1Lesson(order)
+  if (order >= 121 && order <= 240) return level2Lesson(order)
+  return undefined
+}
 
 function orderOf(levelId: string): number | null {
   const matched = /^L(\d+)$/i.exec(levelId.trim())
@@ -21,7 +29,7 @@ function metaOf(levelId: string): CatalogLevel | undefined {
   return curriculumLevelById(levelId) ?? curriculumLevelByOrder(orderOf(levelId) ?? 0)
 }
 
-/** 把目录里的一节收成课时页能跑的课文。Level 1 的 1–120 关走课程包，再往后才用占位。 */
+/** 把目录里的一节收成课时页能跑的课文。已写正文走课程包，其余才用占位。 */
 export function buildPlayableLevel(levelId: string): Level | undefined {
   const meta = metaOf(levelId)
   if (!meta) return undefined
@@ -33,16 +41,14 @@ export function buildPlayableLevel(levelId: string): Level | undefined {
     ...level,
     ...(bonus ? { bonus_challenge: bonus } : {}),
     ...(drill ? { drill_chunk: drill } : {}),
-    is_placeholder: meta.order >= 1 && meta.order <= 120 && level1Lesson(meta.order) ? false : isPlaceholderLevel(meta),
+    is_placeholder: authoredLesson(meta.order) ? false : isPlaceholderLevel(meta),
   }
 }
 
 function playableBody(meta: CatalogLevel): Level | undefined {
-  if (meta.order >= 1 && meta.order <= 120) {
-    const course = level1Lesson(meta.order)
-    if (course) {
-      return { ...course, level_id: meta.levelId, order: meta.order }
-    }
+  const course = authoredLesson(meta.order)
+  if (course) {
+    return { ...course, level_id: meta.levelId, order: meta.order }
   }
   const authored = meta.legacyLevelId ? getLevelById(meta.legacyLevelId) : undefined
   if (authored) {

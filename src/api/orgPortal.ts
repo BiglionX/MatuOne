@@ -1,3 +1,4 @@
+import type { OrgFinanceView } from '@/types/orgFinance'
 import type { Group, ImportRowResult, Student } from '@/types'
 import type { OrgStudentProgress } from '@/types/orgProgress'
 import { callFunction } from '@/lib/backend'
@@ -19,6 +20,18 @@ export interface OrgCourseSettings {
 
 export function saveOrgStudentPrice(studentMonthlyPrice: number): Promise<OrgCourseSettings> {
   return callFunction('org-course', { studentMonthlyPrice }, { role: 'org', headers: { 'x-action': 'save-price' } })
+}
+
+export function getOrgFinance(): Promise<OrgFinanceView> {
+  return callFunction('org-finance', {}, { role: 'org', headers: { 'x-action': 'read' } })
+}
+
+export function saveOrgFinancePrice(studentMonthlyPrice: number): Promise<OrgFinanceView> {
+  return callFunction('org-finance', { studentMonthlyPrice }, { role: 'org', headers: { 'x-action': 'save-price' } })
+}
+
+export function requestOrgInvoice(recordId: string, title: string, taxNo: string): Promise<OrgFinanceView> {
+  return callFunction('org-finance', { recordId, title, taxNo }, { role: 'org', headers: { 'x-action': 'invoice' } })
 }
 
 export type OrgAttention = 'disabled' | 'inactive' | 'stuck'

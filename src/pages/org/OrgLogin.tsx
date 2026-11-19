@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ApiError, getOrgSession, loginOrgAdmin } from '@/api/orgAuth'
 import { BrandMark } from '@/components/BrandMark'
+import { FormError } from '@/components/FormError'
 import { DemoLoginButton } from '@/dev/DemoLoginButton'
+import { usePageMeta } from '@/lib/usePageMeta'
 
 export function OrgLogin() {
+  usePageMeta('机构端登录', '机构管理员登录，查看学生进度、开通课程、管理素材与席位。')
   const navigate = useNavigate()
   const existing = getOrgSession()
   const [account, setAccount] = useState('')
@@ -56,7 +59,7 @@ export function OrgLogin() {
           />
         </label>
 
-        {error && <p className="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
+        {error && <FormError className="mt-4">{error}</FormError>}
 
         <button type="submit" className="btn-primary mt-6 w-full" disabled={pending}>
           {pending ? '正在登录…' : '进入机构端'}

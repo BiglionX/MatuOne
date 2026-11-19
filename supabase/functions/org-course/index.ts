@@ -1,4 +1,4 @@
-// 课程开通。orgId 来自会话。试用机构的关卡上限仍由进关卡函数卡在前 3 关。
+// 课程开通。orgId 来自会话。试用机构可以学完整 Level 1，Level 2 起由进关卡函数拦住。
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { empty, json } from '../_shared/http.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return empty(204)
   if (req.method !== 'POST') return json(405, { message: '只接受 POST' })
   const action = req.headers.get('x-action') ?? 'read'
-  return withOrgScope(req, { write: action === 'save-price' }, async (ctx) => {
+  return withOrgScope(req, { write: action === 'save-price', admin: action === 'save-price' }, async (ctx) => {
     const { count } = await ctx.db.from('course_level').select('level_id', { count: 'exact', head: true }).eq('published', true)
 
     if (action === 'save-price') {

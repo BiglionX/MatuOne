@@ -1,5 +1,6 @@
 // 机构端最小登录：只校验 org_admin 的账号和密码哈希。
 // orgId 从 org_admin 行取出，忽略请求体里的 orgId。停用机构拒绝登录。
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { ensureAuthUser, issueSession, loginEmail } from '../_shared/authUser.ts'
 import { hashPassword, verifyPassword } from '../_shared/password.ts'
 import { empty, json } from '../_shared/http.ts'
@@ -102,5 +103,11 @@ Deno.serve(async (req) => {
     usedSeats: row.used_seats,
     trialExpireAt: row.trial_expire_at,
     serviceEndAt: row.service_end_at,
+    role: await orgMemberRole(db, row.admin_id),
   })
 })
+
+async function orgMemberRole(db: SupabaseClient, adminId: string): Promise<'admin' | 'teacher'> {
+  const { data } = await db.from('org_admin').select('role').eq('id', adminId).maybeSingle()
+  return data?.role === 'teacher' ? 'teacher' : 'admin'
+}

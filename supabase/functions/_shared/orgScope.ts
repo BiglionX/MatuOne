@@ -9,12 +9,13 @@ export interface OrgScopeContext {
   status: OrgStatus
   seatLimit: number
   usedSeats: number
+  role: 'admin' | 'teacher'
   body: Record<string, unknown>
 }
 
 export async function withOrgScope(
   req: Request,
-  options: { write?: boolean; importStudents?: boolean },
+  options: { write?: boolean; importStudents?: boolean; admin?: boolean },
   handler: (ctx: OrgScopeContext) => Promise<Response>,
 ): Promise<Response> {
   const url = Deno.env.get('SUPABASE_URL')
@@ -32,7 +33,7 @@ export async function withOrgScope(
 
   const { data: admin } = await db
     .from('org_admin')
-    .select('org_id, status')
+    .select('org_id, status, role')
     .eq('auth_user_id', userData.user.id)
     .maybeSingle()
   if (!admin || admin.status !== 'active') {
@@ -50,6 +51,9 @@ export async function withOrgScope(
       body = {}
     }
   }
+
+  const role = admin.role === 'teacher' ? 'teacher' : 'admin'
+  if (options.admin && role !== 'admin') return json(403, { message: '需要机构管理员' })
 
   const requested = typeof body.orgId === 'string' ? body.orgId.trim() : ''
   if (requested && requested !== admin.org_id) return json(403, { message: '无权访问该机构' })
@@ -86,6 +90,7 @@ export async function withOrgScope(
     status,
     seatLimit: limit,
     usedSeats: org.used_seats,
+    role,
     body,
   })
 }

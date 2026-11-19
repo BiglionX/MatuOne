@@ -3,6 +3,7 @@ import type { BlankLine, Level, RunResult } from '@/types'
 import { runCode, type PythonPhase } from '@/lib/runner'
 import { RunPreview } from '@/components/RunPreview'
 import { RunButton } from '@/components/RunButton'
+import { FormError } from '@/components/FormError'
 
 interface Props {
   level: Level
@@ -67,8 +68,8 @@ export function FillBlank({ level, envPhase, onNext }: Props) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(300px,40%)_minmax(0,1fr)]">
-      <div className="flex min-h-[420px] flex-col gap-4">
+    <div className="grid gap-6 lg:grid-cols-[minmax(280px,40%)_minmax(0,1fr)]">
+      <div className="flex min-h-[420px] min-w-0 flex-col gap-4">
         <div className="text-sm font-medium text-ink-soft">
           {result?.ok ? '这是你填完跑出来的' : '空都填上之后，点运行看看'}
         </div>
@@ -77,19 +78,19 @@ export function FillBlank({ level, envPhase, onNext }: Props) {
         </div>
       </div>
 
-      <div className="card flex flex-col p-6">
+      <div className="card flex min-w-0 flex-col p-6">
         <span className="chip w-fit bg-brand-soft text-brand-strong">填一填</span>
         <h2 className="mt-3 text-xl font-semibold text-ink">代码已经给你，把空着的词填上</h2>
         <p className="mt-1 text-sm text-ink-soft">变量名和数字都在上面出现过。空都填了，运行按钮才会亮。</p>
 
-        <div className="mt-5 space-y-2 rounded-card border border-line bg-code-bg px-4 py-4">
+        <div className="mt-5 space-y-2 overflow-x-auto rounded-2xl border border-line bg-code-bg px-4 py-4">
           {level.teach_code_lines.map((line, lineNo) => {
             const group = groups.find((item) => item.line === lineNo)
             const failed = !!result && !result.ok && !result.loading && result.line === lineNo + 1
             return (
-              <div key={lineNo} className={`flex items-start gap-3 rounded-md px-1 ${failed ? 'bg-danger-soft ring-1 ring-danger' : ''}`}>
-                <span className="code-font w-6 shrink-0 pt-1 text-right text-sm text-ink-soft">{lineNo + 1}</span>
-                <div className="code-font min-w-0 flex-1 text-sm leading-8 text-ink">
+              <div key={lineNo} className={`flex min-w-0 items-start gap-3 rounded-xl px-1 ${failed ? 'bg-danger-soft ring-1 ring-danger' : ''}`}>
+                <span className="code-font w-8 shrink-0 pt-1 text-right text-ink-soft">{lineNo + 1}</span>
+                <div className="code-font min-w-0 flex-1 overflow-x-auto text-ink">
                   <LineParts
                     line={line}
                     lineNo={lineNo}
@@ -107,12 +108,9 @@ export function FillBlank({ level, envPhase, onNext }: Props) {
         </div>
 
         {result && !result.ok && !result.loading && (
-          <div className="mt-4 rounded-card border border-danger/40 bg-danger-soft p-4">
-            <p className="font-semibold text-danger">
-              {result.line > 0 ? `第 ${result.line} 行出了点小问题` : result.message}
-            </p>
-            {result.line > 0 && <p className="mt-1 text-ink">{result.message}</p>}
-          </div>
+          <FormError className="mt-4">
+            {result.line > 0 ? `第 ${result.line} 行出了点小问题。${result.message}` : result.message}
+          </FormError>
         )}
 
         {result?.ok && !allCorrect && (
@@ -177,7 +175,7 @@ function LineParts({
         onPaste={(e) => e.preventDefault()}
         spellCheck={false}
         autoComplete="off"
-        className="code-font mx-0.5 inline-block rounded border-2 border-brand bg-white px-1 text-center text-ink outline-none"
+        className="code-font mx-0.5 inline-block rounded-xl border-2 border-brand bg-white px-1 text-center text-ink outline-none focus:ring-2 focus:ring-brand"
         style={{ width: `${Math.max(blank.answer.length, 2) + 1.5}ch` }}
       />,
     )

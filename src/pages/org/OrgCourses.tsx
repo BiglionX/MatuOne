@@ -32,7 +32,7 @@ export function OrgCourses() {
       })
   }, [])
 
-  const accessText = session?.status === 'trial' ? '前 3 关' : stageText(maxLevel)
+  const accessText = session?.status === 'trial' ? 'Level 1（完整免费）' : stageText(maxLevel)
 
   return (
     <div className="px-8 py-8">

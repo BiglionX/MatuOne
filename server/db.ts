@@ -84,11 +84,18 @@ function rowsOf(payload: SqlPayload): Record<string, unknown>[] {
   })
 }
 
-async function run(text: string, params: unknown[]): Promise<Record<string, unknown>[]> {
+function transient(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  if (/column|syntax|violates|does not exist|invalid input/i.test(message)) return false
+  return /fetch|timeout|ECONN|network|socket|terminated|HTTP 5|数据库 HTTP 5/i.test(message) || error instanceof TypeError
+}
+
+async function runOnce(text: string, params: unknown[]): Promise<Record<string, unknown>[]> {
   const connectionString = loadDatabaseUrl()
   const host = new URL(connectionString).hostname.replace(/^[^.]+/, 'api')
   const response = await fetch(`https://${host}/sql`, {
     method: 'POST',
+    signal: AbortSignal.timeout(45_000),
     headers: {
       'content-type': 'application/json',
       'neon-connection-string': connectionString,
@@ -111,6 +118,20 @@ async function run(text: string, params: unknown[]): Promise<Record<string, unkn
     throw new Error(message.slice(0, 180))
   }
   return rowsOf(payload)
+}
+
+async function run(text: string, params: unknown[]): Promise<Record<string, unknown>[]> {
+  let last: unknown
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await runOnce(text, params)
+    } catch (error) {
+      last = error
+      if (!transient(error) || attempt === 2) break
+      await new Promise((resolve) => setTimeout(resolve, 800 * (attempt + 1)))
+    }
+  }
+  throw last
 }
 
 export async function q<T extends Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T[]> {

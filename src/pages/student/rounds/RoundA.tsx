@@ -4,6 +4,7 @@ import { beginTrace, buildDemoCode, nextTraceStep, runCode, type PythonPhase } f
 import { getLineNotes } from '@/lib/lineNotes'
 import { RunPreview } from '@/components/RunPreview'
 import { RunButton } from '@/components/RunButton'
+import { FormError } from '@/components/FormError'
 
 interface Props {
   level: Level
@@ -18,13 +19,11 @@ function missedGuessHint(answer: string): string {
 }
 
 function stepResult(level: Level, step: RunStep): RunResult {
-  if (level.preview_kind === 'text') {
-    return { ok: true, output: { kind: 'text', text: step.text } }
+  const commands = level.preview_kind === 'text' ? [] : step.commands
+  if (commands.length === 0) {
+    return { ok: true, output: { kind: 'text', text: step.text, commands: [] } }
   }
-  return {
-    ok: true,
-    output: { kind: 'canvas', commands: step.commands, text: step.text },
-  }
+  return { ok: true, output: { kind: 'canvas', text: step.text, commands } }
 }
 
 /** A 回合：先看效果、猜一猜，再运行给定代码验证。猜错也能跑通。 */
@@ -168,8 +167,8 @@ export function RoundA({ level, targetResult, envPhase, onNext }: Props) {
   const preview = step ? stepResult(level, step) : stepping ? null : (result ?? targetResult)
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(320px,46%)_minmax(0,1fr)]">
-      <div className="flex flex-col gap-3">
+    <div className="grid gap-6 lg:grid-cols-[minmax(280px,42%)_minmax(0,1fr)]">
+      <div className="flex min-w-0 flex-col gap-4">
         <div className="text-sm font-medium text-ink-soft">
           {stepping ? (step ? `第 ${stepIndex + 1} / ${stepTotal} 步` : '准备分步走') : result ? '运行后的样子' : '这一段代码跑出来是这样'}
         </div>
@@ -180,6 +179,7 @@ export function RoundA({ level, targetResult, envPhase, onNext }: Props) {
             frame={frame}
             cursor={step && !steppedDone ? step.cursor : undefined}
             blank={stepping && !step}
+            typewrite={stepping && !!step}
           />
         </div>
         {step && (
@@ -200,7 +200,7 @@ export function RoundA({ level, targetResult, envPhase, onNext }: Props) {
         )}
       </div>
 
-      <div className="card flex flex-col p-7">
+      <div className="card flex min-w-0 flex-col p-6">
         <span className="chip w-fit bg-brand-soft text-brand-strong">猜一猜</span>
         <h2 className="mt-4 text-2xl font-semibold text-ink">{level.quiz.question}</h2>
 
@@ -260,7 +260,7 @@ export function RoundA({ level, targetResult, envPhase, onNext }: Props) {
                             : ''
                     }`}
                   >
-                    <pre className={`code-font whitespace-pre text-sm ${active ? 'font-semibold text-brand-strong' : 'text-ink'}`}>
+                    <pre className={`code-font overflow-x-auto whitespace-pre ${active ? 'font-semibold text-brand-strong' : 'text-ink'}`}>
                       {line || ' '}
                     </pre>
                     {active && <p className="mt-0.5 text-sm leading-snug text-brand-strong">{step.note}</p>}
@@ -296,16 +296,14 @@ export function RoundA({ level, targetResult, envPhase, onNext }: Props) {
             )}
           </div>
           {result && !result.ok && !result.loading && (
-            <p className="mt-3 text-sm text-danger">
-              {result.line > 0 ? `第 ${result.line} 行：${result.message}` : result.message}
-            </p>
+            <FormError className="mt-3">{result.line > 0 ? `第 ${result.line} 行：${result.message}` : result.message}</FormError>
           )}
           {stepNotice && (
             <p className="mt-3 rounded-field bg-brand-soft px-4 py-3 text-sm text-brand-strong" role="status">
               {stepNotice}
             </p>
           )}
-          {stepError && <p className="mt-3 text-sm text-danger">{stepError}</p>}
+          {stepError && <FormError className="mt-3">{stepError}</FormError>}
         </div>
       </div>
     </div>

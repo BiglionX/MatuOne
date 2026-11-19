@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { getParentSession, loginParent, registerParent } from '@/api/parent'
 import { BrandMark } from '@/components/BrandMark'
+import { FormError } from '@/components/FormError'
 import { DemoLoginButton } from '@/dev/DemoLoginButton'
 import { ApiError } from '@/lib/apiError'
+import { usePageMeta } from '@/lib/usePageMeta'
 
 const ACCOUNT = /^[a-z0-9][a-z0-9._]{2,31}$/i
 
 export function ParentLogin() {
+  usePageMeta('家长端登录', '家长登录后用绑定码查看孩子的关卡进度与打字成长。')
   const navigate = useNavigate()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [account, setAccount] = useState('')
@@ -96,7 +99,7 @@ export function ParentLogin() {
           </label>
         )}
 
-        {error && <p className="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
+        {error && <FormError className="mt-4">{error}</FormError>}
 
         <button type="submit" className="btn-primary mt-6 w-full" disabled={pending}>
           {pending ? '请稍候…' : mode === 'register' ? '注册并进入' : '进入家长端'}
@@ -105,7 +108,7 @@ export function ParentLogin() {
 
         <button
           type="button"
-          className="mt-4 w-full text-sm text-brand-strong"
+          className="btn-secondary mt-4 w-full"
           onClick={() => {
             setMode((current) => (current === 'login' ? 'register' : 'login'))
             setError('')

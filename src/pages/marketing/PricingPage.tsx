@@ -91,7 +91,9 @@ export function PricingPage() {
 
       <section className="card mt-8 p-6">
         <h2 className="text-xl font-semibold text-ink">试用</h2>
-        <p className="mt-2 text-ink-soft">{trialDays ?? '—'} 天，最多 10 个席位，只开放前 3 关。试用到期后数据保留，开通正式服务再继续。</p>
+        <p className="mt-2 text-ink-soft">
+          {trialDays ?? '—'} 天，最多 10 个席位，Level 1 全部 120 关免费开放。Level 2 及以后需开通正式服务。试用到期后数据保留。
+        </p>
         <p className="mt-2 text-sm text-ink-soft">
           1.0 不提供在线支付与自动扣费，收款、发票与退费口径按双方签署的服务合同执行。
         </p>

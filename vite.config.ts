@@ -16,6 +16,21 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
+  build: {
+    target: 'chrome87',
+    cssTarget: 'chrome87',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules') || id.includes('pyodide')) return undefined
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
+            return 'react'
+          }
+          return undefined
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -24,7 +39,7 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    watch: { ignored: ['**/_brand/**'] },
+    watch: { ignored: ['**/_brand/**', '**/tmp-ldraw/**'] },
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',

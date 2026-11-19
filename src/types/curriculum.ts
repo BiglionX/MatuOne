@@ -38,7 +38,7 @@ export interface CurriculumLevelRef {
  */
 export interface StudentStanding {
   completedCount: number
-  /** 全课程线性序号，试用「前 3 关」和旧页面仍读它。位置以 stage / semester / unit / level 为准。 */
+  /** 全课程线性序号。试用开放 Level 1（第 1–120 节）。位置以 stage / semester / unit / level 为准。 */
   currentOrder: number
   /** progress：已有学习记录；mock：还没有记录，回落到学生身上的 currentLevelOrder。 */
   source: 'progress' | 'mock'

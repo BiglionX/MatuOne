@@ -9,11 +9,14 @@ const CARDS = [
 ]
 
 export function HomePage() {
-  usePageMeta(undefined, '面向儿童的 Python 编程课外课：学生自己抄代码、逐行校验、跑出图形。机构零师资、零硬件开课，14 天试用。')
+  usePageMeta('Python 课外课', '面向儿童的 Python 编程课外课：学生自己抄代码、逐行校验、跑出图形。机构零师资、零硬件开课，14 天试用。')
   return (
     <main>
       <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="flex items-center gap-2.5">
+        <Link to="/" className="text-sm text-ink-soft transition hover:text-brand-strong">
+          ← 返回 MatuOne
+        </Link>
+        <div className="mt-6 flex items-center gap-2.5">
           <BrandMark size={32} />
           <span className="text-sm font-medium text-brand-strong">代码闯关</span>
         </div>

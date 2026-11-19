@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { useNavigate, Link, Navigate } from 'react-router-dom'
 import { getCurrentStudent, loginStudentAccount } from '@/api/studentAuth'
 import { BrandMark } from '@/components/BrandMark'
+import { FormError } from '@/components/FormError'
 import { DemoLoginButton } from '@/dev/DemoLoginButton'
+import { usePageMeta } from '@/lib/usePageMeta'
 
 export function StudentLogin() {
+  usePageMeta('学生登录', '用机构开通的账号登录学生端，进入课程地图继续闯关。')
   const navigate = useNavigate()
   const [account, setAccount] = useState('')
   const [password, setPassword] = useState('')
@@ -51,7 +54,7 @@ export function StudentLogin() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        {error && <p className="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
+        {error && <FormError className="mt-4">{error}</FormError>}
 
         <button type="submit" className="btn-primary mt-7 w-full text-lg">
           进入课程地图

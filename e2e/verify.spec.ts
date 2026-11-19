@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import { LEVELS } from '../src/mock/levels'
+import { q } from '../server/db'
 import { reportApi, watchApi } from './api-log'
 import { expectCanvasDrawn } from './canvasInk'
 import { prepareOrgSwitch } from './org-progress'
@@ -76,7 +77,8 @@ async function loginOps(page: Page) {
 
 test('R1 入口能进五个端', async ({ page }) => {
   await page.goto('/enter')
-  await expect(page.getByRole('heading', { name: '代码闯关' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '进入系统' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '代码闯关' }).first()).toBeVisible()
   for (const [title, href] of [
     ['学生端', '/student/login'],
     ['机构端', '/org/login'],
@@ -94,26 +96,27 @@ test('R2 学生登录进入课程地图', async ({ page }) => {
   await expect(page.getByRole('link', { name: '打字热身' })).toBeVisible()
 })
 
-test('R3 试用机构进不了第 4 关，响应里没有课文', async ({ page }) => {
-  const mapResponse = page.waitForResponse(
-    (response) => response.url().includes('/api/student-learning') && (response.request().postData() ?? '').includes('"map"'),
-  )
+test('R3 试用机构可以学 Level 1，进不了 Level 2', async ({ page }) => {
   await loginStudent(page, 'chenxiaoman', '123456')
-  const map = (await (await mapResponse).json()) as { entries: { order: number; levelId: string; unlocked: boolean }[] }
-  const fourth = map.entries.find((entry) => entry.order === 4)
-  expect(fourth, '课程地图应有第 4 关').toBeTruthy()
-  expect(fourth?.unlocked).toBe(false)
 
-  const gateResponse = page.waitForResponse((response) => response.url().includes('/api/student-enter-level'))
-  await page.goto(`/student/lesson/${fourth?.levelId}`)
-  const gate = await gateResponse
-  const gateText = await gate.text()
-  expect(gateText).not.toContain('teach_code_lines')
-  expect(gateText).not.toContain('demo_code')
-  const gateJson = JSON.parse(gateText) as { allowed?: boolean; reason?: string }
-  expect(gateJson.allowed).toBe(false)
-  expect(gateJson.reason).toBe('trial_locked')
-  await expect(page.getByText('试用期间只能学习前 3 关')).toBeVisible()
+  const level1Gate = page.waitForResponse((response) => response.url().includes('/api/student-enter-level'))
+  await page.goto('/student/lesson/L0004')
+  const level1 = await level1Gate
+  const level1Json = JSON.parse(await level1.text()) as { allowed?: boolean; reason?: string }
+  expect(level1Json.reason).not.toBe('trial_locked')
+  expect(level1Json.allowed).toBe(true)
+  await expect(page.getByText('试用期间只能学习 Level 1')).toHaveCount(0)
+
+  const level2Gate = page.waitForResponse((response) => response.url().includes('/api/student-enter-level'))
+  await page.goto('/student/lesson/L0121')
+  const level2 = await level2Gate
+  const level2Text = await level2.text()
+  expect(level2Text).not.toContain('teach_code_lines')
+  expect(level2Text).not.toContain('demo_code')
+  const level2Json = JSON.parse(level2Text) as { allowed?: boolean; reason?: string }
+  expect(level2Json.allowed).toBe(false)
+  expect(level2Json.reason).toBe('trial_locked')
+  await expect(page.getByText('试用期间只能学习 Level 1')).toBeVisible()
   await expect(page.getByText('抄代码')).toHaveCount(0)
 })
 
@@ -413,11 +416,7 @@ test('R13 换机构后第一单元仍是 5/20', async ({ page, request, browser 
         data: { action: 'complete', levelId, stars: 3, errorTaps: 0 },
       })
       const body = (await response.json()) as { ok?: boolean; reason?: string }
-      if (levelId === 'L0004' || levelId === 'L0005') {
-        expect(body.reason).toBe('trial_locked')
-      } else {
-        expect(body.ok, `${levelId} 应能记成完成`).toBe(true)
-      }
+      expect(body.ok, `${levelId} 应能记成完成`).toBe(true)
     }
     await plan.finishFive()
     await plan.moveOrg()
@@ -817,3 +816,78 @@ test('T-Py4 分步走超过 500 步就停下，并改为直接运行', async ({ 
   await expect(page.getByRole('button', { name: '下一步' })).toHaveCount(0)
   await expect(page.getByText('代码执行时间太长啦，检查一下有没有死循环？')).toHaveCount(0)
 })
+
+test('R12 Level 2 列表、图文混排和字典颜色', async ({ page }) => {
+  test.setTimeout(600_000)
+  const before = await q<{ sort_order: number; preview_frozen: boolean }>(
+    `select sort_order, preview_frozen
+     from public.course_level
+     where sort_order in (161, 201, 221)
+     order by sort_order`,
+  )
+  await q(
+    `update public.course_level
+     set preview_frozen = false
+     where sort_order in (161, 201, 221)`,
+  )
+  try {
+    await loginOps(page)
+    await openLevel2(page, 161)
+    await expect(page.getByText('sides = [first, 50, 70]')).toBeVisible()
+    await expect(page.getByText('出了点小问题')).toHaveCount(0)
+    await expectCanvasDrawn(page)
+
+    await openLevel2(page, 201)
+    await expectCanvasDrawn(page)
+    await expect(page.getByLabel('控制台输出')).toContainText('小窗')
+    const spoken = await page.getByLabel('控制台输出').boundingBox()
+    const canvas = await page.getByRole('img', { name: '程序运行结果' }).boundingBox()
+    expect(spoken && canvas).toBeTruthy()
+    if (spoken && canvas) {
+      expect(spoken.y + spoken.height).toBeLessThanOrEqual(canvas.y + 1)
+      expect(canvas.height).toBeGreaterThan(160)
+    }
+
+    await openLevel2(page, 221)
+    await expect(page.getByText('t.color(box["窗"])')).toBeVisible()
+    await expectCanvasDrawn(page)
+    await expect(page.getByLabel('控制台输出')).toContainText('red')
+    const red = await page.getByRole('img', { name: '程序运行结果' }).evaluate((el) => {
+      const canvas = el as HTMLCanvasElement
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return 0
+      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      let count = 0
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 20) continue
+        if (data[i] > 150 && data[i] > data[i + 1] + 40 && data[i] > data[i + 2] + 40) count += 1
+      }
+      return count
+    })
+    expect(red).toBeGreaterThan(20)
+  } finally {
+    for (const row of before) {
+      await q('update public.course_level set preview_frozen = $2 where sort_order = $1', [row.sort_order, row.preview_frozen])
+    }
+  }
+})
+
+async function openLevel2(page: Page, order: number) {
+  await page.goto(`/student/lesson/L${String(order).padStart(4, '0')}?preview=true`)
+  const recall = page.getByRole('heading', { name: '先把上一节的这一串遮住打一遍' })
+  const lesson = page.getByRole('heading', { name: new RegExp(`第 ${order} 关`) })
+  await expect(recall.or(lesson)).toBeVisible({ timeout: 60_000 })
+  if (await recall.isVisible()) {
+    const prev = await q<{ drill: string | null }>(
+      `select body->>'drill_chunk' as drill from public.course_level where sort_order = $1`,
+      [order - 1],
+    )
+    const chunk = prev[0]?.drill ?? ''
+    expect(chunk, `第 ${order} 关要复习的组块`).toBeTruthy()
+    await page.getByLabel('组块打字').fill(chunk)
+    await expect(lesson).toBeVisible()
+  }
+  const storySkip = page.getByRole('button', { name: '跳过' })
+  if (await storySkip.isVisible()) await storySkip.click()
+  await expect(lesson).toBeVisible()
+}

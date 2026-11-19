@@ -10,6 +10,8 @@ import {
   type AdminStudentRow,
 } from '@/api/adminStudents'
 import { formatDate } from '@/lib/format'
+import { FormError } from '@/components/FormError'
+import { TableSkeleton } from '@/components/Skeleton'
 import type { OrgLedgerRow } from '@/types/orgAdmin'
 
 const PAGE_SIZE = 20
@@ -153,7 +155,7 @@ export function AdminStudents() {
       <div className="mx-auto max-w-6xl">
         <h1 className="text-2xl font-bold text-ink">学生库</h1>
         <p className="mt-1 text-sm text-ink-soft">全平台学生。可按机构和姓名或账号筛选。</p>
-        {notice && <p className="mt-4 text-sm text-danger">{notice}</p>}
+        {notice && <FormError className="mt-4">{notice}</FormError>}
 
         <section className="card mt-6 p-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -191,11 +193,11 @@ export function AdminStudents() {
         </section>
 
         <section className="card mt-4 overflow-x-auto">
-          {error && <p className="px-4 py-6 text-sm text-danger">{error}</p>}
-          {!error && loading && students.length === 0 && <p className="px-4 py-6 text-sm text-ink-soft">正在加载学生…</p>}
+          {error && <FormError className="m-4">{error}</FormError>}
+          {!error && loading && students.length === 0 && <TableSkeleton rows={6} cols={5} />}
           {!error && !loading && students.length === 0 && <p className="px-4 py-6 text-sm text-ink-soft">没有符合条件的学生。</p>}
           {!error && students.length > 0 && (
-            <table className="w-full min-w-[920px] text-left text-sm">
+            <table className="data-table w-full min-w-[920px] text-left text-sm">
               <thead className="text-ink-soft">
                 <tr className="border-b border-line">
                   {['学生姓名', '账号', '所属机构', '当前进度', '最近学习', '绑定家长数', '操作'].map((label) => (
@@ -276,8 +278,8 @@ export function AdminStudents() {
                 关闭
               </button>
             </div>
-            {detailLoading && <p className="mt-6 text-sm text-ink-soft">正在读取…</p>}
-            {detailError && <p className="mt-6 text-sm text-danger">{detailError}</p>}
+            {detailLoading && <TableSkeleton rows={3} cols={2} />}
+            {detailError && <FormError className="mt-6">{detailError}</FormError>}
             {detail && (
               <div className="mt-6 space-y-6">
                 <dl className="grid grid-cols-2 gap-4 text-sm">

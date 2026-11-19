@@ -327,8 +327,10 @@ for (const pack of UNITS) {
   const row = catalog.units.find((item) => item.unitId === pack.id)
   row.knowledgeTags = pack.tags
 }
-if (catalog.levels[120].order !== 121 || catalog.levels[120].is_placeholder !== true) {
-  throw new Error('第 121 关骨架被改动了')
+const level121 = catalog.levels[120]
+if (level121.order !== 121) throw new Error('第 121 关序号错了')
+if (level121.is_placeholder !== true && level121.title !== '给正方形起个名字') {
+  throw new Error('第 121 关既不是占位，也不是已写的函数课')
 }
 writeFileSync(catalogPath, `${JSON.stringify(catalog)}\n`)
 
@@ -347,7 +349,7 @@ const unitSummary = byUnit
 
 const overview = `# Level 1 前 120 关教研总览
 
-给皓。这是可上课的课文，不是提纲。课程包在 \`content/courses/level1/\`，一个单元一个文件，格式和后台导入器一致。第 121 关往后的骨架没有改。
+给皓。这是可上课的课文，不是提纲。课程包在 \`content/courses/level1/\`，一个单元一个文件，格式和后台导入器一致。第 121–240 关是 Level 2，见 docs/level2.md。第 241 关起仍是占位。
 
 计行：按 \`teach_code_lines\` 里的非空字符串计。这 120 关没有空行，所以条数就是行数。导入器仍在超过 15 行时给警告（产品 1.0 的上限）。本批机检按 10 行判失败。
 
@@ -395,7 +397,7 @@ ${rows}
 
 ## 机检
 
-- 关数 120，第 121 关仍是占位骨架。
+- 关数 120。Level 2 的第 121–240 关另见 docs/level2.md。
 - 禁止 API：0。
 - 超过 10 行：0。
 - drill 超过 20 个字符：0。本批 drill 都是上一关的核心行，第 1 关用本关最短核心行，全部不超过 15 个字符。

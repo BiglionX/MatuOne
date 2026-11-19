@@ -3,6 +3,8 @@ import type { ImportReport, Level } from '@/types'
 import { importCoursePackage, listCourseCopyHistory, listCourseTree, setPreviewFrozen, validateCoursePackage } from '@/api/catalog'
 import { CommandStory } from '@/components/CommandStory'
 import { CourseCopyDrawer } from '@/components/CourseCopyDrawer'
+import { FormError } from '@/components/FormError'
+import { ListSkeleton } from '@/components/Skeleton'
 import { badgeTitle, LEVEL_KIND_LABEL } from '@/data/grade3Fall'
 import { buildPlayableLevel } from '@/lib/lessonMaterial'
 import { storyOutlineMarkdown } from '@/lib/storyOutline'
@@ -224,7 +226,7 @@ export function AdminCourseImport() {
         </button>
       </header>
 
-      {error && <p className="mt-4 text-sm text-danger">{error}</p>}
+      {error && <FormError className="mt-4">{error}</FormError>}
 
       <div className="mt-5 grid min-h-0 flex-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <nav aria-label="课程目录" className="card min-h-[420px] overflow-y-auto p-3 lg:max-h-[calc(100vh-11rem)]">
@@ -233,7 +235,7 @@ export function AdminCourseImport() {
               {showFrozen ? '隐藏冻结关卡' : '显示冻结关卡'}
             </button>
           </div>
-          {loading && !tree && <p className="px-2 py-3 text-sm text-ink-soft">正在读取课程树…</p>}
+          {loading && !tree && <ListSkeleton rows={5} />}
           {!loading && (tree?.stages.length ?? 0) === 0 && <p className="px-2 py-3 text-sm text-ink-soft">还没有课程。</p>}
           {tree?.stages.map((stage) => {
             const stageOpen = openStages.has(stage.stageLevel)
@@ -309,7 +311,7 @@ export function AdminCourseImport() {
           ) : selected ? (
             <LevelDetail stage={selected.stage} unit={selected.unit} level={selected.level} onFrozen={markFrozen} onCopy={markCopy} />
           ) : (
-            <p className="text-sm text-ink-soft">{loading ? '正在读取…' : '在左侧选一节课。'}</p>
+            loading ? <ListSkeleton rows={3} /> : <p className="text-sm text-ink-soft">在左侧选一节课。</p>
           )}
         </section>
       </div>
@@ -418,7 +420,7 @@ function LevelDetail({
           </button>
         </div>
       </div>
-      {outlineError && <p className="mt-3 text-sm text-danger">{outlineError}</p>}
+      {outlineError && <FormError className="mt-3">{outlineError}</FormError>}
       <div className="mt-4 flex items-center justify-between gap-3 rounded-field bg-canvas px-4 py-3">
         <div>
           <p className="text-sm font-medium text-ink">冻结预览</p>
@@ -455,7 +457,7 @@ function LevelDetail({
           {history ? `文案版本 ${history.revisionCount}` : '正在读取修改记录…'}
           。只记录这四段文案，不记录代码。
         </p>
-        {historyError && <p className="mt-2 text-sm text-danger">{historyError}</p>}
+        {historyError && <FormError className="mt-2">{historyError}</FormError>}
         {history && history.entries.length === 0 && <p className="mt-2 text-sm text-ink-soft">还没有就地修改。</p>}
         {history && history.entries.length > 0 && (
           <ul className="mt-3 space-y-2">
@@ -624,7 +626,7 @@ function ImportPanel({
           </button>
         </div>
       </div>
-      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      {error && <FormError className="mt-3">{error}</FormError>}
       <textarea
         value={text}
         onChange={(event) => {

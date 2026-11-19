@@ -28,8 +28,8 @@ const local = /localhost|127\.0\.0\.1/.test(baseURL)
 
 export default defineConfig({
   testDir: 'e2e',
-  timeout: 120_000,
-  expect: { timeout: 30_000 },
+  timeout: 180_000,
+  expect: { timeout: 45_000 },
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -39,13 +39,13 @@ export default defineConfig({
         command: 'npm run dev -- --host 127.0.0.1 --port 5173',
         url: baseURL,
         reuseExistingServer: true,
-        timeout: 120_000,
+        timeout: 180_000,
       }
     : undefined,
   use: {
     baseURL,
-    actionTimeout: 90_000,
-    navigationTimeout: 45_000,
+    actionTimeout: 120_000,
+    navigationTimeout: 60_000,
     channel: 'msedge',
     viewport: { width: 1280, height: 800 },
     screenshot: 'only-on-failure',

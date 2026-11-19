@@ -8,6 +8,7 @@ import { RunPreview } from '@/components/RunPreview'
 import { TypingTrainer } from '@/components/TypingTrainer'
 import { ChunkDrill } from '@/components/ChunkDrill'
 import { useToast } from '@/components/Toast'
+import { FormError } from '@/components/FormError'
 
 interface Props {
   level: Level
@@ -204,8 +205,8 @@ export function RoundC({ level, studentId: _studentId, targetResult, envPhase, o
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(320px,46%)_minmax(0,1fr)]">
-          <div className="flex flex-col gap-3">
+        <div className="grid gap-6 lg:grid-cols-[minmax(280px,42%)_minmax(0,1fr)]">
+          <div className="flex min-w-0 flex-col gap-4">
             <div className="text-sm font-medium text-ink-soft">{ranOk ? '改完的样子' : '还没改之前，它长这样'}</div>
             <div className="min-h-[340px] flex-1">
               {consoleMode ? (
@@ -232,7 +233,7 @@ export function RoundC({ level, studentId: _studentId, targetResult, envPhase, o
             )}
           </div>
 
-          <div className="card p-6">
+          <div className="card min-w-0 p-6">
             <div className="space-y-5">
               {level.challenge_params.map((param) => (
                 <div key={param.name}>
@@ -259,7 +260,7 @@ export function RoundC({ level, studentId: _studentId, targetResult, envPhase, o
                   return (
                     <div
                       key={`${pulse}-${i}`}
-                      className={`whitespace-pre rounded-md px-1 ${failed ? 'bg-danger-soft ring-1 ring-danger' : ''}`}
+                      className={`code-font overflow-x-auto whitespace-pre rounded-xl px-1 ${failed ? 'bg-danger-soft ring-1 ring-danger' : ''}`}
                     >
                       {mark ? (
                         <>
@@ -288,12 +289,9 @@ export function RoundC({ level, studentId: _studentId, targetResult, envPhase, o
             </div>
 
             {result && !result.ok && !result.loading && (
-              <div className="mt-4 rounded-card border border-danger/40 bg-danger-soft p-4">
-                <p className="font-semibold text-danger">
-                  {result.line > 0 ? `第 ${result.line} 行出了点小问题` : result.message}
-                </p>
-                {result.line > 0 && <p className="mt-1 text-ink">{result.message}</p>}
-              </div>
+              <FormError className="mt-4">
+                {result.line > 0 ? `第 ${result.line} 行出了点小问题。${result.message}` : result.message}
+              </FormError>
             )}
           </div>
         </div>

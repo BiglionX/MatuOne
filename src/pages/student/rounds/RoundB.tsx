@@ -6,6 +6,7 @@ import { checkTypedLine } from '@/lib/lineCheck'
 import { getLineNotes } from '@/lib/lineNotes'
 import { RunPreview } from '@/components/RunPreview'
 import { useToast } from '@/components/Toast'
+import { FormError } from '@/components/FormError'
 
 interface Props {
   level: Level
@@ -110,8 +111,8 @@ export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(300px,40%)_minmax(0,1fr)]">
-      <div className="flex min-h-[420px] flex-col gap-4">
+    <div className="grid gap-6 lg:grid-cols-[minmax(280px,40%)_minmax(0,1fr)]">
+      <div className="flex min-h-[420px] min-w-0 flex-col gap-4">
         <div className="text-sm font-medium text-ink-soft">
           {result?.ok ? '这是你跑出来的' : '还没有运行，点下面的「运行」看看'}
         </div>
@@ -130,14 +131,14 @@ export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
             <span>{showFullRef ? '收起' : '展开'}</span>
           </button>
           {showFullRef && (
-            <pre className="code-font overflow-auto border-t border-line bg-code-bg px-4 py-3 text-sm text-ink-soft">
+            <pre className="code-font overflow-x-auto border-t border-line bg-code-bg px-4 py-3 text-ink">
               {buildDemoCode(level)}
             </pre>
           )}
         </div>
       </div>
 
-      <div className="flex flex-col">
+      <div className="flex min-w-0 flex-col">
         <div className="mb-2 flex items-center justify-between text-sm text-ink-soft">
           <span>
             第 {Math.min(locked + 1, lines.length)} 行 / 共 {lines.length} 行
@@ -145,7 +146,7 @@ export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
           <span>打完一行按回车</span>
         </div>
 
-        <div className="card flex-1 p-5">
+        <div className="card min-w-0 flex-1 p-6">
           <div className="space-y-1">
             {lines.map((line, i) => {
               const state = i < locked ? 'done' : i === locked ? 'current' : 'todo'
@@ -153,8 +154,8 @@ export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
               return (
                 <div key={i} id={`code-line-${i + 1}`} className="flex items-start gap-3">
                   <span
-                    className={`code-font w-6 shrink-0 select-none pt-1 text-right text-sm ${
-                      state === 'done' ? 'text-success' : 'text-ink-soft/70'
+                    className={`code-font w-8 shrink-0 select-none pt-1 text-right ${
+                      state === 'done' ? 'text-success' : 'text-ink-soft'
                     }`}
                   >
                     {i + 1}
@@ -162,14 +163,14 @@ export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
 
                   <div className="min-w-0 flex-1">
                     <div
-                      className={`code-font whitespace-pre rounded-field px-3 py-1.5 transition-colors ${
+                      className={`code-font overflow-x-auto whitespace-pre rounded-xl px-3 py-1.5 transition-colors ${
                         failed
                           ? 'bg-danger-soft text-ink ring-1 ring-danger'
                           : state === 'done'
-                            ? 'bg-success-soft text-success'
+                            ? 'bg-success-soft text-ink'
                             : state === 'current'
                               ? 'bg-brand-soft text-ink ring-1 ring-brand/40'
-                              : 'text-ink-soft/60'
+                              : 'text-ink-soft'
                       }`}
                     >
                       {line || ' '}
@@ -196,19 +197,15 @@ export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
                           spellCheck={false}
                           autoComplete="off"
                           aria-label={`第 ${i + 1} 行代码`}
-                          className={`code-font mt-2 w-full rounded-field border-2 bg-white px-3 py-2 outline-none transition ${
+                          className={`code-font mt-2 w-full rounded-xl border-2 bg-white px-3 py-2 outline-none transition focus:ring-2 ${
                             error
-                              ? 'border-danger focus:ring-danger/15'
-                              : 'border-brand focus:ring-2 focus:ring-brand/20'
+                              ? 'border-danger focus:ring-danger'
+                              : 'border-brand focus:ring-brand'
                           }`}
                           placeholder="照着上面这一行打一遍"
                         />
 
-                        {error && (
-                          <div className="mt-2 rounded-field bg-danger-soft px-4 py-2.5 text-sm text-danger">
-                            {error}
-                          </div>
-                        )}
+                        {error && <FormError className="mt-2">{error}</FormError>}
 
                         {showStandard && (
                           <div className="mt-2 rounded-field border border-warning/50 bg-warning-soft px-4 py-2.5 text-sm">
@@ -225,7 +222,7 @@ export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
                       state === 'done'
                         ? 'bg-success text-white'
                         : state === 'current'
-                          ? 'bg-brand text-white'
+                          ? 'bg-brand-action text-white'
                           : 'bg-canvas text-ink-soft'
                     }`}
                     aria-hidden="true"
@@ -245,14 +242,19 @@ export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
         </div>
 
         {result && !result.ok && !result.loading && (
-          <div className="mt-4 rounded-card border border-danger/40 bg-danger-soft p-4">
-            <p className="font-semibold text-danger">
-              {result.line > 0 ? `第 ${result.line} 行出了点小问题` : result.message}
+          <div className="mt-4 rounded-2xl border border-danger/40 bg-danger-soft p-4">
+            <p className="flex items-start gap-2 font-semibold text-danger">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" className="mt-1 shrink-0">
+                <circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M8 4.6v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="8" cy="11.15" r="0.8" fill="currentColor" />
+              </svg>
+              <span>{result.line > 0 ? `第 ${result.line} 行出了点小问题` : result.message}</span>
             </p>
-            {result.line > 0 && <p className="mt-1 text-ink">{result.message}</p>}
+            {result.line > 0 && <p className="mt-1 pl-6 text-ink">{result.message}</p>}
             <button
               type="button"
-              className="mt-3 rounded-field border border-danger/40 bg-white px-4 py-2 text-sm font-medium text-danger"
+              className="btn-secondary mt-3"
               onClick={() => {
                 inputRef.current?.focus()
                 inputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
@@ -295,7 +297,7 @@ export function RoundB({ level, envPhase, onNext, onErrorTap }: Props) {
         </div>
 
         {showCode && (
-          <pre className="code-font mt-3 overflow-auto rounded-card border border-line bg-code-bg p-4 text-sm">
+          <pre className="code-font mt-3 overflow-x-auto rounded-2xl border border-line bg-code-bg p-4">
             {lines.slice(0, locked).join('\n') || '还没有打任何一行'}
           </pre>
         )}

@@ -1,3 +1,4 @@
+import type { OrgMemberRole } from '@/types/orgFinance'
 import type { OrgSession } from '@/types/orgAdmin'
 import { ApiError } from '@/lib/apiError'
 import { callFunction, clearAuth, establishSession } from '@/lib/backend'
@@ -21,6 +22,7 @@ interface LoginResponse {
   usedSeats: number
   trialExpireAt: string | null
   serviceEndAt: string | null
+  role?: OrgMemberRole
 }
 
 function readProfile(): OrgSession | null {
@@ -48,6 +50,7 @@ export async function loginOrgAdmin(account: string, password: string): Promise<
     usedSeats: result.usedSeats,
     trialExpireAt: result.trialExpireAt,
     serviceEndAt: result.serviceEndAt,
+    role: result.role === 'teacher' ? 'teacher' : 'admin',
   }
   localStorage.setItem(PROFILE, JSON.stringify(session))
   return session

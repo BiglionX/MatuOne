@@ -1,0 +1,462 @@
+/* MatuOne 启动器专用样式：太空底纹、扫描线、窗口角标、卡片高亮。
+   与代码闯关 / MatuPix 的浅色主题互不影响，只作用于 .matuone-* 系列类名。 */
+
+/* 底色只是 Canvas 没起来时的兜底，正常情况由 StarfieldCanvas 铺满视口 */
+.matuone-shell {
+  background-color: #04060d;
+  background-image:
+    radial-gradient(1100px 620px at 12% -12%, rgba(45, 212, 191, 0.14), transparent 62%),
+    radial-gradient(900px 520px at 88% 2%, rgba(129, 140, 248, 0.15), transparent 60%),
+    radial-gradient(1200px 700px at 50% 110%, rgba(56, 189, 248, 0.1), transparent 62%);
+}
+
+/* 背景叙事画布：固定铺满视口，不吃指针事件 */
+.matuone-stars {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* 缓慢漂移的网格地板。能量越强网格自动退到背景里，不跟光晕打架 */
+.matuone-grid {
+  background-image:
+    linear-gradient(rgba(125, 211, 252, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, 0.075) 1px, transparent 1px);
+  background-size: 46px 46px;
+  animation: matuoneGridDrift 24s linear infinite;
+  opacity: calc(0.6 - var(--matuone-act, 0) * 0.35);
+  transition: opacity 1200ms ease;
+  -webkit-mask-image: radial-gradient(ellipse 78% 62% at 50% 32%, #000 0%, transparent 78%);
+  mask-image: radial-gradient(ellipse 78% 62% at 50% 32%, #000 0%, transparent 78%);
+}
+
+@keyframes matuoneGridDrift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 46px 46px;
+  }
+}
+
+/* CRT 扫描线，压在所有内容下方 */
+.matuone-scan {
+  background-image: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 4px);
+}
+
+/* 内容区压暗：双极能量场很亮，压一层遮罩保证卡片与文字始终可读 */
+.matuone-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(120% 78% at 50% 46%, rgba(4, 8, 16, 0.46) 0%, rgba(4, 8, 16, 0.26) 42%, rgba(4, 8, 16, 0) 74%);
+}
+
+/* 窗口四角标记 */
+.matuone-corner-tl,
+.matuone-corner-tr,
+.matuone-corner-bl,
+.matuone-corner-br {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  border-color: rgba(94, 234, 212, 0.55);
+  border-style: solid;
+  border-width: 0;
+}
+
+.matuone-corner-tl {
+  left: 12px;
+  top: 46px;
+  border-top-width: 1.5px;
+  border-left-width: 1.5px;
+}
+
+.matuone-corner-tr {
+  right: 12px;
+  top: 46px;
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+.matuone-corner-bl {
+  left: 12px;
+  bottom: 40px;
+  border-bottom-width: 1.5px;
+  border-left-width: 1.5px;
+}
+
+.matuone-corner-br {
+  right: 12px;
+  bottom: 40px;
+  border-bottom-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+/* 模块卡片：半透明玻璃，让背景的星云与恒星透上来 */
+.matuone-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(8, 13, 26, 0.6);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 18px 46px -26px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.matuone-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.03) 24%, transparent 52%);
+}
+
+.matuone-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.matuone-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 20px 52px -30px var(--accent);
+  background-color: rgba(16, 22, 40, 0.5);
+}
+
+.matuone-card:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 0 20px 52px -30px var(--accent);
+}
+
+/* 待开发模块：整体压暗，提示还没上线 */
+.matuone-card.is-locked:hover {
+  box-shadow: 0 20px 52px -30px var(--accent);
+}
+
+/* 模块预览面板：透明开窗，直达后面的星空；扫光与光锥用板块色区分 */
+.matuone-preview {
+  position: relative;
+  height: 108px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+}
+
+.matuone-preview::before {
+  content: "";
+  position: absolute;
+  top: -60%;
+  left: -40%;
+  width: 34%;
+  height: 220%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.45;
+  transform: rotate(18deg);
+  animation: matuonePreviewSweep 7s ease-in-out infinite;
+}
+
+.matuone-preview::after {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.14) 38deg,
+    transparent 110deg,
+    transparent 360deg
+  );
+  animation: matuonePreviewSpin 16s linear infinite;
+}
+
+@keyframes matuonePreviewSweep {
+  0%,
+  58% {
+    transform: translateX(-30%) rotate(18deg);
+    opacity: 0;
+  }
+  68% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(430%) rotate(18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes matuonePreviewSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 启动器入场：开屏结束后，菜单各元素依次浮现 */
+.matuone-rise {
+  animation: matuoneRise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--matuone-delay, 0ms);
+}
+
+@keyframes matuoneRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ========== 开屏动画：菜单出现之前的那一段 ========== */
+.matuone-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(760px 460px at 50% 44%, rgba(4, 10, 22, 0.62), rgba(2, 4, 10, 0.9) 76%);
+  animation: matuoneBootFade 520ms ease 2230ms forwards;
+}
+
+.matuone-boot-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+/* 标志先长出来，再被光环点亮 */
+.matuone-boot-glyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  animation: matuoneBootGlyph 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.matuone-boot-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: matuoneBootStroke 880ms ease-out 240ms forwards;
+}
+
+.matuone-boot-ring {
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgba(94, 234, 212, 0.5);
+  border-radius: 22px;
+  animation: matuoneBootRing 900ms ease-out 640ms forwards;
+}
+
+.matuone-boot-title {
+  margin-top: 26px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: rgb(226 236 255);
+  animation: matuoneBootUp 620ms ease-out 760ms both;
+}
+
+.matuone-boot-sub {
+  margin-top: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  color: rgb(148 163 190);
+  animation: matuoneBootUp 620ms ease-out 860ms both;
+}
+
+/* 系统自检：三个板块逐行亮出来 */
+.matuone-boot-list {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  text-align: left;
+}
+
+.matuone-boot-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  animation: matuoneBootRow 420ms ease-out var(--boot-delay, 880ms) both;
+}
+
+.matuone-boot-tag {
+  min-width: 40px;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.matuone-boot-tag.is-ok {
+  color: rgb(52 211 153);
+}
+
+.matuone-boot-tag.is-wait {
+  color: rgb(251 191 36);
+}
+
+.matuone-boot-label {
+  color: rgb(226 236 255);
+}
+
+.matuone-boot-ready {
+  margin-top: 20px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.34em;
+  color: rgb(45 212 191);
+  animation: matuoneBootUp 500ms ease-out 1900ms both;
+}
+
+/* 进入板块时卡片先爆亮一下，再跳走 */
+.matuone-card.is-launching {
+  animation: matuoneCardBurst 760ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes matuoneBootFade {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes matuoneBootGlyph {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes matuoneBootStroke {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes matuoneBootRing {
+  0% {
+    opacity: 0.85;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+
+@keyframes matuoneBootUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes matuoneBootRow {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes matuoneCardBurst {
+  0% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  35% {
+    filter: brightness(2.4);
+    transform: scale(1.03);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matuone-grid {
+    animation: none;
+  }
+
+  .matuone-preview::before,
+  .matuone-preview::after {
+    animation: none;
+  }
+
+  .matuone-rise {
+    animation: none;
+  }
+
+  .matuone-card {
+    transition: none;
+  }
+
+  .matuone-card:hover {
+    transform: none;
+  }
+
+  .matuone-boot,
+  .matuone-boot-glyph,
+  .matuone-boot-ring,
+  .matuone-boot-title,
+  .matuone-boot-sub,
+  .matuone-boot-item,
+  .matuone-boot-ready {
+    animation: none;
+  }
+
+  .matuone-boot-stroke {
+    stroke-dashoffset: 0;
+  }
+
+  .matuone-boot-item {
+    opacity: 1;
+  }
+
+  .matuone-card.is-launching {
+    animation: none;
+  }
+}

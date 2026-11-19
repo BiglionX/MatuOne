@@ -13,6 +13,8 @@ import {
   type ProvisionLog,
 } from '@/api/adminOrgs'
 import { formatDate } from '@/lib/format'
+import { FormError } from '@/components/FormError'
+import { CardGridSkeleton, TableSkeleton } from '@/components/Skeleton'
 import type { OrgStatus } from '@/types/orgAdmin'
 import type { BillingInput, BillingRecord, BillingType, InvoiceStatus } from '@/types/ops'
 
@@ -128,9 +130,9 @@ export function AdminOrgDetail() {
           ))}
         </div>
 
-        {error && <p className="mt-4 text-sm text-danger">{error}</p>}
-        {notice && <p className="mt-4 text-sm text-danger">{notice}</p>}
-        {!error && loading && <p className="mt-6 text-sm text-ink-soft">正在读取机构…</p>}
+        {error && <FormError className="mt-4">{error}</FormError>}
+        {notice && <FormError className="mt-4">{notice}</FormError>}
+        {!error && loading && <CardGridSkeleton count={4} />}
 
         {org && tab === 'overview' && (
           <div className="mt-6 space-y-4">
@@ -187,7 +189,7 @@ export function AdminOrgDetail() {
 
         {org && tab === 'people' && (
           <section className="card mt-6 overflow-x-auto">
-            {!students && <p className="px-4 py-6 text-sm text-ink-soft">正在读取学生…</p>}
+            {!students && <TableSkeleton rows={4} cols={4} />}
             {students && students.students.length === 0 && <p className="px-4 py-6 text-sm text-ink-soft">这个机构还没有学生。</p>}
             {students && students.students.length > 0 && (
               <table className="w-full min-w-[760px] text-left text-sm">
@@ -470,7 +472,7 @@ function RenewForm({
             <input className="field mt-1" type="date" value={serviceEnd} onChange={(event) => setServiceEnd(event.target.value)} />
           </label>
         </div>
-        {formError && <p className="mt-4 text-sm text-danger">{formError}</p>}
+        {formError && <FormError className="mt-4">{formError}</FormError>}
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" className="btn-ghost" onClick={onClose}>
             取消

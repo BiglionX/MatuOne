@@ -3,11 +3,11 @@ import { getOrgSession, logoutOrgAdmin } from '@/api/orgAuth'
 import { BrandMark } from '@/components/BrandMark'
 import type { OrgStatus } from '@/types/orgAdmin'
 
-const NAV = [
+const NAV: { to: string; label: string; admin?: boolean }[] = [
   { to: '/org/dashboard', label: '进度看板' },
   { to: '/org/students', label: '学生管理' },
   { to: '/org/courses', label: '课程管理' },
-  { to: '/org/finance', label: '财务' },
+  { to: '/org/financial', label: '财务', admin: true },
 ]
 
 const STATUS_LABEL: Record<OrgStatus, string> = {
@@ -59,7 +59,7 @@ export function OrgLayout() {
         </div>
 
         <nav className="mt-2 flex flex-col gap-1 px-2">
-          {NAV.map((item) => (
+          {NAV.filter((item) => !item.admin || session.role !== 'teacher').map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

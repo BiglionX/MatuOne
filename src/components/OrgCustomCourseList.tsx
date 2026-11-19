@@ -9,6 +9,7 @@ import {
   unassignOrgCustomCourse,
 } from '@/api/orgCustomCourses'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
+import { ListSkeleton } from '@/components/Skeleton'
 import type { OrgCustomCourseSummary } from '@/types/orgMaterial'
 
 interface PersonOption {
@@ -111,7 +112,7 @@ export function OrgCustomCourseList({
       <div className="mt-4">
         <OrgAccessNotice message={notice} />
       </div>
-      {!ready && <p className="text-sm text-ink-soft">正在读取自定义课程…</p>}
+      {!ready && <ListSkeleton rows={3} />}
       {ready && courses.length === 0 && <p className="text-sm text-ink-soft">还没有自定义课程。</p>}
       <ul className="space-y-4">
         {courses.map((course) => (

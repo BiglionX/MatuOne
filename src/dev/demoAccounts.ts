@@ -13,3 +13,9 @@ export const DEMO_ACCOUNTS: Record<DemoRole, DemoAccount> = {
   platform: { account: 'ops', password: 'OpsDemo12345' },
   agent: { account: 'partner0001@daima-chuangguan.local', password: 'AgentDemo1234' },
 }
+
+/** 青禾托辅的老师演示账号。与机构管理员共用同一套演示哈希，不能进财务。 */
+export const ORG_TEACHER_DEMO: DemoAccount = {
+  account: 'teacherorg0001@daima-chuangguan.local',
+  password: 'TrialDemo1234',
+}

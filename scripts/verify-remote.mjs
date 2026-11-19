@@ -90,22 +90,35 @@ async function main() {
     report('V3', false, `${studentLogin.status} ${studentLogin.text}`)
     report('V4', false, '没有学生 JWT，未改机构状态')
   } else {
-    const level4 = await postFunction(
+    const level1 = await postFunction(
       'student-learning',
       { action: 'level', levelId: 4 },
       { authorization: `Bearer ${jwt}` },
     )
-    let level4Json = null
+    const level2 = await postFunction(
+      'student-learning',
+      { action: 'level', levelId: 121 },
+      { authorization: `Bearer ${jwt}` },
+    )
+    let level1Json = null
+    let level2Json = null
     try {
-      level4Json = JSON.parse(level4.text)
+      level1Json = JSON.parse(level1.text)
     } catch {
-      level4Json = null
+      level1Json = null
+    }
+    try {
+      level2Json = JSON.parse(level2.text)
+    } catch {
+      level2Json = null
     }
     const v3 =
-      level4Json?.allowed === false &&
-      level4Json?.reason === 'trial_locked' &&
-      !forbiddenLesson(level4.text)
-    report('V3', v3, `${level4.status} ${level4.text}`)
+      Boolean(level1Json?.level) &&
+      level1Json?.reason !== 'trial_locked' &&
+      level2Json?.allowed === false &&
+      level2Json?.reason === 'trial_locked' &&
+      !forbiddenLesson(level2.text)
+    report('V3', v3, `L4 ${level1.status} ${level1.text} | L121 ${level2.status} ${level2.text}`)
 
     let orgId = ''
     let original = ''

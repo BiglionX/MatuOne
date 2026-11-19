@@ -143,7 +143,7 @@ export function ChunkDrill({ chunk, reps, hideFrom, onComplete }: Props) {
           onDrop={(event) => event.preventDefault()}
           spellCheck={false}
           autoComplete="off"
-          className="code-font mt-5 w-full rounded-field border border-line bg-white px-4 py-3 text-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+          className="code-font mt-5 w-full rounded-xl border border-line bg-white px-4 py-3 outline-none focus:border-brand focus:ring-2 focus:ring-brand"
           placeholder={masked ? '凭手打一遍' : '照着上面这一串打'}
           aria-label="组块打字"
         />

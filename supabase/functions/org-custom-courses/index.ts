@@ -204,6 +204,7 @@ function failed(message: string): Response {
   if (
     line.includes('课程名称需要') ||
     line.includes('关卡不存在') ||
+    line.includes('试用机构只能使用 Level 1') ||
     line.includes('试用机构只能使用前 3 关') ||
     line.includes('这关尚未授权') ||
     line.includes('素材不属于本机构') ||

@@ -2,7 +2,8 @@
  * 生成 960 节课骨架：Level 1–8，每个 Level 6 个单元、120 节。
  *
  * 学习序号从 Level 1 开始。若 content/courses/level1 里有 6 个单元包，
- * 第 1–120 节用那份课文盖住骨架；第 121 节仍是占位。
+ * 第 1–120 节用那份课文盖住骨架。若 Level 2 的单元包在，第 121 节起按包盖上；
+ * 六个单元都在时，第 121–240 节都是课文，第 241 节起仍是占位。
  * 占位课标题用「Level X · 单元 Y · 第 Z 关」。
  * 每个单元严格 12 new + 5 practice + 2 typing + 1 project。
  *
@@ -195,31 +196,41 @@ LEVELS.forEach((stageUnits, stageIndex) => {
   })
 })
 
+function overlayPack(file) {
+  const pack = JSON.parse(readFileSync(file, 'utf8'))
+  const unit = units.find((item) => item.unitId === pack.unit.unit_id)
+  if (unit && Array.isArray(pack.unit_tags)) unit.knowledgeTags = pack.unit_tags
+  for (const lesson of pack.levels) {
+    const row = levels[lesson.order - 1]
+    if (!row || row.order !== lesson.order) throw new Error(`课程包序号错位 ${lesson.order}`)
+    row.title = lesson.title
+    row.goal = lesson.goal
+    row.levelType = lesson.level_type
+    row.knowledgeTags = lesson.knowledge_tags
+    row.milestoneBadge = lesson.milestone_badge
+    row.placeholder = false
+    row.is_placeholder = false
+    if (typeof lesson.milestone_badge === 'string' && lesson.badge_title) badges[lesson.milestone_badge] = lesson.badge_title
+  }
+}
+
 function overlayLevel1() {
   const ids = ['L1_U01', 'L1_U02', 'L1_U03', 'L1_U04', 'L1_U05', 'L1_U06']
   const files = ids.map((id) => join(root, 'content', 'courses', 'level1', `${id}.json`))
   if (!files.every((file) => existsSync(file))) return false
-  for (const file of files) {
-    const pack = JSON.parse(readFileSync(file, 'utf8'))
-    const unit = units.find((item) => item.unitId === pack.unit.unit_id)
-    if (unit && Array.isArray(pack.unit_tags)) unit.knowledgeTags = pack.unit_tags
-    for (const lesson of pack.levels) {
-      const row = levels[lesson.order - 1]
-      if (!row || row.order !== lesson.order) throw new Error(`课程包序号错位 ${lesson.order}`)
-      row.title = lesson.title
-      row.goal = lesson.goal
-      row.levelType = lesson.level_type
-      row.knowledgeTags = lesson.knowledge_tags
-      row.milestoneBadge = lesson.milestone_badge
-      row.placeholder = false
-      row.is_placeholder = false
-      if (typeof lesson.milestone_badge === 'string' && lesson.badge_title) badges[lesson.milestone_badge] = lesson.badge_title
-    }
-  }
+  for (const file of files) overlayPack(file)
   return true
 }
 
-function assertCurriculum(overlaid) {
+function overlayLevel2() {
+  const ids = ['L2_U01', 'L2_U02', 'L2_U03', 'L2_U04', 'L2_U05', 'L2_U06']
+  const files = ids.map((id) => join(root, 'content', 'courses', 'level2', `${id}.json`))
+  const present = files.filter((file) => existsSync(file))
+  for (const file of present) overlayPack(file)
+  return { started: present.length > 0, complete: present.length === files.length }
+}
+
+function assertCurriculum(overlaid, level2) {
   if (stages.length !== 8) throw new Error(`Level 数应为 8，实际 ${stages.length}`)
   if (units.length !== 48) throw new Error(`单元数应为 48，实际 ${units.length}`)
   if (levels.length !== 960) throw new Error(`课时数应为 960，实际 ${levels.length}`)
@@ -230,7 +241,26 @@ function assertCurriculum(overlaid) {
   if (levels[19].unitId !== 'L1_U01' || levels[20].unitId !== 'L1_U02' || levels[20].order !== 21) {
     throw new Error('第 21 节没有落在第二单元')
   }
-  if (levels[120].order !== 121 || levels[120].title !== 'Level 2 · 单元 1 · 第 1 关' || !levels[120].is_placeholder) {
+  if (level2.complete) {
+    if (levels[120].order !== 121 || levels[120].title !== '给正方形起个名字' || levels[120].is_placeholder) {
+      throw new Error('第 121 节应是已写好的函数课')
+    }
+    if (levels[140].order !== 141 || levels[140].title !== '函数一上来就涂红' || levels[140].is_placeholder) {
+      throw new Error('第 141 节应是已写好的判断课')
+    }
+    if (levels[239].order !== 240 || levels[239].title !== '我的小花园' || levels[239].levelType !== 'project' || levels[239].is_placeholder) {
+      throw new Error('第 240 节应是可上的项目关')
+    }
+    if (levels[240].order !== 241 || !levels[240].is_placeholder) throw new Error('第 241 节应仍是占位')
+  } else if (level2.started) {
+    if (levels[120].order !== 121 || levels[120].title !== '给正方形起个名字' || levels[120].is_placeholder) {
+      throw new Error('第 121 节应是已写好的函数课')
+    }
+    if (levels[139].order !== 140 || levels[139].levelType !== 'project' || levels[139].is_placeholder) {
+      throw new Error('第 140 节应是可上的项目关')
+    }
+    if (levels[140].order !== 141 || !levels[140].is_placeholder) throw new Error('第 141 节应仍是占位')
+  } else if (levels[120].order !== 121 || levels[120].title !== 'Level 2 · 单元 1 · 第 1 关' || !levels[120].is_placeholder) {
     throw new Error('第 121 节应仍是 Level 2 的占位课')
   }
   if (overlaid) {
@@ -274,7 +304,8 @@ function assertCurriculum(overlaid) {
 }
 
 const level1Ready = overlayLevel1()
-assertCurriculum(level1Ready)
+const level2 = overlayLevel2()
+assertCurriculum(level1Ready, level2)
 
 const catalog = { stages, units, levels, badges }
 const jsonPath = join(root, 'src', 'data', 'generated', 'curriculum.json')

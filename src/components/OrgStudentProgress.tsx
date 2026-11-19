@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { ApiError, loadOrgStudentProgress } from '@/api/orgPortal'
 import type { OrgStudentProgress as Progress } from '@/types/orgProgress'
 import { LessonCueTip } from '@/components/LessonCueTip'
+import { FormError } from '@/components/FormError'
+import { TableSkeleton } from '@/components/Skeleton'
 import { formatDate } from '@/lib/format'
 
 function catalogId(order: number): string {
@@ -118,8 +120,8 @@ export function OrgStudentProgress({
             </div>
           </dl>
         )}
-        {error && <p className="mt-6 text-sm text-danger">{error}</p>}
-        {!error && !detail && <p className="mt-6 text-sm text-ink-soft">正在读取进度…</p>}
+        {error && <FormError className="mt-6">{error}</FormError>}
+        {!error && !detail && <TableSkeleton rows={4} cols={3} />}
         {detail && detail.lessons.length === 0 && <p className="mt-6 text-sm text-ink-soft">还没有学习记录。</p>}
         {detail && <LessonList lessons={detail.lessons.filter((lesson) => lesson.authorized !== false)} />}
         {detail && detail.lessons.some((lesson) => lesson.authorized === false) && (

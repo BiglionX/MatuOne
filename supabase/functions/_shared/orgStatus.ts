@@ -4,7 +4,10 @@
  */
 export const GRACE_DAYS = 30
 export const TRIAL_SEAT_CAP = 10
-export const TRIAL_LEVEL_MAX = 3
+/** 与课程目录一致：每个 Level 120 节。库里没有 stage_level 时用关卡序号推。 */
+export const LESSONS_PER_STAGE = 120
+/** 试用开放完整 Level 1。Level 2 起需要正式服务。 */
+export const TRIAL_LEVEL_MAX = LESSONS_PER_STAGE
 
 export type OrgStatus = 'trial' | 'active' | 'expired' | 'disabled'
 
@@ -65,18 +68,22 @@ export type EnterLevelReason =
   | 'course_locked'
   | 'not_found'
 
-/** 与课程目录一致：每个 Level 120 节。库里没有 stage_level 时用关卡序号推。 */
-export const LESSONS_PER_STAGE = 120
+/** Level 1（第 1–120 节）对试用和正式机构免费，不看课程包和购买范围。 */
+export function isFreeLevel1(order: number, stageLevel: number): boolean {
+  return stageLevel === 1 && Number.isInteger(order) && order >= 1 && order <= LESSONS_PER_STAGE
+}
 
 /** 看板用：已停用、本周没学、当前关超过 3 天没有新进度。本周从北京时间周一开始。 */
 export type OrgAttention = 'disabled' | 'inactive' | 'stuck'
 
-/** 对不上课程阶段时不要当成第 0 阶段放行。阶段序号从 1 起。 */
+/** 对不上课程阶段时不要当成第 0 阶段放行。阶段序号从 1 起。Level 1 免费，不要求课程包。 */
 export function lessonIsAuthorized(status: OrgStatus, maxStage: number, sortOrder: number, stageSort: number): boolean {
-  if (!Number.isInteger(maxStage) || maxStage < 1) return false
   if (!Number.isInteger(sortOrder) || sortOrder < 1) return false
-  if (!Number.isInteger(stageSort) || stageSort < 1 || stageSort > maxStage) return false
-  if (status === 'trial' && sortOrder > TRIAL_LEVEL_MAX) return false
+  if (!Number.isInteger(stageSort) || stageSort < 1) return false
+  if ((status === 'trial' || status === 'active') && isFreeLevel1(sortOrder, stageSort)) return true
+  if (!Number.isInteger(maxStage) || maxStage < 1) return false
+  if (stageSort > maxStage) return false
+  if (status === 'trial') return false
   return true
 }
 
@@ -180,8 +187,8 @@ export function isLevelEntitled(
 }
 
 /**
- * 顺序固定：机构状态 → 试用关卡范围 → 开通记录 → 课程包阶段。
- * stageLevel 取 course_level.stage_level。大于 org_entitlement 的有效 max_level 时 course_locked。
+ * 顺序固定：机构状态 → Level 1 免费 → 试用范围 → 开通记录 → 课程包阶段。
+ * stageLevel 取 course_level.stage_level。Level 1 不看购买范围；更高阶段超过有效 max_level 时 course_locked。
  * 调用方不要在页面里重算。
  */
 export function decideEnterLevel(input: {
@@ -194,9 +201,10 @@ export function decideEnterLevel(input: {
   if (input.levelOrder == null) return { allowed: false, reason: 'not_found' }
   if (input.status === 'disabled') return { allowed: false, reason: 'org_disabled' }
   if (input.status !== 'trial' && input.status !== 'active') return { allowed: false, reason: 'org_expired' }
-  if (input.status === 'trial' && input.levelOrder > TRIAL_LEVEL_MAX) return { allowed: false, reason: 'trial_locked' }
-  if (!input.entitled) return { allowed: false, reason: 'not_entitled' }
   if (input.stageLevel == null) return { allowed: false, reason: 'not_found' }
-  if (input.stageLevel > input.maxLevel) return { allowed: false, reason: 'course_locked' }
+  const free = isFreeLevel1(input.levelOrder, input.stageLevel)
+  if (input.status === 'trial' && !free) return { allowed: false, reason: 'trial_locked' }
+  if (!free && !input.entitled) return { allowed: false, reason: 'not_entitled' }
+  if (!free && input.stageLevel > input.maxLevel) return { allowed: false, reason: 'course_locked' }
   return { allowed: true, reason: 'ok' }
 }

@@ -34,7 +34,7 @@ export function StudentProfile() {
   })()
 
   return (
-    <div className="student-shell min-h-screen min-w-[1024px] bg-canvas pb-16">
+    <div className="student-shell min-h-screen bg-canvas pb-16">
       <div className="sticky top-0 z-20 border-b border-line bg-white">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-8 py-4">
           <Link to="/student" className="btn-ghost px-2" aria-label="返回课程地图">
@@ -62,7 +62,7 @@ export function StudentProfile() {
         <section className="flex flex-col gap-6">
           <div className="card p-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand text-2xl font-bold text-white">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-action text-2xl font-bold text-white">
                 {student.name.slice(0, 1)}
               </div>
               <div className="min-w-0">
@@ -137,7 +137,7 @@ export function StudentProfile() {
               <div key={item.levelId} className="flex items-center gap-4 py-3">
                 <span
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                    item.completed ? 'bg-success-soft text-success' : item.current ? 'bg-brand text-white' : 'bg-canvas text-ink-soft'
+                    item.completed ? 'bg-success-soft text-success' : item.current ? 'bg-brand-action text-white' : 'bg-canvas text-ink-soft'
                   }`}
                 >
                   {item.completed ? '✓' : item.order}

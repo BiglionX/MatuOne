@@ -1,0 +1,2607 @@
+{
+  "stage_level": 2,
+  "unit": {
+    "unit_id": "L2_U02",
+    "title": "Level 2 · 单元 2",
+    "sort_order": 2
+  },
+  "unit_tags": [
+    "function",
+    "if",
+    "color"
+  ],
+  "levels": [
+    {
+      "level_id": "L0141",
+      "order": 141,
+      "title": "函数一上来就涂红",
+      "goal": "一进函数就选定颜色，正方形整幅都是这个颜色",
+      "knowledge_tags": [
+        "function",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    ink = \"red\"\n    t.color(ink)\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nsquare(50)\nt.done()",
+      "expected_output": "一个红色正方形",
+      "teach_code_lines": [
+        "def square(side):",
+        "    ink = \"red\"",
+        "    t.color(ink)",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "square(50)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "先记住ink是红色",
+        "把画笔换成取出来的颜色",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "调用 square，把 50 传进去",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "ink = \"red\"",
+        "t.color(ink)",
+        "def square(side):",
+        "square(50)"
+      ],
+      "drill_chunk": "ink = \"red\"",
+      "challenge_params": [
+        {
+          "name": "ink",
+          "label": "换成蓝色",
+          "type": "select",
+          "default": "red",
+          "options": [
+            {
+              "value": "red",
+              "label": "红色"
+            },
+            {
+              "value": "blue",
+              "label": "蓝色"
+            }
+          ],
+          "apply": {
+            "kind": "assign",
+            "variable": "ink"
+          },
+          "hint": "这个词会变成画笔的颜色。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "颜色写在函数的哪一行？",
+        "options": [
+          "刚进函数就写进 ink",
+          "写在 square(50) 后面",
+          "写在 t.done() 里"
+        ],
+        "answerIndex": 0,
+        "explain": "函数一开头换的颜色，四条边都会用。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「换成蓝色」改一下。你猜它会变成什么样？",
+        "target_param_name": "ink",
+        "target_value": "blue",
+        "expected_output": "红正方形变成蓝色",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "一进函数就选定颜色，正方形整幅都是这个颜色",
+      "parent_brief": "孩子会画出一个红色正方形。这一处改完，红正方形变成蓝色。",
+      "teacher_guide": "先看一个红色正方形，再只改「换成蓝色」，确认红正方形变成蓝色。"
+    },
+    {
+      "level_id": "L0142",
+      "order": 142,
+      "title": "调用前先选颜色",
+      "goal": "调用之前先涂色，这个颜色会留进函数里",
+      "knowledge_tags": [
+        "function",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "ink = \"green\"\nt.color(ink)\ndef square(side):\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nsquare(30)\nsquare(50)",
+      "expected_output": "一大一小两个绿色正方形",
+      "teach_code_lines": [
+        "ink = \"green\"",
+        "t.color(ink)",
+        "def square(side):",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "square(30)",
+        "square(50)"
+      ],
+      "line_notes": [
+        "先记住ink是绿色",
+        "把画笔换成取出来的颜色",
+        "给做法起名 square，它要用一个数",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "调用 square，把 30 传进去",
+        "调用 square，把 50 传进去"
+      ],
+      "keywords": [
+        "ink = \"green\"",
+        "t.color(ink)",
+        "square(30)",
+        "square(50)"
+      ],
+      "drill_chunk": "ink = \"red\"",
+      "challenge_params": [
+        {
+          "name": "ink",
+          "label": "换成紫色",
+          "type": "select",
+          "default": "green",
+          "options": [
+            {
+              "value": "green",
+              "label": "绿色"
+            },
+            {
+              "value": "purple",
+              "label": "紫色"
+            }
+          ],
+          "apply": {
+            "kind": "assign",
+            "variable": "ink"
+          },
+          "hint": "这个词会变成画笔的颜色。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "颜色写在函数外面，里面还看得到吗？",
+        "options": [
+          "看得到，画笔的颜色会留着",
+          "看不到，函数会重新变黑",
+          "只有写在 def 里面才有用"
+        ],
+        "answerIndex": 0,
+        "explain": "调用之前换好的颜色，会一直留到下一次更换。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「换成紫色」改一下。你猜它会变成什么样？",
+        "target_param_name": "ink",
+        "target_value": "purple",
+        "expected_output": "两个正方形一起变成紫色",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "调用之前先涂色，这个颜色会留进函数里",
+      "parent_brief": "孩子会画出一大一小两个绿色正方形。这一处改完，两个正方形一起变成紫色。",
+      "teacher_guide": "先看一大一小两个绿色正方形，再只改「换成紫色」，确认两个正方形一起变成紫色。"
+    },
+    {
+      "level_id": "L0143",
+      "order": 143,
+      "title": "边长大于 60 才涂蓝",
+      "goal": "边长比分界大，才把正方形涂成蓝色",
+      "knowledge_tags": [
+        "function",
+        "if"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    if side > n:\n        t.color(\"blue\")\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nn = 60\nsquare(80)",
+      "expected_output": "一个蓝色正方形",
+      "teach_code_lines": [
+        "def square(side):",
+        "    if side > n:",
+        "        t.color(\"blue\")",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "n = 60",
+        "square(80)"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "左边更大，才做下面这几行",
+        "把画笔换成蓝色",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "先记住n是 60",
+        "调用 square，把 80 传进去"
+      ],
+      "keywords": [
+        "if side > n:",
+        "n = 60",
+        "t.color(\"blue\")",
+        "square(80)"
+      ],
+      "drill_chunk": "ink = \"green\"",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把分界改大",
+          "type": "number",
+          "default": 60,
+          "min": 20,
+          "max": 100,
+          "step": 20,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "分界比边长还大时，蓝色那一行不会走。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "80 比 60 大，会怎样？",
+        "options": [
+          "走进 if，涂成蓝色",
+          "什么都不画",
+          "涂成红色"
+        ],
+        "answerIndex": 0,
+        "explain": "左边更大，if 下面那一行才会做。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把分界改大」改一下。你猜它会变成什么样？",
+        "target_param_name": "n",
+        "target_value": "100",
+        "expected_output": "分界变大后，正方形不再涂蓝",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "边长比分界大，才把正方形涂成蓝色",
+      "parent_brief": "孩子会画出一个蓝色正方形。这一处改完，分界变大后，正方形不再涂蓝。",
+      "teacher_guide": "先看一个蓝色正方形，再只改「把分界改大」，确认分界变大后，正方形不再涂蓝。"
+    },
+    {
+      "level_id": "L0144",
+      "order": 144,
+      "title": "把分界改成 80",
+      "goal": "还是用边长和分界比，这一次分界从 40 看起",
+      "knowledge_tags": [
+        "function",
+        "if"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def door(side):\n    if side > n:\n        t.color(\"orange\")\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\nn = 40\ndoor(70)",
+      "expected_output": "一扇橙色小门",
+      "teach_code_lines": [
+        "def door(side):",
+        "    if side > n:",
+        "        t.color(\"orange\")",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "n = 40",
+        "door(70)"
+      ],
+      "line_notes": [
+        "给做法起名 door，它要用一个数",
+        "左边更大，才做下面这几行",
+        "把画笔换成橙色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "先记住n是 40",
+        "调用 door，把 70 传进去"
+      ],
+      "keywords": [
+        "if side > n:",
+        "n = 40",
+        "door(70)",
+        "t.color(\"orange\")"
+      ],
+      "drill_chunk": "n = 60",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把分界改成 80",
+          "type": "number",
+          "default": 40,
+          "min": 40,
+          "max": 100,
+          "step": 20,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "70 不再比分界大时，橙色那一行会跳过。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节主要改哪里？",
+        "options": [
+          "改判断里的分界",
+          "把 def 删掉",
+          "新学一个圆形"
+        ],
+        "answerIndex": 0,
+        "explain": "练习关把已经会的判断再用一次。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把分界改成 80」改一下。你猜它会变成什么样？",
+        "target_param_name": "n",
+        "target_value": "80",
+        "expected_output": "分界改成 80 后，小门不再涂橙",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "还是用边长和分界比，这一次分界从 40 看起",
+      "parent_brief": "孩子会画出一扇橙色小门。这一处改完，分界改成 80 后，小门不再涂橙。",
+      "teacher_guide": "先看一扇橙色小门，再只改「把分界改成 80」，确认分界改成 80 后，小门不再涂橙。"
+    },
+    {
+      "level_id": "L0145",
+      "order": 145,
+      "title": "第一笔涂红，其余涂蓝",
+      "goal": "循环里看是不是第一笔，第一笔涂红，后面涂蓝",
+      "knowledge_tags": [
+        "function",
+        "if",
+        "for_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    for i in range(4):\n        if i == 0:\n            t.color(\"red\")\n        else:\n            t.color(\"blue\")\n        t.forward(side)\n        t.right(90)\nsquare(60)",
+      "expected_output": "第一笔红色、其余蓝色的正方形",
+      "teach_code_lines": [
+        "def square(side):",
+        "    for i in range(4):",
+        "        if i == 0:",
+        "            t.color(\"red\")",
+        "        else:",
+        "            t.color(\"blue\")",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "square(60)"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "重复 4 次，把下面这几行做完",
+        "两边一样，才做下面这几行",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "调用 square，把 60 传进去"
+      ],
+      "keywords": [
+        "if i == 0:",
+        "t.color(\"red\")",
+        "t.color(\"blue\")",
+        "square(60)"
+      ],
+      "drill_chunk": "n = 40",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把正方形改大",
+          "type": "number",
+          "default": 60,
+          "min": 40,
+          "max": 100,
+          "step": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "square",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "传进去的边长一变，四条边一起变。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "哪一笔是红色？",
+        "options": [
+          "i 等于 0 的第一笔",
+          "四笔都是红色",
+          "只有最后一笔"
+        ],
+        "answerIndex": 0,
+        "explain": "电脑从 0 开始数，0 就是第一笔。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把正方形改大」改一下。你猜它会变成什么样？",
+        "target_param_name": "side",
+        "target_value": "80",
+        "expected_output": "四条边一起变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "循环里看是不是第一笔，第一笔涂红，后面涂蓝",
+      "parent_brief": "孩子会画出第一笔红色、其余蓝色的正方形。这一处改完，四条边一起变长。",
+      "teacher_guide": "先看第一笔红色、其余蓝色的正方形，再只改「把正方形改大」，确认四条边一起变长。"
+    },
+    {
+      "level_id": "L0146",
+      "order": 146,
+      "title": "小的涂绿，大的涂橙",
+      "goal": "边长不超过分界就涂绿，超过就涂橙",
+      "knowledge_tags": [
+        "function",
+        "if",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    if side > n:\n        t.color(\"orange\")\n    else:\n        t.color(\"green\")\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nn = 50\nsquare(40)",
+      "expected_output": "一个绿色小正方形",
+      "teach_code_lines": [
+        "def square(side):",
+        "    if side > n:",
+        "        t.color(\"orange\")",
+        "    else:",
+        "        t.color(\"green\")",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "n = 50",
+        "square(40)"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "左边更大，才做下面这几行",
+        "把画笔换成橙色",
+        "对不上的时候，走这边",
+        "把画笔换成绿色",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "先记住n是 50",
+        "调用 square，把 40 传进去"
+      ],
+      "keywords": [
+        "if side > n:",
+        "t.color(\"green\")",
+        "t.color(\"orange\")",
+        "square(40)"
+      ],
+      "drill_chunk": "square(60)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把边长改到 80",
+          "type": "number",
+          "default": 40,
+          "min": 20,
+          "max": 100,
+          "step": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "square",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "边长超过 50 就走橙色那一支。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "40 没有超过 50，涂什么颜色？",
+        "options": [
+          "绿色",
+          "橙色",
+          "不涂色"
+        ],
+        "answerIndex": 0,
+        "explain": "不超过分界，就走 else。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把边长改到 80」改一下。你猜它会变成什么样？",
+        "target_param_name": "side",
+        "target_value": "80",
+        "expected_output": "方块变大，并且换成橙色",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "边长不超过分界就涂绿，超过就涂橙",
+      "parent_brief": "孩子会画出一个绿色小正方形。这一处改完，方块变大，并且换成橙色。",
+      "teacher_guide": "先看一个绿色小正方形，再只改「把边长改到 80」，确认方块变大，并且换成橙色。"
+    },
+    {
+      "level_id": "L0147",
+      "order": 147,
+      "title": "转角太大就改回 90",
+      "goal": "转角比分界大时，先改回 90 再画",
+      "knowledge_tags": [
+        "function",
+        "if"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def poly(side, turn):\n    if turn > n:\n        turn = 90\n    for i in range(4):\n        t.forward(side)\n        t.right(turn)\nn = 100\npoly(40, 120)",
+      "expected_output": "一个正方形",
+      "teach_code_lines": [
+        "def poly(side, turn):",
+        "    if turn > n:",
+        "        turn = 90",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(turn)",
+        "n = 100",
+        "poly(40, 120)"
+      ],
+      "line_notes": [
+        "给做法起名 poly，它要用两个数",
+        "左边更大，才做下面这几行",
+        "先记住turn是 90",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 盒子 turn 里的数",
+        "先记住n是 100",
+        "调用 poly，把 40,120 传进去"
+      ],
+      "keywords": [
+        "if turn > n:",
+        "turn = 90",
+        "poly(40, 120)",
+        "t.right(turn)"
+      ],
+      "drill_chunk": "square(40)",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把分界放到 140",
+          "type": "number",
+          "default": 100,
+          "min": 60,
+          "max": 140,
+          "step": 20,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "120 不再比分界大时，就不会改回 90。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "120 比 100 大时，实际转多少？",
+        "options": [
+          "改回 90 度",
+          "还是转 120 度",
+          "转 100 度"
+        ],
+        "answerIndex": 0,
+        "explain": "if 里面把 turn 换成了 90。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把分界放到 140」改一下。你猜它会变成什么样？",
+        "target_param_name": "n",
+        "target_value": "140",
+        "expected_output": "分界变大后，转角留在 120，图形变了",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "转角比分界大时，先改回 90 再画",
+      "parent_brief": "孩子会画出一个正方形。这一处改完，分界变大后，转角留在 120，图形变了。",
+      "teacher_guide": "先看一个正方形，再只改「把分界放到 140」，确认分界变大后，转角留在 120，图形变了。"
+    },
+    {
+      "level_id": "L0148",
+      "order": 148,
+      "title": "把 def 和 if 打准确",
+      "goal": "打字课：把 def、if 和 color 再打一遍",
+      "knowledge_tags": [
+        "function",
+        "if"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "keywords",
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    if side > n:\n        t.color(\"red\")\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nn = 30\nsquare(50)\nt.done()",
+      "expected_output": "一个红色正方形",
+      "teach_code_lines": [
+        "def square(side):",
+        "    if side > n:",
+        "        t.color(\"red\")",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "n = 30",
+        "square(50)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "左边更大，才做下面这几行",
+        "把画笔换成红色",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "先记住n是 30",
+        "调用 square，把 50 传进去",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "def square(side):",
+        "if side > n:",
+        "t.color(\"red\")",
+        "square(50)"
+      ],
+      "drill_chunk": "poly(40, 120)",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把分界改大",
+          "type": "number",
+          "default": 30,
+          "min": 30,
+          "max": 90,
+          "step": 20,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "打完这些词，还能看到判断会不会涂红。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节主要在练什么？",
+        "options": [
+          "把 def 和 if 打准确",
+          "新学一种转弯",
+          "把列表背下来"
+        ],
+        "answerIndex": 0,
+        "explain": "打字课不讲新画法，只把刚学的词打熟。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把这节的词再打一遍。",
+        "expected_output": "编程关键词",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：把 def、if 和 color 再打一遍",
+      "parent_brief": "孩子会画出一个红色正方形。这一处改完，分界变大后不再涂红。",
+      "teacher_guide": "先看一个红色正方形，再只改「把分界改大」，确认分界变大后不再涂红。"
+    },
+    {
+      "level_id": "L0149",
+      "order": 149,
+      "title": "先判断要不要再画一个",
+      "goal": "第一个正方形总是画，第二个要等判断成立",
+      "knowledge_tags": [
+        "function",
+        "if"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "n = 50\ndef square(side):\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nsquare(36)\nif n > 40:\n    t.right(45)\n    square(36)",
+      "expected_output": "两个错开的正方形",
+      "teach_code_lines": [
+        "n = 50",
+        "def square(side):",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "square(36)",
+        "if n > 40:",
+        "    t.right(45)",
+        "    square(36)"
+      ],
+      "line_notes": [
+        "先记住n是 50",
+        "给做法起名 square，它要用一个数",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "调用 square，把 36 传进去",
+        "左边更大，才做下面这几行",
+        "向右转 45 度",
+        "调用 square，把 36 传进去"
+      ],
+      "keywords": [
+        "if n > 40:",
+        "square(36)",
+        "n = 50",
+        "t.right(45)"
+      ],
+      "drill_chunk": "n = 30",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把分界降到 20",
+          "type": "number",
+          "default": 50,
+          "min": 20,
+          "max": 80,
+          "step": 10,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "20 并不大于 40，第二个正方形会被跳过。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "第二个正方形什么时候才画？",
+        "options": [
+          "n 比 40 大的时候",
+          "每次都会画",
+          "只有删除 if 才画"
+        ],
+        "answerIndex": 0,
+        "explain": "if 写在函数外面，也能决定要不要再调用。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把分界降到 20」改一下。你猜它会变成什么样？",
+        "target_param_name": "n",
+        "target_value": "20",
+        "expected_output": "分界不成立时，第二个正方形不画",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "第一个正方形总是画，第二个要等判断成立",
+      "parent_brief": "孩子会画出两个错开的正方形。这一处改完，分界不成立时，第二个正方形不画。",
+      "teacher_guide": "先看两个错开的正方形，再只改「把分界降到 20」，确认分界不成立时，第二个正方形不画。"
+    },
+    {
+      "level_id": "L0150",
+      "order": 150,
+      "title": "一次红，一次蓝",
+      "goal": "两次调用之间换颜色，再转一个角度",
+      "knowledge_tags": [
+        "function",
+        "color"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nt.color(\"red\")\nsquare(36)\nt.right(30)\nt.color(\"blue\")\nsquare(36)",
+      "expected_output": "一红一蓝两个错开的正方形",
+      "teach_code_lines": [
+        "def square(side):",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "t.color(\"red\")",
+        "square(36)",
+        "t.right(30)",
+        "t.color(\"blue\")",
+        "square(36)"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "把画笔换成红色",
+        "调用 square，把 36 传进去",
+        "向右转 30 度",
+        "把画笔换成蓝色",
+        "调用 square，把 36 传进去"
+      ],
+      "keywords": [
+        "t.color(\"red\")",
+        "t.color(\"blue\")",
+        "t.right(30)",
+        "square(36)"
+      ],
+      "drill_chunk": "if n > 40:",
+      "challenge_params": [
+        {
+          "name": "turn",
+          "label": "把转角改大",
+          "type": "number",
+          "default": 30,
+          "min": 15,
+          "max": 90,
+          "step": 15,
+          "apply": {
+            "kind": "arg",
+            "func": "right",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "函数里的 right(90) 不动，只改两次调用之间的角度。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "蓝色是在哪里换上的？",
+        "options": [
+          "第二次调用之前",
+          "函数自己会变蓝",
+          "红色用完就自动变蓝"
+        ],
+        "answerIndex": 0,
+        "explain": "颜色会留着，所以要在下一次调用前再换。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把转角改大」改一下。你猜它会变成什么样？",
+        "target_param_name": "turn",
+        "target_value": "60",
+        "expected_output": "两个正方形错得更开",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "两次调用之间换颜色，再转一个角度",
+      "parent_brief": "孩子会画出一红一蓝两个错开的正方形。这一处改完，两个正方形错得更开。",
+      "teacher_guide": "先看一红一蓝两个错开的正方形，再只改「把转角改大」，确认两个正方形错得更开。"
+    },
+    {
+      "level_id": "L0151",
+      "order": 151,
+      "title": "边长装进盒子再传进去",
+      "goal": "先用盒子记住边长，再把盒子传进函数",
+      "knowledge_tags": [
+        "function",
+        "variable"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nside = 44\nsquare(side)\nt.done()",
+      "expected_output": "一个正方形",
+      "teach_code_lines": [
+        "def square(side):",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "side = 44",
+        "square(side)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "先记住side是 44",
+        "调用 square，把 side 传进去",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "side = 44",
+        "square(side)",
+        "def square(side):",
+        "t.forward(side)"
+      ],
+      "drill_chunk": "t.right(30)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把盒子里的边长改大",
+          "type": "number",
+          "default": 44,
+          "min": 24,
+          "max": 104,
+          "step": 20,
+          "apply": {
+            "kind": "assign",
+            "variable": "side"
+          },
+          "hint": "盒子里的数变大，传进函数的边长也变大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "square(side) 传进去的是什么？",
+        "options": [
+          "盒子 side 里的那个数",
+          "单词 side 本身",
+          "固定的 4"
+        ],
+        "answerIndex": 0,
+        "explain": "括号里写变量名，用的是它现在记住的数。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把盒子里的边长改大」改一下。你猜它会变成什么样？",
+        "target_param_name": "side",
+        "target_value": "84",
+        "expected_output": "正方形变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "先用盒子记住边长，再把盒子传进函数",
+      "parent_brief": "孩子会画出一个正方形。这一处改完，正方形变大。",
+      "teacher_guide": "先看一个正方形，再只改「把盒子里的边长改大」，确认正方形变大。"
+    },
+    {
+      "level_id": "L0152",
+      "order": 152,
+      "title": "把红的换成紫",
+      "goal": "函数里的颜色从红色换成紫色",
+      "knowledge_tags": [
+        "function",
+        "color"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    ink = \"red\"\n    t.color(ink)\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nsquare(48)\nt.done()",
+      "expected_output": "一个红色正方形",
+      "teach_code_lines": [
+        "def square(side):",
+        "    ink = \"red\"",
+        "    t.color(ink)",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "square(48)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "先记住ink是红色",
+        "把画笔换成取出来的颜色",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "调用 square，把 48 传进去",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "ink = \"red\"",
+        "t.color(ink)",
+        "square(48)",
+        "def square(side):"
+      ],
+      "drill_chunk": "square(side)",
+      "challenge_params": [
+        {
+          "name": "ink",
+          "label": "换成紫色",
+          "type": "select",
+          "default": "red",
+          "options": [
+            {
+              "value": "red",
+              "label": "红色"
+            },
+            {
+              "value": "purple",
+              "label": "紫色"
+            }
+          ],
+          "apply": {
+            "kind": "assign",
+            "variable": "ink"
+          },
+          "hint": "这个词会变成画笔的颜色。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "想换颜色，改哪一个词？",
+        "options": [
+          "改 ink 记住的颜色名",
+          "把 def 改成 if",
+          "把 range(4) 删掉"
+        ],
+        "answerIndex": 0,
+        "explain": "color 用的是盒子里的那个词。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「换成紫色」改一下。你猜它会变成什么样？",
+        "target_param_name": "ink",
+        "target_value": "purple",
+        "expected_output": "正方形变成紫色",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "函数里的颜色从红色换成紫色",
+      "parent_brief": "孩子会画出一个红色正方形。这一处改完，正方形变成紫色。",
+      "teacher_guide": "先看一个红色正方形，再只改「换成紫色」，确认正方形变成紫色。"
+    },
+    {
+      "level_id": "L0153",
+      "order": 153,
+      "title": "三扇门里只有第一扇涂红",
+      "goal": "循环画三截小门，只有第一截涂红",
+      "knowledge_tags": [
+        "function",
+        "if",
+        "for_loop"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def door(side):\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\nfor i in range(3):\n    if i == 0:\n        t.color(\"red\")\n    else:\n        t.color(\"blue\")\n    door(24)",
+      "expected_output": "三截小门，第一截是红色",
+      "teach_code_lines": [
+        "def door(side):",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "for i in range(3):",
+        "    if i == 0:",
+        "        t.color(\"red\")",
+        "    else:",
+        "        t.color(\"blue\")",
+        "    door(24)"
+      ],
+      "line_notes": [
+        "给做法起名 door，它要用一个数",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "重复 3 次，把下面这几行做完",
+        "两边一样，才做下面这几行",
+        "把画笔换成红色",
+        "对不上的时候，走这边",
+        "把画笔换成蓝色",
+        "调用 door，把 24 传进去"
+      ],
+      "keywords": [
+        "if i == 0:",
+        "t.color(\"red\")",
+        "door(24)",
+        "range(3)"
+      ],
+      "drill_chunk": "ink = \"red\"",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把门改高",
+          "type": "number",
+          "default": 24,
+          "min": 24,
+          "max": 64,
+          "step": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "door",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "循环里的高度一改，三截一起变。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "为什么只有第一截是红色？",
+        "options": [
+          "只有 i 等于 0 时才涂红",
+          "红色会自动只用一次",
+          "循环只会做一次"
+        ],
+        "answerIndex": 0,
+        "explain": "后面几次走进 else，涂的是蓝色。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把门改高」改一下。你猜它会变成什么样？",
+        "target_param_name": "side",
+        "target_value": "44",
+        "expected_output": "三截小门一起变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "循环画三截小门，只有第一截涂红",
+      "parent_brief": "孩子会画出三截小门，第一截是红色。这一处改完，三截小门一起变长。",
+      "teacher_guide": "先看三截小门，第一截是红色，再只改「把门改高」，确认三截小门一起变长。"
+    },
+    {
+      "level_id": "L0154",
+      "order": 154,
+      "title": "函数里抬笔再空开",
+      "goal": "函数里面先画、再抬笔空一截、再画",
+      "knowledge_tags": [
+        "function",
+        "penup"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def gap(side):\n    t.forward(side)\n    t.right(90)\n    t.penup()\n    t.forward(side)\n    t.pendown()\n    t.forward(side)\ngap(40)\nt.done()",
+      "expected_output": "中间空开的一条折线",
+      "teach_code_lines": [
+        "def gap(side):",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.penup()",
+        "    t.forward(side)",
+        "    t.pendown()",
+        "    t.forward(side)",
+        "gap(40)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "给做法起名 gap，它要用一个数",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "把笔抬起来，接着走先不画线",
+        "小海龟向前走 盒子 side 里的数",
+        "把笔放下，接着走就会画出线",
+        "小海龟向前走 盒子 side 里的数",
+        "调用 gap，把 40 传进去",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "t.penup()",
+        "t.pendown()",
+        "def gap(side):",
+        "gap(40)"
+      ],
+      "drill_chunk": "door(24)",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把这段改长",
+          "type": "number",
+          "default": 40,
+          "min": 20,
+          "max": 100,
+          "step": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "gap",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "传进去的数会用在画的地方，也会用在抬笔空开的地方。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "中间那段为什么没有线？",
+        "options": [
+          "penup 和 pendown 中间不画",
+          "函数画不了两条线",
+          "right 会把线擦掉"
+        ],
+        "answerIndex": 0,
+        "explain": "抬笔之后再 forward，只是挪位置。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把这段改长」改一下。你猜它会变成什么样？",
+        "target_param_name": "side",
+        "target_value": "80",
+        "expected_output": "画的和空的一起变长",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "函数里面先画、再抬笔空一截、再画",
+      "parent_brief": "孩子会画出中间空开的一条折线。这一处改完，画的和空的一起变长。",
+      "teacher_guide": "先看中间空开的一条折线，再只改「把这段改长」，确认画的和空的一起变长。"
+    },
+    {
+      "level_id": "L0155",
+      "order": 155,
+      "title": "决定画方还是画三角",
+      "goal": "用一个词决定画正方形还是三角形",
+      "knowledge_tags": [
+        "if"
+      ],
+      "level_type": "new",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "kind = \"方\"\nif kind == \"方\":\n    for i in range(4):\n        t.forward(40)\n        t.right(90)\nelse:\n    for i in range(3):\n        t.forward(50)\n        t.right(120)\nt.done()",
+      "expected_output": "一个正方形",
+      "teach_code_lines": [
+        "kind = \"方\"",
+        "if kind == \"方\":",
+        "    for i in range(4):",
+        "        t.forward(40)",
+        "        t.right(90)",
+        "else:",
+        "    for i in range(3):",
+        "        t.forward(50)",
+        "        t.right(120)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "先记住kind是「方」",
+        "两边一样，才做下面这几行",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 40 步",
+        "向右转 90 度",
+        "对不上的时候，走这边",
+        "重复 3 次，把下面这几行做完",
+        "小海龟向前走 50 步",
+        "向右转 120 度",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "kind = \"方\"",
+        "if kind == \"方\":",
+        "range(4)",
+        "range(3)"
+      ],
+      "drill_chunk": "gap(40)",
+      "challenge_params": [
+        {
+          "name": "kind",
+          "label": "改成三角形",
+          "type": "select",
+          "default": "方",
+          "options": [
+            {
+              "value": "方",
+              "label": "正方形"
+            },
+            {
+              "value": "角",
+              "label": "三角形"
+            }
+          ],
+          "apply": {
+            "kind": "assign",
+            "variable": "kind"
+          },
+          "hint": "词对上「方」才画四条边。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "kind 是「角」时画什么？",
+        "options": [
+          "三角形",
+          "还是正方形",
+          "什么都不画"
+        ],
+        "answerIndex": 0,
+        "explain": "对不上「方」，就走 else 里的三条边。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「改成三角形」改一下。你猜它会变成什么样？",
+        "target_param_name": "kind",
+        "target_value": "角",
+        "expected_output": "改成三角后，画出三角形",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": false,
+      "teaching_intent": "用一个词决定画正方形还是三角形",
+      "parent_brief": "孩子会画出一个正方形。这一处改完，改成三角后，画出三角形。",
+      "teacher_guide": "先看一个正方形，再只改「改成三角形」，确认改成三角后，画出三角形。"
+    },
+    {
+      "level_id": "L0156",
+      "order": 156,
+      "title": "选择之前再打基准键",
+      "goal": "打字课：练习基准键位，手指回原位",
+      "knowledge_tags": [
+        "function"
+      ],
+      "level_type": "typing",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": "baseline_keys",
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nsquare(40)\nt.done()",
+      "expected_output": "一个正方形",
+      "teach_code_lines": [
+        "def square(side):",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "square(40)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "调用 square，把 40 传进去",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "asdf",
+        "jkl;",
+        "ffjj",
+        "fjfj"
+      ],
+      "drill_chunk": "kind = \"方\"",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把正方形改大",
+          "type": "number",
+          "default": 40,
+          "min": 20,
+          "max": 100,
+          "step": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "square",
+            "argIndex": 0,
+            "occurrence": 2
+          },
+          "hint": "基准键打完，正方形还能改大。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "这一节在练哪一档打字？",
+        "options": [
+          "基准键位",
+          "编程关键词",
+          "一种新的判断"
+        ],
+        "answerIndex": 0,
+        "explain": "打字只有基准键位和编程关键词两档。"
+      },
+      "bonus_challenge": {
+        "type": "typing",
+        "instruction": "还有力气的话，把基准键再打一遍。",
+        "expected_output": "基准键位",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "打字课：练习基准键位，手指回原位",
+      "parent_brief": "孩子会画出一个正方形。这一处改完，正方形变大。",
+      "teacher_guide": "先看一个正方形，再只改「把正方形改大」，确认正方形变大。"
+    },
+    {
+      "level_id": "L0157",
+      "order": 157,
+      "title": "把分界再改一次",
+      "goal": "三角形也用分界决定要不要涂绿",
+      "knowledge_tags": [
+        "function",
+        "if"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def triangle(side):\n    if side > n:\n        t.color(\"green\")\n    for i in range(3):\n        t.forward(side)\n        t.right(120)\nn = 30\ntriangle(50)\nt.done()",
+      "expected_output": "一个绿色三角形",
+      "teach_code_lines": [
+        "def triangle(side):",
+        "    if side > n:",
+        "        t.color(\"green\")",
+        "    for i in range(3):",
+        "        t.forward(side)",
+        "        t.right(120)",
+        "n = 30",
+        "triangle(50)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "给做法起名 triangle，它要用一个数",
+        "左边更大，才做下面这几行",
+        "把画笔换成绿色",
+        "重复 3 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 120 度",
+        "先记住n是 30",
+        "调用 triangle，把 50 传进去",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "if side > n:",
+        "n = 30",
+        "triangle(50)",
+        "t.color(\"green\")"
+      ],
+      "drill_chunk": "square(40)",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把分界改到 70",
+          "type": "number",
+          "default": 30,
+          "min": 30,
+          "max": 90,
+          "step": 20,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "50 不再比分界大时，绿色那一行会跳过。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "50 比 30 大，会涂色吗？",
+        "options": [
+          "会，涂成绿色",
+          "不会",
+          "会涂成红色"
+        ],
+        "answerIndex": 0,
+        "explain": "判断成立，才去做涂色那一行。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把分界改到 70」改一下。你猜它会变成什么样？",
+        "target_param_name": "n",
+        "target_value": "70",
+        "expected_output": "分界变大后，三角形不再涂绿",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "三角形也用分界决定要不要涂绿",
+      "parent_brief": "孩子会画出一个绿色三角形。这一处改完，分界变大后，三角形不再涂绿。",
+      "teacher_guide": "先看一个绿色三角形，再只改「把分界改到 70」，确认分界变大后，三角形不再涂绿。"
+    },
+    {
+      "level_id": "L0158",
+      "order": 158,
+      "title": "两色方块再画一次",
+      "goal": "先画紫色方块，转开后再画橙色方块",
+      "knowledge_tags": [
+        "function",
+        "color"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def square(side):\n    for i in range(4):\n        t.forward(side)\n        t.right(90)\nt.color(\"purple\")\nsquare(28)\nt.right(20)\nt.color(\"orange\")\nsquare(22)",
+      "expected_output": "一个紫方块和一个较小的橙方块",
+      "teach_code_lines": [
+        "def square(side):",
+        "    for i in range(4):",
+        "        t.forward(side)",
+        "        t.right(90)",
+        "t.color(\"purple\")",
+        "square(28)",
+        "t.right(20)",
+        "t.color(\"orange\")",
+        "square(22)"
+      ],
+      "line_notes": [
+        "给做法起名 square，它要用一个数",
+        "重复 4 次，把下面这几行做完",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "把画笔换成紫色",
+        "调用 square，把 28 传进去",
+        "向右转 20 度",
+        "把画笔换成橙色",
+        "调用 square，把 22 传进去"
+      ],
+      "keywords": [
+        "t.color(\"purple\")",
+        "t.color(\"orange\")",
+        "square(28)",
+        "square(22)"
+      ],
+      "drill_chunk": "n = 30",
+      "challenge_params": [
+        {
+          "name": "side",
+          "label": "把橙色方块改大",
+          "type": "number",
+          "default": 22,
+          "min": 22,
+          "max": 62,
+          "step": 20,
+          "apply": {
+            "kind": "arg",
+            "func": "square",
+            "argIndex": 0,
+            "occurrence": 3
+          },
+          "hint": "只改第二次调用的边长。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "橙色用在哪一次调用？",
+        "options": [
+          "第二次 square",
+          "两次都是橙色",
+          "函数里写死了橙色"
+        ],
+        "answerIndex": 0,
+        "explain": "调用之前换的颜色，会留给这一次。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把橙色方块改大」改一下。你猜它会变成什么样？",
+        "target_param_name": "side",
+        "target_value": "42",
+        "expected_output": "橙色方块变大",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "先画紫色方块，转开后再画橙色方块",
+      "parent_brief": "孩子会画出一个紫方块和一个较小的橙方块。这一处改完，橙色方块变大。",
+      "teacher_guide": "先看一个紫方块和一个较小的橙方块，再只改「把橙色方块改大」，确认橙色方块变大。"
+    },
+    {
+      "level_id": "L0159",
+      "order": 159,
+      "title": "小门太大就换颜色",
+      "goal": "小门比分界高，才涂成紫色",
+      "knowledge_tags": [
+        "function",
+        "if"
+      ],
+      "level_type": "practice",
+      "exercise": "normal",
+      "milestone_badge": null,
+      "badge_title": null,
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def door(side):\n    if side > n:\n        t.color(\"purple\")\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\nn = 60\ndoor(80)\nt.right(90)\nt.forward(20)",
+      "expected_output": "一扇紫色小门，门边还有一笔",
+      "teach_code_lines": [
+        "def door(side):",
+        "    if side > n:",
+        "        t.color(\"purple\")",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "n = 60",
+        "door(80)",
+        "t.right(90)",
+        "t.forward(20)"
+      ],
+      "line_notes": [
+        "给做法起名 door，它要用一个数",
+        "左边更大，才做下面这几行",
+        "把画笔换成紫色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "先记住n是 60",
+        "调用 door，把 80 传进去",
+        "向右转 90 度",
+        "小海龟向前走 20 步"
+      ],
+      "keywords": [
+        "if side > n:",
+        "door(80)",
+        "t.color(\"purple\")",
+        "n = 60"
+      ],
+      "drill_chunk": "square(22)",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把分界改成 100",
+          "type": "number",
+          "default": 60,
+          "min": 40,
+          "max": 100,
+          "step": 20,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "80 不再比分界大时，紫色会跳过。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "80 比 60 大，小门是什么颜色？",
+        "options": [
+          "紫色",
+          "不涂色",
+          "绿色"
+        ],
+        "answerIndex": 0,
+        "explain": "判断成立，函数里才会涂紫。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把分界改成 100」改一下。你猜它会变成什么样？",
+        "target_param_name": "n",
+        "target_value": "100",
+        "expected_output": "分界变大后，小门不再涂紫",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 15,
+      "is_review": true,
+      "teaching_intent": "小门比分界高，才涂成紫色",
+      "parent_brief": "孩子会画出一扇紫色小门，门边还有一笔。这一处改完，分界变大后，小门不再涂紫。",
+      "teacher_guide": "先看一扇紫色小门，门边还有一笔，再只改「把分界改成 100」，确认分界变大后，小门不再涂紫。"
+    },
+    {
+      "level_id": "L0160",
+      "order": 160,
+      "title": "双色小窗",
+      "goal": "小窗不超过分界就保持原色，超过就涂红",
+      "knowledge_tags": [
+        "function",
+        "if",
+        "color"
+      ],
+      "level_type": "project",
+      "exercise": "normal",
+      "milestone_badge": "two_color_windows",
+      "badge_title": "双色小窗",
+      "typing_tier": null,
+      "preview_kind": "turtle",
+      "demo_code": "def window(side):\n    if side > n:\n        t.color(\"red\")\n    t.forward(side)\n    t.right(90)\n    t.forward(side)\nn = 40\nwindow(24)\nwindow(56)\nt.done()",
+      "expected_output": "两扇连着的小窗，大的那扇是红色",
+      "teach_code_lines": [
+        "def window(side):",
+        "    if side > n:",
+        "        t.color(\"red\")",
+        "    t.forward(side)",
+        "    t.right(90)",
+        "    t.forward(side)",
+        "n = 40",
+        "window(24)",
+        "window(56)",
+        "t.done()"
+      ],
+      "line_notes": [
+        "给做法起名 window，它要用一个数",
+        "左边更大，才做下面这几行",
+        "把画笔换成红色",
+        "小海龟向前走 盒子 side 里的数",
+        "向右转 90 度",
+        "小海龟向前走 盒子 side 里的数",
+        "先记住n是 40",
+        "调用 window，把 24 传进去",
+        "调用 window，把 56 传进去",
+        "告诉小海龟，这一幅画完了"
+      ],
+      "keywords": [
+        "if side > n:",
+        "window(24)",
+        "window(56)",
+        "t.color(\"red\")"
+      ],
+      "drill_chunk": "n = 60",
+      "challenge_params": [
+        {
+          "name": "n",
+          "label": "把分界降到 20",
+          "type": "number",
+          "default": 40,
+          "min": 20,
+          "max": 60,
+          "step": 20,
+          "apply": {
+            "kind": "assign",
+            "variable": "n"
+          },
+          "hint": "24 也超过分界时，第一扇会涂红。"
+        }
+      ],
+      "error_mappings": [
+        {
+          "pattern": "colon",
+          "match": "expected ':'",
+          "friendlyMessage": "这行的最后是不是漏了一个英文冒号 ':'？"
+        },
+        {
+          "pattern": "name",
+          "match": "has no attribute",
+          "friendlyMessage": "海龟不认识这个动作，forward 或 right 是不是拼错了？"
+        },
+        {
+          "pattern": "paren",
+          "match": "was never closed",
+          "friendlyMessage": "这里的括号没有闭合哦"
+        },
+        {
+          "pattern": "cjk",
+          "match": "invalid character '（'",
+          "friendlyMessage": "注意，要切到英文键盘，打半角括号哦。"
+        },
+        {
+          "pattern": "indent",
+          "match": "expected an indented block",
+          "friendlyMessage": "冒号下面要往右空四格，函数、循环或判断里的代码才算在里面。"
+        },
+        {
+          "pattern": "defined",
+          "match": "is not defined",
+          "friendlyMessage": "这个名字还没准备好。是不是函数名拼错了，或者还没写 def？"
+        },
+        {
+          "pattern": "concat",
+          "match": "can only concatenate",
+          "friendlyMessage": "句子和数字不能直接加在一起。数字要先用 str 变成文字。"
+        },
+        {
+          "pattern": "key",
+          "match": "KeyError",
+          "friendlyMessage": "字典里没有这个键，看一看引号里的名字。"
+        }
+      ],
+      "quiz": {
+        "question": "哪一扇会涂红？",
+        "options": [
+          "边长超过分界的那一扇",
+          "两扇都不会",
+          "只有写了 def 的那一行"
+        ],
+        "answerIndex": 0,
+        "explain": "每次调用都用自己的边长去比。"
+      },
+      "bonus_challenge": {
+        "type": "param_edit",
+        "instruction": "把「把分界降到 20」改一下。你猜它会变成什么样？",
+        "target_param_name": "n",
+        "target_value": "20",
+        "expected_output": "分界变小后，第一扇也涂成红色",
+        "bonus_reward": "皇冠"
+      },
+      "estimated_minutes": 20,
+      "is_review": false,
+      "teaching_intent": "小窗不超过分界就保持原色，超过就涂红",
+      "parent_brief": "孩子会画出两扇连着的小窗，大的那扇是红色。这一处改完，分界变小后，第一扇也涂成红色。",
+      "teacher_guide": "先看两扇连着的小窗，大的那扇是红色，再只改「把分界降到 20」，确认分界变小后，第一扇也涂成红色。"
+    }
+  ]
+}

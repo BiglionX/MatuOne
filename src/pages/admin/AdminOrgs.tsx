@@ -4,6 +4,8 @@ import { ApiError, getPlatformOperator, getPlatformProfile, listOrgs, loadOvervi
 import { loadPlatformSettings } from '@/api/adminSettings'
 import type { OrgLedgerRow, OrgStatus, ProvisionOrgResult } from '@/types/orgAdmin'
 import type { OpsOverview } from '@/types/ops'
+import { FormError } from '@/components/FormError'
+import { TableSkeleton } from '@/components/Skeleton'
 
 const STATUS_META: Record<OrgStatus, { label: string; className: string }> = {
   trial: { label: '试用中', className: 'bg-brand-soft text-brand-strong' },
@@ -156,7 +158,7 @@ export function AdminOrgs() {
     <div className="px-8 py-8">
       <div className="mx-auto max-w-6xl">
         {overview && (
-            <section className="grid gap-3 sm:grid-cols-4">
+            <section className="grid gap-6 sm:grid-cols-4">
             {[
               ['待续费', String(overview.renewing)],
               ['试用转正常', `${overview.conversion}%`],
@@ -238,8 +240,8 @@ export function AdminOrgs() {
         </section>
 
         <section className="card mt-4 overflow-x-auto">
-          {loadError && <p className="px-4 py-6 text-sm text-danger">{loadError}</p>}
-          {!loadError && loading && rows.length === 0 && <p className="px-4 py-6 text-sm text-ink-soft">正在加载台账…</p>}
+          {loadError && <FormError className="m-4">{loadError}</FormError>}
+          {!loadError && loading && rows.length === 0 && <TableSkeleton rows={6} cols={6} />}
           {!loadError && !loading && rows.length === 0 && (
             <p className="px-4 py-6 text-sm text-ink-soft">没有符合条件的机构。</p>
           )}
@@ -402,7 +404,7 @@ export function AdminOrgs() {
                   </label>
                   <p className="self-end text-sm text-ink-soft">{trialNote}</p>
                 </div>
-                {formError && <p className="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{formError}</p>}
+                {formError && <FormError className="mt-4">{formError}</FormError>}
                 <div className="mt-5 flex justify-end gap-2">
                   <button type="button" className="btn-ghost" onClick={closeModal}>
                     取消

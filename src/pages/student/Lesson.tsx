@@ -12,11 +12,13 @@ import { getCurrentStudent } from '@/api/studentAuth'
 import { ApiError } from '@/lib/apiError'
 import type { CustomLessonContext } from '@/types/studentCustomCourse'
 import type { Level, RunResult } from '@/types'
-import { buildDemoCode, runCode } from '@/lib/runner'
+import { buildDemoCode, pythonEnvMessage, runCode } from '@/lib/runner'
 import { usePythonEnv } from '@/lib/usePythonEnv'
 import { Stars } from '@/components/WpmChart'
 import { CommandStory } from '@/components/CommandStory'
 import { BrandMark } from '@/components/BrandMark'
+import { FormError } from '@/components/FormError'
+import { Skeleton } from '@/components/Skeleton'
 import { RoundA } from './rounds/RoundA'
 import { RoundB } from './rounds/RoundB'
 import { RoundC } from './rounds/RoundC'
@@ -36,7 +38,7 @@ const ENTER_COPY: Record<EnterLevelReason, string> = {
   unauthenticated: '请先登录',
   org_expired: '本机构服务已到期，请联系老师',
   org_disabled: '机构已停用，请联系老师',
-  trial_locked: '试用期间只能学习前 3 关',
+  trial_locked: '试用期间只能学习 Level 1',
   not_entitled: '老师还没有为你开通这一关',
   course_locked: '本机构尚未开通该阶段课程，请联系老师',
   not_found: '没有找到这一关',
@@ -80,6 +82,7 @@ export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
   const staff = preview ? getPlatformProfile() : null
   const [level, setLevel] = useState<Level | null>(null)
   const [missing, setMissing] = useState(false)
+  const [loadError, setLoadError] = useState('')
   const [previewError, setPreviewError] = useState('')
   const [round, setRound] = useState<Round>('A')
   const [gate, setGate] = useState<Awaited<ReturnType<typeof enterLevel>> | null>(null)
@@ -103,6 +106,7 @@ export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
       let alive = true
       setLevel(null)
       setMissing(false)
+      setLoadError('')
       setPreviewError('')
       setGate({ allowed: true, reason: 'ok' })
       setFinished(false)
@@ -128,6 +132,7 @@ export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
     let alive = true
     setLevel(null)
     setMissing(false)
+    setLoadError('')
     setGate(null)
     setFinished(false)
     setRound('A')
@@ -145,12 +150,22 @@ export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
           setLevel(next.level)
           setReviewChunk(next.reviewChunk)
           setRecallDone(!next.reviewChunk)
-        } catch {
-          if (alive) setMissing(true)
+        } catch (err: unknown) {
+          if (!alive) return
+          if (err instanceof ApiError && (err.status === 0 || err.status >= 500)) {
+            setLoadError(err.message)
+            return
+          }
+          setMissing(true)
         }
       })
-      .catch(() => {
-        if (alive) setMissing(true)
+      .catch((err: unknown) => {
+        if (!alive) return
+        if (err instanceof ApiError && (err.status === 0 || err.status >= 500)) {
+          setLoadError(err.message)
+          return
+        }
+        setMissing(true)
       })
     return () => {
       alive = false
@@ -199,6 +214,17 @@ export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
     )
   }
 
+  if (loadError) {
+    return (
+      <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
+        <p className="text-xl text-ink">{loadError}</p>
+        <Link to={mapHref} className="btn-primary">
+          回到课程地图
+        </Link>
+      </div>
+    )
+  }
+
   if (missing || (gate && !gate.allowed && gate.reason === 'not_found')) {
     return (
       <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas pt-12">
@@ -229,7 +255,10 @@ export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
     return (
       <div className={`student-shell flex min-h-screen items-center justify-center bg-canvas ${preview ? 'pt-12' : ''}`}>
         {preview && <PreviewBanner />}
-        <p className="text-xl text-ink">{preview ? '正在打开试课…' : '正在确认能不能进入这一关'}</p>
+        <div className="grid w-full max-w-6xl gap-6 px-8 lg:grid-cols-2" role="status" aria-label="正在打开这一关">
+          <Skeleton className="h-80 rounded-2xl" />
+          <Skeleton className="h-80 rounded-2xl" />
+        </div>
       </div>
     )
   }
@@ -337,11 +366,16 @@ export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
   }
 
   return (
-    <div className={`student-shell flex min-h-screen min-w-[1024px] flex-col bg-canvas ${preview ? 'pt-12' : ''}`}>
+    <div className={`student-shell flex min-h-screen flex-col bg-canvas ${preview ? 'pt-12' : ''}`}>
       {preview && <PreviewBanner />}
       <PlaceholderBanner show={level.is_placeholder || placeholderLesson} />
+      {pythonPhase === 'error' && (
+        <p role="status" className="bg-warning-soft px-8 py-3 text-center text-sm text-ink">
+          {pythonEnvMessage()}
+        </p>
+      )}
       <div className={`sticky z-20 border-b border-line bg-white ${preview ? 'top-12' : 'top-0'}`}>
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-8 py-3.5">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 p-6 lg:px-8">
           <Link to={preview ? '/admin/levels' : mapHref} className="btn-ghost px-2" aria-label={preview ? '返回课程管理' : '返回课程地图'}>
             ←
           </Link>
@@ -359,14 +393,14 @@ export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
               return (
                 <div
                   key={item.key}
-                  className={`rounded-field px-4 py-2 text-center transition ${
-                    active ? 'bg-brand text-white' : passed ? 'bg-success-soft text-success' : 'bg-canvas text-ink-soft'
+                  className={`min-w-[7.5rem] rounded-xl px-4 py-2 text-center ${
+                    active ? 'bg-brand-action text-white' : passed ? 'bg-success-soft text-success' : 'bg-canvas text-ink'
                   }`}
                 >
                   <div className="text-sm font-semibold">
                     {item.key} {item.label}
                   </div>
-                  <div className={`text-xs ${active ? 'text-white/80' : 'text-ink-soft/80'}`}>{item.sub}</div>
+                  <div className={`text-sm ${active ? 'text-white' : 'text-ink-soft'}`}>{item.sub}</div>
                 </div>
               )
             })}
@@ -375,8 +409,8 @@ export function Lesson({ custom }: { custom?: CustomLessonContext } = {}) {
         </div>
       </div>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-8 py-7">
-        {finishError && <p className="mb-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{finishError}</p>}
+      <main className="mx-auto w-full max-w-6xl flex-1 p-6 lg:p-8">
+        {finishError && <FormError className="mb-4">{finishError}</FormError>}
         {round === 'A' && (
           <RoundA
             level={level}

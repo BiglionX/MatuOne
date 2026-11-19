@@ -6,13 +6,14 @@ import { ApiError } from '@/lib/apiError'
 import type { EnterLevelReason } from '@/api/studentLevel'
 import type { StudentCustomMaterial } from '@/types/studentCustomCourse'
 import { Lesson } from './Lesson'
+import { FormError } from '@/components/FormError'
 
 const ENTER_COPY: Record<EnterLevelReason, string> = {
   ok: '',
   unauthenticated: '请先登录',
   org_expired: '本机构服务已到期，请联系老师',
   org_disabled: '机构已停用，请联系老师',
-  trial_locked: '试用期间只能学习前 3 关',
+  trial_locked: '试用期间只能学习 Level 1',
   not_entitled: '老师还没有为你开通这一关',
   course_locked: '本机构尚未开通该阶段课程，请联系老师',
   not_found: '没有找到这一关',
@@ -116,7 +117,7 @@ export function CustomSection() {
 
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-8 py-6">
         {!ready && <p className="text-ink-soft">正在打开这一节…</p>}
-        {ready && (blocked || error) && <p className="rounded-field bg-danger-soft px-4 py-3 text-danger">{blocked || error}</p>}
+        {ready && (blocked || error) && <FormError>{blocked || error}</FormError>}
         {ready && !blocked && material && (
           <MaterialView material={material} onReady={markReady} onFailed={markFailed} />
         )}

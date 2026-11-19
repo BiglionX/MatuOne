@@ -2,7 +2,6 @@ import type { ImportReport, Level } from '@/types'
 import type { CourseCopyField, CourseCopyHistory, CourseCopySave, CourseTree, StaffCoursePreview } from '@/types/courseAdmin'
 import { ApiError } from '@/lib/apiError'
 import { callFunction } from '@/lib/backend'
-import { buildPlayableLevel } from '@/lib/lessonMaterial'
 import { rememberHints, rememberLevels } from '@/lib/levelCatalog'
 
 export interface PublishedLevel {
@@ -20,8 +19,8 @@ export async function loadPreviewLevel(levelId: string): Promise<{ level: Level;
     reviewChunk?: string | null
     hints?: { pattern: string; friendly_message: string }[]
   }>('course-catalog', { action: 'preview', levelId: request.levelId, sandbox: request.sandbox }, { role: 'platform' })
-  const level = result.level?.quiz && result.level.teach_code_lines?.length ? result.level : buildPlayableLevel(levelId)
-  if (!level) throw new ApiError(404, '没有找到这一关')
+  const level = result.level
+  if (!level?.quiz || !level.teach_code_lines?.length) throw new ApiError(404, '没有找到这一关')
   rememberLevels([level])
   rememberHints((result.hints ?? []).map((row) => ({ pattern: row.pattern, friendlyMessage: row.friendly_message })))
   const reviewChunk = typeof result.reviewChunk === 'string' && result.reviewChunk.trim() ? result.reviewChunk : null

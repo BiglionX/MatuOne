@@ -53,6 +53,9 @@ const RUN_LIMIT_MS = 3_000
 const INTERRUPT_GRACE_MS = 800
 const EXEC_TIMEOUT_MESSAGE = '代码执行时间太长啦，检查一下有没有死循环？'
 
+/** 旧浏览器创建不了 Worker，或 Worker 脚本本身起不来。 */
+export const PYTHON_ENV_UNAVAILABLE = '这台浏览器打不开 Python 运行环境。题目还能看，运行代码需要换用较新的 Chrome。'
+
 /** Pyodide 还在下载。页面用它把运行按钮换成「引擎准备中...」。 */
 export function pythonLoadingResult(): RunResult {
   return { ok: false, loading: true, line: 0, message: '引擎准备中...' }
@@ -82,7 +85,14 @@ export function subscribePythonEnv(listener: (next: PythonPhase) => void): () =>
   return () => listeners.delete(listener)
 }
 
+let envMessage = ''
+
+export function pythonEnvMessage(): string {
+  return envMessage
+}
+
 function dropWorker(message: string) {
+  envMessage = message
   const current = worker
   worker = null
   bootPromise = null
@@ -102,17 +112,24 @@ function dropWorker(message: string) {
 
 function ensureWorker(): Worker {
   if (worker) return worker
-  const next = new Worker(new URL('./pyodide.worker.ts', import.meta.url), { type: 'module' })
+  if (typeof Worker !== 'function') throw new Error(PYTHON_ENV_UNAVAILABLE)
+  let next: Worker
+  try {
+    next = new Worker(new URL('./pyodide.worker.ts', import.meta.url), { type: 'module' })
+  } catch {
+    throw new Error(PYTHON_ENV_UNAVAILABLE)
+  }
   next.onmessage = (event: MessageEvent<WorkerInbound>) => {
     const data = event.data
     if (!data || typeof data !== 'object') return
     if (data.type === 'ready') {
+      envMessage = ''
       setPhase('ready')
       return
     }
     if (data.type === 'fatal') {
       setPhase('error')
-      dropWorker(data.message || '运行环境加载失败')
+      dropWorker(data.message || PYTHON_ENV_UNAVAILABLE)
       return
     }
     if (data.type === 'interrupt') {
@@ -136,7 +153,7 @@ function ensureWorker(): Worker {
   }
   next.onerror = () => {
     setPhase('error')
-    dropWorker('运行环境加载失败')
+    dropWorker(PYTHON_ENV_UNAVAILABLE)
   }
   worker = next
   return next
@@ -147,13 +164,20 @@ export function warmupPython(): Promise<void> {
   if (phase === 'ready' && worker) return Promise.resolve()
   if (bootPromise) return bootPromise
   setPhase('loading')
-  ensureWorker()
+  try {
+    ensureWorker()
+  } catch (err) {
+    const message = err instanceof Error ? err.message : PYTHON_ENV_UNAVAILABLE
+    dropWorker(message)
+    setPhase('error')
+    return Promise.reject(new Error(message))
+  }
   const mine = new Promise<void>((resolve, reject) => {
     const timeout = window.setTimeout(() => {
       if (bootPromise === mine) bootPromise = null
+      dropWorker('Python 运行环境没有下载下来。题目还能看，请检查网络后再试一次。')
       setPhase('error')
-      dropWorker('运行环境加载超时，请检查网络后再试一次。')
-      reject(new Error('运行环境加载超时'))
+      reject(new Error(envMessage))
     }, 60_000)
     const stop = subscribePythonEnv((next) => {
       if (next !== 'ready' && next !== 'error') return
@@ -161,7 +185,7 @@ export function warmupPython(): Promise<void> {
       stop()
       if (bootPromise === mine) bootPromise = null
       if (next === 'ready') resolve()
-      else reject(new Error('运行环境加载失败'))
+      else reject(new Error(envMessage || PYTHON_ENV_UNAVAILABLE))
     })
   })
   bootPromise = mine
@@ -286,7 +310,7 @@ async function runWithPyodide(code: string, level: Level): Promise<RunResult> {
   if (parsed.commands.length > 0) {
     return { ok: true, output: { kind: 'canvas', commands: parsed.commands, text } }
   }
-  return { ok: true, output: { kind: 'text', text } }
+  return { ok: true, output: { kind: 'text', text, commands: [] } }
 }
 
 /**

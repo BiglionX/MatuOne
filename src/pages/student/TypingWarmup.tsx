@@ -69,7 +69,7 @@ export function TypingWarmup() {
   const keywordsReady = mode !== 'keywords' || keywordTargets !== null
 
   return (
-    <div className="student-shell min-h-screen min-w-[1024px] bg-canvas pb-16">
+    <div className="student-shell min-h-screen bg-canvas pb-16">
       <div className="sticky top-0 z-20 border-b border-line bg-white">
         <div className="mx-auto flex max-w-4xl items-center gap-4 px-8 py-4">
           <Link to="/student" className="btn-ghost px-2">
@@ -90,8 +90,8 @@ export function TypingWarmup() {
                   setStats(null)
                   setRoundKey((n) => n + 1)
                 }}
-                className={`rounded-field px-4 py-2.5 text-sm font-medium transition ${
-                  mode === key ? 'bg-brand text-white' : 'bg-canvas text-ink-soft hover:text-brand-strong'
+                className={`inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-medium transition ${
+                  mode === key ? 'bg-brand-action text-white' : 'bg-canvas text-ink hover:text-brand-strong'
                 }`}
               >
                 {PRACTICE[key].label}

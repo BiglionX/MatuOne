@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { ApiError, loadPlatformSettings, savePlatformSettings } from '@/api/adminSettings'
 import { getPlatformProfile } from '@/api/adminOrgs'
 import type { PlatformSettings } from '@/types/platformSettings'
+import { FormError } from '@/components/FormError'
+import { ListSkeleton } from '@/components/Skeleton'
 
 const EMPTY = {
   minSeatCount: '',
@@ -66,7 +68,7 @@ export function AdminSettings() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-2xl font-bold text-ink">运营配置</h1>
         <p className="mt-1 text-sm text-ink-soft">开户席位、平台底价、试用天数和区域服务商分成都从这里读取。续费金额按底价计算，不在页面里写死。</p>
-        {loading && <p className="mt-6 text-sm text-ink-soft">正在读取配置…</p>}
+        {loading && <ListSkeleton rows={2} />}
         {!loading && (
           <form className="card mt-6 p-6" onSubmit={submit}>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -116,7 +118,7 @@ export function AdminSettings() {
               </label>
             </div>
             {updatedAt && <p className="mt-4 text-xs text-ink-soft">最近更新 {updatedAt.replace('T', ' ').slice(0, 16)}</p>}
-            {error && <p className="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
+            {error && <FormError className="mt-4">{error}</FormError>}
             {saved && <p className="mt-4 text-sm text-success">已保存。之后的开户和续费会使用新配置。</p>}
             {canEdit && (
               <button type="submit" className="btn-primary mt-5 px-6" disabled={saving}>

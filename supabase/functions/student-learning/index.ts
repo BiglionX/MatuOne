@@ -5,7 +5,7 @@ import { decideEnterLevel } from '../_shared/enterLevel.ts'
 import { normalizeTypingScore } from '../_shared/typingScore.ts'
 import { empty, json } from '../_shared/http.ts'
 import { drillForLevel, reviewChunkOf } from '../_shared/drill_chunks.ts'
-import { isLevelEntitled, levelOrderOf } from '../_shared/orgStatus.ts'
+import { isFreeLevel1, isLevelEntitled, levelOrderOf, stageLevelOfOrder } from '../_shared/orgStatus.ts'
 
 function weekStart(date: Date): Date {
   const copy = new Date(date)
@@ -299,9 +299,11 @@ Deno.serve(async (req) => {
     const order = Number(level.sort_order)
     const row = progress.get(level.level_id)
     const completed = Boolean(row?.completed)
-    const entitled = isLevelEntitled(spans, student.org_id, student.group_id, student.id, order)
+    const stage = stageLevelOfOrder(order)
+    const free = (status === 'trial' || status === 'active') && stage != null && isFreeLevel1(order, stage)
+    const entitled = free || isLevelEntitled(spans, student.org_id, student.group_id, student.id, order)
     const openStatus = status === 'trial' || status === 'active'
-    const trialOk = status !== 'trial' || order <= 3
+    const trialOk = status !== 'trial' || free
     const unlocked = entitled && openStatus && trialOk && (completed || order === focus)
     const stars = Number(row?.stars ?? 0)
     return {

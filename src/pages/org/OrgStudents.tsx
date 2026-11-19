@@ -16,6 +16,7 @@ import {
   type OrgStudentListItem,
 } from '@/api/orgPortal'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
+import { TableSkeleton } from '@/components/Skeleton'
 import { OrgStudentProgress } from '@/components/OrgStudentProgress'
 import type { Group } from '@/types'
 import { formatDate } from '@/lib/format'
@@ -34,6 +35,7 @@ export function OrgStudents() {
   const [groupNameInput, setGroupNameInput] = useState('')
   const [groupBusy, setGroupBusy] = useState(false)
   const [notice, setNotice] = useState('')
+  const [ready, setReady] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
   const [rows, setRows] = useState<ImportRowResult[] | null>(null)
   const [fileName, setFileName] = useState('')
@@ -57,6 +59,7 @@ export function OrgStudents() {
       .catch((error: unknown) => {
         if (error instanceof ApiError) setNotice(error.message)
       })
+      .finally(() => setReady(true))
   }, [])
 
   useEffect(() => {
@@ -168,7 +171,7 @@ export function OrgStudents() {
   const emptyLabel = students.length === 0 ? '还没有学生。先建好分组，再用 CSV 批量导入。' : '这个分组还没有学生。'
 
   return (
-    <div className="px-8 py-8">
+    <div className="p-8">
       <OrgAccessNotice message={notice} />
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
@@ -313,8 +316,11 @@ export function OrgStudents() {
       )}
 
       <section className="card overflow-hidden">
+        {!ready ? (
+          <TableSkeleton rows={6} cols={6} />
+        ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="data-table w-full min-w-[1080px] text-sm">
             <thead>
               <tr className="border-b border-line bg-canvas text-left text-ink-soft">
                 <th className="px-6 py-3 font-medium">姓名</th>
@@ -353,7 +359,7 @@ export function OrgStudents() {
                   </td>
                   <td className="px-6 py-3.5">
                     <select
-                      className="field min-h-0 w-36 py-1 text-sm"
+                      className="field w-40 text-sm"
                       value={groups.some((group) => group.id === student.groupId) ? student.groupId : ''}
                       disabled={readOnly}
                       aria-label={`${student.name}的分组`}
@@ -427,6 +433,7 @@ export function OrgStudents() {
             </tbody>
           </table>
         </div>
+        )}
       </section>
 
       {detailId && (
@@ -516,7 +523,7 @@ export function OrgStudents() {
 }
 
 function filterChip(selected: boolean): string {
-  return `chip cursor-pointer border-0 ${selected ? 'bg-brand-soft text-brand-strong' : 'bg-canvas text-ink-soft hover:text-ink'}`
+  return `inline-flex min-h-11 cursor-pointer items-center rounded-full px-4 text-sm font-medium ${selected ? 'bg-brand-soft text-brand-strong' : 'bg-canvas text-ink hover:text-brand-strong'}`
 }
 
 function ConfirmDialog({

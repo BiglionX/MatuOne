@@ -41,6 +41,10 @@ verify_jwt = true
 [functions.org-course]
 verify_jwt = true
 
+# 机构财务。函数内再校验 org_admin.role = admin，老师返回 403。
+[functions.org-finance]
+verify_jwt = true
+
 # 机构管理员会话，withOrgScope 从 JWT 取 orgId。
 [functions.org-dashboard]
 verify_jwt = true

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { ApiError, issueAgentAccount, loadAdminDashboard, type AdminDashboard } from '@/api/adminDashboard'
 import { getPlatformProfile } from '@/api/adminOrgs'
 import type { IssuedAgentAccount } from '@/types/agentPortal'
+import { FormError } from '@/components/FormError'
+import { CardGridSkeleton, TableSkeleton } from '@/components/Skeleton'
 
 function money(amount: number): string {
   return `¥${amount.toLocaleString('zh-CN')}`
@@ -64,11 +66,18 @@ export function AdminDashboard() {
       <div className="mx-auto max-w-6xl">
         <h1 className="text-2xl font-bold text-ink">工作台</h1>
         <p className="mt-1 text-sm text-ink-soft">全平台的经营数字，以及需要跟进的机构。</p>
-        {error && <p className="mt-4 text-sm text-danger">{error}</p>}
-        {!error && !data && <p className="mt-6 text-sm text-ink-soft">正在汇总…</p>}
+        {error && <FormError className="mt-4">{error}</FormError>}
+        {!error && !data && (
+          <div className="mt-6 space-y-6">
+            <CardGridSkeleton count={4} />
+            <div className="card">
+              <TableSkeleton rows={4} cols={4} />
+            </div>
+          </div>
+        )}
         {data && (
           <>
-            <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
               {cards.map((card) => (
                 <article key={card.label} className="card px-4 py-4">
                   <p className="text-sm text-ink-soft">{card.label}</p>
@@ -130,7 +139,7 @@ export function AdminDashboard() {
                 <p className="mt-4 text-sm text-ink-soft">还没有区域服务商。</p>
               ) : (
                 <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[860px] text-left text-sm">
+                  <table className="data-table w-full min-w-[860px] text-left text-sm">
                     <thead className="text-ink-soft">
                       <tr className="border-b border-line">
                         {['区域服务商', '名下机构数', '席位费总额', '服务商应发', '平台净收入', '登录账号', ''].map((label) => (
@@ -153,7 +162,7 @@ export function AdminDashboard() {
                             {canIssue && (
                               <button
                                 type="button"
-                                className="text-brand-strong"
+                                className="btn-ghost"
                                 disabled={issuingId === row.agentId}
                                 onClick={() => issue(row.agentId, row.agentName)}
                               >
