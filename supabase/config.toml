@@ -1,4 +1,6 @@
 # 本地与托管网关都读这份配置。改 verify_jwt 后必须重新部署函数才生效，见 DEPLOY.md。
+# 注意：这份配置只对 functions/ 下的遗留 Edge Functions 生效，当前线上链路是
+# Vercel 的 /api/<name> → server/routes.ts → Neon，不经过函数网关。先读 supabase/README.md。
 project_id = "matuone"
 
 # 调用时还没有 Supabase 会话，账号密码在函数体内校验。

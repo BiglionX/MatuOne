@@ -1,6 +1,12 @@
 /**
  * 对远程 staging 做部署后检查。只读环境变量，不读 .env 文件。
  * 摘要会抹掉令牌和密码哈希，避免把密钥打进终端。
+ *
+ * 【已过时】这个脚本打的是 Supabase Edge Functions（`{STAGING_URL}/functions/v1/<name>`），
+ * 属于早期架构。当前线上链路是 Vercel 的 `/api/<name>` → server/routes.ts → Neon，
+ * 不经过函数网关，这个脚本对当前部署检查不出问题。
+ * 现在用 `npm run e2e`（默认打本地 127.0.0.1:5173，远程用 E2E_BASE_URL 覆盖）。
+ * 保留仅供将来恢复 Supabase Edge Functions 链路时参考。
  */
 import { createClient } from '@supabase/supabase-js'
 

@@ -63,6 +63,12 @@ scripts/brand-build.py  # 由 _brand/logo-src.jpg 生成 logo 与 favicon
 scripts/og-cover.py     # 生成 1200×630 社交分享卡 public/og-cover.png
 ```
 
+## 后端与部署
+
+线上链路：前端 `/api/<name>` → Vercel `api/[name].js` → `server/routes.ts` → **Neon** 数据库，会话是自签 JWT。`supabase/functions/` 是早期基于 Supabase Edge Functions 的遗留实现，不在链路上；`supabase/migrations/` 里的迁移用 `npm run db:apply` 执行到 Neon。
+
+完整流程见 [DEPLOY.md](DEPLOY.md) 与 [supabase/README.md](supabase/README.md)。
+
 ## 关键实现约定
 
 - **执行适配层**：页面不直接碰 Pyodide，只调 `src/lib/runner.ts` 的 `runCode(code, levelId)`；返回值是统一的 `RunResult`（笔迹、文字、错误行与「人话提示」）。真正执行在 `src/lib/pyodide.worker.ts`。
