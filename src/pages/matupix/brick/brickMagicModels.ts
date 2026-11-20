@@ -5,6 +5,7 @@ import {
   createBrickId,
   footprint,
   occupancyKeys,
+  partBounds,
   partMount,
   partOrigin,
   partPlates,
@@ -38,6 +39,11 @@ export type MagicPiece = {
    * 单连接点零件（头、发、手臂、手）的落点不在网格上，position 直接指这个连接点。
    */
   joint?: [number, number, number]
+  /**
+   * 亚格偏移：零件相对网格落点的额外位移，X/Z 按钉距、Y 按格高。
+   * 板层网格和零件真实高度对不上时，用它把人偶各段贴紧。
+   */
+  anchor?: [number, number, number]
   /** 摆角（绕 X 轴，度），支点是零件自己的 LDraw 原点。 */
   tilt?: number
   /** 滚角（绕 Z 轴，度），支点同样是零件自己的 LDraw 原点。 */
@@ -59,7 +65,7 @@ type Add = (
   gz: number,
   base?: number,
   rotation?: BrickRotation,
-  attach?: { joint: [number, number, number]; tilt?: number; roll?: number },
+  attach?: { joint?: [number, number, number]; tilt?: number; roll?: number; anchor?: [number, number, number] },
 ) => void
 
 function bag(): { pieces: MagicPiece[]; add: Add } {
@@ -72,7 +78,8 @@ function bag(): { pieces: MagicPiece[]; add: Add } {
       gz,
       base,
       rotation,
-      ...(attach ? { joint: attach.joint } : {}),
+      ...(attach?.joint ? { joint: attach.joint } : {}),
+      ...(attach?.anchor ? { anchor: attach.anchor } : {}),
       ...(attach?.tilt === undefined ? {} : { tilt: attach.tilt }),
       ...(attach?.roll === undefined ? {} : { roll: attach.roll }),
     })
@@ -112,17 +119,86 @@ const HEAD_OFFSET_Y = 28 / 24
 const HAND_LOCAL: [number, number, number] = [-5, 18.9, -9.9]
 const HAND_TILT = 45 // 手掌相对手腕孔的倾角：孔轴是竖直方向偏 45°
 
+// 人偶三段在 LDraw 里的真实高度和目录里声明的板层数对不上：
+// 腿 3817c 高 36.75 LDU（1.532 格），目录声明 5 板（1.667 格）；
+// 髋 3815b 高 31.75 LDU（1.323 格），目录声明 4 板（1.333 格）；
+// 躯干 973 高 44 LDU（1.833 格），目录声明 6 板（2 格）。
+// 照板层网格往上堆，腿顶和髋底之间空出 0.13 格、髋顶和躯干底之间空出 0.15 格，
+// 下半身和上半身就断成两截。这里按真实高度把髋和躯干往下贴紧。
+const FIGURE_SEAM = 0.02 // 再往里压一点，两个面正好贴平反而看着像断开
+// 两条腿各自按 1×1 脚印摆在相邻两格，中间会空出 0.1 格。
+// 官方人偶两条腿的 LDraw 原点重合在中线上、腿身紧贴，往中间收一点才接得上。
+const LEG_INSET = 0.045
+
+/**
+ * 网格件摆在第 base 层时的顶面高度（渲染坐标）。
+ * 网格件的支点在脚印中心，底面落在 base/3，顶面按零件自己的真实高度往上加。
+ */
+function gridTop(type: BrickType, base: number) {
+  const bounds = partBounds(type)
+  return base / 3 + bounds[4] - bounds[1]
+}
+
+// 方向盘 30663 的中心是一截朝下的空心套筒（LDraw 里用 stud4od 画的 antistud）：
+// 管身是 LDraw y 4..8，长 4 LDU 也就是 1/6 格，和一颗凸点一样高。
+// 渲染后套筒占零件原点下方 1/6..1/3 格：带法兰的开口端在最下面，封闭端在 1/6 格处。
+// 凸点整个塞进套筒时，封闭端正好抵住凸点顶端，所以方向盘原点要比凸点顶端再高 1/6 格。
+const STEER_SOCKET_RISE = 1 / 6
+// 凸点高 4 LDU，也就是 1/6 格。
+const STUD_HEIGHT = 1 / 6
+
+/**
+ * 凸点顶端的渲染坐标。
+ * dx/dz 是凸点相对零件自己原点的偏移（LDraw 里 1 格 = 20 LDU，Y 轴向下、Z 轴反向）。
+ * 候选零件的凸点底端都在零件原点的 LDraw y=0 上，顶端比原点高 1/6 格。
+ * rotation 是零件绕 Y 轴的转向，凸点偏移要跟着一起转。
+ */
+function studTop(
+  gx: number,
+  gz: number,
+  base: number,
+  type: BrickType,
+  dx: number,
+  dz: number,
+  rotation: BrickRotation = 0,
+) {
+  const { width, depth } = footprint(type, rotation)
+  const origin = partOrigin(type)
+  const ox = origin[0] + dx
+  const oz = origin[2] + dz
+  const turn = (rotation * Math.PI) / 180
+  const cos = Math.cos(turn)
+  const sin = Math.sin(turn)
+  return {
+    x: gx + width / 2 + ox * cos + oz * sin,
+    y: centerForPlates(base, type) + origin[1] + STUD_HEIGHT,
+    z: gz + depth / 2 + (-ox * sin + oz * cos),
+  }
+}
+
+/**
+ * 方向盘套在某个凸点上：原点抬高 1/6 格，套筒封闭端正好抵住凸点顶端，
+ * 凸点整个塞进管子里，管的开口端落在凸点根部。
+ */
+function steerOnStud(x: number, studTopY: number, z: number): [number, number, number] {
+  return [x, studTopY + STEER_SOCKET_RISE, z]
+}
+
 function figure(add: Add, x: number, z: number, base: number, cloth: string, hairColor: string) {
-  add('legs', cloth, x, z, base)
-  add('leg-right', cloth, x + 1, z, base)
-  add('hip', cloth, x, z, base + 5)
-  add('torso', cloth, x, z, base + 9)
+  // 髋压到腿顶、躯干压到髋顶，接缝才算真正合上。
+  const hipDrop = gridTop('legs', base) - (base + 5) / 3 - FIGURE_SEAM
+  const torsoDrop = gridTop('hip', base + 5) + hipDrop - (base + 9) / 3 - FIGURE_SEAM
+
+  add('legs', cloth, x, z, base, 0, { anchor: [LEG_INSET, 0, 0] })
+  add('leg-right', cloth, x + 1, z, base, 0, { anchor: [-LEG_INSET, 0, 0] })
+  add('hip', cloth, x, z, base + 5, 0, { anchor: [0, hipDrop, 0] })
+  add('torso', cloth, x, z, base + 9, 0, { anchor: [0, torsoDrop, 0] })
 
   // 躯干的 LDraw 原点在脖子根，不在脚印中心，肩和颈都要拿它当基准。
   const origin = partOrigin('torso')
   const torso: [number, number, number] = [
     x + 1 + origin[0],
-    centerForPlates(base + 9, 'torso') + origin[1],
+    centerForPlates(base + 9, 'torso') + origin[1] + torsoDrop,
     z + 0.5 + origin[2],
   ]
 
@@ -487,7 +563,10 @@ function f1(): MagicPiece[] {
   add('brick-1x6', R, 4, 4, 1)
   add('seat', K, 8, 2, 1)
   add('windscreen', B, 4, 2, 1)
-  add('steer', K, 6, 2, 8)
+  // 方向盘不再悬在挡风上方：30663 的中心是一截朝下的空心套筒，套在挡风顶面右边的凸点上。
+  // 挡风 3823 的凸点在 LDraw (±30, 0, 0)，也就是绕零件原点左右各 1.5 格。
+  const dashStud = studTop(4, 2, 1, 'windscreen', 1.5, 0)
+  add('steer', K, 6, 2, 8, 0, { joint: steerOnStud(dashStud.x, dashStud.y, dashStud.z) })
   add('round-1x1', Y, 8, 2, 7)
   add('1x1', K, 9, 2, 7)
   add('2x4', R, 12, 1, 1)
@@ -578,13 +657,20 @@ function plane(): MagicPiece[] {
   add('2x4', W, 12, 4, 3)
   add('plate-2x12', B, 6, -2, 3, 90)
   add('plate-2x12', B, 8, -2, 3, 90)
+  // 驾驶座底下再垫一块 2×2 板，它得避开前后两个轮子（轮胎占了 4 层板）。
+  add('plate-2x2', B, 10, 4, 3)
   add('cylinder-2x2', K, 6, -1, 0)
   add('cylinder-2x2', K, 8, -1, 0)
   add('cylinder-2x2', K, 6, 8, 0)
   add('cylinder-2x2', K, 8, 8, 0)
   add('canopy', B, 4, 2, 6)
-  add('seat', K, 8, 4, 4)
-  add('steer', K, 6, 4, 12)
+  // 座椅 4079 的靠背在零件的 -Z 侧、座面凸点在 +Z 侧，直接摆就是模着机身横坐。
+  // 转到 270 度后靠背朝机尾、凸点朝机头，驾驶座才正对前方。
+  add('seat', K, 10, 4, 4, 270)
+  // 座舱罩 4474 顶面没有凸点，方向盘改套在座椅 4079 座面朝前那颗凸点上。
+  // 座舱罩占机头到第 8 格，方向盘环半径 1 格，驾驶座要往后挪到第 10 格才不撞罩壁。
+  const seatStud = studTop(10, 4, 4, 'seat', -0.5, 0.5, 270)
+  add('steer', K, 6, 4, 12, 0, { joint: steerOnStud(seatStud.x, seatStud.y, seatStud.z) })
   // 尾翼下面补两块托板，尾翼才不会悬在半空。
   add('1x2', R, 14, 2, 0)
   add('1x2', R, 14, 6, 0)
@@ -856,7 +942,9 @@ function tractor(): MagicPiece[] {
   add('2x4', G, 3, 2, 3)
   add('2x2', Y, 3, 2, 6)
   add('seat', K, 5, 2, 6)
-  add('steer', K, 3, 2, 9)
+  // 方向盘套在驾驶座前那块黄色机盖砖的凸点上。
+  const cowlStud = studTop(3, 2, 6, '2x2', 0.5, 0.5)
+  add('steer', K, 3, 2, 9, 0, { joint: steerOnStud(cowlStud.x, cowlStud.y, cowlStud.z) })
   add('grille', K, 2, 1, 3)
   add('cone-1x1', K, 6, 1, 3)
   add('cylinder-2x2', G, 8, 2, 0)
@@ -1357,7 +1445,9 @@ function sportCar(): MagicPiece[] {
   add('2x4', R, 6, 2, 1)
   add('windscreen', B, 4, 2, 4)
   add('seat', K, 8, 2, 4)
-  add('steer', K, 6, 2, 11)
+  // 方向盘不再悬在挡风上方：30663 的中心是一截朝下的空心套筒，套在挡风顶面右边的凸点上。
+  const dashStud = studTop(4, 2, 4, 'windscreen', 1.5, 0)
+  add('steer', K, 6, 2, 11, 0, { joint: steerOnStud(dashStud.x, dashStud.y, dashStud.z) })
   add('2x4', R, 10, 1, 1)
   add('2x4', R, 10, 3, 1)
   add('slope-2x2', R, 14, 1, 1)
@@ -2091,6 +2181,7 @@ function place(pieces: readonly MagicPiece[]): Brick[] {
       rotation: piece.rotation,
       position:
         piece.joint ?? [piece.gx + width / 2, centerForPlates(piece.base, piece.type), piece.gz + depth / 2],
+      ...(piece.anchor ? { anchor: piece.anchor } : {}),
       ...(piece.tilt === undefined ? {} : { tilt: piece.tilt }),
       ...(piece.roll === undefined ? {} : { roll: piece.roll }),
     }

@@ -357,7 +357,7 @@ export const BRICK_PARTS: BrickPartInfo[] = [
   { type: 'tyre-small', label: '小轮胎', name: '小轮胎', footprint: '3×1', ldraw: '6015', studs: [3, 1], plates: 6, category: '车辆', glyph: 'round' },
   { type: 'rim', label: '轮毂', name: '轮毂', footprint: '1×1', ldraw: '4624', studs: [1, 1], plates: 3, category: '车辆', glyph: 'round' },
   { type: 'rim-small', label: '小轮毂', name: '小轮毂', footprint: '1×1', ldraw: '30027a', studs: [1, 1], plates: 3, category: '车辆', glyph: 'round' },
-  { type: 'steer', label: '方向盘', name: '方向盘', footprint: '2×2', ldraw: '30663', studs: [2, 2], plates: 2, category: '车辆', glyph: 'round' },
+  { type: 'steer', label: '方向盘', name: '方向盘', footprint: '2×2', ldraw: '30663', studs: [2, 2], plates: 2, category: '车辆', glyph: 'round', mount: 'point' },
   { type: 'windscreen', label: '挡风', name: '挡风', footprint: '4×2', ldraw: '3823', studs: [4, 2], plates: 7, category: '车辆', glyph: 'slope' },
   { type: 'windscreen-long', label: '长挡风', name: '长挡风', footprint: '2×5', ldraw: '6070', studs: [2, 5], plates: 6, category: '车辆', glyph: 'slope' },
   { type: 'canopy', label: '座舱罩', name: '座舱罩', footprint: '4×6', ldraw: '4474', studs: [4, 6], plates: 6, category: '车辆', glyph: 'slope' },
@@ -573,8 +573,10 @@ function axisCells(center: number, size: number) {
 }
 
 // 亚格偏移的零件脚印会跨在两格中间，占格要按它实际盖住的范围算。
+// 但偏移不到半格时零件还属于自己那一格（人偶两条腿往中间靠一点），
+// 这时候扩成两格会让并排的两条腿互相撞格。
 function spanCells(center: number, size: number, offset: number) {
-  if (!offset) return axisCells(center, size)
+  if (!offset || Math.abs(offset) < 0.5) return axisCells(center, size)
   const min = center + offset - size / 2
   const max = center + offset + size / 2
   const cells: number[] = []
