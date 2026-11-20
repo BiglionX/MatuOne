@@ -15,6 +15,8 @@ await build({
   target: 'node20',
   legalComments: 'none',
   alias: { '@': join(root, 'src') },
+  // pg 的 native 支持是可选依赖，本地不装；留着会被 esbuild 当成必解析依赖而报错。
+  external: ['pg-native'],
   banner: { js: '/* Generated from server/vercelHandler.ts. Do not edit. */' },
 })
 

@@ -28,6 +28,7 @@ const local = /localhost|127\.0\.0\.1/.test(baseURL)
 
 export default defineConfig({
   testDir: 'e2e',
+  globalTeardown: './e2e/global-teardown.ts',
   timeout: 180_000,
   expect: { timeout: 45_000 },
   fullyParallel: false,
