@@ -21,3 +21,6 @@ supabase/.temp
 npm-debug.log*
 .DS_Store
 Thumbs.db
+
+# 临时诊断/截图脚本
+tmp-*
