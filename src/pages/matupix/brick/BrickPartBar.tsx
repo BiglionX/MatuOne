@@ -1,4 +1,6 @@
 import { BRICK_PARTS, type BrickType } from './brickTypes'
+import { BrickPartThumb } from './BrickPartThumb'
+import './brickCard.css'
 
 type BrickPartBarProps = {
   part: BrickType
@@ -6,6 +8,9 @@ type BrickPartBarProps = {
   open?: boolean
   onOpen: () => void
 }
+
+/** 按钮底板是绿的，图形统一用白灰色，形状跟着当前零件走。 */
+const PREVIEW_COLOR = '#F2F6F3'
 
 export function BrickPartBar({ part, emphasized = false, open = false, onOpen }: BrickPartBarProps) {
   const current = BRICK_PARTS.find((item) => item.type === part) ?? BRICK_PARTS[0]
@@ -21,7 +26,9 @@ export function BrickPartBar({ part, emphasized = false, open = false, onOpen }:
         }`}
       >
         <span className="inline-flex max-w-full items-center gap-3">
-          <BrickGlyph />
+          <span className="brick3d-part flex h-11 w-11 shrink-0 items-center justify-center">
+            <BrickPartThumb type={current.type} color={PREVIEW_COLOR} className="h-full w-full" />
+          </span>
           <span className="min-w-0 text-left">
             <span className="block text-[15px] font-bold leading-5">我的零件</span>
             <span className="block text-[13px] font-medium leading-4 text-white/80">{current.label}</span>
@@ -29,15 +36,5 @@ export function BrickPartBar({ part, emphasized = false, open = false, onOpen }:
         </span>
       </button>
     </section>
-  )
-}
-
-function BrickGlyph() {
-  return (
-    <svg viewBox="0 0 36 28" width="34" height="26" aria-hidden="true" className="block shrink-0">
-      <path fill="currentColor" d="M2.5 13.4h31a2 2 0 0 1 2 2V24a2.2 2.2 0 0 1-2.2 2.2H2.7A2.2 2.2 0 0 1 .5 24v-8.6a2 2 0 0 1 2-2Z" />
-      <path fill="currentColor" d="M7.2 4.6h7.4a1.6 1.6 0 0 1 1.6 1.6V14H5.6V6.2a1.6 1.6 0 0 1 1.6-1.6Z" />
-      <path fill="currentColor" d="M21.4 4.6h7.4a1.6 1.6 0 0 1 1.6 1.6V14H19.8V6.2a1.6 1.6 0 0 1 1.6-1.6Z" />
-    </svg>
   )
 }

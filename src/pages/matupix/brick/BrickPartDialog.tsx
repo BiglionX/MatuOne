@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { brickColorName, BRICK_PARTS, categoriesInUse, type Brick, type BrickCategory, type BrickPartInfo, type BrickType } from './brickTypes'
 import { loadPartMemory, subscribePartMemory, togglePartFavorite, type BrickPartMemory } from './brickPartMemory'
+import { BrickPartThumb } from './BrickPartThumb'
+import { BRICK_CATEGORY_TONES, cardToneVars, type BrickCardTone } from './brickCardTone'
+import './brickCard.css'
 
 type PartTab = 'all' | 'favorites' | 'recent'
 type DialogMode = 'catalog' | 'bill'
@@ -292,7 +295,7 @@ export function BrickPartDialog({ part, color, bricks, onClose, onSelect }: Bric
                       key={item.type}
                       item={item}
                       color={color}
-                      edge={CATEGORY_LOOK[item.category].edge}
+                      tone={BRICK_CATEGORY_TONES[item.category]}
                       selected={item.type === part}
                       favorite={memory.favorites.includes(item.type)}
                       onSelect={() => onSelect(item.type)}
@@ -333,7 +336,7 @@ function CloseButton({ onClick }: { onClick: () => void }) {
 function PartCard({
   item,
   color,
-  edge,
+  tone,
   selected,
   favorite,
   onSelect,
@@ -341,22 +344,25 @@ function PartCard({
 }: {
   item: BrickPartInfo
   color: string
-  edge: string
+  tone: BrickCardTone
   selected: boolean
   favorite: boolean
   onSelect: () => void
   onToggleFavorite: () => void
 }) {
   return (
-    <div className="relative rounded-[22px] border-2 bg-white shadow-[0_1px_2px_rgba(16,40,60,0.04)]" style={{ borderColor: edge }}>
+    <div
+      className={`brick3d-card relative ${selected ? 'is-selected' : ''}`}
+      style={cardToneVars(tone)}
+    >
       <button
         type="button"
         onClick={onSelect}
         aria-pressed={selected}
-        className={`flex min-h-[168px] w-full flex-col items-center justify-center rounded-[20px] px-2 pb-3 pt-6 text-center ${FOCUS_RING}`}
+        className={`flex min-h-[176px] w-full flex-col items-center justify-center rounded-[20px] px-2 pb-3 pt-12 text-center ${FOCUS_RING}`}
       >
-        <span className="flex h-12 w-full items-center justify-center [&>svg]:h-auto [&>svg]:max-h-12 [&>svg]:max-w-[88%]">
-          <PartGlyph item={item} color={color} />
+        <span className="brick3d-part flex h-20 w-full items-center justify-center">
+          <BrickPartThumb type={item.type} color={color} className="h-full w-full" />
         </span>
         <span className="mt-2 text-[13px] font-bold leading-4 text-ink">{item.name}</span>
         <span className="mt-1 text-[11px] font-medium leading-4 text-[#A7B1B8]">{footprintLabel(item.footprint)}</span>
@@ -369,11 +375,11 @@ function PartCard({
           event.stopPropagation()
           onToggleFavorite()
         }}
-        className={`absolute right-1.5 top-1.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full ${FOCUS_RING} ${
-          favorite ? 'text-[#F5B400]' : 'text-[#C5CED6]'
+        className={`absolute right-1 top-1 z-10 inline-flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-110 active:scale-95 ${FOCUS_RING} ${
+          favorite ? 'text-[#F5B400] drop-shadow-[0_2px_4px_rgba(245,180,0,0.45)]' : 'text-[#C5CED6]'
         }`}
       >
-        <StarIcon filled={favorite} />
+        <StarIcon filled={favorite} size={32} />
       </button>
     </div>
   )
@@ -445,105 +451,6 @@ function CategoryIcon({ category }: { category: BrickCategory }) {
       <circle cx="8" cy="12.85" r="1.8" fill="currentColor" />
       <circle cx="3.15" cy="8" r="1.8" fill="currentColor" />
       <circle cx="12.85" cy="8" r="1.8" fill="currentColor" />
-    </svg>
-  )
-}
-
-function PartGlyph({ item, color }: { item: BrickPartInfo; color: string }) {
-  if (item.glyph === 'round' || item.glyph === 'disc') return <RoundMark color={color} stud={item.glyph === 'round'} />
-  if (item.glyph === 'tile') return <StudPreview color={color} columns={item.studs[0]} rows={item.studs[1]} studs={false} />
-  if (item.glyph === 'cone') return <ConeMark color={color} />
-  if (item.glyph === 'jumper') return <JumperMark color={color} />
-  if (item.glyph === 'slope') return <SlopeMark color={color} type={item.category === '斜面' ? item.type : ''} />
-  if (item.glyph === 'corner') return <CornerMark color={color} />
-  return <StudPreview color={color} columns={item.studs[0]} rows={item.studs[1]} />
-}
-
-function RoundMark({ color, stud }: { color: string; stud: boolean }) {
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
-      <circle cx="18" cy="18" r="15.5" fill={color} stroke="rgba(20,30,40,0.18)" />
-      {stud ? <circle cx="18" cy="18" r="5" fill="rgba(255,255,255,0.55)" stroke="rgba(20,30,40,0.22)" /> : null}
-    </svg>
-  )
-}
-
-function ConeMark({ color }: { color: string }) {
-  return (
-    <svg width="36" height="32" viewBox="0 0 36 32" aria-hidden="true">
-      <path d="M18 3 33 28 H3 Z" fill={color} stroke="rgba(20,30,40,0.28)" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function SlopeMark({ color, type }: { color: string; type: string }) {
-  const common = { fill: color, stroke: 'rgba(20,30,40,0.28)', strokeLinejoin: 'round' as const }
-  let path = 'M4 24 H36 V8 L4 24 Z'
-  if (type.startsWith('cheese') || type.includes('gentle')) path = 'M4 24 H36 V16 L4 24 Z'
-  if (type.includes('inv')) path = 'M4 8 V24 H36 Z'
-  if (type.includes('double') || type === 'slope-gentle-2x2') path = 'M4 24 L20 6 L36 24 Z'
-  if (type.includes('curved') || type.includes('round')) path = 'M6 24 H34 V10 A28 16 0 0 1 6 24 Z'
-  if (type.includes('wedge') && type.includes('left')) path = 'M34 5 L8 14 L34 23 Z'
-  if (type.includes('wedge') && type.includes('right')) path = 'M6 5 L32 14 L6 23 Z'
-  return (
-    <svg width="40" height="28" viewBox="0 0 40 28" aria-hidden="true">
-      <path d={path} {...common} />
-    </svg>
-  )
-}
-
-function JumperMark({ color }: { color: string }) {
-  return (
-    <svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true">
-      <rect x="0.5" y="0.5" width="33" height="21" rx="5" fill={color} stroke="rgba(20,30,40,0.18)" />
-      <circle cx="17" cy="11" r="4" fill="rgba(255,255,255,0.55)" stroke="rgba(20,30,40,0.22)" />
-    </svg>
-  )
-}
-
-function CornerMark({ color }: { color: string }) {
-  return <StudPreview color={color} columns={2} rows={2} skip={[1, 0]} />
-}
-
-function StudPreview({
-  color,
-  columns,
-  rows,
-  studs = true,
-  skip,
-}: {
-  color: string
-  columns: number
-  rows: number
-  studs?: boolean
-  skip?: readonly [number, number]
-}) {
-  const stud = 7
-  const gap = 3
-  const padX = 7
-  const padY = 6
-  const width = padX * 2 + columns * stud + Math.max(0, columns - 1) * gap
-  const height = padY * 2 + rows * stud + Math.max(0, rows - 1) * gap
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-      <rect x="0.5" y="0.5" width={width - 1} height={height - 1} rx="5" fill={color} stroke="rgba(20,30,40,0.18)" />
-      {Array.from({ length: rows }, (_, row) =>
-        Array.from({ length: columns }, (_, column) => {
-          const cx = padX + stud / 2 + column * (stud + gap)
-          const cy = padY + stud / 2 + row * (stud + gap)
-          if (!studs || (skip && skip[0] === column && skip[1] === row)) return null
-          return (
-            <circle
-              key={`${column}-${row}`}
-              cx={cx}
-              cy={cy}
-              r={stud / 2 - 1}
-              fill="rgba(255,255,255,0.55)"
-              stroke="rgba(20,30,40,0.22)"
-            />
-          )
-        }),
-      )}
     </svg>
   )
 }

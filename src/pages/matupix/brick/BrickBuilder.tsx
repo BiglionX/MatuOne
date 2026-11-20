@@ -11,6 +11,8 @@ import { frameModel, orbitPose, paintAspect, recordCanvas, videoPlan, type ShotF
 import { rememberPart } from './brickPartMemory'
 import { BrickScene, BRICK_FLOOR_COLOR, type BrickPointerMode, type BrickPreview, type BrickReveal, type BrickSceneHandle, type CameraForward, type CameraPose } from './BrickScene'
 import { BrickToolbar } from './BrickToolbar'
+import { cardToneVars, type Brick3dStyle, type BrickCardTone } from './brickCardTone'
+import './brickCard.css'
 import { loadBrickDraft, saveBrickDraft } from './brickDraft'
 import { toLDraw } from './brickLdraw'
 import {
@@ -691,7 +693,21 @@ export function BrickBuilder() {
         />
         {bricks.length === 0 ? (
           <div className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-4 pb-16 ${panelOpen ? 'md:pl-[19rem]' : ''}`}>
-            <div className="pointer-events-auto w-full max-w-[19rem] rounded-[24px] bg-white px-6 py-7 text-center shadow-[0_18px_44px_rgba(20,60,24,0.16)]">
+            <div
+              className="brick3d-card pointer-events-auto w-full max-w-[19rem] px-6 py-7 text-center"
+              style={
+                {
+                  '--brick3d-from': '#FFFFFF',
+                  '--brick3d-to': '#F1FAF3',
+                  '--brick3d-edge': '#C9E7D4',
+                  '--brick3d-lip': '#2FA84A',
+                  '--brick3d-glow': 'rgba(47, 168, 74, 0.26)',
+                  '--brick3d-ring': 'rgba(47, 168, 74, 0.24)',
+                  '--brick3d-radius': '24px',
+                  '--brick3d-depth': '6px',
+                } as Brick3dStyle
+              }
+            >
               <EmptyBrickMark />
               <p className="mt-3 text-lg font-bold leading-6">来放第一块积木吧？</p>
               <p className="mt-2 text-[13px] leading-5 text-ink-soft">选一个零件和一种颜色，然后点一下底板。</p>
@@ -699,7 +715,7 @@ export function BrickBuilder() {
               <button
                 type="button"
                 onClick={focusPartPicker}
-                className="mt-5 inline-flex items-center gap-1 rounded-full bg-[#2FA84A] px-5 py-2 text-sm font-bold text-white shadow-[0_6px_14px_rgba(24,110,48,0.22)]"
+                className="mt-5 inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-[#4FCB6C] to-[#1F8C36] px-5 py-2 text-sm font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_3px_0_#166C28,0_8px_16px_rgba(24,110,48,0.28)]"
               >
                 选一个零件
                 <span aria-hidden="true">›</span>
@@ -862,11 +878,21 @@ export function BrickBuilder() {
   )
 }
 
-const POINTER_MODES: { id: BrickPointerMode; label: string; active: string }[] = [
-  { id: 'select', label: '选择', active: 'border-transparent bg-[#5E6A75] text-white' },
-  { id: 'build', label: '搭建', active: 'border-transparent bg-[#2FA84A] text-white' },
-  { id: 'erase', label: '橡皮', active: 'border-transparent bg-[#E23D3D] text-white' },
+const POINTER_MODES: { id: BrickPointerMode; label: string; tone: BrickCardTone }[] = [
+  { id: 'select', label: '选择', tone: { from: '#7A858F', to: '#5E6A75', edge: '#4B565F', lip: '#3E4952', glow: 'rgba(62, 73, 82, 0.3)', ring: 'rgba(94, 106, 117, 0.3)' } },
+  { id: 'build', label: '搭建', tone: { from: '#4FCB6C', to: '#2FA84A', edge: '#1F7A34', lip: '#17642A', glow: 'rgba(47, 168, 74, 0.3)', ring: 'rgba(47, 168, 74, 0.3)' } },
+  { id: 'erase', label: '橡皮', tone: { from: '#FF6A5C', to: '#E23D3D', edge: '#B01E1E', lip: '#8E1717', glow: 'rgba(226, 61, 61, 0.3)', ring: 'rgba(226, 61, 61, 0.3)' } },
 ]
+
+const POINTER_OFF: Brick3dStyle = {
+  '--brick3d-from': '#FFFFFF',
+  '--brick3d-to': '#F4F7FA',
+  '--brick3d-edge': '#E3E8EE',
+  '--brick3d-lip': '#CED5DD',
+  '--brick3d-glow': 'rgba(30, 42, 50, 0.12)',
+  '--brick3d-radius': '16px',
+  '--brick3d-depth': '4px',
+}
 
 function PointerModes({ mode, onChange }: { mode: BrickPointerMode | null; onChange: (mode: BrickPointerMode) => void }) {
   return (
@@ -879,8 +905,9 @@ function PointerModes({ mode, onChange }: { mode: BrickPointerMode | null; onCha
             type="button"
             aria-pressed={active}
             onClick={() => onChange(item.id)}
-            className={`inline-flex h-11 items-center justify-center gap-1 rounded-2xl border text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--art-purple)] focus-visible:ring-offset-2 ${
-              active ? item.active : 'border-line bg-white text-ink'
+            style={active ? cardToneVars(item.tone) : POINTER_OFF}
+            className={`brick3d-card inline-flex h-11 items-center justify-center gap-1 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--art-purple)] focus-visible:ring-offset-2 ${
+              active ? 'is-selected text-white' : 'text-ink'
             }`}
           >
             <ModeIcon mode={item.id} />

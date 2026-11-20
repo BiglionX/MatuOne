@@ -1,4 +1,15 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import './brickCard.css'
+
+const TOOL_STYLE = {
+  '--brick3d-from': '#FFFFFF',
+  '--brick3d-to': '#F3F7FB',
+  '--brick3d-edge': '#E0E7EE',
+  '--brick3d-lip': '#CBD4DE',
+  '--brick3d-glow': 'rgba(30, 42, 50, 0.13)',
+  '--brick3d-radius': '16px',
+  '--brick3d-depth': '3px',
+} as CSSProperties
 
 type BrickToolbarProps = {
   canUndo: boolean
@@ -38,9 +49,10 @@ function ToolButton({
       title={label}
       aria-disabled={locked ? true : undefined}
       onClick={onClick}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-line bg-white text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--art-purple)] focus-visible:ring-offset-2 ${
+      className={`brick3d-card is-compact inline-flex h-10 w-10 items-center justify-center text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--art-purple)] focus-visible:ring-offset-2 ${
         locked ? 'cursor-not-allowed opacity-40' : ''
       }`}
+      style={TOOL_STYLE}
     >
       {children}
     </button>

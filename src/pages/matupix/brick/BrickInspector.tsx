@@ -1,6 +1,8 @@
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { BRICK_PALETTE, brickColorName } from './brickTypes'
+import { cardToneVars, type Brick3dStyle, type BrickCardTone } from './brickCardTone'
+import './brickCard.css'
 
 export type BrickLook = 'oblique' | 'top' | 'side' | 'front'
 
@@ -22,9 +24,9 @@ const RING_RADIUS = 0.8
 type TipState = { id: string; label: string; left: number; top: number }
 
 const STATS = [
-  { key: 'count', label: '零件', tone: 'bg-[#FDE8E8]' },
-  { key: 'colors', label: '颜色', tone: 'bg-[#E5F0FF]' },
-  { key: 'height', label: '高度', tone: 'bg-[#E5F7EA]' },
+  { key: 'count', label: '零件', tone: { from: '#FFFFFF', to: '#FDE8E8', edge: '#F6D2D2', lip: '#E37373', glow: 'rgba(227, 115, 115, 0.26)', ring: 'rgba(227, 115, 115, 0.24)' } },
+  { key: 'colors', label: '颜色', tone: { from: '#FFFFFF', to: '#E5F0FF', edge: '#C9DCF8', lip: '#5E9BEA', glow: 'rgba(94, 155, 234, 0.26)', ring: 'rgba(94, 155, 234, 0.24)' } },
+  { key: 'height', label: '高度', tone: { from: '#FFFFFF', to: '#E5F7EA', edge: '#C4E7D1', lip: '#4FB97A', glow: 'rgba(79, 185, 122, 0.26)', ring: 'rgba(79, 185, 122, 0.24)' } },
 ] as const
 
 const VIEWS: { id: string; label: string; look?: BrickLook; zoom?: 'in' | 'out' }[] = [
@@ -126,9 +128,9 @@ function ThickDash() {
   )
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
+function Stat({ label, value, tone }: { label: string; value: string; tone: BrickCardTone }) {
   return (
-    <div className={`rounded-2xl px-1 py-2.5 text-center ${tone}`}>
+    <div className="brick3d-card is-compact px-1 py-2.5 text-center" style={cardToneVars(tone)}>
       <p className="text-2xl font-bold leading-none tabular-nums">{value}</p>
       <p className="mt-1 text-[11px] font-medium leading-4 text-ink-soft">{label}</p>
     </div>
@@ -395,7 +397,18 @@ export function BrickInspector({ color, count, colorCount, height, onSelectColor
               else if (item.zoom === 'in') onZoomIn()
               else onZoomOut()
             }}
-            className="inline-flex h-8 w-full min-w-0 items-center justify-center rounded-xl bg-white/90 text-[#6D7E92] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--art-purple)]"
+            className="brick3d-card is-compact inline-flex h-8 w-full min-w-0 items-center justify-center text-[#6D7E92] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--art-purple)]"
+            style={
+              {
+                '--brick3d-from': '#FFFFFF',
+                '--brick3d-to': '#EFF4F9',
+                '--brick3d-edge': '#E1E7EE',
+                '--brick3d-lip': '#CFD7E1',
+                '--brick3d-glow': 'rgba(30, 42, 50, 0.14)',
+                '--brick3d-radius': '12px',
+                '--brick3d-depth': '3px',
+              } as Brick3dStyle
+            }
           >
             <ViewGlyph id={item.id} />
           </button>

@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { videoPlan, type ShotFps, type ShotStyle } from './brickVideo'
+import type { Brick3dStyle } from './brickCardTone'
+import './brickCard.css'
 
 type BrickVideoDialogProps = {
   count: number
@@ -100,9 +102,19 @@ function ChoiceCard({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`flex min-h-[76px] flex-col items-center justify-center rounded-2xl border-2 bg-white px-2 py-2 text-center ${
-        selected ? 'border-[#E23D3D]' : 'border-[#E6E8EC]'
-      }`}
+      style={
+        {
+          '--brick3d-from': '#FFFFFF',
+          '--brick3d-to': selected ? '#FFF1EF' : '#F5F7FA',
+          '--brick3d-edge': selected ? '#F4C9C5' : '#E3E7EC',
+          '--brick3d-lip': selected ? '#D8363C' : '#CFD5DD',
+          '--brick3d-glow': selected ? 'rgba(216, 54, 60, 0.26)' : 'rgba(30, 42, 50, 0.12)',
+          '--brick3d-ring': 'rgba(216, 54, 60, 0.24)',
+          '--brick3d-radius': '16px',
+          '--brick3d-depth': '4px',
+        } as Brick3dStyle
+      }
+      className={`brick3d-card flex min-h-[76px] flex-col items-center justify-center px-2 py-2 text-center ${selected ? 'is-selected' : ''}`}
     >
       {icon}
       <span className="text-[15px] font-extrabold leading-5">{title}</span>

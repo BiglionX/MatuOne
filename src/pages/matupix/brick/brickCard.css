@@ -1,0 +1,89 @@
+/* 3D 搭建页统一卡片语言：斜面高光 + 厚底边 + 落地投影，做出积木的立体感。 */
+
+/* 卡片面色、边框、底边、投影都走 CSS 变量，方便每个零件分类各配一套。 */
+.brick3d-card {
+  --brick3d-from: #ffffff;
+  --brick3d-to: #f4f7fa;
+  --brick3d-edge: #e4e9f0;
+  --brick3d-lip: #d3dae3;
+  --brick3d-glow: rgba(30, 42, 50, 0.12);
+  --brick3d-ring: rgba(47, 111, 237, 0.22);
+  --brick3d-radius: 22px;
+  --brick3d-depth: 5px;
+  --brick3d-lift: -4px;
+  position: relative;
+  border: 2px solid var(--brick3d-edge);
+  border-radius: var(--brick3d-radius);
+  background-image: linear-gradient(180deg, var(--brick3d-from) 0%, var(--brick3d-to) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -12px 18px rgba(18, 38, 58, 0.07),
+    0 var(--brick3d-depth) 0 var(--brick3d-lip),
+    0 14px 22px var(--brick3d-glow);
+  transition:
+    transform 170ms cubic-bezier(0.34, 1.24, 0.64, 1),
+    box-shadow 170ms ease,
+    border-color 170ms ease,
+    background-image 170ms ease;
+}
+
+/* 悬停时整块浮起来，底边跟着变厚。 */
+.brick3d-card:hover {
+  transform: translateY(var(--brick3d-lift));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -12px 18px rgba(18, 38, 58, 0.07),
+    0 calc(var(--brick3d-depth) + 3px) 0 var(--brick3d-lip),
+    0 20px 30px var(--brick3d-glow);
+}
+
+/* 按下去时压进卡面，底边收成一薄条。 */
+.brick3d-card:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 3px 8px rgba(18, 38, 58, 0.18),
+    0 1px 0 var(--brick3d-lip),
+    0 6px 12px var(--brick3d-glow);
+}
+
+/* 选中态：边框换成底边色，外加一圈高亮。 */
+.brick3d-card.is-selected {
+  border-color: var(--brick3d-lip);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -12px 18px rgba(18, 38, 58, 0.07),
+    0 calc(var(--brick3d-depth) + 1px) 0 var(--brick3d-lip),
+    0 0 0 3px var(--brick3d-ring),
+    0 16px 24px var(--brick3d-glow);
+}
+
+.brick3d-card.is-selected:hover {
+  transform: translateY(var(--brick3d-lift));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -12px 18px rgba(18, 38, 58, 0.07),
+    0 calc(var(--brick3d-depth) + 4px) 0 var(--brick3d-lip),
+    0 0 0 3px var(--brick3d-ring),
+    0 20px 30px var(--brick3d-glow);
+}
+
+.brick3d-card.is-selected:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 3px 8px rgba(18, 38, 58, 0.18),
+    0 1px 0 var(--brick3d-lip),
+    0 0 0 3px var(--brick3d-ring),
+    0 6px 12px var(--brick3d-glow);
+}
+
+/* 卡片里的小积木：影子落在卡面上，像浮在板子上。 */
+.brick3d-part {
+  filter: drop-shadow(0 5px 5px rgba(18, 38, 58, 0.24));
+}
+
+/* 小尺寸卡片（统计格、图标按钮）：收薄底边、缩短浮起距离。 */
+.brick3d-card.is-compact {
+  --brick3d-radius: 16px;
+  --brick3d-depth: 3px;
+  --brick3d-lift: -2px;
+}

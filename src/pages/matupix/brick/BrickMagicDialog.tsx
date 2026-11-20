@@ -1,7 +1,7 @@
-import type { CSSProperties } from 'react'
 import { MagicGlyph } from './brickMagicIcons'
 import { MAGIC_LARGE, MAGIC_SMALL, type MagicModel } from './brickMagicModels'
-import './brickMagicCard.css'
+import { hexToRgba, mixHex, shadeHex, type Brick3dStyle } from './brickCardTone'
+import './brickCard.css'
 
 type BrickMagicDialogProps = {
   onClose: () => void
@@ -91,18 +91,23 @@ export function BrickMagicDialog({ onClose, onPick }: BrickMagicDialogProps) {
 
 function MagicCard({ model, onPick }: { model: MagicModel; onPick: (model: MagicModel) => void }) {
   const face = CARD_FACE[model.id] ?? { fill: '#F4F7FB', edge: '#D5DCE3' }
+  const lip = shadeHex(face.fill, 0.74)
   return (
     <button
       type="button"
       onClick={() => onPick(model)}
       style={
         {
-          '--magic-fill': face.fill,
-          '--magic-edge': face.edge,
-          '--magic-press': pressColor(face.fill),
-        } as CSSProperties
+          '--brick3d-from': mixHex(face.fill, '#FFFFFF', 0.55),
+          '--brick3d-to': face.fill,
+          '--brick3d-edge': face.edge,
+          '--brick3d-lip': lip,
+          '--brick3d-glow': hexToRgba(lip, 0.3),
+          '--brick3d-ring': hexToRgba(lip, 0.28),
+          '--brick3d-radius': '17px',
+        } as Brick3dStyle
       }
-      className="magic-model-card flex aspect-square w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[17px] px-1 py-2 text-center transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E2A2E]/25 focus-visible:ring-offset-2"
+      className="brick3d-card flex aspect-square w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1.5 px-1 py-2 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E2A2E]/25 focus-visible:ring-offset-2"
     >
       <MagicGlyph id={model.id} />
       <span className="text-[15px] font-bold leading-none text-[#17283A]">{model.name}</span>
@@ -134,10 +139,4 @@ function SceneMark() {
       <path d="M10 16V6l4-2 4 2v10h-8Z" fill="#E23D3D" />
     </svg>
   )
-}
-
-function pressColor(hex: string) {
-  const n = Number.parseInt(hex.slice(1), 16)
-  const channel = (shift: number) => Math.round(((n >> shift) & 255) * 0.93).toString(16).padStart(2, '0')
-  return `#${channel(16)}${channel(8)}${channel(0)}`
 }
