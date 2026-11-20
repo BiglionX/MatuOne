@@ -16,15 +16,16 @@ import './brickCard.css'
 import { loadBrickDraft, saveBrickDraft } from './brickDraft'
 import { toLDraw } from './brickLdraw'
 import {
-  centerForPlates,
+  brickBasePlates,
+  brickPlacementY,
+  brickTopHeight,
   createBrickId,
   hasOverlap,
   initialPartColor,
-  partHeight,
   partInfo,
-  plateIndex,
+  partMount,
   rotateBrick,
-  snapPosition,
+  snapPlacement,
   type Brick,
   type BrickType,
 } from './brickTypes'
@@ -61,7 +62,7 @@ function workHeight(bricks: readonly Brick[]) {
   if (bricks.length === 0) return 0
   let maxTop = 0
   for (const brick of bricks) {
-    const top = brick.position[1] + partHeight(brick.type) / 2
+    const top = brickTopHeight(brick)
     if (top > maxTop) maxTop = top
   }
   return maxTop * 1.2
@@ -198,12 +199,13 @@ export function BrickBuilder() {
   }
 
   function place(x: number, z: number, basePlates: number) {
-    const [sx, sz] = snapPosition(x, z, partRef.current, 0)
+    const type = partRef.current
+    const [sx, sz] = snapPlacement(x, z, type, 0)
     const nextBrick: Brick = {
       id: createBrickId(),
-      type: partRef.current,
+      type,
       color: colorRef.current,
-      position: [sx, centerForPlates(basePlates, partRef.current), sz],
+      position: [sx, brickPlacementY(basePlates, type), sz],
       rotation: 0,
     }
     if (hasOverlap(bricksRef.current, nextBrick)) {
@@ -243,8 +245,10 @@ export function BrickBuilder() {
     const current = bricksRef.current
     const brick = current.find((item) => item.id === id)
     if (!brick) return
+    // 单连接点零件的连接点可以落在两个凸点中间，方向键按半格挪。
+    const step = partMount(brick.type) === 'point' ? 0.5 : 1
     const [x, y, z] = brick.position
-    const moved: Brick = { ...brick, position: [x + dx, y, z + dz] }
+    const moved: Brick = { ...brick, position: [x + dx * step, y, z + dz * step] }
     if (hasOverlap(current, moved)) {
       showStatus('这里放不下')
       return
@@ -273,7 +277,7 @@ export function BrickBuilder() {
     const brick = current.find((item) => item.id === id)
     if (!brick) return
     const [ox, y, oz] = brick.position
-    const [sx, sz] = snapPosition(x, z, brick.type, brick.rotation)
+    const [sx, sz] = snapPlacement(x, z, brick.type, brick.rotation)
     if (sx === ox && sz === oz) return
     const moved: Brick = { ...brick, position: [sx, y, sz] }
     if (hasOverlap(current, moved)) {
@@ -288,10 +292,10 @@ export function BrickBuilder() {
     const current = bricksRef.current
     const brick = current.find((item) => item.id === id)
     if (!brick) return
-    const nextPlates = plateIndex(brick.position[1], brick.type) + delta
+    const nextPlates = brickBasePlates(brick) + delta
     if (nextPlates < 0) return
     const [x, , z] = brick.position
-    const moved: Brick = { ...brick, position: [x, centerForPlates(nextPlates, brick.type), z] }
+    const moved: Brick = { ...brick, position: [x, brickPlacementY(nextPlates, brick.type), z] }
     if (hasOverlap(current, moved)) {
       showStatus('这里放不下')
       return

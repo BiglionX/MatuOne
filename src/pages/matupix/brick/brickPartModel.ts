@@ -1,4 +1,4 @@
-import { Box3, Group, LineSegments, LoadingManager, Mesh, MeshStandardMaterial, type Material, type Object3D } from 'three'
+import { Box3, Group, LineBasicMaterial, LineSegments, LoadingManager, Mesh, MeshStandardMaterial, type Material, type Object3D } from 'three'
 import { LDrawConditionalLineMaterial } from 'three/examples/jsm/materials/LDrawConditionalLineMaterial.js'
 import { LDrawLoader } from 'three/examples/jsm/loaders/LDrawLoader.js'
 import { BRICK_PARTS, partHeight, type BrickType } from './brickTypes'
@@ -42,6 +42,25 @@ function rewriteLDrawUrl(url: string) {
   return prefix + rel
 }
 
+// LDraw 官方颜色表。这份零件库只用到三个颜色号：16 主色、24 边线色、0 黑色。
+// 加载器自带 16 和 24，缺 0：不注册的话，加载器会退回洋红兜底材质，
+// 人偶脸上的眼睛和嘴（颜色 0）就跟着主色一起被涂掉，脸就没了。
+const LDRAW_BLACK = new MeshStandardMaterial({ color: '#05131D', roughness: 0.35, metalness: 0 })
+LDRAW_BLACK.userData.code = '0'
+LDRAW_BLACK.name = 'LDraw_Black'
+
+// 加载器每次 load 都会把材质表重置成默认的两个材质，这里包一层把官方颜色装回去。
+// 边线材质缓存按材质索引：颜色 0 的零件如果带边线，没有这条会拿到 undefined，
+// 后面释放材质时就会炸。类型声明里没有这个字段，按实际结构取。
+type LDrawLoaderInternals = { edgeMaterialCache?: WeakMap<Material, Material> }
+
+function applyLDrawColors(target: LDrawLoader) {
+  const base = target.setMaterials.bind(target)
+  target.setMaterials = (materials: Material[]) => base([LDRAW_BLACK, ...materials])
+  const internals = target as unknown as LDrawLoaderInternals
+  internals.edgeMaterialCache?.set(LDRAW_BLACK, new LineBasicMaterial({ color: '#333333' }))
+}
+
 function getLoader() {
   if (!loader) {
     const manager = new LoadingManager()
@@ -50,6 +69,7 @@ function getLoader() {
     loader.setPath('/ldraw/')
     loader.setPartsLibraryPath('/ldraw/')
     loader.setConditionalLineMaterial(LDrawConditionalLineMaterial)
+    applyLDrawColors(loader)
   }
   return loader
 }
@@ -115,18 +135,32 @@ function alignPart(group: Group, type: BrickType): Pick<PartAlign, 'min' | 'max'
   }
 }
 
+export const PART_ROLL = 'part-roll'
+export const PART_TILT = 'part-tilt'
+
 async function fetchAligned(type: BrickType) {
   const file = PART_FILE.get(type)
   if (!file) throw new Error(`未知零件 ${type}`)
-  const group = await getLoader().loadAsync(file)
-  stripLines(group)
-  const bounds = alignPart(group, type)
-  const counts = countGeometry(group)
+  const loaded = await getLoader().loadAsync(file)
+  stripLines(loaded)
+  // 摆角和滚角必须作用在 LDraw 坐标上：缩放是 XZ 1/20、Y 1/24 的各向异性，
+  // 放在缩放之后旋转会被拉歪（45 度摆角看着像 56 度）。
+  // 所以在几何外面套两层空的 group，滚角在外、摆角在内，支点都是零件的 LDraw 原点。
+  const tilt = new Group()
+  tilt.name = PART_TILT
+  const roll = new Group()
+  roll.name = PART_ROLL
+  tilt.add(loaded)
+  roll.add(tilt)
+  const root = new Group()
+  root.add(roll)
+  const bounds = alignPart(root, type)
+  const counts = countGeometry(root)
   const align: PartAlign = { ...bounds, ...counts }
-  group.name = `ldraw-${type}`
-  group.userData.partType = type
-  group.userData.align = align
-  return group
+  root.name = `ldraw-${type}`
+  root.userData.partType = type
+  root.userData.align = align
+  return root
 }
 
 function enqueue(type: BrickType) {

@@ -5,6 +5,8 @@ import {
   createBrickId,
   footprint,
   occupancyKeys,
+  partMount,
+  partOrigin,
   partPlates,
   type Brick,
   type BrickRotation,
@@ -31,6 +33,15 @@ export type MagicPiece = {
   gz: number
   base: number
   rotation: BrickRotation
+  /**
+   * 连接点（渲染坐标：X/Z 按钉距、Y 按格高）。
+   * 单连接点零件（头、发、手臂、手）的落点不在网格上，position 直接指这个连接点。
+   */
+  joint?: [number, number, number]
+  /** 摆角（绕 X 轴，度），支点是零件自己的 LDraw 原点。 */
+  tilt?: number
+  /** 滚角（绕 Z 轴，度），支点同样是零件自己的 LDraw 原点。 */
+  roll?: number
 }
 
 export type MagicModel = {
@@ -41,18 +52,42 @@ export type MagicModel = {
   pieces: MagicPiece[]
 }
 
-type Add = (type: BrickType, color: string, gx: number, gz: number, base?: number, rotation?: BrickRotation) => void
+type Add = (
+  type: BrickType,
+  color: string,
+  gx: number,
+  gz: number,
+  base?: number,
+  rotation?: BrickRotation,
+  attach?: { joint: [number, number, number]; tilt?: number; roll?: number },
+) => void
 
 function bag(): { pieces: MagicPiece[]; add: Add } {
   const pieces: MagicPiece[] = []
-  const add: Add = (type, color, gx, gz, base = 0, rotation = 0) => {
-    pieces.push({ type, color, gx, gz, base, rotation })
+  const add: Add = (type, color, gx, gz, base = 0, rotation = 0, attach) => {
+    pieces.push({
+      type,
+      color,
+      gx,
+      gz,
+      base,
+      rotation,
+      ...(attach ? { joint: attach.joint } : {}),
+      ...(attach?.tilt === undefined ? {} : { tilt: attach.tilt }),
+      ...(attach?.roll === undefined ? {} : { roll: attach.roll }),
+    })
   }
   return { pieces, add }
 }
 
 function shift(pieces: readonly MagicPiece[], dx: number, dz: number): MagicPiece[] {
-  return pieces.map((piece) => ({ ...piece, gx: piece.gx + dx, gz: piece.gz + dz }))
+  return pieces.map((piece) => ({
+    ...piece,
+    gx: piece.gx + dx,
+    gz: piece.gz + dz,
+    // 连接点跟着一起平移，否则人偶会和身子错开。
+    ...(piece.joint ? { joint: [piece.joint[0] + dx, piece.joint[1], piece.joint[2] + dz] as [number, number, number] } : {}),
+  }))
 }
 
 function join(...groups: MagicPiece[][]): MagicPiece[] {
@@ -64,17 +99,68 @@ function column(add: Add, type: BrickType, color: string, gx: number, gz: number
   for (let level = 0; level < levels; level += 1) add(type, color, gx, gz, base + level * step, rotation)
 }
 
+// 人偶的装配点都落在网格之外，这些数字来自 LDraw 官方注释（!HELP）和零件原始几何。
+// 渲染里 1 钉距 = 20 LDU、1 格高 = 24 LDU，Z 轴与 LDraw 反向。
+const ARM_OFFSET_X = 15.552 / 20 // 肩窝离躯干中线，官方 !HELP：3818 放在 -15.552 9 0
+const ARM_OFFSET_Y = 9 / 24
+const ARM_ROLL = 9.782 // 肩窝斜面 9.782°，官方 !HELP 给的角度
+// 头的 LDraw 原点落在头顶空心凸点的底面，脑袋往下长 24 LDU 才是下巴。
+// 躯干颈柱在肩线以上露出 4 LDU，下巴正好压在这截上，所以头原点比躯干原点高 28 LDU。
+const HEAD_OFFSET_Y = 28 / 24
+// 手腕孔在手臂自身坐标里的孔口 (-5, 18.9, -9.9)，孔轴朝 (0, .7071, -.7071) 深 15 LDU；
+// 手的凸柱沿自身 +Z 长 13，插进去之后孔底还余 2 LDU，所以手就落在孔口上。
+const HAND_LOCAL: [number, number, number] = [-5, 18.9, -9.9]
+const HAND_TILT = 45 // 手掌相对手腕孔的倾角：孔轴是竖直方向偏 45°
+
 function figure(add: Add, x: number, z: number, base: number, cloth: string, hairColor: string) {
   add('legs', cloth, x, z, base)
   add('leg-right', cloth, x + 1, z, base)
   add('hip', cloth, x, z, base + 5)
   add('torso', cloth, x, z, base + 9)
-  add('head', Y, x, z, base + 15)
-  add('hair', hairColor, x, z, base + 19)
-  add('arm-left', cloth, x - 1, z, base + 10)
-  add('arm-right', cloth, x + 2, z, base + 10)
-  add('hand', Y, x - 1, z, base + 14)
-  add('hand', Y, x + 2, z, base + 14)
+
+  // 躯干的 LDraw 原点在脖子根，不在脚印中心，肩和颈都要拿它当基准。
+  const origin = partOrigin('torso')
+  const torso: [number, number, number] = [
+    x + 1 + origin[0],
+    centerForPlates(base + 9, 'torso') + origin[1],
+    z + 0.5 + origin[2],
+  ]
+
+  // 头套在颈柱上，发再套在头的空心凸点上，两者原点与头重合。
+  const head: [number, number, number] = [torso[0], torso[1] + HEAD_OFFSET_Y, torso[2]]
+  add('head', Y, x, z, base + 15, 0, { joint: head })
+  add('hair', hairColor, x, z, base + 19, 0, { joint: head })
+
+  // 3818 是人偶的右臂。人偶面朝观者时，它的右臂落在画面左边。
+  const armRight: [number, number, number] = [torso[0] - ARM_OFFSET_X, torso[1] - ARM_OFFSET_Y, torso[2]]
+  const armLeft: [number, number, number] = [torso[0] + ARM_OFFSET_X, torso[1] - ARM_OFFSET_Y, torso[2]]
+  add('arm-right', cloth, x - 1, z, base + 10, 0, { joint: armRight, roll: ARM_ROLL })
+  add('arm-left', cloth, x + 2, z, base + 10, 0, { joint: armLeft, roll: -ARM_ROLL })
+
+  // 手插在手腕孔里，跟着手臂的滚角一起转。3818 的孔在自己坐标的 -X 侧，
+  // 3819 是它的镜像，孔在 +X 侧，镜像系数要跟着换。
+  add('hand', Y, x - 1, z, base + 14, 0, {
+    joint: handJoint(armRight, ARM_ROLL, 1),
+    tilt: HAND_TILT,
+    roll: ARM_ROLL,
+  })
+  add('hand', Y, x + 2, z, base + 14, 0, {
+    joint: handJoint(armLeft, -ARM_ROLL, -1),
+    tilt: HAND_TILT,
+    roll: -ARM_ROLL,
+  })
+}
+
+// 手腕孔在手臂自身坐标里，手的落点要跟着手臂的滚角一起转。
+// mirror 是左右镜像：3818 的孔在 -X 侧，3819 的孔在 +X 侧。
+function handJoint(arm: [number, number, number], roll: number, mirror: number): [number, number, number] {
+  const r = (roll * Math.PI) / 180
+  const c = Math.cos(r)
+  const s = Math.sin(r)
+  const lx = HAND_LOCAL[0] * mirror
+  const x = lx * c - HAND_LOCAL[1] * s
+  const y = lx * s + HAND_LOCAL[1] * c
+  return [arm[0] + x / 20, arm[1] - y / 24, arm[2] - HAND_LOCAL[2] / 20]
 }
 
 function bounds(pieces: readonly MagicPiece[]) {
@@ -176,6 +262,9 @@ function cottage(wall: string, roofColor: string): MagicPiece[] {
   add('1x1', wall, 3, 5, 4)
   add('1x2', B, 4, 5, 4)
   add('brick-1x6', wall, 0, 5, 7)
+  // 两侧再补一层墙，屋顶中间的平顶才有东西托着。
+  add('brick-1x4', wall, 0, 1, 7, 90)
+  add('brick-1x4', wall, 5, 1, 7, 90)
   add('slope-2x4', roofColor, 0, 0, 10)
   add('slope-2x2', roofColor, 4, 0, 10)
   add('2x4', roofColor, 0, 2, 10)
@@ -249,8 +338,8 @@ function shop(): MagicPiece[] {
   add('plate-4x8', O, 0, 0, 10)
   add('plate-1x8', O, 0, 4, 10)
   add('brick-1x6', R, 1, 0, 11)
-  add('tile-1x4', W, 2, -1, 1)
-  add('tile-1x4', W, 2, -1, 2)
+  add('tile-1x4', W, 2, 1, 1)
+  add('tile-1x4', W, 2, 1, 2)
   add('cup', Y, 2, 2, 11)
   add('cup', R, 4, 2, 11)
   add('flower', R, -1, 2, 0)
@@ -260,9 +349,9 @@ function shop(): MagicPiece[] {
 
 function treeScene(): MagicPiece[] {
   const { pieces, add } = bag()
-  add('plate-6x6', G, 1, 1)
-  column(add, 'cylinder-2x2', O, 3, 3, 1, 4)
-  const ring: Array<[number, number]> = [
+  // 草地底板把树干、树冠和花草全部连成一个整体。
+  add('plate-8x8', G, 0, 0)
+  const crown: Array<[number, number]> = [
     [1, 1],
     [1, 3],
     [1, 5],
@@ -272,49 +361,68 @@ function treeScene(): MagicPiece[] {
     [5, 3],
     [5, 5],
   ]
-  for (const [x, z] of ring) add('bush', G, x, z, 8)
-  for (const [x, z] of ring) add('bush', G, x, z, 12)
+  // 树冠一层层压在下层上，每一层都有依托，不会散开。
+  for (const [x, z] of crown) add('bush', G, x, z, 1)
+  column(add, 'cylinder-2x2', O, 3, 3, 1, 4)
+  for (const [x, z] of crown) add('leaves', G, x, z, 5)
+  for (const [x, z] of crown) add('bush', G, x, z, 7)
+  for (const [x, z] of crown) add('leaves', G, x, z, 11)
   add('cone-2x2', G, 3, 3, 13)
-  add('cone-2x2', G, 3, 3, 19)
-  for (const [x, z] of ring) add('leaves', G, x, z, 16)
-  add('flower', R, 1, 1, 1)
-  add('flower', Y, 6, 1, 1)
-  add('flower', P, 1, 6, 1)
-  add('flower', W, 6, 6, 1)
-  add('flower', R, 2, 6, 1)
-  add('flower', Y, 6, 2, 1)
-  add('cone-1x1', R, 1, 1, 18)
-  add('cone-1x1', R, 5, 1, 18)
-  add('cone-1x1', Y, 1, 5, 18)
-  add('cone-1x1', O, 5, 5, 18)
-  add('star', Y, 3, 3, 25)
-  add('1x1', K, 0, 3, 0)
-  add('1x1', K, 7, 4, 0)
-  add('round-1x1', O, 0, 5, 0)
+  // 树顶的四个锥桶都压在最高那层锥体上，顶上的星星也就跟着连成一体。
+  for (const [x, z] of [
+    [3, 3],
+    [4, 3],
+    [3, 4],
+    [4, 4],
+  ] as const) add('cone-1x1', G, x, z, 19)
+  add('star', Y, 3, 3, 22)
+  for (const [x, z] of [
+    [0, 0],
+    [0, 2],
+    [0, 4],
+    [0, 6],
+    [7, 1],
+    [7, 3],
+    [7, 5],
+    [7, 7],
+    [3, 0],
+    [5, 7],
+  ] as const) add('flower', R, x, z, 1)
+  for (const [x, z] of [
+    [0, 1],
+    [0, 3],
+    [0, 5],
+    [0, 7],
+  ] as const) add('1x1', K, x, z, 1)
+  for (const [x, z] of [
+    [7, 0],
+    [7, 2],
+    [7, 4],
+    [7, 6],
+  ] as const) add('round-1x1', O, x, z, 1)
   return pieces
 }
 
 function pine(): MagicPiece[] {
   const { pieces, add } = bag()
   column(add, 'cylinder-2x2', O, 2, 2, 0, 4)
-  add('cone-2x2', G, 2, 2, 12)
+  // 树冠一层层压在树干和下一层树冠上，整棵松树不会散开。
+  const crown: Array<[number, number]> = [
+    [1, 1],
+    [3, 1],
+    [1, 3],
+    [3, 3],
+  ]
+  for (const [x, z] of crown) add('bush', G, x, z, 12)
+  for (const [x, z] of crown) add('leaves', G, x, z, 16)
   add('cone-2x2', G, 2, 2, 18)
-  add('bush', G, 0, 2, 6)
-  add('bush', G, 4, 2, 6)
-  add('bush', G, 2, 0, 6)
-  add('bush', G, 2, 4, 6)
-  add('bush', G, 0, 0, 10)
-  add('bush', G, 4, 0, 10)
-  add('bush', G, 0, 4, 10)
-  add('bush', G, 4, 4, 10)
-  add('leaves', G, 1, 0, 14)
-  add('leaves', G, 3, 0, 14)
-  add('leaves', G, 1, 4, 14)
-  add('leaves', G, 3, 4, 14)
-  add('cone-1x1', G, 2, 2, 24)
-  add('flower', R, 1, 2, 0)
-  add('flower', Y, 4, 2, 0)
-  add('flower', P, 2, 1, 0)
+  for (const [x, z] of crown) add('bush', G, x, z, 24)
+  add('cone-2x2', G, 2, 2, 28)
+  add('cone-1x1', G, 2, 2, 34)
+  // 花草紧挨树干，才算这棵树的一部分。
+  add('flower', R, 2, 1, 0)
+  add('flower', Y, 4, 3, 0)
+  add('flower', P, 1, 3, 0)
   return pieces
 }
 
@@ -340,7 +448,7 @@ function robot(): MagicPiece[] {
   column(add, '2x2', B, 0, 1, 0, 5)
   column(add, '2x2', B, 2, 1, 0, 5)
   column(add, '2x2', B, 4, 1, 0, 5)
-  add('plate-2x6', B, 0, 1, 15)
+  add('plate-4x8', B, 0, 0, 15)
   column(add, '2x2', B, 0, 0, 16, 3)
   column(add, '2x2', B, 4, 0, 16, 3)
   column(add, '2x2', B, 0, 2, 16, 3)
@@ -352,7 +460,7 @@ function robot(): MagicPiece[] {
   add('round-1x1', Y, 3, 0, 25)
   add('antenna', K, 2, 1, 38)
   add('sword', Y, 6, 1, 16)
-  add('shield', R, -2, 1, 20)
+  add('shield', R, 0, 1, 32)
   add('cone-1x1', O, 2, 3, 34)
   add('cone-1x1', O, 3, 3, 34)
   add('slope-2x2', K, -2, 1, 0)
@@ -389,11 +497,11 @@ function f1(): MagicPiece[] {
   add('bar-4l', K, 17, 1, 4)
   add('bar-4l', K, 17, 4, 4)
   add('brick-1x6', K, 17, 0, 14, 90)
-  add('plate-1x6', R, 18, 0, 14, 90)
-  add('plate-1x4', R, 0, 0, 1)
-  add('plate-1x4', R, 0, 5, 1)
-  add('tile-1x2', Y, 0, 0, 2)
-  add('tile-1x2', Y, 0, 5, 2)
+  add('plate-1x6', R, 17, 0, 17, 90)
+  add('plate-1x4', R, 0, 0, 0)
+  add('plate-1x4', R, 0, 5, 0)
+  add('tile-1x2', Y, 0, 0, 1)
+  add('tile-1x2', Y, 0, 5, 1)
   add('round-1x1', Y, 5, 1, 4)
   add('round-1x1', Y, 5, 4, 4)
   add('tile-1x4', W, 6, 1, 4)
@@ -402,8 +510,8 @@ function f1(): MagicPiece[] {
   add('cone-1x1', K, 15, 3, 4)
   add('tile-1x2', K, 4, 0, 5)
   add('tile-1x2', K, 4, 5, 5)
-  add('1x1', R, 2, 0, 2)
-  add('1x1', R, 2, 5, 2)
+  add('1x1', R, 2, 0, 1)
+  add('1x1', R, 2, 5, 1)
   add('tile-1x1', W, 1, 1, 4)
   add('tile-1x1', K, 1, 1, 5)
   add('plate-1x2', K, 12, 0, 5)
@@ -419,9 +527,12 @@ function fireEngine(): MagicPiece[] {
   add('tyre', K, 1, 4)
   add('tyre', K, 6, 4)
   add('tyre', K, 11, 3)
-  add('plate-2x8', K, 0, 1, 5)
+  // 车厢下面补两根底盘纵梁，车身才不会整个架在两排轮子中间。
+  add('brick-1x8', K, 0, 1, 0)
+  add('brick-1x8', K, 0, 3, 0)
+  add('brick-2x8', K, 0, 1, 3)
+  add('brick-1x8', K, 0, 3, 3)
   add('plate-2x8', K, 8, 1, 5)
-  add('plate-1x8', K, 0, 3, 5)
   add('plate-1x8', K, 8, 3, 5)
   add('brick-2x3', W, 0, 1, 6)
   add('1x2', W, 0, 3, 6)
@@ -474,6 +585,9 @@ function plane(): MagicPiece[] {
   add('canopy', B, 4, 2, 6)
   add('seat', K, 8, 4, 4)
   add('steer', K, 6, 4, 12)
+  // 尾翼下面补两块托板，尾翼才不会悬在半空。
+  add('1x2', R, 14, 2, 0)
+  add('1x2', R, 14, 6, 0)
   add('slope-2x2', R, 14, 2, 3)
   add('slope-2x2', R, 14, 6, 3)
   add('1x2', R, 15, 4, 6, 90)
@@ -527,21 +641,18 @@ function rocket(): MagicPiece[] {
   column(add, 'cylinder-2x2', W, 6, 3, 3, 5)
   add('cone-2x2', R, 0, 3, 18)
   add('cone-2x2', R, 6, 3, 18)
-  add('slope-2x2', R, 3, 1, 3)
-  add('slope-2x2', R, 3, 5, 3)
-  add('slope-2x2', O, 1, 1, 3)
-  add('slope-2x2', O, 6, 1, 3)
-  add('slope-2x2', O, 1, 5, 3)
-  add('slope-2x2', O, 6, 5, 3)
-  add('plate-1x4', K, 3, 2, 0)
-  add('plate-1x4', K, 3, 5, 0)
-  add('brick-1x4', K, 3, 6, 0)
+  // 助推器斜撑直接落地，火箭尾巴才不是悬在半空。
+  add('slope-2x2', R, 3, 1, 1)
+  add('slope-2x2', R, 3, 5, 1)
+  add('slope-2x2', O, 1, 1, 0)
+  add('slope-2x2', O, 6, 1, 0)
+  add('slope-2x2', O, 1, 5, 0)
+  add('slope-2x2', O, 6, 5, 0)
+  add('plate-1x3', K, 3, 2, 0)
+  add('plate-1x3', K, 3, 5, 0)
+  add('1x1', K, 5, 6, 0)
   column(add, '1x1', K, 9, 3, 0, 8)
   add('brick-1x6', K, 5, 3, 24)
-  add('round-1x1', B, 3, 2, 12)
-  add('round-1x1', B, 4, 2, 12)
-  add('round-1x1', R, 3, 2, 18)
-  add('round-1x1', R, 4, 2, 18)
   return pieces
 }
 
@@ -596,7 +707,7 @@ function helicopter(): MagicPiece[] {
   add('brick-1x4', W, 0, 3, 6)
   add('windscreen', B, 0, 1, 6)
   add('seat', K, 4, 1, 6)
-  add('brick-1x8', K, 6, 1, 3)
+  add('brick-2x8', K, 6, 1, 3)
   add('brick-1x6', K, 6, 1, 6)
   add('brick-1x4', K, 6, 1, 9)
   add('slope-2x2', R, 12, 0, 6)
@@ -672,6 +783,8 @@ function crane(): MagicPiece[] {
   add('2x2', K, 5, 1, 1)
   add('2x2', K, 5, 1, 4)
   add('bar-4l', K, 5, 1, 7)
+  // 吊臂根部垫一块底座，吊臂第一节才不会悬在驾驶室旁边。
+  add('1x2', K, 7, 1, 1)
   for (let step = 0; step < 5; step += 1) {
     add('1x2', Y, 7 + step, 1, 4 + step * 3)
     add('1x2', O, 7 + step, 2, 4 + step * 3)
@@ -750,7 +863,7 @@ function tractor(): MagicPiece[] {
   add('cone-2x2', Y, 8, 2, 3)
   add('tile-1x2', Y, 4, 1, 3)
   add('tile-1x4', Y, 3, 4, 3)
-  add('round-1x1', Y, 2, 2, 6)
+  add('round-1x1', Y, 2, 2, 3)
   add('round-1x1', R, 2, 4, 3)
   add('plate-1x2', K, 10, 2, 0)
   add('plate-4x6', O, 12, 1, 0)
@@ -785,12 +898,12 @@ function fieldTractor(): MagicPiece[] {
   add('seat', K, 4, 2, 3)
   add('cone-1x1', K, 4, 1, 3)
   add('grille', K, 1, 1, 3)
-  add('plate-2x6', O, 9, 1, 0)
+  add('plate-4x6', O, 9, 1, 0)
   add('tyre', K, 9, 0)
   add('tyre', K, 12, 0)
   add('tyre', K, 9, 5)
   add('tyre', K, 12, 5)
-  add('plate-1x4', K, 4, 2, 0)
+  add('brick-1x4', K, 4, 2, 0)
   add('1x1', K, 8, 2, 0)
   for (const x of [9, 11, 13]) {
     add('1x1', Y, x, 1, 1)
@@ -823,54 +936,63 @@ function lighthouse(): MagicPiece[] {
   add('brick-1x4', W, 0, 3, 25)
   add('brick-1x4', W, 0, 0, 28, 90)
   add('brick-1x4', W, 3, 0, 28, 90)
-  add('2x2', K, -4, 3, 1)
+  add('2x2', K, -4, 3, 0)
   add('1x2', K, 5, 3, 1)
-  add('bush', G, 6, -2, 1)
-  add('flower', R, -3, -2, 1)
+  add('bush', G, 6, -2, 0)
+  add('flower', R, -3, -2, 0)
   add('flower', Y, 5, 5, 1)
   return pieces
 }
 
 function dinosaur(): MagicPiece[] {
   const { pieces, add } = bag()
+  // 四条腿都顶在身体底面下，腿冠只放在腿上，不再往外飘。
   for (const [x, z] of [
-    [1, 0],
-    [6, 0],
-    [1, 4],
-    [6, 4],
+    [1, 1],
+    [6, 1],
   ] as const) {
     add('2x2', G, x, z, 0)
     add('1x1', G, x, z, 3)
     add('1x1', G, x + 1, z, 3)
+  }
+  for (const [x, z] of [
+    [1, 3],
+    [6, 3],
+  ] as const) {
+    add('2x2', G, x, z, 0)
     add('1x1', G, x, z + 1, 3)
     add('1x1', G, x + 1, z + 1, 3)
   }
   for (const [x, z] of [
-    [1, -1],
-    [2, -1],
-    [6, -1],
-    [7, -1],
-    [1, 6],
-    [2, 6],
-    [6, 6],
-    [7, 6],
+    [1, 0],
+    [2, 0],
+    [6, 0],
+    [7, 0],
+    [1, 5],
+    [2, 5],
+    [6, 5],
+    [7, 5],
   ] as const) add('1x1', G, x, z, 0)
-  add('plate-2x4', G, 3, 2, 0)
+  add('plate-2x3', G, 3, 2, 0)
   add('brick-2x8', G, 1, 2, 3)
   add('brick-2x6', G, 2, 2, 6)
+  // 脖子落在地上的底座上，头才不会悬在半空；脖子根贴着身体前缘。
+  add('2x4', G, -5, 2, 0)
   add('brick-2x3', G, -2, 2, 3)
   add('slope-2x2', G, -4, 2, 3)
   add('slope-2x1', G, -5, 2, 3)
   add('cone-1x1', G, -4, 2, 6)
   add('cone-1x1', G, -3, 2, 6)
+  // 尾巴同样落在地上的底座上，尾尖才有着落。
+  add('2x4', G, 9, 2, 0)
   add('brick-2x3', G, 9, 2, 3)
   add('slope-2x2', G, 12, 2, 3)
   add('slope-2x2', G, 12, 2, 6)
   add('tile-round-1x1', W, 13, 2, 9)
-  add('tile-round-1x1', K, 12, 2, 10)
-  add('tile-1x2', W, 12, 1, 3)
-  add('brick-1x3', G, 9, 1, 3)
-  add('brick-1x3', G, 9, 4, 3)
+  add('tile-round-1x1', K, 12, 2, 9)
+  add('tile-1x2', W, 12, 1, 0)
+  add('brick-1x3', G, 9, 1, 0)
+  add('brick-1x3', G, 9, 4, 0)
   for (const x of [2, 4, 6]) add('cone-1x1', O, x, 2, 9)
   add('plate-1x4', G, -2, 2, 6)
   add('plate-1x4', G, -2, 3, 6)
@@ -891,9 +1013,13 @@ function raptor(): MagicPiece[] {
   }
   add('brick-2x8', G, 3, 2, 3)
   add('brick-2x6', O, 4, 2, 6)
+  // 脖子、头和尾巴都落在地上的底座上，嘴和后腿才不会悬在半空。
+  add('brick-1x6', G, -3, 2, 0)
   add('brick-1x6', G, -3, 2, 3)
+  add('brick-1x4', G, -7, 2, 0)
   add('brick-1x4', G, -7, 2, 3)
   add('slope-2x2', G, -9, 2, 3)
+  add('2x4', G, 11, 2, 0)
   add('brick-2x3', G, 11, 2, 3)
   add('slope-2x2', G, 14, 2, 3)
   add('tile-round-1x1', Y, 15, 2, 6)
@@ -948,10 +1074,12 @@ function barn(): MagicPiece[] {
   add('1x2', W, 4, 5, 4)
   add('1x2', B, 6, 5, 4)
   add('brick-1x10', W, 0, 5, 7)
-  for (const base of [1, 4, 7]) {
+  for (const base of [1, 4]) {
     add('brick-1x4', R, 0, 1, base, 90)
     add('brick-1x4', R, 9, 1, base, 90)
   }
+  // 中间隔墙把中间的平屋顶顶起来。
+  add('brick-1x10', R, 0, 2, 7)
   add('slope-2x4', W, 0, 0, 10)
   add('slope-2x4', W, 4, 0, 10)
   add('slope-2x2', W, 8, 0, 10)
@@ -983,11 +1111,12 @@ function towerCrane(): MagicPiece[] {
     add('1x1', Y, 3, 2, base)
   }
   add('brick-1x12', Y, 0, 1, 25)
-  add('brick-1x6', O, 12, 1, 25)
-  add('1x1', K, 7, 1, 22)
-  add('1x1', K, 7, 1, 19)
-  add('1x1', K, 7, 1, 16)
-  add('cone-1x1', R, 7, 1, 13)
+  // 配重压在吊臂尾端，塔顶标志杆从塔身正上方的吊臂长出来。
+  add('brick-1x6', O, 6, 1, 28)
+  add('cone-1x1', R, 2, 1, 28)
+  add('1x1', K, 2, 1, 31)
+  add('1x1', K, 2, 1, 34)
+  add('1x1', K, 2, 1, 37)
   add('brick-2x3', K, 1, 4, 1)
   add('tyre', K, -2, 1)
   add('tyre', K, -2, 4)
@@ -1090,7 +1219,7 @@ function controlTower(): MagicPiece[] {
   add('plate-4x6', W, -1, 0, 22)
   add('antenna', K, 1, 1, 23)
   add('dish', W, 5, 0, 19)
-  add('cone-1x1', R, 5, 4, 19)
+  add('cone-1x1', R, 2, 3, 23)
   add('door', K, 1, 4, 1)
   add('fence', W, -1, -2, 0)
   add('fence', W, 3, -2, 0)
@@ -1131,6 +1260,8 @@ function garage(): MagicPiece[] {
   add('brick-1x4', W, 9, 1, 1, 90)
   add('brick-1x4', W, 9, 1, 4, 90)
   add('brick-1x4', W, 9, 1, 7, 90)
+  // 中间一道墙把平屋顶撑住。
+  add('brick-1x8', W, 1, 2, 7)
   add('slope-2x4', R, 0, 0, 10)
   add('slope-2x4', R, 4, 0, 10)
   add('slope-2x2', R, 8, 0, 10)
@@ -1244,8 +1375,8 @@ function sportCar(): MagicPiece[] {
   add('cone-1x1', K, 15, 2, 4)
   add('cone-1x1', K, 15, 3, 4)
   add('1x1', Y, 8, 2, 10)
-  add('plate-1x2', R, 0, 0, 1)
-  add('plate-1x2', R, 0, 5, 1)
+  add('plate-1x2', R, 0, 0, 0)
+  add('plate-1x2', R, 0, 5, 0)
   add('round-1x1', R, 14, 2, 4)
   add('round-1x1', R, 14, 3, 4)
   return pieces
@@ -1273,7 +1404,7 @@ function openRacer(color: string): MagicPiece[] {
   add('tyre', K, 8, 0)
   add('tyre', K, 2, 4)
   add('tyre', K, 8, 4)
-  add('plate-2x10', K, 0, 1)
+  add('plate-2x12', K, 0, 1)
   add('plate-1x10', K, 0, 3)
   add('slope-2x2', color, 0, 1, 1)
   add('brick-1x6', color, 2, 1, 1)
@@ -1284,8 +1415,8 @@ function openRacer(color: string): MagicPiece[] {
   add('brick-1x4', K, 10, 1, 4, 90)
   add('round-1x1', Y, 2, 1, 4)
   add('cone-1x1', K, 9, 1, 4)
-  add('plate-1x2', color, 0, 0, 1)
-  add('plate-1x2', color, 0, 4, 1)
+  add('plate-1x2', color, 0, 0, 0)
+  add('plate-1x2', color, 0, 4, 0)
   return pieces
 }
 
@@ -1295,7 +1426,7 @@ function hatch(color: string): MagicPiece[] {
   add('tyre', K, 7, 1)
   add('tyre', K, 1, 4)
   add('tyre', K, 7, 3)
-  add('plate-2x10', K, 0, 1, 5)
+  add('plate-2x12', K, 0, 1, 5)
   add('plate-1x10', K, 0, 3, 5)
   add('2x4', color, 0, 1, 6)
   add('brick-1x4', color, 0, 3, 6)
@@ -1328,33 +1459,20 @@ function startGantry(): MagicPiece[] {
 function stationHouse(): MagicPiece[] {
   const { pieces, add } = bag()
   add('plate-6x12', Y, 0, 0)
-  add('brick-1x4', W, 0, 0, 1)
-  add('brick-1x4', W, 8, 0, 1)
-  add('brick-1x4', W, 0, 0, 4)
+  // 四面墙砌到同一高度，屋顶才有整圈依托，窗户也贴在墙外面。
+  for (const base of [1, 4, 7, 10, 13, 16]) {
+    add('brick-1x4', W, 0, 0, base)
+    add('brick-1x4', W, 8, 0, base)
+    add('brick-1x12', W, 0, 5, base)
+    add('brick-1x4', W, 0, 1, base, 90)
+    add('brick-1x4', W, 11, 1, base, 90)
+  }
   add('door', K, 4, 0, 1)
-  add('brick-1x4', W, 8, 0, 4)
-  add('brick-1x4', W, 0, 0, 7)
-  add('brick-1x4', W, 8, 0, 7)
-  add('brick-1x4', W, 0, 0, 10)
-  add('brick-1x4', W, 8, 0, 10)
-  add('brick-1x4', W, 0, 0, 13)
-  add('brick-1x4', W, 8, 0, 13)
-  add('brick-1x12', R, 0, 0, 18)
-  add('brick-1x12', W, 0, 5, 1)
-  add('window', B, 1, 5, 4)
-  add('window', B, 5, 5, 4)
-  add('window', B, 9, 5, 4)
-  add('brick-1x12', W, 0, 5, 11)
-  add('brick-1x12', R, 0, 5, 14)
-  add('brick-1x4', W, 0, 1, 1, 90)
-  add('brick-1x4', W, 0, 1, 4, 90)
-  add('brick-1x4', W, 0, 1, 11, 90)
-  add('brick-1x4', W, 11, 1, 1, 90)
-  add('brick-1x4', W, 11, 1, 4, 90)
-  add('brick-1x4', W, 11, 1, 11, 90)
-  add('slope-2x4', R, 0, 1, 17)
-  add('slope-2x4', R, 4, 1, 17)
-  add('slope-2x4', R, 8, 1, 17)
+  add('window', B, 1, 6, 4)
+  add('window', B, 5, 6, 4)
+  add('window', B, 9, 6, 4)
+  add('plate-6x12', R, 0, 0, 19)
+  add('brick-1x12', R, 0, 0, 20)
   return pieces
 }
 
@@ -1485,8 +1603,8 @@ function bigCastle(): MagicPiece[] {
   add('cone-2x2', R, 2, -2, 15)
   add('cone-2x2', R, 10, -2, 15)
   add('flag', B, 3, -2, 21)
-  add('flower', R, 6, 14, 1)
-  add('flower', Y, 8, 14, 1)
+  add('flower', R, 6, 14, 0)
+  add('flower', Y, 8, 14, 0)
   return pieces
 }
 
@@ -1627,7 +1745,7 @@ function villageScene(): MagicPiece[] {
     cottage(W, R),
     shift(cabin(Y, B), 16, 2),
     shift(shop(), 1, 13),
-    shift(pine(), 18, 9),
+    shift(pine(), 18, 8),
     shift(well(), 8, 9),
     shift(gardenPath(), 0, 8),
     shift(figurePieces(B, K), 13, 4),
@@ -1682,7 +1800,7 @@ function trackMarks(): MagicPiece[] {
 }
 
 function siteScene(): MagicPiece[] {
-  return join(towerCrane(), shift(halfWall(), 8, 1), shift(figurePieces(Y, K), 10, 8), shift(brickPile(), 0, 6), shift(pine(), 12, 9))
+  return join(towerCrane(), shift(halfWall(), 6, 1), shift(figurePieces(Y, K), 10, 8), shift(brickPile(), 0, 6), shift(pine(), 12, 7))
 }
 
 function brickPile(): MagicPiece[] {
@@ -1738,11 +1856,11 @@ function portScene(): MagicPiece[] {
 }
 
 function stationScene(): MagicPiece[] {
-  return join(shortTrain(), shift(stationHouse(), 0, 7), shift(platform(), 2, 5), shift(pine(), 12, 9), shift(figurePieces(R, K), 18, 8))
+  return join(shortTrain(), shift(stationHouse(), 0, 7), shift(platform(), 2, 5), shift(pine(), 11, 9), shift(figurePieces(R, K), 16, 9))
 }
 
 function dinoPark(): MagicPiece[] {
-  return join(shift(raptor(), 3, 0), shift(longneck(), 24, 0), shift(pine(), 0, 4), shift(pine(), 12, 4), shift(fenceRow(), -1, 9), shift(plateSign(), 20, 4))
+  return join(shift(raptor(), 3, 0), shift(longneck(), 24, 0), shift(pine(), 3, 2), shift(pine(), 12, 3), shift(fenceRow(), -1, 5), shift(plateSign(), 20, 4))
 }
 
 function plateSign(): MagicPiece[] {
@@ -1773,6 +1891,9 @@ function hangar(): MagicPiece[] {
   add('brick-1x4', W, 0, 1, 4, 90)
   add('brick-1x4', W, 7, 1, 1, 90)
   add('brick-1x4', W, 7, 1, 4, 90)
+  // 两侧再补一层墙，中间的平屋顶才有东西托着。
+  add('brick-1x4', W, 0, 1, 7, 90)
+  add('brick-1x4', W, 7, 1, 7, 90)
   add('plate-2x8', R, 0, 0, 10)
   add('plate-2x8', R, 0, 2, 10)
   add('plate-1x8', R, 0, 4, 11)
@@ -1800,7 +1921,7 @@ function runwayMarks(): MagicPiece[] {
 }
 
 function fireStation(): MagicPiece[] {
-  return join(garage(), shift(pumpEngine(), 10, 1), shift(pine(), 0, 6), shift(figurePieces(R, K), 12, 6), shift(fenceRow(), 16, 5))
+  return join(garage(), shift(pumpEngine(), 10, 1), shift(pine(), 0, 5), shift(figurePieces(R, K), 12, 6), shift(fenceRow(), 16, 5))
 }
 
 function habitat(): MagicPiece[] {
@@ -1860,7 +1981,7 @@ function sportScene(): MagicPiece[] {
   const { pieces, add } = bag()
   const car = sportCar()
   const wall = pitWall()
-  return join(car, shift(wall, 1, 10), shift(figurePieces(R, K), 4, 12), shift(paddock(), 17, 5))
+  return join(car, shift(wall, 1, 6), shift(figurePieces(R, K), 4, 8), shift(paddock(), 17, 5))
 }
 
 function pitWall(): MagicPiece[] {
@@ -1960,18 +2081,27 @@ function place(pieces: readonly MagicPiece[]): Brick[] {
       throw new Error(`颜色不在色板里 ${piece.color}`)
     }
     const { width, depth } = footprint(piece.type, piece.rotation)
+    // 单连接点零件（头、发、手臂、手）用连接点定位，position 直接指连接点，
+    // 位置可以落在网格之外，绕 Y 转向、摆角、滚角都绕着这个点转。
+    const point = partMount(piece.type) === 'point'
     const brick: Brick = {
       id: createBrickId(),
       type: piece.type,
       color: piece.color,
       rotation: piece.rotation,
-      position: [piece.gx + width / 2, centerForPlates(piece.base, piece.type), piece.gz + depth / 2],
+      position:
+        piece.joint ?? [piece.gx + width / 2, centerForPlates(piece.base, piece.type), piece.gz + depth / 2],
+      ...(piece.tilt === undefined ? {} : { tilt: piece.tilt }),
+      ...(piece.roll === undefined ? {} : { roll: piece.roll }),
     }
     const label = `${index}:${piece.type}@${piece.gx},${piece.gz},b${piece.base}`
-    for (const key of occupancyKeys(brick)) {
-      const previous = occupied.get(key)
-      if (previous) throw new Error(`${label} 撞上 ${previous} (${key})`)
-      occupied.set(key, label)
+    // 连接点零件挂在别的零件上，本身不占格，不能参与撞格检查。
+    if (!point) {
+      for (const key of occupancyKeys(brick)) {
+        const previous = occupied.get(key)
+        if (previous) throw new Error(`${label} 撞上 ${previous} (${key})`)
+        occupied.set(key, label)
+      }
     }
     bricks.push(brick)
   })
@@ -2035,6 +2165,121 @@ export function magicComponents(pieces: readonly MagicPiece[]) {
   return [...groups.values()].sort((a, b) => b - a)
 }
 
+// 会卡在侧面而不是压在下面的零件：人偶手臂、门窗、轮胎这类件靠咬在旁边的积木上固定。
+const SIDE_MOUNT = new Set([
+  'arm-left',
+  'arm-right',
+  'hand',
+  'window',
+  'door',
+  'door-frame',
+  'glass',
+  'fence',
+  'ladder',
+  'panel-1x4',
+  'grille',
+  'mudguard',
+  'windscreen',
+  'windscreen-long',
+  'canopy',
+  'steer',
+  'tyre',
+  'tyre-small',
+  'rim',
+  'rim-small',
+  'dish',
+])
+
+function footprintCells(piece: MagicPiece): Array<[number, number]> {
+  const { width, depth } = footprint(piece.type, piece.rotation)
+  const cells: Array<[number, number]> = []
+  for (let x = 0; x < width; x += 1) for (let z = 0; z < depth; z += 1) cells.push([piece.gx + x, piece.gz + z])
+  return cells
+}
+
+// 检查一个模型的结构问题：
+// 1) 碰撞：两件积木占同一格，摆出来会报错；
+// 2) 悬空：没贴地、下面没东西托着，也不是能卡在侧面的件；
+// 3) 拆堆：模型被切成几堆，没有连成整体。
+export function auditMagicStructure(pieces: readonly MagicPiece[]) {
+  const problems: string[] = []
+  const owner = new Map<string, number>()
+  for (const [index, piece] of pieces.entries()) {
+    for (const cell of pieceCells(piece)) owner.set(cell, index)
+  }
+
+  const seen = new Map<string, number>()
+  pieces.forEach((piece, index) => {
+    for (const cell of pieceCells(piece)) {
+      const other = seen.get(cell)
+      if (other === undefined) {
+        seen.set(cell, index)
+        continue
+      }
+      problems.push(`overlap: #${index} ${piece.type} at ${piece.gx},${piece.gz} base=${piece.base} 撞上 #${other} (${cell})`)
+    }
+  })
+
+  // 侧向咬合：同一层里 x/z 相邻一格，属于另一块积木。
+  const lateral: number[][] = pieces.map(() => [])
+  pieces.forEach((piece, index) => {
+    const hit = new Set<number>()
+    for (const cell of pieceCells(piece)) {
+      const [x, y, z] = cell.split(',').map(Number)
+      for (const next of [`${x + 1},${y},${z}`, `${x - 1},${y},${z}`, `${x},${y},${z + 1}`, `${x},${y},${z - 1}`]) {
+        const other = owner.get(next)
+        if (other === undefined || other === index || hit.has(other)) continue
+        hit.add(other)
+        lateral[index].push(other)
+      }
+    }
+  })
+
+  // 直接支撑：底面正下方一格被占。斜下方（脚印外扩一格）被占也算托住，
+  // 乐高车轮就是靠这种方式把底盘顶起来的，没有这块支撑的才是真的悬空。
+  const supported = pieces.map((piece) => {
+    if (piece.base === 0) return true
+    for (const [x, z] of footprintCells(piece)) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        for (let dz = -1; dz <= 1; dz += 1) {
+          if (owner.has(`${x + dx},${piece.base - 1},${z + dz}`)) return true
+        }
+      }
+    }
+    return false
+  })
+
+  // 递归判定：贴地 / 下面有托 / 侧装件咬在有依托的积木上。
+  const state = new Array<number>(pieces.length).fill(0) // 0 未算 1 在算 2 有依托 3 无依托
+  const anchored = (index: number): boolean => {
+    if (state[index] === 2) return true
+    if (state[index] === 3) return false
+    if (state[index] === 1) return false // 互相吊着，不算依托
+    state[index] = 1
+    let ok = supported[index]
+    if (!ok && SIDE_MOUNT.has(pieces[index].type)) {
+      for (const other of lateral[index]) {
+        if (anchored(other)) {
+          ok = true
+          break
+        }
+      }
+    }
+    state[index] = ok ? 2 : 3
+    return ok
+  }
+
+  pieces.forEach((piece, index) => {
+    if (anchored(index)) return
+    problems.push(`floating: #${index} ${piece.type} at ${piece.gx},${piece.gz} base=${piece.base} 悬空，没有东西托着`)
+  })
+
+  const components = magicComponents(pieces)
+  if (components.length !== 1) problems.push(`split: 拆成 ${components.length} 块 ${components.join('+')}`)
+
+  return problems
+}
+
 export function auditMagicModels() {
   const problems: string[] = []
   const counts: string[] = []
@@ -2044,11 +2289,10 @@ export function auditMagicModels() {
     try {
       const bricks = place(item.pieces)
       const box = bounds(centerPieces(item.pieces))
-      const parts = magicComponents(item.pieces)
       counts.push(`${item.id} ${bricks.length}`)
       if (bricks.length < min || bricks.length > max) problems.push(`${item.id} ${bricks.length} 块，应在 ${min}-${max}`)
       if (!item.pieces.some((piece) => piece.base === 0)) problems.push(`${item.id} 没有贴地`)
-      if (parts.length !== 1) problems.push(`${item.id} 拆成 ${parts.length} 块：${parts.join('+')}`)
+      for (const detail of auditMagicStructure(item.pieces)) problems.push(`${item.id} ${detail}`)
       if (box.minX < -24 || box.minZ < -24 || box.maxX > 24 || box.maxZ > 24) {
         problems.push(`${item.id} 超出底板 ${box.minX},${box.maxX},${box.minZ},${box.maxZ}`)
       }

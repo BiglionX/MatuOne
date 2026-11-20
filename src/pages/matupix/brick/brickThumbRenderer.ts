@@ -11,6 +11,7 @@ import {
   SRGBColorSpace,
   Vector3,
   WebGLRenderer,
+  type Material,
   type MeshStandardMaterial,
 } from 'three'
 import { loadBrickTemplate } from './brickPartModel'
@@ -107,15 +108,20 @@ function getMaterial(color: string) {
   return material
 }
 
+// 一个 mesh 可能带多组材质（LDraw 零件按颜色分组），
+// 比如人偶头：五官一组（颜色 0）、头身一组（颜色 16）。
+// 这里逐组换材质，只看第一组会把五官也涂成头色，脸就没了。
 function buildThumbPart(template: Group, color: string) {
   const part = template.clone(true)
   part.traverse((obj) => {
     if (!(obj instanceof Mesh)) return
-    const source = Array.isArray(obj.material) ? obj.material[0] : obj.material
-    const std = source as MeshStandardMaterial
-    const code = std.userData?.code
-    const main = code === undefined || code === '16' || code === 16
-    obj.material = getMaterial(main ? color : `#${std.color?.getHexString() ?? 'ffffff'}`)
+    const pick = (material: Material) => {
+      const std = material as MeshStandardMaterial
+      const code = std.userData?.code
+      const main = code === undefined || code === '16' || code === 16
+      return getMaterial(main ? color : `#${std.color?.getHexString() ?? 'ffffff'}`)
+    }
+    obj.material = Array.isArray(obj.material) ? obj.material.map(pick) : pick(obj.material)
   })
   return part
 }

@@ -16,6 +16,19 @@ function isBrickType(value: unknown): value is BrickType {
   return typeof value === 'string' && BRICK_TYPES.has(value as BrickType)
 }
 
+function readVector(value: unknown): [number, number, number] | null {
+  if (!Array.isArray(value) || value.length !== 3) return null
+  const [x, y, z] = value
+  if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number') return null
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return null
+  return [x, y, z]
+}
+
+function readAngle(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+  return value
+}
+
 function readBrick(value: unknown): Brick | null {
   if (!isRecord(value)) return null
   if (typeof value.id !== 'string' || value.id.length === 0) return null
@@ -28,13 +41,21 @@ function readBrick(value: unknown): Brick | null {
   if (!Number.isFinite(x) || !Number.isFinite(z)) return null
   const yFixed = normalizeBrickY(y, value.type)
   if (yFixed === null) return null
-  return {
+  const brick: Brick = {
     id: value.id,
     type: value.type,
     color: value.color,
     rotation: value.rotation,
     position: [x, yFixed, z],
   }
+  // 亚格偏移、摆角、滚角是单连接点零件的姿态信息，草稿里要一起存。
+  const anchor = readVector(value.anchor)
+  if (anchor) brick.anchor = anchor
+  const tilt = readAngle(value.tilt)
+  if (tilt !== undefined) brick.tilt = tilt
+  const roll = readAngle(value.roll)
+  if (roll !== undefined) brick.roll = roll
+  return brick
 }
 
 export function loadBrickDraft(): Brick[] {

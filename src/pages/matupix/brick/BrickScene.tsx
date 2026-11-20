@@ -3,8 +3,8 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { BackSide, Camera, Fog, GridHelper, InstancedMesh, LineBasicMaterial, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Plane, Raycaster, Vector2, Vector3, WebGLRenderer } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
-import { cloneColoredPart, disposePartMaterials, loadBrickTemplate, peekBrickTemplate, type PartAlign } from './brickPartModel'
-import { centerForPlates, hasOverlap, localSize, partPlates, plateIndex, snapPosition, type Brick, type BrickType } from './brickTypes'
+import { cloneColoredPart, disposePartMaterials, loadBrickTemplate, peekBrickTemplate, PART_ROLL, PART_TILT, type PartAlign } from './brickPartModel'
+import { brickPlacementY, brickTopHeight, hasOverlap, localSize, partMount, partOrigin, snapPlacement, type Brick, type BrickType } from './brickTypes'
 
 const CLICK_MAX_PX = 5
 const FALLBACK_DANGER = '#BE4040'
@@ -581,35 +581,65 @@ function BrickModel({
     if (!instance) return
     return () => disposePartMaterials(instance)
   }, [instance])
+  // 摆角和滚角写在零件内部的 part-roll / part-tilt 两层上，作用在 LDraw 坐标里，
+  // 支点是零件自己的原点，缩放之前就转完了，不会被各向异性缩放拉歪。
+  useEffect(() => {
+    if (!instance) return
+    const rollGroup = instance.getObjectByName(PART_ROLL)
+    const tiltGroup = instance.getObjectByName(PART_TILT)
+    if (rollGroup) rollGroup.rotation.z = ((brick.roll ?? 0) * Math.PI) / 180
+    if (tiltGroup) tiltGroup.rotation.x = ((brick.tilt ?? 0) * Math.PI) / 180
+  }, [brick.roll, brick.tilt, instance])
+  // 零件的 LDraw 原点就是它的连接点。单连接点的零件（头、手臂、手）绕这个点转，
+  // 位置也对到这一点，所以它们不会掉在两个凸点中间。
+  const origin = partOrigin(brick.type)
+  const anchor = brick.anchor ?? [0, 0, 0]
+  const point = partMount(brick.type) === 'point'
+  const body = instance ? (
+    <primitive object={instance} />
+  ) : (
+    <mesh>
+      <boxGeometry args={localSize(brick.type)} />
+      <meshStandardMaterial
+        color={selected ? shadeHex(brick.color, SELECT_SHADE) : brick.color}
+        roughness={0.55}
+        transparent={faded}
+        opacity={faded ? 0.28 : 1}
+        depthWrite={!faded}
+      />
+    </mesh>
+  )
+  const outline = selected ? (
+    <mesh raycast={() => undefined}>
+      <boxGeometry args={localSize(brick.type)} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      <Edges name="selection-outline" color="#ffffff" threshold={15} />
+    </mesh>
+  ) : null
   return (
     <group
       position={position ?? brick.position}
-      rotation={[0, (brick.rotation * Math.PI) / 180, 0]}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerOut={onPointerOut}
     >
-      {instance ? (
-        <primitive object={instance} />
-      ) : (
-        <mesh>
-          <boxGeometry args={localSize(brick.type)} />
-          <meshStandardMaterial
-            color={selected ? shadeHex(brick.color, SELECT_SHADE) : brick.color}
-            roughness={0.55}
-            transparent={faded}
-            opacity={faded ? 0.28 : 1}
-            depthWrite={!faded}
-          />
-        </mesh>
-      )}
-      {selected ? (
-        <mesh raycast={() => undefined}>
-          <boxGeometry args={localSize(brick.type)} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-          <Edges name="selection-outline" color="#ffffff" threshold={15} />
-        </mesh>
-      ) : null}
+      <group position={anchor}>
+        <group rotation={[0, (brick.rotation * Math.PI) / 180, 0]}>
+          {point ? (
+            // 连接点挂在支点上：把 LDraw 原点从零件自身的偏移里挪回支点。
+            <group position={[-origin[0], -origin[1], -origin[2]]}>
+              {body}
+              {outline}
+            </group>
+          ) : (
+            // 网格件的零件本身已经带了对齐偏移，直接摆在支点上就行。
+            <>
+              {body}
+              {outline}
+            </>
+          )}
+        </group>
+      </group>
     </group>
   )
 }
@@ -650,7 +680,9 @@ function ModelFacts({ hostRef }: { hostRef: RefObject<HTMLElement | null> }) {
 }
 
 function resolveGhost(spot: GhostSpot, bricks: readonly Brick[], part: BrickType) {
-  const position: [number, number, number] = [spot.sx, centerForPlates(spot.layer, part), spot.sz]
+  // 落点高度统一走 brickPlacementY：网格件支点在脚印中心，
+  // 单连接点零件的支点是它自己的连接点，底面贴在落点表面上。
+  const position: [number, number, number] = [spot.sx, brickPlacementY(spot.layer, part), spot.sz]
   const conflict = hasOverlap(bricks, { id: '__preview__', type: part, rotation: 0, position })
   return { position, conflict, layer: spot.layer }
 }
@@ -991,7 +1023,7 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
   }
 
   function showPreview(x: number, z: number, layer: number) {
-    const [sx, sz] = snapPosition(x, z, partRef.current, 0)
+    const [sx, sz] = snapPlacement(x, z, partRef.current, 0)
     const spot = { sx, sz, layer }
     publishPreview(spot)
     setGhostSpot((current) => {
@@ -1060,7 +1092,7 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
       if (!camera || !host) return null
       const hit = pointerOnPlane(camera, host, ev.clientX, ev.clientY, originY)
       if (!hit) return null
-      return snapPosition(hit.x, hit.z, brickType, brickRotation)
+      return snapPlacement(hit.x, hit.z, brickType, brickRotation)
     }
 
     function showDrag(sx: number, sz: number) {
@@ -1146,7 +1178,7 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
     const ny = worldNormalY(event)
     const x = event.point.x
     const z = event.point.z
-    const topPlates = plateIndex(brick.position[1], brick.type) + partPlates(brick.type)
+    const topPlates = Math.max(0, Math.round(brickTopHeight(brick) * 3))
     beginGesture(event, (shift) => {
       if (shift) {
         handlers.current.onDelete(brick.id)
@@ -1189,7 +1221,7 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
       clearPreview()
       return
     }
-    showPreview(event.point.x, event.point.z, plateIndex(brick.position[1], brick.type) + partPlates(brick.type))
+    showPreview(event.point.x, event.point.z, Math.max(0, Math.round(brickTopHeight(brick) * 3)))
   }
 
   const padAnchor: [number, number, number] | null = (() => {

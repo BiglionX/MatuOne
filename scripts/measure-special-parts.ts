@@ -1,8 +1,9 @@
-import { Box3, Group, LoadingManager, Mesh, LineSegments } from 'three'
+﻿import { Box3, Group, LoadingManager, Mesh, LineSegments } from 'three'
 import { LDrawLoader } from 'three/examples/jsm/loaders/LDrawLoader.js'
 import { LDrawConditionalLineMaterial } from 'three/examples/jsm/materials/LDrawConditionalLineMaterial.js'
 import { BRICK_PARTS, partHeight, type BrickType } from '../src/pages/matupix/brick/brickTypes.ts'
 
+if (typeof (globalThis as any).ProgressEvent === 'undefined') { (globalThis as any).ProgressEvent = class ProgressEvent { constructor(type: string, init: any = {}) { this.type = type; Object.assign(this, init) } } }
 const STUD = 20
 const HEIGHT = 24
 const EXTRA_ROOTS = new Set(['3023b.dat', '3794a.dat', '4032a.dat', '6141.dat', '3815.dat', '3816.dat', '3817.dat', '3048a.dat'].map((n) => n.toLowerCase()))
@@ -58,8 +59,8 @@ async function main() {
   const manager = new LoadingManager()
   manager.setURLModifier(rewrite)
   const loader = new LDrawLoader(manager)
-  loader.setPath('http://127.0.0.1:5173/ldraw/')
-  loader.setPartsLibraryPath('http://127.0.0.1:5173/ldraw/')
+  loader.setPath('http://127.0.0.1:5174/ldraw/')
+  loader.setPartsLibraryPath('http://127.0.0.1:5174/ldraw/')
   loader.setConditionalLineMaterial(LDrawConditionalLineMaterial)
 
   for (const type of special) {
@@ -94,3 +95,4 @@ async function main() {
 }
 
 main()
+

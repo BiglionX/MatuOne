@@ -14,6 +14,12 @@
     "import:level1": "tsx scripts/import-level1.mjs",
     "import:level2": "tsx scripts/import-level2.mjs",
     "audit:content": "node scripts/audit-level1.js",
+    "audit:magic": "tsx scripts/audit-magic.ts",
+    "audit:engine": "tsx scripts/audit-engine.ts",
+    "audit:origins": "tsx scripts/check-part-origins.ts",
+    "audit:ldraw": "tsx scripts/check-ldraw.ts",
+    "audit:parts": "tsx scripts/audit-magic-lib.ts",
+    "shot:magic": "node scripts/shot-magic.mjs",
     "e2e": "playwright test"
   },
   "dependencies": {
