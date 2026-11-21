@@ -6,7 +6,7 @@ import { BrickMagicDialog } from './BrickMagicDialog'
 import { BrickPartBar } from './BrickPartBar'
 import { BrickPartDialog } from './BrickPartDialog'
 import { BrickVideoDialog } from './BrickVideoDialog'
-import { bricksFromMagic, type MagicModel } from './brickMagicModels'
+import { bricksFromMagic, magicModelById, type MagicModel } from './brickMagicModels'
 import { frameModel, orbitPose, paintAspect, recordCanvas, videoPlan, type ShotFps, type ShotStyle } from './brickVideo'
 import { rememberPart } from './brickPartMemory'
 import { BrickScene, BRICK_FLOOR_COLOR, type BrickPointerMode, type BrickPreview, type BrickReveal, type BrickSceneHandle, type CameraForward, type CameraPose } from './BrickScene'
@@ -118,6 +118,7 @@ export function BrickBuilder() {
   const navigate = useNavigate()
   const rootRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<BrickSceneHandle>(null)
+  const panelRef = useRef<HTMLElement>(null)
   const bricksRef = useRef(bricks)
   const selectedRef = useRef(selectedId)
   const partRef = useRef(part)
@@ -447,7 +448,7 @@ export function BrickBuilder() {
   }
 
   function exportLDraw() {
-    const { text, fallbackCount } = toLDraw(bricksRef.current)
+    const { text, fallbackCount } = toLDraw(bricksRef.current, sceneAttribution())
     rootRef.current?.setAttribute('data-last-ldr', text)
     if (fallbackCount > 0) showStatus(`${fallbackCount} 块非预设色已映射为默认色`)
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
@@ -465,10 +466,58 @@ export function BrickBuilder() {
     showStatus('这个入口还在做')
   }
 
+  /**
+   * 画布上真正看得见的区域。
+   *
+   * 宽屏时左侧工具卡片是浮在画布上的，卡片盖住的那一块虽然还在渲染，
+   * 用户却看不到。取景时要把内容摆到没被盖住的那一半里。
+   * 窄屏时卡片在画布下方，不挡，返回整块画布。
+   */
+  function sceneSafeArea() {
+    const canvas = sceneRef.current?.getCanvas()
+    if (!canvas) return null
+    const canvasRect = canvas.getBoundingClientRect()
+    if (canvasRect.width <= 0) return null
+    let left = canvasRect.left
+    const panelRect = panelRef.current?.getBoundingClientRect()
+    if (
+      panelRect &&
+      panelRect.right > canvasRect.left &&
+      panelRect.top < canvasRect.bottom &&
+      panelRect.bottom > canvasRect.top
+    ) {
+      left = Math.max(left, panelRect.right)
+    }
+    const width = canvasRect.right - left
+    if (width <= 0 || width >= canvasRect.width - 1) return null
+    return {
+      centerX: (left - canvasRect.left + width / 2) / canvasRect.width,
+      widthRatio: width / canvasRect.width,
+    }
+  }
+
+  /**
+   * 场景里用到的官方模型，导出 .ldr 时写进头部。
+   *
+   * 官方模型是 CC BY 2.0，衍生作品必须带作者和许可。
+   * 同一模型只写一次；砖被删光或换掉了，对应的模型也不用再署。
+   */
+  function sceneAttribution() {
+    const used = new Set<string>()
+    for (const brick of bricksRef.current) {
+      if (brick.magicModel) used.add(brick.magicModel)
+    }
+    const models = [...used]
+      .map((id) => magicModelById(id))
+      .filter((model): model is MagicModel => model !== null)
+      .map((model) => ({ label: model.label, author: model.author }))
+    return { models }
+  }
+
   function applyMagic(model: MagicModel) {
     let next: Brick[]
     try {
-      next = bricksFromMagic(model.pieces)
+      next = bricksFromMagic(model.pieces, model.id)
     } catch {
       showStatus('这个模型排不开')
       return
@@ -480,6 +529,9 @@ export function BrickBuilder() {
     setTool('build')
     setGuide(null)
     setMagicOpen(false)
+    // 官方模型大小差别很大（从一艘小船到一整座城堡），
+    // 镜头得按模型实际尺寸重新框一次，不然塔尖会被画面切掉。
+    sceneRef.current?.frameBounds(model.bounds, sceneSafeArea() ?? undefined)
   }
 
   function openGuide() {
@@ -762,6 +814,7 @@ export function BrickBuilder() {
       </div>
       {panelOpen ? (
         <aside
+          ref={panelRef}
           className="relative z-20 flex min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-line bg-white shadow-pop md:absolute md:bottom-auto md:left-3 md:top-3 md:max-h-[calc(100%-1.5rem)] md:w-[300px] md:flex-none md:overflow-visible md:rounded-[28px] md:border"
           aria-label="积木工具"
         >

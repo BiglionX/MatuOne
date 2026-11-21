@@ -13,27 +13,35 @@
 // 物理论证：躯干肩窝 `0.85 1.97 0 / 4.925 -0.34 0 / 0 0 5` 在这个约定下
 // 得到半径 5、长度 2、轴向正好 9.782° 倾斜的圆柱，和 LDraw 官方注释一致；
 // 反过来按列向量算会得到一个椭圆，根本不是圆柱。
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-export const ROOTS = ['public/ldraw/parts', 'public/ldraw/p']
+export const ROOTS = ['public/ldraw/parts', 'public/ldraw/p', 'public/ldraw/models']
 
 const INDEX = new Map<string, { path: string; depth: number }>()
 
 // p/48/、p/8/ 里有一批同名图元（LDraw 的 48 倍缩放版本）。
 // 直接引用 “4-4cyli.dat” 时必须取 p/ 下的本体，所以索引时偏浅的路径优先。
-function scan(dir: string, depth: number) {
+//
+// 索引同时记两份键：相对根目录的子路径（s/3005.dat、48/4-4cyli.dat、8/4-4cyli.dat）
+// 和纯文件名（4-4cyli.dat）。相对路径优先，否则 “48/4-4cyli.dat” 会被
+// 裸名回退规则错配到 p/4-4cyli.dat，缩放差 48 倍。
+function scan(dir: string, depth: number, rel = '') {
+  if (!existsSync(dir)) return
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry)
     const stat = statSync(full)
     if (stat.isDirectory()) {
-      scan(full, depth + 1)
+      scan(full, depth + 1, `${rel}${entry}/`)
       continue
     }
-    if (!entry.toLowerCase().endsWith('.dat')) continue
-    const key = entry.toLowerCase()
-    const found = INDEX.get(key)
-    if (!found || depth < found.depth) INDEX.set(key, { path: full.replace(/\\/g, '/'), depth })
+    if (!/\.(dat|ldr|mpd)$/i.test(entry)) continue
+    const base = entry.toLowerCase()
+    const path = full.replace(/\\/g, '/')
+    for (const key of [base, `${rel}${base}`.toLowerCase()]) {
+      const found = INDEX.get(key)
+      if (!found || depth < found.depth) INDEX.set(key, { path, depth })
+    }
   }
 }
 
@@ -43,8 +51,23 @@ export function indexLibrary(roots: readonly string[] = ROOTS) {
 
 export function resolve(name: string): string | null {
   const key = name.toLowerCase().replace(/\\/g, '/')
-  const direct = INDEX.get(key)
-  if (direct) return direct.path
+  // LDraw 的子目录约定：s/ 下的细分件在 parts/s/，48/ 与 8/ 是缩放图元，
+  // 其余零件在 parts/、图元在 p/。先按这些约定精确命中，再退回裸文件名。
+  const candidates = [
+    key,
+    `parts/${key}`,
+    `p/${key}`,
+    `parts/s/${key}`,
+    `p/48/${key}`,
+    `p/8/${key}`,
+  ]
+  // 引用里已经带了 p/ 前缀（如 p/48/4-4cyli.dat）时，要去掉前缀再试一次相对目录，
+  // 否则会退到裸文件名，把 48 倍缩放图元错配成 p/ 下的本体。
+  if (key.startsWith('p/')) candidates.push(key.slice(2))
+  for (const candidate of candidates) {
+    const direct = INDEX.get(candidate)
+    if (direct) return direct.path
+  }
   const base = key.slice(key.lastIndexOf('/') + 1)
   return INDEX.get(base)?.path ?? null
 }
@@ -156,15 +179,30 @@ export function measure(file: string, xform: Xform, box: Box, depth = 0) {
       const sub = parseXform(line)
       if (sub) {
         const tokens = line.split(/\s+/)
-        measure(tokens[tokens.length - 1], compose(xform, sub), box, depth + 1)
+        measure(tokens.slice(14).join(' ').trim(), compose(xform, sub), box, depth + 1)
+      }
+      continue
+    }
+    if (line.startsWith('2 ') || line.startsWith('5 ')) {
+      // 2 = 线段，5 = 条件线段，格式一样：color x1 y1 z1 x2 y2 z2。
+      // 圆角零件（4-4edge.dat、recte4.dat）只用这两种行描述。
+      const nums = line.split(/\s+/).slice(2, 8).map(Number)
+      for (let index = 0; index + 2 < nums.length; index += 3) {
+        if (!nums.slice(index, index + 3).every((value) => Number.isFinite(value))) continue
+        const p = apply(xform, [nums[index], nums[index + 1], nums[index + 2]])
+        grow(box, p[0], p[1], p[2])
       }
       continue
     }
     if (line.startsWith('3 ')) {
-      const c = line.split(/\s+/).slice(2, 5).map(Number)
-      if (c.length === 3 && c.every((v) => Number.isFinite(v))) {
-        const p = apply(xform, [c[0], c[1], c[2]])
-        grow(box, p[0], p[1], p[2])
+      // type 3 = 三角形，三个顶点都写在行里（与 three.js 的 LDrawLoader 一致）。
+      // 早先只量了第一个顶点，圆盘图元的边缘顶点会漏掉，包围盒会偏小。
+      const nums = line.split(/\s+/).slice(2).map(Number)
+      if (nums.length >= 9 && nums.slice(0, 9).every((value) => Number.isFinite(value))) {
+        for (let index = 0; index + 2 < 9; index += 3) {
+          const p = apply(xform, [nums[index], nums[index + 1], nums[index + 2]])
+          grow(box, p[0], p[1], p[2])
+        }
       }
       continue
     }
@@ -191,7 +229,7 @@ export function children(file: string): { name: string; xform: Xform }[] {
     const xform = parseXform(line)
     if (!xform) continue
     const tokens = line.split(/\s+/)
-    out.push({ name: tokens[tokens.length - 1], xform })
+    out.push({ name: tokens.slice(14).join(' ').trim(), xform })
   }
   return out
 }

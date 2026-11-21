@@ -12,15 +12,35 @@ const targets = process.argv[3]
   ? process.argv[3].split(',').map((item) => item.split('|'))
   : [
       ['直升机', 'heli'],
-      ['树', 'tree'],
+      ['圣诞树', 'tree'],
       ['恐龙', 'dino'],
-      ['恐龙公园', 'dino-park'],
-      ['火车站', 'station'],
+      ['游乐园', 'dino-park'],
+      ['砖月火车站', 'station'],
       ['跑车', 'sport'],
-      ['工地', 'site'],
-      ['村庄', 'village'],
-      ['消防站', 'fire-station'],
+      ['工地推土机', 'site'],
+      ['砖月镇公所', 'village'],
+      ['砖月消防站', 'fire-station'],
       ['机场', 'airport'],
+      ['F1赛车', 'f1'],
+      ['消防车', 'fire-engine'],
+      ['飞机', 'plane'],
+      ['穿梭机', 'rocket'],
+      ['城堡', 'castle'],
+      ['房子', 'house'],
+      ['机器人', 'robot'],
+      ['蒸汽火车', 'train'],
+      ['起重机', 'crane'],
+      ['帆船', 'boat'],
+      ['拖拉机', 'tractor'],
+      ['灯塔', 'lighthouse'],
+      ['雷霆赛道', 'race'],
+      ['拖船', 'port'],
+      ['农场拖车', 'farm'],
+      ['太空隔离基地', 'space'],
+      ['骑士城堡', 'big-castle'],
+      ['法拉利赛车', 'stadium'],
+      ['埃菲尔铁塔', 'eiffel'],
+      ['西尔斯大厦', 'skyscraper'],
     ]
 
 // playwright 自带的浏览器版本可能与本机已装的不一致，这里自动挑一个能用的。
@@ -51,7 +71,9 @@ page.on('console', (msg) => {
 })
 page.on('pageerror', (err) => errors.push(String(err)))
 
-await page.goto(url, { waitUntil: 'networkidle' })
+// 这个页面有长连接/轮询，networkidle 等不到，直接等 canvas 出来更稳。
+await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
+await page.waitForSelector('canvas', { timeout: 30000 })
 await page.waitForTimeout(2500)
 
 for (const [label, slug] of targets) {

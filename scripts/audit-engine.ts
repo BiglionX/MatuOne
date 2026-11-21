@@ -14,6 +14,7 @@ import { MAGIC_MODELS, bricksFromMagic } from '../src/pages/matupix/brick/brickM
 import { toLDraw } from '../src/pages/matupix/brick/brickLdraw.ts'
 import { partHeight, partInfo, partMount, partOrigin, type Brick, type BrickType } from '../src/pages/matupix/brick/brickTypes.ts'
 import { compose, emptyBox, IDENTITY, indexLibrary, isEmpty, measure, parseXform, type Box, type Xform } from './ldraw-geom.ts'
+import { rotMatrix } from './audit-solid.ts'
 
 const STUD = 20
 const HEIGHT = 24
@@ -75,7 +76,12 @@ function renderXform(brick: Brick, offset: Vec3): Xform {
   const tilt = rotateX(brick.tilt ?? 0)
   const roll = rotateZ(brick.roll ?? 0)
   const flip = compose(rotateX(180), scale(1 / STUD, 1 / HEIGHT, 1 / STUD))
-  const aligned = compose(translate(offset[0], offset[1], offset[2]), compose(flip, compose(roll, tilt)))
+  // LDraw 矩阵件：渲染端多一层 part-ldraw-rot，直接吃官方矩阵。
+  // 层级见 brickPartModel.ts：ldraw-rot → roll → tilt → 几何，
+  // 矩阵在缩放里面，作用在 LDraw 原始坐标上。
+  const ldraw = brick.ldraw ? rotMatrix(brick.ldraw.rot) : IDENTITY
+  const inner = compose(ldraw, compose(roll, tilt))
+  const aligned = compose(translate(offset[0], offset[1], offset[2]), compose(flip, inner))
   const pulled = point
     ? compose(translate(-origin[0], -origin[1], -origin[2]), aligned)
     : aligned

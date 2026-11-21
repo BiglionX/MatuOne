@@ -1,3 +1,4 @@
+import { MAGIC_PARTS } from './brickMagicParts'
 import { PART_BOUNDS, PART_ORIGINS } from './brickPartOrigins'
 
 export type BrickRotation = 0 | 90 | 180 | 270
@@ -159,6 +160,32 @@ export type BrickType =
   | 'antenna'
   | 'dish'
   | 'propeller'
+  /**
+   * 魔法模型专用的官方 LDraw 零件。
+   *
+   * 类型名就是零件号，例如 `ldraw:3003` 指 LDraw 库的 3003.dat。
+   * 这类零件只出现在魔法模型里，不进「我的零件」面板，
+   * 目录数据由 scripts/build-magic-models.ts 按官方模型用到的零件生成。
+   */
+  | `ldraw:${string}`
+
+/**
+ * LDraw 精确摆放。
+ *
+ * 官方 LDraw 模型里的每个零件带一个 4x4 矩阵，矩阵同时管位置和姿态。
+ * 只靠 position/rotation/tilt/roll 表达它会掉信息：转向只认 90 度倍数，
+ * 而官方模型里的斜面、车轮、挡风玻璃经常带任意角度。
+ * 有这个字段的砖按矩阵摆，position 只作整体平移用。
+ */
+export type BrickLdrawPlacement = {
+  /**
+   * 旋转部分，行向量三行 a b c / d e f / g h i，作用在零件自己的 LDraw 坐标里。
+   * 和 LDraw 文件里的写法一致，可以原样导出成 .ldr。
+   */
+  rot: [number, number, number, number, number, number, number, number, number]
+  /** 零件 LDraw 原点在模型坐标系里的位置，单位 LDU。 */
+  pos: [number, number, number]
+}
 
 export type Brick = {
   id: string
@@ -181,6 +208,15 @@ export type Brick = {
    * 人偶手臂要靠它对上躯干肩膀的斜面，官方 !HELP 里写的是 9.782 度。
    */
   roll?: number
+  /** LDraw 精确摆放。有它的时候 rotation/tilt/roll 全部忽略。 */
+  ldraw?: BrickLdrawPlacement
+  /**
+   * 这块砖来自哪个官方模型（魔法模型的 id）。
+   *
+   * 导出 .ldr 时要用它写 CC BY 署名：官方模型是 CC BY 2.0，衍生作品要带作者和许可。
+   * 自己拼的砖没有这个字段。
+   */
+  magicModel?: string
 }
 
 export const BRICK_PALETTE = [
@@ -230,6 +266,12 @@ export type BrickPartInfo = {
    * 按最低点贴面会把整顶头发抬到头顶上方，所以这里显式写成 0。
    */
   mountRise?: number
+  /**
+   * 零件文件在 public/ldraw 下的真实路径。
+   * 不填就是 parts/<ldraw>.dat；魔法模型的零件在官方库里可能位于 p/、p/48/、p/8/，
+   * 所以单独记一个真实路径，渲染端直接按它加载。
+   */
+  path?: string
 }
 
 // studs 是旋转 0° 时的 [X 向钉数, Z 向钉数]，和 .dat 实心包围盒一致。
@@ -389,7 +431,17 @@ export const BRICK_PARTS: BrickPartInfo[] = [
   { type: 'propeller', label: '螺旋桨', name: '螺旋桨', footprint: '3×1', ldraw: '6041', studs: [3, 1], plates: 7, category: '物件', glyph: 'cone' },
 ]
 
-const PART_BY_TYPE = new Map(BRICK_PARTS.map((item) => [item.type, item]))
+const PART_BY_TYPE = new Map<string, BrickPartInfo>(
+  [...BRICK_PARTS, ...MAGIC_PARTS].map((item) => [item.type, item]),
+)
+
+/** 全部可用的零件类型：面板零件加上魔法模型零件。 */
+export const ALL_BRICK_TYPES = new Set<string>(PART_BY_TYPE.keys())
+
+/** 魔法模型零件的类型名：ldraw:<零件号>。 */
+export function magicPartType(file: string): BrickType {
+  return `ldraw:${file}` as BrickType
+}
 
 export const BRICK_CATEGORIES = ['基础积木', '斜面', '曲面', '房子', '车辆', '自然', '人物', '物件'] as const
 
@@ -584,9 +636,12 @@ function spanCells(center: number, size: number, offset: number) {
   return cells
 }
 
-export function occupancyKeys(brick: Pick<Brick, 'type' | 'rotation' | 'position'> & { anchor?: [number, number, number] }) {
+export function occupancyKeys(brick: Pick<Brick, 'type' | 'rotation' | 'position'> & { anchor?: [number, number, number]; ldraw?: BrickLdrawPlacement }) {
   // 单连接点零件（头、发、手臂、手）是挂在别的零件上的，自己不占格。
   if (partMount(brick.type) === 'point') return []
+  // LDraw 精确摆放的零件位置可以落在半格上，格子近似会误判成撞车。
+  // 这类砖的碰撞交给按真实几何做的模型审计，见 scripts/audit-magic-models.ts。
+  if (brick.ldraw) return []
   const { width, depth } = footprint(brick.type, brick.rotation)
   const [x, y, z] = brick.position
   const anchor = brick.anchor ?? [0, 0, 0]

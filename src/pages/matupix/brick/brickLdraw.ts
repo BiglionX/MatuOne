@@ -11,6 +11,17 @@ type Mat3 = [number, number, number, number, number, number, number, number, num
 
 const HEADER = ['0 MatuPix Brick Model', '0 Name: matupix-brick.ldr', '0 Author: MatuPix']
 
+/**
+ * 官方模型与零件的署名。
+ *
+ * 官方模型库是 CC BY 2.0、官方零件库是 CC BY 4.0，都要求衍生作品写明作者、
+ * 作品、许可和链接。导出的 .ldr 会离开站点，署名必须跟着走。
+ */
+export type LdrawAttribution = {
+  /** 用到的官方模型（魔法模型）。 */
+  models: { label: string; author: string }[]
+}
+
 function formatLdu(value: number) {
   if (!Number.isFinite(value)) return '0'
   const rounded = Math.round(value * 1e6) / 1e6
@@ -98,6 +109,21 @@ function placement(brick: Brick) {
   const tau = brick.tilt ?? 0
   const point = partMount(brick.type) === 'point'
 
+  // LDraw 矩阵件：姿态本来就是官方模型给的矩阵，直接用。
+  // 但位置不能直接用官方坐标 —— 渲染时整个模型被平移过（居中 + 贴地），
+  // 用户还能把零件拖走。所以这里从渲染落点反算 LDraw 坐标：
+  //   base = G(P + A + o)   o 是零件的对齐偏移（= partOrigin）
+  // 导出的 .ldr 就和画面里看到的完全一致。
+  if (brick.ldraw) {
+    const base = toLdraw([
+      brick.position[0] + anchor[0] + origin[0],
+      brick.position[1] + anchor[1] + origin[1],
+      brick.position[2] + anchor[2] + origin[2],
+    ])
+    const matrix = multiply(rotateY(-theta), brick.ldraw.rot as Mat3)
+    return { base, matrix }
+  }
+
   const turned = apply(rotateY(-theta), toLdraw(origin))
   const base: Vec3 = point
     ? pivot
@@ -106,9 +132,33 @@ function placement(brick: Brick) {
   return { base, matrix }
 }
 
-export function toLDraw(bricks: readonly Brick[]): { text: string; fallbackCount: number } {
+/**
+ * 写出 LDraw 头部的署名行。
+ *
+ * 官方模型库是 CC BY 2.0，官方零件库是 CC BY 4.0，两者都要求衍生作品写明：
+ * 作者、作品名、许可名称、许可链接，以及作品被修改过。
+ * 用的是 LDraw 自己的注释字段（0 ! 前缀），不影响任何 LDraw 工具读这个文件。
+ */
+function attributionLines(attribution?: LdrawAttribution) {
+  const models = attribution?.models ?? []
+  if (models.length === 0) return []
+  const lines: string[] = []
+  for (const model of models) {
+    lines.push(`0 !SOURCE ${model.label} by ${model.author}`)
+  }
+  lines.push('0 !LDRAW_ORG Model')
+  lines.push('0 !LICENSE Model: CC BY 2.0 https://creativecommons.org/licenses/by/2.0/')
+  lines.push('0 !LICENSE Parts: CC BY 4.0 https://creativecommons.org/licenses/by/4.0/')
+  lines.push('0 !SOURCE Modified: recoloured to the MatuPix palette and re-centred on the baseplate.')
+  return lines
+}
+
+export function toLDraw(
+  bricks: readonly Brick[],
+  attribution?: LdrawAttribution,
+): { text: string; fallbackCount: number } {
   let fallbackCount = 0
-  const lines = [...HEADER]
+  const lines = [...HEADER, ...attributionLines(attribution)]
   for (const brick of bricks) {
     const mapped = ldrawColor(brick.color)
     if (mapped.fallback) fallbackCount += 1

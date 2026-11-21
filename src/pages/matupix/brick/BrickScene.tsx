@@ -1,9 +1,9 @@
 import { Edges, OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from 'react'
 import { BackSide, Camera, Fog, GridHelper, InstancedMesh, LineBasicMaterial, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Plane, Raycaster, Vector2, Vector3, WebGLRenderer } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
-import { cloneColoredPart, disposePartMaterials, loadBrickTemplate, peekBrickTemplate, PART_ROLL, PART_TILT, type PartAlign } from './brickPartModel'
+import { cloneColoredPart, disposePartMaterials, loadBrickTemplate, peekBrickTemplate, PART_LDRAW_ROT, PART_ROLL, PART_TILT, type PartAlign } from './brickPartModel'
 import { brickPlacementY, brickTopHeight, hasOverlap, localSize, partMount, partOrigin, snapPlacement, type Brick, type BrickType } from './brickTypes'
 
 const CLICK_MAX_PX = 5
@@ -11,21 +11,61 @@ const FALLBACK_DANGER = '#BE4040'
 const DOLLY_RATIO = 0.8
 const PAD_GAP = 12
 const PAD_MARGIN = 4
-// 站在底板正前方（X=0），近边在画面下方，左右边与窗口基本平行。垂直 fov 40 时，16:9 下绿板约占画面宽度的七成，上下都能看见底板外的网格。
-const INITIAL_CAMERA: [number, number, number] = [0, 46, 54]
-const INITIAL_TARGET: [number, number, number] = [0, 0, 0]
+// 展示机位：站在底板正前方（X=0），俯视整块底板，俯角约 30.7°。
+// 这组参数是照参考图反解出来的：底板远边落在画面 27% 高处、横向占画面宽度 48%，
+// 底板左边线在屏幕上每往下 1 像素往左偏 0.7 像素，底板外的细网格一直铺到画面上沿。
+// 俯角是死的，取景只改镜头远近和高低，画布宽高比一变就按新比例重算。
+//
+// 俯角是拿底板左边线的屏幕斜率反解出来的：近边的位置和宽度只定出近边的深度，
+// 定不出俯角；左右两边线张开的方向才把俯角钉死。
+const INITIAL_PITCH = 30.7 * (Math.PI / 180)
+// 轨道目标的高度（世界坐标）。
+const TARGET_HEIGHT = 2.5
 const INITIAL_FOV = 40
+// 底板近边（离镜头最近的那条边）在画面里的宽度占比和高度位置，都是从参考图量出来的。
+// 宽度占比决定镜头退多远，高度位置决定机位抬多高。
+// 近边比画面还宽一点（1.01），所以底板左右两侧顶出画面，看得见的是远边和两条边线。
+const PLATE_SCREEN_FRACTION = 1.01
+const PLATE_NEAR_NDC_Y = -0.826
+// 初始机位。距离按参考图的宽高比算的，真实距离在画布内按实际宽高比重算。
+const INITIAL_CAMERA: [number, number, number] = [0, 29.15, 50.94]
+// 初始机位的视线方向（从轨道目标指向镜头）。自动取景只改距离和轨道目标，方向不动，
+// 所以画面角度和默认机位保持一致。
+const INITIAL_DIRECTION = new Vector3(0, Math.sin(INITIAL_PITCH), Math.cos(INITIAL_PITCH)).normalize()
 const MIN_ORBIT_DISTANCE = 8
 const PLATE_MIN_SCREEN_FRACTION = 1 / 5
-const BASEPLATE_COLOR = '#5DBB46'
-export const BRICK_FLOOR_COLOR = '#f4f6f4'
-const FLOOR_GRID_LINE = '#c9d3ca'
-const FLOOR_GRID_MAJOR = '#7EB4D8'
-const MAJOR_STUD_SPAN = 10
+const BASEPLATE_COLOR = '#6DDE6D'
+export const BRICK_FLOOR_COLOR = '#eaf0f1'
+// 地面网格分两层，和参考图一样：
+// 一格一钉的细线是很淡的绿，只把大片白地织出一点网格感；
+// 每 8 格一道的主线才是实打实的绿，是地面上唯一抢眼的东西。
+// 反过来（一格一钉就画实线）会让整块地面糊成一片绿网，和参考图差很远。
+const FLOOR_GRID_LINE = '#d5e3d8'
+const FLOOR_GRID_MAJOR = '#6bad79'
+const MAJOR_STUD_SPAN = 8
 const FLOOR_GRID_SIZE = 4000
 const FOG_COLOR = '#ffffff'
 const SKY_RADIUS = 2000
 const PLATE_STUDS = 48
+// 网格与地面的淡出边界（世界格）。用轨道半径（镜头到轨道目标的距离）做基准：
+// 轨道半径决定画面能铺开多大一片地面，镜头退得越远、地面上沿也退得越远，
+// 淡出半径跟着退，天际线的位置就不跟着窗口大小变。
+// 不用「镜头到原点的水平距离」：那个量在俯角变大（镜头几乎垂直往下看）时会缩得很小，
+// 淡出边界会缩进画面里，地面凭空缺一块。
+//
+// 系数是照默认机位反解的：那个机位下画面上沿看到的地面在 107 格开外，
+// 淡出必须从画面上沿之外开始，初始画面顶部才是地面网格，而不是一条参考图没有的天空带。
+//
+// 但也不能太晚：天地交接处（视线刚好水平的那个方向）上，网格主线在屏幕上会挤成
+// 连续几条像素宽的线，一片主线绿 #6BAD79 糊成一条绿带。所以淡出起点要压在
+// 天地交接之前，让那片密集网格先褪成雾白，交接处才是白色的。
+// 1.6 倍起步：底板边缘（24 格）到起点之间不淡出，底板外那圈网格保持满强度。
+const FADE_NEAR_RATIO = 1.6
+const FADE_FAR_RATIO = 3.0
+const fadeUniforms = {
+  uFadeNear: { value: 83.6 },
+  uFadeFar: { value: 156.7 },
+}
 const STUD_DIAMETER = 0.6
 const STUD_HEIGHT = 0.16
 const STUD_TOP = -0.012
@@ -97,6 +137,8 @@ export type BrickSceneHandle = {
   getPose: () => CameraPose | null
   setPose: (pose: CameraPose) => void
   setControlsEnabled: (enabled: boolean) => void
+  /** 把镜头对准一块内容（魔法模型的包围盒，单位是格）。 */
+  frameBounds: (bounds: { x: number; y: number; z: number }, safe?: FrameSafe) => void
 }
 
 export type NudgeKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
@@ -128,30 +170,59 @@ function useDangerColor(hostRef: RefObject<HTMLElement | null>) {
 }
 
 const SKY_VERTEX = `
-varying vec3 vDir;
+varying vec3 vViewPos;
 void main() {
   vec4 worldPos = modelMatrix * vec4(position, 1.0);
-  vDir = worldPos.xyz - cameraPosition;
+  vViewPos = (viewMatrix * worldPos).xyz;
   gl_Position = projectionMatrix * viewMatrix * worldPos;
 }
 `
 
-// 仰角着色：画面顶部 #A9CDEE，往下 #B7D4EE、#D8EAF8，地平线收到近白 #F9FBFD，再接到地面 #F4F6F4。雾本身仍是白。数值直接用 sRGB，避免再做一次线性转换把天空压深。
+// 天空色按「相机空间的竖直斜率」tilt 分层。
+//
+// 分层参数不能是「视线仰角」。仰角相同的方向构成一个圆锥，透视投影到屏幕是曲线
+// —— 天际线会弯成弧。tilt 相同的方向落在一个垂直于视线的平面上，它与地面的交线
+// 是一条平行于相机右向量的水平直线，投影到屏幕仍然是水平直线。
+// 所以天际线是平着横过画面的，不会随模型大小或位置弯成弧。
+//
+// tilt 与屏幕纵向位置一一对应（tilt = ndcY * tan(fov/2)），
+// 所以阈值直接按「占画面多高」来标。
+//
+// 这里返回的是 sRGB 数值：天空球是自定义 shaderMaterial，three 不会给它加
+// tonemapping / colorspace 转换，写什么就直出什么。地面那边不一样，见 brickSrgbToLinear。
+//
+// 画面顶部是很淡的蓝 #E5F0FB，从顶上一路平滑收到地平线的雾白 #EAF0F1；
+// 雾白同时也是远处地面的底色，两者接缝处看不出界。
+//
+// 这个蓝要「亮」「淡」不要「深」：蓝分量给足（251），红分量压到 229，
+// 颜色就亮起来、再淡一点，是接近白的淡蓝。把蓝分量也压下去会发灰，
+// 把红分量留太满会看着是块蓝布，都不对。
+//
+// 过渡带要窄、要贴地平线：地平线以上如果拖太长一段淡蓝到雾白，整个天空看起来就是灰蓝的。
+// 现在从 tilt 0.04（地平线上方一点点）才开始变蓝，0.14 就完全是蓝的 ——
+// 换算到画面上，过渡带只占高度的一成多，画面上三分之一就全是蓝的，
+// 地平线上方那一圈纯雾白留着，天地交接处的白色才有宽度。
+const SKY_COLOR_GLSL = `
+vec3 brickSkyColor(float tilt) {
+  vec3 skyColor = vec3(0.89804, 0.94118, 0.98431);
+  vec3 mistColor = vec3(0.91765, 0.93725, 0.94510);
+  return mix(mistColor, skyColor, smoothstep(0.04, 0.14, tilt));
+}
+
+// 地面与网格线用的是标准材质，工作空间是线性 RGB，最后会被转回 sRGB 输出。
+// 淡出目标色是从天空那边拿来的 sRGB 数值，混色前要先转成线性值，
+// 否则和天空球那一侧对不上，地面上会留一道色差。
+vec3 brickSrgbToLinear(vec3 c) {
+  return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
+}
+`
+
 const SKY_FRAGMENT = `
-varying vec3 vDir;
+varying vec3 vViewPos;
+${SKY_COLOR_GLSL}
 void main() {
-  float elev = normalize(vDir).y;
-  vec3 skyColor = vec3(0.66275, 0.80392, 0.93333);
-  vec3 highColor = vec3(0.71765, 0.83137, 0.93333);
-  vec3 paleColor = vec3(0.84706, 0.91765, 0.97255);
-  vec3 mistColor = vec3(0.97647, 0.98431, 0.99216);
-  vec3 groundColor = vec3(0.95686, 0.96471, 0.95686);
-  vec3 color = groundColor;
-  color = mix(color, mistColor, smoothstep(-0.62, -0.48, elev));
-  color = mix(color, paleColor, smoothstep(-0.48, -0.44, elev));
-  color = mix(color, highColor, smoothstep(-0.44, -0.40, elev));
-  color = mix(color, skyColor, smoothstep(-0.40, -0.37, elev));
-  gl_FragColor = vec4(color, 1.0);
+  float tilt = vViewPos.y / max( -vViewPos.z, 1e-4 );
+  gl_FragColor = vec4(brickSkyColor(tilt), 1.0);
 }
 `
 
@@ -160,16 +231,48 @@ function fadeWithFog(material: Material) {
   material.transparent = true
   material.depthWrite = false
   material.fog = true
+  // 地面和网格线不参与 tone mapping：three 默认给标准材质挂 ACES，
+  // 会把写进去的颜色压暗压灰，而天空球是自定义 shaderMaterial、three 不给它挂，
+  // 两边不在同一个色彩空间，地面和天空接不上，颜色也对不准。
+  // 去掉 tone mapping 后，写什么色就输出什么色。
+  material.toneMapped = false
   // 场景里还有一块不改色的透明放置面，也是 Basic 材质。不单独给缓存键的话，雾的透明淡出会被那份程序盖掉。
   material.customProgramCacheKey = () => 'brick-fog-fade'
   material.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <fog_fragment>',
-      `#include <fog_fragment>
-#ifdef USE_FOG
-  gl_FragColor.a *= 1.0 - fogFactor;
-#endif`,
-    )
+    shader.uniforms.uFadeNear = fadeUniforms.uFadeNear
+    shader.uniforms.uFadeFar = fadeUniforms.uFadeFar
+    // 淡出量按世界坐标算：到 48×48 底板边界的切比雪夫距离。
+    // 用切比雪夫而不是欧氏距离，底板四角才和底板边缘同时开始淡出。
+    //
+    // 淡出的目标色是「那个方向的天空色」（和天空球共用 brickSkyColor），
+    // 不是白色：远处地面半透明地叠在淡蓝天上，白色会把天空混成灰蓝。
+    // 淡成同方向天空色后，网格线、地面、天空三者之间没有硬边，也没有灰调。
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vFadeWorld;')
+      .replace(
+        '#include <fog_vertex>',
+        '#include <fog_vertex>\nvFadeWorld = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;',
+      )
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+varying vec3 vFadeWorld;
+uniform float uFadeNear;
+uniform float uFadeFar;
+${SKY_COLOR_GLSL}`,
+      )
+      .replace(
+        '#include <fog_fragment>',
+        `// 不走 three 自带的雾：它是按到相机的距离算的，会跟着自动取景一起漂。
+  // 这里只看世界坐标，淡出量与相机位置无关。
+  // 目标色用和天空球同一个 tilt 分层，所以远处地面和天空天衣无缝。
+  vec3 fadeView = ( viewMatrix * vec4( vFadeWorld, 1.0 ) ).xyz;
+  float fadeTilt = fadeView.y / max( -fadeView.z, 1e-4 );
+  float fadeFactor = smoothstep( uFadeNear, uFadeFar, max( abs( vFadeWorld.x ), abs( vFadeWorld.z ) ) );
+  gl_FragColor.rgb = mix( gl_FragColor.rgb, brickSkyColor( fadeTilt ), fadeFactor );
+  gl_FragColor.a *= 1.0 - fadeFactor;`,
+      )
   }
   material.needsUpdate = true
 }
@@ -195,11 +298,19 @@ function plateFarDistance(camera: Camera) {
 
 function SkyBackdrop() {
   const meshRef = useRef<Mesh>(null)
+  const camera = useThree((state) => state.camera)
   useLayoutEffect(() => {
     const mesh = meshRef.current
     if (!mesh) return
     mesh.raycast = () => undefined
   }, [])
+  // 天空球跟着相机平移，只平移不跟着转，球心始终压在相机上：
+  // 这样无论镜头推到哪儿，天空都不会被甩在身后，也不会有近距离的视差。
+  useFrame(() => {
+    const mesh = meshRef.current
+    if (!mesh) return
+    mesh.position.copy(camera.position)
+  })
   return (
     <mesh ref={meshRef} frustumCulled={false} renderOrder={-10} raycast={() => undefined}>
       <sphereGeometry args={[SKY_RADIUS, 48, 32]} />
@@ -215,7 +326,10 @@ function SkyBackdrop() {
   )
 }
 
-// 近距留在底板外侧，远距让网格在白色里消失，避免视野尽头一条硬边。
+// 场景雾，给普通材质（零件等）用。
+// 网格与地面的淡出不走这里：那部分在 fadeWithFog 里按底板边界的切比雪夫距离算，
+// 基准与相机远近无关。three 自带的雾是按到相机的距离算的，会跟着自动取景一起漂，
+// 天空露出的比例和色相就会随模型形状变。
 function EdgeFog() {
   const scene = useThree((state) => state.scene)
   const camera = useThree((state) => state.camera)
@@ -231,6 +345,22 @@ function EdgeFog() {
     const near = farEdge + 6
     fog.near = near
     fog.far = near + 18
+  }, -2)
+  return null
+}
+
+// 网格与地面的淡出半径按轨道半径缩放。
+// 参考图里网格铺到多远才化进天空，是按机位退到哪算的；固定的世界半径在窄画布上
+// 会让网格铺不到那么远，天际线的高低跟着窗口大小变。
+// 负优先级：在这一帧渲染之前就把半径写好。
+function GridFade({ controlsRef }: { controlsRef: RefObject<OrbitControlsImpl | null> }) {
+  const camera = useThree((state) => state.camera)
+  useFrame(() => {
+    const target = controlsRef.current?.target
+    const radius = target ? camera.position.distanceTo(target) : 0
+    if (radius < 1) return
+    fadeUniforms.uFadeNear.value = radius * FADE_NEAR_RATIO
+    fadeUniforms.uFadeFar.value = radius * FADE_FAR_RATIO
   }, -2)
   return null
 }
@@ -317,6 +447,88 @@ function Baseplate() {
       </instancedMesh>
     </group>
   )
+}
+
+/**
+ * 取景安全区。
+ *
+ * 左侧工具卡片是浮在画布上的，卡片盖住的那一块虽然画布还在渲染，
+ * 但用户看不到。取景时把内容摆到没被遮住的那一半里。
+ */
+export type FrameSafe = {
+  /** 可见区中心的归一化 X（0 = 画布左边，1 = 画布右边）。 */
+  centerX: number
+  /** 可见区宽度占画布宽度的比例。 */
+  widthRatio: number
+}
+
+/** 整块画布都可见时的安全区。 */
+const FULL_FRAME: FrameSafe = { centerX: 0.5, widthRatio: 1 }
+
+/**
+ * 按参考图的构图算展示机位。
+ *
+ * 参考图是站在底板正前方、俯视整块底板的机位：底板远边落在画面 27% 高处，
+ * 横向占画面宽度的 48%，近边比画面还宽一点；底板外的网格一直铺到画面上沿。
+ *
+ * 取景只留两个自由度：俯角是死的（INITIAL_PITCH），
+ * 镜头退多远由「底板近边在画面里占多宽」反推，机位抬多高由「近边落在画面多高」反推。
+ * 画布宽高比一变，这两个量跟着换算，构图始终和参考图一致。
+ *
+ * 模型比底板高时（比如铁塔），还要退到模型整个装得下为止。
+ */
+function showcaseFrame(
+  camera: PerspectiveCamera,
+  bounds: { x: number; y: number; z: number } | null,
+  safe: FrameSafe,
+) {
+  const tanV = Math.tan((camera.fov * Math.PI) / 360)
+  const tanH = tanV * camera.aspect
+  const sinP = Math.sin(INITIAL_PITCH)
+  const cosP = Math.cos(INITIAL_PITCH)
+  const half = PLATE_STUDS / 2
+  // 底板近边的深度。近边是投影最宽的一条边，按它定距，底板在画面里的占比就固定住了。
+  const depth = half / (PLATE_SCREEN_FRACTION * tanH)
+  // 近边在画面里的纵向位置，换算成相机上下方向上的偏移量。
+  const vert = PLATE_NEAR_NDC_Y * depth * tanV
+  // 由这两个量解出：近边的水平距离、机位高出底板面的高度。
+  const nearS = depth * cosP + vert * sinP
+  const nearH = depth * sinP - vert * cosP
+  // 轨道目标高度固定，轨道半径和目标的 Z 据此推出来。
+  let distance = (nearH + PLATE_TOP - TARGET_HEIGHT) / sinP
+  const targetZ = nearS + half - distance * cosP
+  // 安全区中心在 ndc 里的位置。底板要摆到安全区中心，而不是画布中心
+  // （左边被工具卡片盖着）。
+  const centerNdc = 2 * safe.centerX - 1
+  let offsetX = 0
+  for (let pass = 0; pass < 3; pass += 1) {
+    let need = distance
+    // 模型：整个装进画面
+    if (bounds) {
+      for (const x of [-bounds.x / 2, bounds.x / 2]) {
+        for (const y of [0, bounds.y]) {
+          for (const z of [-bounds.z / 2, bounds.z / 2]) {
+            const py = PLATE_TOP + y
+            // 相机上下方向上的偏移量。相机沿视线平移，这个量不变。
+            const vertical = Math.abs((py - TARGET_HEIGHT) * cosP + (targetZ - z) * sinP)
+            const lateral = Math.abs(x - offsetX)
+            // 轨道半径要退到多深，才装得下这个角点
+            const base = (TARGET_HEIGHT - py) * sinP + (targetZ - z) * cosP
+            need = Math.max(
+              need,
+              lateral / (0.86 * tanH) - base,
+              vertical / (0.72 * tanV) - base,
+            )
+          }
+        }
+      }
+    }
+    distance = need
+    // 横向偏移把底板摆到安全区中心。偏移量和距离互相影响，迭代三轮。
+    const edgeDepth = distance + (TARGET_HEIGHT - PLATE_TOP) * sinP + (targetZ - half) * cosP
+    offsetX = -centerNdc * edgeDepth * tanH
+  }
+  return { distance, offsetX, targetZ }
 }
 
 function formatCamera(position: { x: number; y: number; z: number }) {
@@ -422,6 +634,47 @@ function PlateZoomLimit({ controlsRef }: { controlsRef: RefObject<OrbitControlsI
   useFrame(() => {
     apply()
   }, -2)
+  return null
+}
+
+// 首帧把机位按画布宽高比退到位。
+//
+// 画布外面算取景的时候还不知道真实宽高比，进来再算一次才准。
+// 用 useFrame 而不是 useLayoutEffect：R3F 的画布尺寸和相机投影矩阵是在
+// 自己的 effect 里更新的，布局阶段拿到的还是旧比例。
+// 默认优先级（非正）会在这一帧渲染之前执行，第一帧就是最终构图。
+//
+// 用户自己动过镜头，或者已经按某个模型取过景，就不再自动接管。
+function InitialCamera({
+  controlsRef,
+  autoFrame,
+}: {
+  controlsRef: RefObject<OrbitControlsImpl | null>
+  autoFrame: MutableRefObject<{ touched: boolean; modelFramed: boolean }>
+}) {
+  const camera = useThree((state) => state.camera)
+  const size = useThree((state) => state.size)
+  const lastSize = useRef('')
+  useFrame(() => {
+    if (autoFrame.current.touched || autoFrame.current.modelFramed) return
+    if (!(camera instanceof PerspectiveCamera)) return
+    const controls = controlsRef.current
+    if (!controls) return
+    if (size.width < 2 || size.height < 2) return
+    const key = `${size.width}x${size.height}`
+    if (key === lastSize.current) return
+    lastSize.current = key
+    const frame = showcaseFrame(camera, null, FULL_FRAME)
+    const damping = controls.enableDamping
+    controls.enableDamping = false
+    controls.target.set(frame.offsetX, TARGET_HEIGHT, frame.targetZ)
+    camera.position
+      .set(frame.offsetX, TARGET_HEIGHT, frame.targetZ)
+      .addScaledVector(INITIAL_DIRECTION, frame.distance)
+    camera.lookAt(controls.target)
+    controls.update()
+    controls.enableDamping = damping
+  })
   return null
 }
 
@@ -583,13 +836,26 @@ function BrickModel({
   }, [instance])
   // 摆角和滚角写在零件内部的 part-roll / part-tilt 两层上，作用在 LDraw 坐标里，
   // 支点是零件自己的原点，缩放之前就转完了，不会被各向异性缩放拉歪。
+  // LDraw 矩阵件走 part-ldraw-rot 那层：官方模型的姿态是任意角度的矩阵，转向/摆角/滚角表达不了。
   useEffect(() => {
     if (!instance) return
     const rollGroup = instance.getObjectByName(PART_ROLL)
     const tiltGroup = instance.getObjectByName(PART_TILT)
+    const ldrawGroup = instance.getObjectByName(PART_LDRAW_ROT)
+    if (ldrawGroup && brick.ldraw) {
+      const r = brick.ldraw.rot
+      ldrawGroup.matrixAutoUpdate = false
+      ldrawGroup.matrix.set(
+        r[0], r[1], r[2], 0,
+        r[3], r[4], r[5], 0,
+        r[6], r[7], r[8], 0,
+        0, 0, 0, 1,
+      )
+      ldrawGroup.matrixWorldNeedsUpdate = true
+    }
     if (rollGroup) rollGroup.rotation.z = ((brick.roll ?? 0) * Math.PI) / 180
     if (tiltGroup) tiltGroup.rotation.x = ((brick.tilt ?? 0) * Math.PI) / 180
-  }, [brick.roll, brick.tilt, instance])
+  }, [brick.roll, brick.tilt, brick.ldraw, instance])
   // 零件的 LDraw 原点就是它的连接点。单连接点的零件（头、手臂、手）绕这个点转，
   // 位置也对到这一点，所以它们不会掉在两个凸点中间。
   const origin = partOrigin(brick.type)
@@ -872,6 +1138,8 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
   const hostRef = useRef<HTMLDivElement>(null)
   const padRef = useRef<HTMLDivElement>(null)
   const controlsRef = useRef<OrbitControlsImpl>(null)
+  // 自动取景的状态：用户动过镜头、或者已经按某个模型取过景，就不再自动接管机位。
+  const autoFrame = useRef({ touched: false, modelFramed: false })
   const glRef = useRef<WebGLRenderer | null>(null)
   const frozenRef = useRef(frozen)
   frozenRef.current = frozen
@@ -921,14 +1189,21 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
     resetView() {
       const controls = controlsRef.current
       if (!controls) return
+      const camera = controls.object
+      if (!(camera instanceof PerspectiveCamera)) return
+      // 重置视角拉回展示机位。距离按当前画布宽高比重算，
+      // 构图才和刚打开页面时一样。
+      const frame = showcaseFrame(camera, null, FULL_FRAME)
       const damping = controls.enableDamping
       controls.enableDamping = false
       controls.update()
-      controls.target.set(INITIAL_TARGET[0], INITIAL_TARGET[1], INITIAL_TARGET[2])
-      controls.object.position.set(INITIAL_CAMERA[0], INITIAL_CAMERA[1], INITIAL_CAMERA[2])
-      controls.object.zoom = 1
-      controls.object.updateProjectionMatrix()
-      controls.object.lookAt(INITIAL_TARGET[0], INITIAL_TARGET[1], INITIAL_TARGET[2])
+      controls.target.set(frame.offsetX, TARGET_HEIGHT, frame.targetZ)
+      camera.position
+        .set(frame.offsetX, TARGET_HEIGHT, frame.targetZ)
+        .addScaledVector(INITIAL_DIRECTION, frame.distance)
+      camera.zoom = 1
+      camera.updateProjectionMatrix()
+      camera.lookAt(controls.target)
       controls.saveState()
       controls.reset()
       controls.enableDamping = damping
@@ -972,6 +1247,24 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
     setControlsEnabled(enabled) {
       const controls = controlsRef.current
       if (controls) controls.enabled = enabled
+    },
+    frameBounds(bounds, safe) {
+      const controls = controlsRef.current
+      if (!controls) return
+      const camera = controls.object
+      if (!(camera instanceof PerspectiveCamera)) return
+      autoFrame.current.modelFramed = true
+      const frame = showcaseFrame(camera, bounds, safe ?? FULL_FRAME)
+      // 展示机位的目标高度是固定的，横向偏移只为了躲开被工具卡片盖住的那一块。
+      const target = new Vector3(frame.offsetX, TARGET_HEIGHT, frame.targetZ)
+      const distance = frame.distance
+      const damping = controls.enableDamping
+      controls.enableDamping = false
+      controls.target.copy(target)
+      camera.position.copy(target).addScaledVector(INITIAL_DIRECTION, distance)
+      camera.lookAt(target)
+      controls.update()
+      controls.enableDamping = damping
     },
   }), [])
 
@@ -1248,6 +1541,7 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
         <color attach="background" args={[BRICK_FLOOR_COLOR]} />
         <SkyBackdrop />
         <EdgeFog />
+        <GridFade controlsRef={controlsRef} />
         <ambientLight intensity={0.5} />
         <hemisphereLight color="#f4f7ee" groundColor="#2f6a32" intensity={0.45} />
         <directionalLight position={[10, 18, 8]} intensity={1.35} />
@@ -1289,12 +1583,16 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
         ) : null}
         <GlBridge glRef={glRef} />
         <PlateZoomLimit controlsRef={controlsRef} />
+        <InitialCamera controlsRef={controlsRef} autoFrame={autoFrame} />
         <OrbitControls
           ref={controlsRef}
           makeDefault
           minDistance={MIN_ORBIT_DISTANCE}
           maxPolarAngle={Math.PI / 2 - 0.04}
           target={[0, 0, 0]}
+          onStart={() => {
+            autoFrame.current.touched = true
+          }}
           onChange={(event) => {
             const object = (event?.target as { object?: Camera } | undefined)?.object
             if (object) publishRef.current(object)

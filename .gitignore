@@ -25,3 +25,7 @@ Thumbs.db
 # 临时诊断/截图脚本
 tmp-*
 _magic-shots
+
+# 本地 LDraw 源库（OMR 模型 + 官方零件 + 索引，体积很大）。
+# 只用于 scripts/build-magic-models.ts 取材，生成结果已入库，源库不入库。
+.ldraw-src

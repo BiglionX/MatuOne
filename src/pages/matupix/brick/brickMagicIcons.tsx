@@ -58,7 +58,7 @@ function renderGlyph(id: string, uid: string) {
   if (id === 'stadium') return <StadiumGlyph />
   if (id === 'sport') return <SportGlyph />
   if (id === 'eiffel') return <EiffelGlyph />
-  if (id === 'colosseum') return <TempleGlyph />
+  if (id === 'skyscraper') return <TempleGlyph />
   return <TrafficGlyph />
 }
 

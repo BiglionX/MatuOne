@@ -24,6 +24,7 @@
 // 矩阵约定必须和渲染端（three.js 的 LDrawLoader）一致，见 scripts/ldraw-geom.ts。
 import { writeFileSync } from 'node:fs'
 import { BRICK_PARTS, partHeight, type BrickType } from '../src/pages/matupix/brick/brickTypes.ts'
+import { MAGIC_PARTS } from '../src/pages/matupix/brick/brickMagicParts.ts'
 import { emptyBox, IDENTITY, indexLibrary, isEmpty, measure, resolve } from './ldraw-geom.ts'
 
 indexLibrary()
@@ -36,15 +37,25 @@ const rows: string[] = []
 const boundRows: string[] = []
 const problems: string[] = []
 
-for (const item of BRICK_PARTS) {
-  const file = `${item.ldraw}.dat`
-  const path = resolve(file)
+// 基础零件的 LDraw 引用是裸号，魔法零件带目录（parts/xxxx.dat 或 p/xxxx.dat）。
+const targets: { type: BrickType; file: string; centered: boolean }[] = [
+  ...BRICK_PARTS.map((item) => ({ type: item.type, file: `${item.ldraw}.dat`, centered: true })),
+  ...MAGIC_PARTS.map((item) => ({
+    type: item.type,
+    file: item.path ?? `parts/${item.ldraw}.dat`,
+    // 魔法零件各种形状都有，原点不在底面中心是正常的，不当成问题。
+    centered: false,
+  })),
+]
+
+for (const item of targets) {
+  const path = resolve(item.file)
   if (!path) {
-    problems.push(`${item.type} 找不到 ${file}`)
+    problems.push(`${item.type} 找不到 ${item.file}`)
     continue
   }
   const box = emptyBox()
-  measure(file, IDENTITY, box)
+  measure(item.file, IDENTITY, box)
   if (isEmpty(box)) {
     problems.push(`${item.type} 量不到几何`)
     continue
@@ -61,7 +72,7 @@ for (const item of BRICK_PARTS) {
   boundRows.push(
     `  '${item.type}': [${round3(box.minX / 20)}, ${round3(-box.maxY / 24)}, ${round3(-box.maxZ / 20)}, ${round3(box.maxX / 20)}, ${round3(-box.minY / 24)}, ${round3(-box.minZ / 20)}],`,
   )
-  if (Math.abs(ox) > 0.02 || Math.abs(oz) > 0.02) {
+  if (item.centered && (Math.abs(ox) > 0.02 || Math.abs(oz) > 0.02)) {
     problems.push(`${item.type} 原点偏离底面中心 ${ox},${oy},${oz}  mesh ${sizeX}x${sizeZ}`)
   }
 }

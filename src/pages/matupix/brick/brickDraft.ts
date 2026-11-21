@@ -1,8 +1,8 @@
-import { BRICK_PARTS, normalizeBrickY, type Brick, type BrickRotation, type BrickType } from './brickTypes'
+import { ALL_BRICK_TYPES, normalizeBrickY, type Brick, type BrickLdrawPlacement, type BrickRotation, type BrickType } from './brickTypes'
 
 const DRAFT_KEY = 'matupix.brick.draft.v1'
 const HEX_COLOR = /^#[0-9a-f]{6}$/i
-const BRICK_TYPES = new Set<BrickType>(BRICK_PARTS.map((item) => item.type))
+const BRICK_TYPES = ALL_BRICK_TYPES
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -29,6 +29,14 @@ function readAngle(value: unknown) {
   return value
 }
 
+/** LDraw 矩阵的旋转部分：行向量三行，共 9 个数。 */
+function readRot(value: unknown): BrickLdrawPlacement['rot'] | null {
+  if (!Array.isArray(value) || value.length !== 9) return null
+  const nums = value.map(Number)
+  if (nums.some((item) => !Number.isFinite(item))) return null
+  return nums as BrickLdrawPlacement['rot']
+}
+
 function readBrick(value: unknown): Brick | null {
   if (!isRecord(value)) return null
   if (typeof value.id !== 'string' || value.id.length === 0) return null
@@ -39,7 +47,9 @@ function readBrick(value: unknown): Brick | null {
   const [x, y, z] = value.position
   if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number') return null
   if (!Number.isFinite(x) || !Number.isFinite(z)) return null
-  const yFixed = normalizeBrickY(y, value.type)
+  // LDraw 矩阵件的坐标是官方模型的精确值，吸到板层网格上会把模型拆歪。
+  const exact = isRecord(value.ldraw)
+  const yFixed = exact ? (Number.isFinite(y) ? y : null) : normalizeBrickY(y, value.type)
   if (yFixed === null) return null
   const brick: Brick = {
     id: value.id,
@@ -55,6 +65,18 @@ function readBrick(value: unknown): Brick | null {
   if (tilt !== undefined) brick.tilt = tilt
   const roll = readAngle(value.roll)
   if (roll !== undefined) brick.roll = roll
+  // LDraw 矩阵件：官方模型带来的精确姿态，草稿里要原样存回去。
+  if (value.ldraw !== undefined) {
+    if (!isRecord(value.ldraw)) return null
+    const rot = readRot(value.ldraw.rot)
+    const pos = readVector(value.ldraw.pos)
+    if (!rot || !pos) return null
+    brick.ldraw = { rot, pos }
+  }
+  // 魔法模型来源：导出 .ldr 时要靠它写 CC BY 署名。
+  if (typeof value.magicModel === 'string' && value.magicModel.length > 0) {
+    brick.magicModel = value.magicModel
+  }
   return brick
 }
 
