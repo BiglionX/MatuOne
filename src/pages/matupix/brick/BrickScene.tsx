@@ -4,7 +4,8 @@ import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, u
 import { BackSide, Camera, Fog, GridHelper, InstancedMesh, LineBasicMaterial, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Plane, Raycaster, Vector2, Vector3, WebGLRenderer } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { cloneColoredPart, disposePartMaterials, loadBrickTemplate, peekBrickTemplate, PART_LDRAW_ROT, PART_ROLL, PART_TILT, type PartAlign } from './brickPartModel'
-import { brickPlacementY, brickTopHeight, hasOverlap, localSize, partMount, partOrigin, snapPlacement, type Brick, type BrickType } from './brickTypes'
+import { BrickPartThumb } from './BrickPartThumb'
+import { brickPlacementY, brickTopHeight, canSpinBrick, hasOverlap, localSize, partBounds, partHeight, partInfo, partMount, partOrigin, snapPlacement, spinAngle, type Brick, type BrickType } from './brickTypes'
 
 const CLICK_MAX_PX = 5
 const FALLBACK_DANGER = '#BE4040'
@@ -114,6 +115,8 @@ type BrickSceneProps = {
   onModelError?: (message: string) => void
   onNudge: (key: NudgeKey) => void
   onLayer: (delta: 1 | -1) => void
+  /** 绕插销旋转选中的零件（每次 15°）。 */
+  onSpin: () => void
   onBrickScreen?: (point: { x: number; y: number } | null) => void
   reveal?: BrickReveal
   frozen?: boolean
@@ -890,7 +893,8 @@ function BrickModel({
       onPointerOut={onPointerOut}
     >
       <group position={anchor}>
-        <group rotation={[0, (brick.rotation * Math.PI) / 180, 0]}>
+        {/* 绕插销的 15° 旋转（spin）和转向是同一个轴，都绕支点的竖直轴，并进同一个角里。 */}
+        <group rotation={[0, ((brick.rotation + (brick.spin ?? 0)) * Math.PI) / 180, 0]}>
           {point ? (
             // 连接点挂在支点上：把 LDraw 原点从零件自身的偏移里挪回支点。
             <group position={[-origin[0], -origin[1], -origin[2]]}>
@@ -953,10 +957,71 @@ function resolveGhost(spot: GhostSpot, bricks: readonly Brick[], part: BrickType
   return { position, conflict, layer: spot.layer }
 }
 
-function placeMovePad(localX: number, localY: number, width: number, height: number, padWidth: number, padHeight: number) {
-  let left = localX + PAD_GAP
+/**
+ * 零件在世界坐标里的包围盒角点。
+ *
+ * 网格件的支点在脚印中心，单连接点零件的支点是它自己的连接点（LDraw 原点），
+ * 两者相对零件自身的位置不一样，所以要按真实的角点算，弹窗才知道该让开多远。
+ */
+function brickBoxCorners(brick: Brick): [number, number, number][] {
+  const origin = partOrigin(brick.type)
+  const bounds = partBounds(brick.type)
+  const height = partHeight(brick.type)
+  const anchor = brick.anchor ?? [0, 0, 0]
+  const pivot: [number, number, number] = [
+    brick.position[0] + anchor[0],
+    brick.position[1] + anchor[1],
+    brick.position[2] + anchor[2],
+  ]
+  // 支点在零件自身坐标里的位置：网格件是脚印中心，单连接点件是连接点。
+  const localPivot: [number, number, number] =
+    partMount(brick.type) === 'point' ? [origin[0], origin[1] - height / 2, origin[2]] : [0, 0, 0]
+  const lo: [number, number, number] = [
+    bounds[0] + origin[0] - localPivot[0],
+    bounds[1] + origin[1] - height / 2 - localPivot[1],
+    bounds[2] + origin[2] - localPivot[2],
+  ]
+  const hi: [number, number, number] = [
+    bounds[3] + origin[0] - localPivot[0],
+    bounds[4] + origin[1] - height / 2 - localPivot[1],
+    bounds[5] + origin[2] - localPivot[2],
+  ]
+  const angle = ((brick.rotation + (brick.spin ?? 0)) * Math.PI) / 180
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  const corners: [number, number, number][] = []
+  for (const x of [lo[0], hi[0]]) {
+    for (const y of [lo[1], hi[1]]) {
+      for (const z of [lo[2], hi[2]]) {
+        // 绕支点的竖直轴转，渲染端和这里用同一个式子。
+        corners.push([
+          pivot[0] + x * cos + z * sin,
+          pivot[1] + y,
+          pivot[2] - x * sin + z * cos,
+        ])
+      }
+    }
+  }
+  return corners
+}
+
+/**
+ * 弹窗的落位。
+ *
+ * 横着放时贴着零件在屏幕上的边缘，不压住零件；右边放不下就翻到零件左边。
+ */
+function placeMovePad(
+  localY: number,
+  width: number,
+  height: number,
+  padWidth: number,
+  padHeight: number,
+  boxLeft: number,
+  boxRight: number,
+) {
+  let left = boxRight + PAD_GAP
   let top = localY - padHeight - PAD_GAP
-  if (left + padWidth > width - PAD_MARGIN) left = localX - padWidth - PAD_GAP
+  if (left + padWidth > width - PAD_MARGIN) left = boxLeft - padWidth - PAD_GAP
   if (top < PAD_MARGIN) top = localY + PAD_GAP
   const maxLeft = Math.max(PAD_MARGIN, width - padWidth - PAD_MARGIN)
   const maxTop = Math.max(PAD_MARGIN, height - padHeight - PAD_MARGIN)
@@ -968,19 +1033,23 @@ function placeMovePad(localX: number, localY: number, width: number, height: num
 
 function BrickScreenAnchor({
   position,
+  corners,
   hostRef,
   padRef,
   onScreen,
 }: {
   position: [number, number, number] | null
+  corners: [number, number, number][] | null
   hostRef: RefObject<HTMLDivElement | null>
   padRef: RefObject<HTMLDivElement | null>
   onScreen?: (point: { x: number; y: number } | null) => void
 }) {
   const camera = useThree((state) => state.camera)
   const positionRef = useRef(position)
+  const cornersRef = useRef(corners)
   const onScreenRef = useRef(onScreen)
   positionRef.current = position
+  cornersRef.current = corners
   onScreenRef.current = onScreen
   const scratch = useRef(new Vector3())
   const reported = useRef('')
@@ -1013,6 +1082,25 @@ function BrickScreenAnchor({
     }
     const localX = (projected.x * 0.5 + 0.5) * width
     const localY = (-projected.y * 0.5 + 0.5) * height
+    // 零件在屏幕上的左右边界：弹窗贴着边放，就不会盖住零件。
+    let boxLeft = localX
+    let boxRight = localX
+    const box = cornersRef.current
+    if (box && box.length > 0) {
+      let min = Infinity
+      let max = -Infinity
+      for (const corner of box) {
+        projected.set(corner[0], corner[1], corner[2]).project(camera)
+        if (projected.z < -1 || projected.z > 1) continue
+        const x = (projected.x * 0.5 + 0.5) * width
+        if (x < min) min = x
+        if (x > max) max = x
+      }
+      if (min !== Infinity) {
+        boxLeft = min
+        boxRight = max
+      }
+    }
     const bounds = host.getBoundingClientRect()
     const clientX = bounds.left + localX
     const clientY = bounds.top + localY
@@ -1027,7 +1115,7 @@ function BrickScreenAnchor({
     const padWidth = pad.offsetWidth
     const padHeight = pad.offsetHeight
     if (padWidth <= 0 || padHeight <= 0) return
-    const next = placeMovePad(localX, localY, width, height, padWidth, padHeight)
+    const next = placeMovePad(localY, width, height, padWidth, padHeight, boxLeft, boxRight)
     pad.style.left = `${next.left}px`
     pad.style.top = `${next.top}px`
     pad.style.visibility = 'visible'
@@ -1051,6 +1139,15 @@ function MoveArrow({ children }: { children: ReactNode }) {
   )
 }
 
+function RotateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 12a8 8 0 1 1-2.6-5.9" />
+      <path d="M20 4v5h-5" />
+    </svg>
+  )
+}
+
 function MoveKey({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
   return (
     <button
@@ -1065,47 +1162,144 @@ function MoveKey({ label, onClick, children }: { label: string; onClick: () => v
   )
 }
 
-function MovePad({ onNudge, onLayer }: { onNudge: (key: NudgeKey) => void; onLayer: (delta: 1 | -1) => void }) {
+/** 升降层的两个绿虚线键：跟十字方向键分开，位置不一样一眼能认出来。 */
+function LayerKey({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
   return (
-    <div className="pointer-events-auto grid grid-cols-2 gap-1 rounded-2xl bg-white/95 p-1 shadow-pop" role="group" aria-label="移动选中积木">
-      <MoveKey label="向前" onClick={() => onNudge('ArrowUp')}>
-        <MoveArrow>
-          <path d="M12 19V6" />
-          <path d="m7 11 5-5 5 5" />
-        </MoveArrow>
-      </MoveKey>
-      <MoveKey label="升高" onClick={() => onLayer(1)}>
-        <MoveArrow>
-          <path d="M12 15V6" />
-          <path d="m8 9 4-4 4 4" />
-          <path d="M7 19h10" />
-        </MoveArrow>
-      </MoveKey>
-      <MoveKey label="向左" onClick={() => onNudge('ArrowLeft')}>
-        <MoveArrow>
-          <path d="M19 12H6" />
-          <path d="m11 7-5 5 5 5" />
-        </MoveArrow>
-      </MoveKey>
-      <MoveKey label="向右" onClick={() => onNudge('ArrowRight')}>
-        <MoveArrow>
-          <path d="M5 12h13" />
-          <path d="m13 7 5 5-5 5" />
-        </MoveArrow>
-      </MoveKey>
-      <MoveKey label="向后" onClick={() => onNudge('ArrowDown')}>
-        <MoveArrow>
-          <path d="M12 5v13" />
-          <path d="m7 13 5 5 5-5" />
-        </MoveArrow>
-      </MoveKey>
-      <MoveKey label="降低" onClick={() => onLayer(-1)}>
-        <MoveArrow>
-          <path d="M12 9v9" />
-          <path d="m8 15 4 4 4-4" />
-          <path d="M7 5h10" />
-        </MoveArrow>
-      </MoveKey>
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border-2 border-dashed border-[#43C17A] bg-[#F1FBF5] text-[#2FA84A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+    >
+      {children}
+    </button>
+  )
+}
+
+/**
+ * 选中零件后的操作弹窗。
+ *
+ * 卡片式：标题行（零件缩略图 + 型号名 + 关闭）→ 虚线 → 十字方向键和绿色升降键
+ * → 虚线 → 绕插销旋转的黄色按钮。
+ */
+function MovePad({
+  brick,
+  onNudge,
+  onLayer,
+  onSpin,
+  onClose,
+}: {
+  brick: Brick
+  onNudge: (key: NudgeKey) => void
+  onLayer: (delta: 1 | -1) => void
+  onSpin: () => void
+  onClose: () => void
+}) {
+  const info = partInfo(brick.type)
+  const angle = spinAngle(brick)
+  // 多个卡点的零件转了会对不上网格，按钮置灰。
+  const spinable = canSpinBrick(brick)
+  return (
+    <div
+      className="pointer-events-auto w-max max-w-[180px] rounded-[20px] border border-[#E4E9F0] bg-white/95 p-2 shadow-pop"
+      role="group"
+      aria-label="移动选中积木"
+    >
+      <div className="flex items-center gap-2 px-0.5 pb-2">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] ring-1 ring-[#E4E9F0]">
+          <BrickPartThumb type={brick.type} color={brick.color} className="h-7 w-7" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-bold leading-4 text-ink">{info.label}</span>
+          <span className="block truncate text-[10px] leading-3 text-ink-soft">#{info.ldraw}</span>
+        </span>
+        <button
+          type="button"
+          aria-label="关闭零件操作"
+          title="关闭"
+          onClick={onClose}
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[15px] font-bold leading-none text-ink-soft transition-colors hover:bg-[#F1F5F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        >
+          ×
+        </button>
+      </div>
+      <div aria-hidden="true" data-separator="thick-dash" className="border-t-2 border-dashed border-[#C5CED6]" />
+      <div className="flex items-center gap-1.5 py-2">
+        <div className="grid grid-cols-3 grid-rows-3 gap-1">
+          <span className="col-start-2 row-start-1">
+            <MoveKey label="向前" onClick={() => onNudge('ArrowUp')}>
+              <MoveArrow>
+                <path d="M12 19V6" />
+                <path d="m7 11 5-5 5 5" />
+              </MoveArrow>
+            </MoveKey>
+          </span>
+          <span className="col-start-1 row-start-2">
+            <MoveKey label="向左" onClick={() => onNudge('ArrowLeft')}>
+              <MoveArrow>
+                <path d="M19 12H6" />
+                <path d="m11 7-5 5 5 5" />
+              </MoveArrow>
+            </MoveKey>
+          </span>
+          <span className="col-start-2 row-start-2" aria-hidden="true">
+            <span className="block h-8 w-8 rounded-lg bg-[#F1F5F9] ring-1 ring-[#E4E9F0]" />
+          </span>
+          <span className="col-start-3 row-start-2">
+            <MoveKey label="向右" onClick={() => onNudge('ArrowRight')}>
+              <MoveArrow>
+                <path d="M5 12h13" />
+                <path d="m13 7 5 5-5 5" />
+              </MoveArrow>
+            </MoveKey>
+          </span>
+          <span className="col-start-2 row-start-3">
+            <MoveKey label="向后" onClick={() => onNudge('ArrowDown')}>
+              <MoveArrow>
+                <path d="M12 5v13" />
+                <path d="m7 13 5 5 5-5" />
+              </MoveArrow>
+            </MoveKey>
+          </span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <LayerKey label="升高" onClick={() => onLayer(1)}>
+            <MoveArrow>
+              <path d="M12 15V6" />
+              <path d="m8 9 4-4 4 4" />
+              <path d="M7 19h10" />
+            </MoveArrow>
+          </LayerKey>
+          <LayerKey label="降低" onClick={() => onLayer(-1)}>
+            <MoveArrow>
+              <path d="M12 9v9" />
+              <path d="m8 15 4 4 4-4" />
+              <path d="M7 5h10" />
+            </MoveArrow>
+          </LayerKey>
+        </div>
+      </div>
+      <div aria-hidden="true" data-separator="thick-dash" className="border-t-2 border-dashed border-[#C5CED6]" />
+      <button
+        type="button"
+        aria-label={`旋转 ${angle}°`}
+        title={spinable ? '绕插销旋转 15°' : '多个卡点的零件不能绕插销旋转'}
+        disabled={!spinable}
+        onClick={onSpin}
+        className={`mt-2 flex w-full items-center justify-center gap-2 rounded-full px-3 py-2 text-[13px] font-bold transition-transform ${
+          spinable
+            ? 'bg-gradient-to-b from-[#FFD562] to-[#F0A81B] text-[#6B4300] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_3px_0_#C9820A,0_8px_14px_rgba(190,130,20,0.26)] hover:brightness-[1.03] active:translate-y-[2px] active:shadow-[inset_0_2px_4px_rgba(120,80,0,0.25),0_1px_0_#C9820A]'
+            : 'cursor-not-allowed border border-[#DCE2E9] bg-[#EDF0F4] text-[#A3ADB8]'
+        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2`}
+      >
+        <RotateIcon />
+        <span>旋转 {angle}°</span>
+        <span className={`rounded-[5px] px-1.5 py-[2px] text-[10px] font-black leading-none ${spinable ? 'bg-white/75 text-[#8A5A00]' : 'bg-white/60 text-[#A9B3BD]'}`}>R</span>
+      </button>
+      {spinable ? null : (
+        <p className="mt-1 text-center text-[10px] leading-4 text-[#9AA6B2]">多个卡点，不能绕插销转</p>
+      )}
     </div>
   )
 }
@@ -1129,6 +1323,7 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
     onModelError,
     onNudge,
     onLayer,
+    onSpin,
     onBrickScreen,
     reveal = { mode: 'all' },
     frozen = false,
@@ -1524,6 +1719,16 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
     return found ? found.position : null
   })()
 
+  // 弹窗要显示选中零件的型号、缩略图和已转过的角度。
+  const selectedBrick = selectedId ? bricks.find((item) => item.id === selectedId) ?? null : null
+
+  // 弹窗按零件在屏幕上的实际宽度让位，拖动时跟着拖动位置走。
+  const padCorners = useMemo(() => {
+    if (!selectedBrick) return null
+    const live = dragPreview?.id === selectedBrick.id ? { ...selectedBrick, position: dragPreview.position } : selectedBrick
+    return brickBoxCorners(live)
+  }, [selectedBrick, dragPreview])
+
   return (
     <div
       ref={hostRef}
@@ -1601,9 +1806,9 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
         <ViewBridge onView={(object) => publishRef.current(object)} />
         <OutlineReport selectedId={selectedId} outline="#ffffff" hostRef={hostRef} />
         <ModelFacts hostRef={hostRef} />
-        <BrickScreenAnchor position={padAnchor} hostRef={hostRef} padRef={padRef} onScreen={onBrickScreen} />
+        <BrickScreenAnchor position={padAnchor} corners={padCorners} hostRef={hostRef} padRef={padRef} onScreen={onBrickScreen} />
       </Canvas>
-      {padAnchor ? (
+      {padAnchor && selectedBrick ? (
         <div
           ref={padRef}
           className="absolute z-30"
@@ -1612,7 +1817,13 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
           onPointerUp={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
-          <MovePad onNudge={onNudge} onLayer={onLayer} />
+          <MovePad
+            brick={selectedBrick}
+            onNudge={onNudge}
+            onLayer={onLayer}
+            onSpin={onSpin}
+            onClose={onClearSelection}
+          />
         </div>
       ) : null}
     </div>

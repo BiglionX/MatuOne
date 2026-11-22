@@ -65,6 +65,9 @@ function readBrick(value: unknown): Brick | null {
   if (tilt !== undefined) brick.tilt = tilt
   const roll = readAngle(value.roll)
   if (roll !== undefined) brick.roll = roll
+  // 绕插销的旋转角：选了零件再转过的角度，草稿里要存回去。
+  const spin = readAngle(value.spin)
+  if (spin !== undefined) brick.spin = spin
   // LDraw 矩阵件：官方模型带来的精确姿态，草稿里要原样存回去。
   if (value.ldraw !== undefined) {
     if (!isRecord(value.ldraw)) return null

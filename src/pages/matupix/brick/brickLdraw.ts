@@ -95,6 +95,9 @@ function toLdraw(v: Vec3): Vec3 {
  *   网格件落点   base = G(P+A) + Ry(-θ)·G·o
  *   连接点件落点 base = G(P+A)
  * 其中 G = diag(20, -24, -20) 是渲染坐标到 LDraw 的换算。
+ *
+ * 绕插销的 15° 旋转（spin）是绕支点的竖直轴转，和转向同一个轴，
+ * 所以直接并进 θ：θ = rotation + spin。
  */
 function placement(brick: Brick) {
   const origin = partOrigin(brick.type)
@@ -104,7 +107,7 @@ function placement(brick: Brick) {
     brick.position[1] + anchor[1],
     brick.position[2] + anchor[2],
   ])
-  const theta = brick.rotation
+  const theta = brick.rotation + (brick.spin ?? 0)
   const rho = brick.roll ?? 0
   const tau = brick.tilt ?? 0
   const point = partMount(brick.type) === 'point'

@@ -11,6 +11,8 @@ type BrickInspectorProps = {
   count: number
   colorCount: number
   height: number
+  /** 场景里选中了零件时为真：点色板会直接给那一件换色。 */
+  recolorTarget: boolean
   onSelectColor: (color: string) => void
   onLook: (view: BrickLook) => void
   onZoomIn: () => void
@@ -300,7 +302,7 @@ function HueWheel({ hsl, showMarker, color, onPick }: { hsl: Hsl; showMarker: bo
   )
 }
 
-export function BrickInspector({ color, count, colorCount, height, onSelectColor, onLook, onZoomIn, onZoomOut }: BrickInspectorProps) {
+export function BrickInspector({ color, count, colorCount, height, recolorTarget, onSelectColor, onLook, onZoomIn, onZoomOut }: BrickInspectorProps) {
   const values = { count, colors: colorCount, height }
   const [wheelOpen, setWheelOpen] = useState(false)
   const [hsl, setHsl] = useState<Hsl>(() => hexToHsl(color))
@@ -347,6 +349,11 @@ export function BrickInspector({ color, count, colorCount, height, onSelectColor
             )
           })}
         </div>
+        {recolorTarget ? (
+          <p className="mt-2 rounded-full bg-[#F1ECFF] px-2.5 py-1 text-[11px] font-bold leading-4 text-[#5B45A8]">
+            点颜色，给选中的零件换色
+          </p>
+        ) : null}
         <div className="mt-2 flex items-center justify-between gap-2">
           <div
             className="h-[10px] w-11 rounded-[4px] ring-1 ring-inset ring-black/10"

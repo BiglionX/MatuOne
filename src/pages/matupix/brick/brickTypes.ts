@@ -208,6 +208,12 @@ export type Brick = {
    * 人偶手臂要靠它对上躯干肩膀的斜面，官方 !HELP 里写的是 9.782 度。
    */
   roll?: number
+  /**
+   * 绕插销（支点）的自由旋转角（度）。
+   * 旋转按钮每点一次加 15°，支点就是零件的插销位置，转零件不挪位置。
+   * 多卡点的零件用不上这个字段 —— 它们只能按 90° 转向。
+   */
+  spin?: number
   /** LDraw 精确摆放。有它的时候 rotation/tilt/roll 全部忽略。 */
   ldraw?: BrickLdrawPlacement
   /**
@@ -517,6 +523,9 @@ export function initialPartColor(type: BrickType) {
 
 const ROTATIONS: BrickRotation[] = [0, 90, 180, 270]
 
+/** 绕插销旋转的步进角度（度）。 */
+export const SPIN_STEP = 15
+
 let fallbackSerial = 0
 
 export function createBrickId() {
@@ -666,6 +675,62 @@ export function hasOverlap(
     for (const key of occupancyKeys(brick)) occupied.add(key)
   }
   return occupancyKeys(candidate).some((key) => occupied.has(key))
+}
+
+/**
+ * 零件的卡点（插销）数量。
+ *
+ * 单连接点零件（头、发、手臂、手、头盔）只有一个连接点，就是它的插销；
+ * 网格件按顶面凸点数算，1×1 是一个点，2×4 是四个。
+ */
+export function partPinCount(type: BrickType) {
+  if (partMount(type) === 'point') return 1
+  const [width, depth] = partInfo(type).studs
+  return width * depth
+}
+
+/**
+ * 能不能绕插销转。
+ *
+ * 多卡点的零件转了会对不上网格，按官方矩阵精确摆放的零件转了就脱离原位，
+ * 这两种都不给转，旋转按钮置灰。
+ */
+export function canSpinBrick(brick: Pick<Brick, 'type' | 'ldraw'>) {
+  if (brick.ldraw) return false
+  return partPinCount(brick.type) === 1
+}
+
+/**
+ * 绕插销已经转过的角度（度），给按钮上的读数用。
+ *
+ * 摆动件（手臂）绕的是自己的摆动轴，角度记在 tilt 上；
+ * 其余零件绕竖直轴，角度记在 spin 上。
+ */
+export function spinAngle(brick: Pick<Brick, 'type' | 'spin' | 'tilt'>) {
+  const swing = partInfo(brick.type).swing
+  if (swing && swing.length > 0) return Math.abs(brick.tilt ?? 0)
+  return (((brick.spin ?? 0) % 360) + 360) % 360
+}
+
+/**
+ * 绕插销转 SPIN_STEP 度，支点不动。
+ *
+ * 摆动件（手臂）顺着摆动档位的方向继续摆，转到头回到起点；
+ * 其余零件绕竖直轴转，转满一圈归零。
+ */
+export function spinBrick(brick: Brick, step = SPIN_STEP): Brick {
+  if (!canSpinBrick(brick)) return brick
+  const swing = partInfo(brick.type).swing
+  if (swing && swing.length > 0) {
+    const low = Math.min(...swing)
+    const high = Math.max(...swing)
+    const current = brick.tilt ?? high
+    const next = current - step
+    return { ...brick, tilt: next < low ? high : next }
+  }
+  const current = brick.spin ?? 0
+  const next = (((current + step) % 360) + 360) % 360
+  return { ...brick, spin: next }
 }
 
 export function rotateBrick(brick: Brick): Brick {

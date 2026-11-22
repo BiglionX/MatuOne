@@ -17,8 +17,10 @@ import { loadBrickDraft, saveBrickDraft } from './brickDraft'
 import { toLDraw } from './brickLdraw'
 import {
   brickBasePlates,
+  brickColorName,
   brickPlacementY,
   brickTopHeight,
+  canSpinBrick,
   createBrickId,
   hasOverlap,
   initialPartColor,
@@ -26,6 +28,7 @@ import {
   partMount,
   rotateBrick,
   snapPlacement,
+  spinBrick,
   type Brick,
   type BrickType,
 } from './brickTypes'
@@ -242,6 +245,30 @@ export function BrickBuilder() {
     commit(current.map((item) => (item.id === id ? rotated : item)))
   }
 
+  /**
+   * 绕插销转 15°。
+   *
+   * 支点就是插销，转零件不挪位置。多个卡点的零件转了会对不上网格，不给转。
+   */
+  function spinSelected() {
+    const id = selectedRef.current
+    if (!id) return
+    const current = bricksRef.current
+    const brick = current.find((item) => item.id === id)
+    if (!brick) return
+    if (!canSpinBrick(brick)) {
+      showStatus('多个卡点的零件不能绕插销旋转')
+      return
+    }
+    const spun = spinBrick(brick)
+    if (hasOverlap(current, spun)) {
+      showStatus('这里放不下')
+      return
+    }
+    pushHistory()
+    commit(current.map((item) => (item.id === id ? spun : item)))
+  }
+
   function moveSelected(id: string, dx: number, dz: number) {
     const current = bricksRef.current
     const brick = current.find((item) => item.id === id)
@@ -350,8 +377,8 @@ export function BrickBuilder() {
     }
   }, [])
 
-  const actionsRef = useRef({ undo, redo, rotateSelected, moveByKey, changeLayer })
-  actionsRef.current = { undo, redo, rotateSelected, moveByKey, changeLayer }
+  const actionsRef = useRef({ undo, redo, rotateSelected, spinSelected, moveByKey, changeLayer })
+  actionsRef.current = { undo, redo, rotateSelected, spinSelected, moveByKey, changeLayer }
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -399,7 +426,11 @@ export function BrickBuilder() {
       const id = selectedRef.current
       if (!id) return
       if (event.key.toLowerCase() === 'r') {
-        actionsRef.current.rotateSelected(id)
+        // 单卡点的零件绕插销转 15°（和弹窗里的旋转按钮一致），
+        // 多卡点的零件只能按 90° 转向，旋转按钮是灰的。
+        const target = bricksRef.current.find((item) => item.id === id)
+        if (target && canSpinBrick(target)) actionsRef.current.spinSelected()
+        else actionsRef.current.rotateSelected(id)
         return
       }
       if (event.shiftKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
@@ -637,9 +668,24 @@ export function BrickBuilder() {
     setPartsOpen(false)
   }
 
+  /**
+   * 点色板。
+   *
+   * 选中着零件时，点色板就是给这一件换色 —— 颜色写在砖自己身上，
+   * 魔法模型里的零件也一样能换。没选中时只是设定下一块要放的颜色。
+   * 两种情况都保留选中：换完色还能接着看这块砖。
+   */
   function selectColor(next: string) {
     setColor(next)
-    clearSelection()
+    const id = selectedRef.current
+    if (!id) return
+    const current = bricksRef.current
+    const brick = current.find((item) => item.id === id)
+    if (!brick) return
+    if (brick.color.toLowerCase() === next.toLowerCase()) return
+    pushHistory()
+    commit(current.map((item) => (item.id === id ? { ...item, color: next } : item)))
+    showStatus(`已把选中的零件换成${brickColorName(next)}`)
   }
 
   function resetView() {
@@ -743,6 +789,7 @@ export function BrickBuilder() {
           onModelError={setModelNotice}
           onNudge={moveByKey}
           onLayer={layerSelected}
+          onSpin={spinSelected}
           onBrickScreen={reportBrickScreen}
           reveal={reveal}
           frozen={frozen}
@@ -788,7 +835,7 @@ export function BrickBuilder() {
         <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex flex-col items-center gap-2 px-3">
           {showHint ? (
             <div className="pointer-events-auto flex max-w-full items-center gap-2 rounded-full bg-white/95 py-1 pl-3 pr-1 text-xs leading-5 text-ink shadow-pop">
-              <p>选择：拖动零件 · 方向键：移动选中的零件（Shift 升高）· 摇杆：点击放置 · Shift+点击删除 · R 旋转</p>
+              <p>选择：拖动零件 · 方向键：移动选中的零件（Shift 升高）· 摇杆：点击放置 · Shift+点击删除 · R 绕插销旋转 · 色板：给选中的零件换色</p>
               <button
                 type="button"
                 aria-label="关闭提示"
@@ -898,6 +945,7 @@ export function BrickBuilder() {
               count={bricks.length}
               colorCount={colorCount}
               height={height}
+              recolorTarget={selectedId !== null}
               onSelectColor={selectColor}
               onLook={setLook}
               onZoomIn={() => sceneRef.current?.zoomIn()}
