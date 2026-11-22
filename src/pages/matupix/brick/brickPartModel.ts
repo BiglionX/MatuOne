@@ -180,6 +180,9 @@ function alignPart(group: Group, type: BrickType): Pick<PartAlign, 'min' | 'max'
 
 export const PART_ROLL = 'part-roll'
 export const PART_TILT = 'part-tilt'
+// 绕插销的自由旋转（spin）：作用在零件局部 LDraw 坐标、绕销轴，支点是 LDraw 原点。
+// 放在官方矩阵内侧，这样任意姿态下都绕自己的销转，而不是绕世界竖直轴。
+export const PART_SPIN = 'part-spin'
 // LDraw 矩阵层：官方模型里的零件带任意角度的姿态，转向/摆角/滚角三个档位表达不了，
 // 所以多留一层直接吃 LDraw 矩阵。层级在 align 里面、零件外面，作用在 LDraw 坐标里。
 export const PART_LDRAW_ROT = 'part-ldraw-rot'
@@ -191,16 +194,20 @@ async function fetchAligned(type: BrickType) {
   stripLines(loaded)
   // 摆角和滚角必须作用在 LDraw 坐标上：缩放是 XZ 1/20、Y 1/24 的各向异性，
   // 放在缩放之后旋转会被拉歪（45 度摆角看着像 56 度）。
-  // 所以在几何外面套两层空的 group，滚角在外、摆角在内，支点都是零件的 LDraw 原点。
+  // 所以在几何外面套多层空的 group：spin → 滚角 → 摆角，支点都是零件的 LDraw 原点。
+  // 层级：ldrawRot > spin > roll > tilt > 几何。spin 在矩阵内侧，绕局部销轴。
   const tilt = new Group()
   tilt.name = PART_TILT
   const roll = new Group()
   roll.name = PART_ROLL
+  const spin = new Group()
+  spin.name = PART_SPIN
   const ldrawRot = new Group()
   ldrawRot.name = PART_LDRAW_ROT
   tilt.add(loaded)
   roll.add(tilt)
-  ldrawRot.add(roll)
+  spin.add(roll)
+  ldrawRot.add(spin)
   const root = new Group()
   root.add(ldrawRot)
   const bounds = alignPart(root, type)

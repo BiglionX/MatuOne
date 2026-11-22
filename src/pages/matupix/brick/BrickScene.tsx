@@ -1,11 +1,11 @@
 import { Edges, OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from 'react'
-import { BackSide, Camera, Fog, GridHelper, InstancedMesh, LineBasicMaterial, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Plane, Raycaster, Vector2, Vector3, WebGLRenderer } from 'three'
+import { BackSide, Box3, Camera, Fog, GridHelper, Group, InstancedMesh, LineBasicMaterial, Material, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Plane, Raycaster, Vector2, Vector3, WebGLRenderer } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
-import { cloneColoredPart, disposePartMaterials, loadBrickTemplate, peekBrickTemplate, PART_LDRAW_ROT, PART_ROLL, PART_TILT, type PartAlign } from './brickPartModel'
+import { cloneColoredPart, disposePartMaterials, loadBrickTemplate, peekBrickTemplate, PART_LDRAW_ROT, PART_ROLL, PART_SPIN, PART_TILT, type PartAlign } from './brickPartModel'
 import { BrickPartThumb } from './BrickPartThumb'
-import { brickPlacementY, brickTopHeight, canSpinBrick, hasOverlap, localSize, partBounds, partHeight, partInfo, partMount, partOrigin, snapPlacement, spinAngle, type Brick, type BrickType } from './brickTypes'
+import { brickPlacementY, brickTopHeight, canSpinBrick, hasOverlap, localSize, partBounds, partHeight, partInfo, partMount, partOrigin, partPinCount, partSpinAxis, snapPlacement, spinAngle, type Brick, type BrickType } from './brickTypes'
 
 const CLICK_MAX_PX = 5
 const FALLBACK_DANGER = '#BE4040'
@@ -84,6 +84,12 @@ const plateCam = new PerspectiveCamera(INITIAL_FOV, 1, 0.1, 4000)
 const plateCorner = new Vector3()
 const plateView = new Vector3()
 const plateDir = new Vector3()
+const outlineBox = new Box3()
+const outlineSize = new Vector3()
+const outlineCenter = new Vector3()
+const outlineInv = new Matrix4()
+const outlineLocal = new Matrix4()
+const outlineGeoBox = new Box3()
 
 export type BrickPreview = {
   x: number
@@ -765,6 +771,63 @@ function NextBrick({ brick }: { brick: Brick }) {
   )
 }
 
+/**
+ * 在 root 局部坐标里量 target 的 AABB。
+ * 必须走子 mesh 几何 + 世界矩阵反变换：setFromObject 是世界轴对齐盒，
+ * 再转回局部会胀一圈；这里直接得到贴合 ldraw.rot / tilt / roll 后的紧包围盒。
+ */
+function measureLocalBox(target: Object3D, root: Object3D, out: Box3) {
+  out.makeEmpty()
+  target.updateWorldMatrix(true, true)
+  root.updateWorldMatrix(true, false)
+  outlineInv.copy(root.matrixWorld).invert()
+  target.traverse((child) => {
+    if (!(child instanceof Mesh) || !child.geometry) return
+    const geom = child.geometry
+    if (!geom.boundingBox) geom.computeBoundingBox()
+    if (!geom.boundingBox || geom.boundingBox.isEmpty()) return
+    outlineLocal.copy(outlineInv).multiply(child.matrixWorld)
+    outlineGeoBox.copy(geom.boundingBox).applyMatrix4(outlineLocal)
+    out.union(outlineGeoBox)
+  })
+  return out
+}
+
+/**
+ * 选中框：跟真实零件网格走，不再用目录里的 studs×plates 占位盒。
+ * 单位盒按测得的局部 AABB 平移+缩放；Edges 仍叫 selection-outline，探测逻辑不用改。
+ */
+function SelectionOutline({ targetRef }: { targetRef: { current: Object3D | null } }) {
+  const meshRef = useRef<Mesh>(null)
+  useFrame(() => {
+    const target = targetRef.current
+    const mesh = meshRef.current
+    const parent = mesh?.parent
+    if (!target || !mesh || !parent) return
+    measureLocalBox(target, parent, outlineBox)
+    if (outlineBox.isEmpty()) {
+      mesh.visible = false
+      return
+    }
+    outlineBox.getSize(outlineSize)
+    outlineBox.getCenter(outlineCenter)
+    if (outlineSize.x < 1e-6 || outlineSize.y < 1e-6 || outlineSize.z < 1e-6) {
+      mesh.visible = false
+      return
+    }
+    mesh.visible = true
+    mesh.position.copy(outlineCenter)
+    mesh.scale.copy(outlineSize)
+  })
+  return (
+    <mesh ref={meshRef} raycast={() => undefined} visible={false}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      <Edges name="selection-outline" color="#ffffff" threshold={15} />
+    </mesh>
+  )
+}
+
 function fadePart(root: Object3D) {
   root.traverse((obj) => {
     if (!(obj instanceof Mesh)) return
@@ -837,13 +900,15 @@ function BrickModel({
     if (!instance) return
     return () => disposePartMaterials(instance)
   }, [instance])
-  // 摆角和滚角写在零件内部的 part-roll / part-tilt 两层上，作用在 LDraw 坐标里，
-  // 支点是零件自己的原点，缩放之前就转完了，不会被各向异性缩放拉歪。
+  // 摆角、滚角、插销旋转写在零件内部的 part-tilt / part-roll / part-spin 上，
+  // 作用在 LDraw 坐标里，支点是零件自己的原点，缩放之前就转完了，不会被各向异性缩放拉歪。
   // LDraw 矩阵件走 part-ldraw-rot 那层：官方模型的姿态是任意角度的矩阵，转向/摆角/滚角表达不了。
+  // spin 在矩阵内侧绕局部销轴，再经 ldraw.rot 变到世界，水平插销上的桨才会像风扇一样转。
   useEffect(() => {
     if (!instance) return
     const rollGroup = instance.getObjectByName(PART_ROLL)
     const tiltGroup = instance.getObjectByName(PART_TILT)
+    const spinGroup = instance.getObjectByName(PART_SPIN)
     const ldrawGroup = instance.getObjectByName(PART_LDRAW_ROT)
     if (ldrawGroup && brick.ldraw) {
       const r = brick.ldraw.rot
@@ -858,33 +923,71 @@ function BrickModel({
     }
     if (rollGroup) rollGroup.rotation.z = ((brick.roll ?? 0) * Math.PI) / 180
     if (tiltGroup) tiltGroup.rotation.x = ((brick.tilt ?? 0) * Math.PI) / 180
-  }, [brick.roll, brick.tilt, brick.ldraw, instance])
+    if (spinGroup) {
+      const rad = ((brick.spin ?? 0) * Math.PI) / 180
+      const axis = partSpinAxis(brick.type)
+      spinGroup.rotation.set(
+        axis === 'x' ? rad : 0,
+        axis === 'y' ? rad : 0,
+        axis === 'z' ? rad : 0,
+      )
+    }
+  }, [brick.roll, brick.tilt, brick.spin, brick.type, brick.ldraw, instance])
   // 零件的 LDraw 原点就是它的连接点。单连接点的零件（头、手臂、手）绕这个点转，
   // 位置也对到这一点，所以它们不会掉在两个凸点中间。
   const origin = partOrigin(brick.type)
   const anchor = brick.anchor ?? [0, 0, 0]
   const point = partMount(brick.type) === 'point'
-  const body = instance ? (
-    <primitive object={instance} />
-  ) : (
-    <mesh>
-      <boxGeometry args={localSize(brick.type)} />
-      <meshStandardMaterial
-        color={selected ? shadeHex(brick.color, SELECT_SHADE) : brick.color}
-        roughness={0.55}
-        transparent={faded}
-        opacity={faded ? 0.28 : 1}
-        depthWrite={!faded}
-      />
-    </mesh>
+  // 魔法螺旋桨等：仍按网格/AABB 中心落点（避免改 mount 弄歪官方矩阵），
+  // 但 90° 转向要绕 LDraw 原点（插销），不能绕 AABB 中心转。
+  // spin 已在零件内部绕局部销轴，外层只保留竖直转向。
+  const spinAroundPin = !point && partPinCount(brick.type) === 1
+  const yaw = (brick.rotation * Math.PI) / 180
+  const bodyRef = useRef<Group>(null)
+  const body = (
+    <group ref={bodyRef}>
+      {instance ? (
+        <primitive object={instance} />
+      ) : (
+        <mesh>
+          <boxGeometry args={localSize(brick.type)} />
+          <meshStandardMaterial
+            color={selected ? shadeHex(brick.color, SELECT_SHADE) : brick.color}
+            roughness={0.55}
+            transparent={faded}
+            opacity={faded ? 0.28 : 1}
+            depthWrite={!faded}
+          />
+        </mesh>
+      )}
+    </group>
   )
-  const outline = selected ? (
-    <mesh raycast={() => undefined}>
-      <boxGeometry args={localSize(brick.type)} />
-      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      <Edges name="selection-outline" color="#ffffff" threshold={15} />
-    </mesh>
-  ) : null
+  const outline = selected ? <SelectionOutline targetRef={bodyRef} /> : null
+  const spunBody = point ? (
+    // 连接点挂在支点上：把 LDraw 原点从零件自身的偏移里挪回支点。
+    <group rotation={[0, yaw, 0]}>
+      <group position={[-origin[0], -origin[1], -origin[2]]}>
+        {body}
+        {outline}
+      </group>
+    </group>
+  ) : spinAroundPin ? (
+    // 落点仍是 AABB 中心，转向轴挪到插销：先走到原点，再转，再走回。
+    <group position={[origin[0], origin[1], origin[2]]}>
+      <group rotation={[0, yaw, 0]}>
+        <group position={[-origin[0], -origin[1], -origin[2]]}>
+          {body}
+          {outline}
+        </group>
+      </group>
+    </group>
+  ) : (
+    // 网格多卡点件：零件本身已经带了对齐偏移，直接绕脚印中心转。
+    <group rotation={[0, yaw, 0]}>
+      {body}
+      {outline}
+    </group>
+  )
   return (
     <group
       position={position ?? brick.position}
@@ -893,22 +996,8 @@ function BrickModel({
       onPointerOut={onPointerOut}
     >
       <group position={anchor}>
-        {/* 绕插销的 15° 旋转（spin）和转向是同一个轴，都绕支点的竖直轴，并进同一个角里。 */}
-        <group rotation={[0, ((brick.rotation + (brick.spin ?? 0)) * Math.PI) / 180, 0]}>
-          {point ? (
-            // 连接点挂在支点上：把 LDraw 原点从零件自身的偏移里挪回支点。
-            <group position={[-origin[0], -origin[1], -origin[2]]}>
-              {body}
-              {outline}
-            </group>
-          ) : (
-            // 网格件的零件本身已经带了对齐偏移，直接摆在支点上就行。
-            <>
-              {body}
-              {outline}
-            </>
-          )}
-        </group>
+        {/* 外层只做 90° 竖直转向；绕插销的 spin 在零件内部 part-spin 层。 */}
+        {spunBody}
       </group>
     </group>
   )
@@ -986,14 +1075,15 @@ function brickBoxCorners(brick: Brick): [number, number, number][] {
     bounds[4] + origin[1] - height / 2 - localPivot[1],
     bounds[5] + origin[2] - localPivot[2],
   ]
-  const angle = ((brick.rotation + (brick.spin ?? 0)) * Math.PI) / 180
+  // 外层只绕竖直轴做 90° 转向；spin 在局部销轴上，对弹窗避让用 AABB 近似即可忽略。
+  const angle = (brick.rotation * Math.PI) / 180
   const cos = Math.cos(angle)
   const sin = Math.sin(angle)
   const corners: [number, number, number][] = []
   for (const x of [lo[0], hi[0]]) {
     for (const y of [lo[1], hi[1]]) {
       for (const z of [lo[2], hi[2]]) {
-        // 绕支点的竖直轴转，渲染端和这里用同一个式子。
+        // 绕支点的竖直轴转，渲染端外层 yaw 和这里用同一个式子。
         corners.push([
           pivot[0] + x * cos + z * sin,
           pivot[1] + y,

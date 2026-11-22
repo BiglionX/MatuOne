@@ -209,9 +209,10 @@ export type Brick = {
    */
   roll?: number
   /**
-   * 绕插销（支点）的自由旋转角（度）。
-   * 旋转按钮每点一次加 15°，支点就是零件的插销位置，转零件不挪位置。
+   * 绕插销（支点）的自由旋转角（度），绕零件局部销轴，不是世界竖直轴。
+   * 旋转按钮每点一次加 15°，支点就是零件的插销（LDraw 原点），转零件不挪位置。
    * 多卡点的零件用不上这个字段 —— 它们只能按 90° 转向。
+   * 摆动件（手臂）走 tilt，不写这个字段。
    */
   spin?: number
   /** LDraw 精确摆放。有它的时候 rotation/tilt/roll 全部忽略。 */
@@ -434,11 +435,23 @@ export const BRICK_PARTS: BrickPartInfo[] = [
   { type: 'flag', label: '旗', name: '旗', footprint: '1×3', ldraw: '2335', studs: [1, 3], plates: 5, category: '物件', glyph: 'tile' },
   { type: 'antenna', label: '天线', name: '天线', footprint: '1×1', ldraw: '3957a', studs: [1, 1], plates: 12, category: '物件', glyph: 'cone' },
   { type: 'dish', label: '碟', name: '碟', footprint: '4×4', ldraw: '3960', studs: [4, 4], plates: 3, category: '物件', glyph: 'round' },
-  { type: 'propeller', label: '螺旋桨', name: '螺旋桨', footprint: '3×1', ldraw: '6041', studs: [3, 1], plates: 7, category: '物件', glyph: 'cone' },
+  { type: 'propeller', label: '螺旋桨', name: '螺旋桨', footprint: '3×1', ldraw: '6041', studs: [3, 1], plates: 7, category: '物件', glyph: 'cone', mount: 'point' },
 ]
 
+/**
+ * 魔法零件目录是脚本生成的，不写 mount / swing。
+ * 这里给人偶手臂补上与内置件一致的摆动档位；不改 mount，避免官方矩阵摆放被原点偏移挪歪。
+ */
+const MAGIC_PART_ENRICHMENTS: Partial<Record<string, Pick<BrickPartInfo, 'swing'>>> = {
+  'ldraw:parts/3818': { swing: [0, -45, -90, -135] },
+  'ldraw:parts/3819': { swing: [0, -45, -90, -135] },
+}
+
 const PART_BY_TYPE = new Map<string, BrickPartInfo>(
-  [...BRICK_PARTS, ...MAGIC_PARTS].map((item) => [item.type, item]),
+  [...BRICK_PARTS, ...MAGIC_PARTS].map((item) => {
+    const extra = MAGIC_PART_ENRICHMENTS[item.type]
+    return [item.type, extra ? { ...item, ...extra } : item]
+  }),
 )
 
 /** 全部可用的零件类型：面板零件加上魔法模型零件。 */
@@ -678,33 +691,65 @@ export function hasOverlap(
 }
 
 /**
+ * AABB 估脚印会夸大、但挂载语义仍是单插销的零件。
+ * 螺旋桨等叶子张开后 studs 可能是 4×3，人偶头盔 AABB 常被估成 2×2；
+ * 这些不能按 studs 乘积算卡点，否则旋转按钮会被误判成「多卡点」。
+ *
+ * 注意：这里只影响 pin 计数 / 能否 spin，不改 mount ——
+ * 给魔法模型实例标 mount:'point' 会叠一层原点偏移，官方矩阵摆放会歪。
+ */
+function isSinglePinPart(type: BrickType, info: BrickPartInfo) {
+  if (info.mount === 'point') return true
+  if (type === 'propeller') return true
+  const text = `${info.name} ${info.label}`
+  if (/\bPropeller\b/i.test(text)) return true
+  if (/Minifig (Arm|Hand|Head|Helmet|Hair)\b/i.test(text)) return true
+  if (/Steering Stand and Wheel/i.test(text)) return true
+  return false
+}
+
+/**
  * 零件的卡点（插销）数量。
  *
- * 单连接点零件（头、发、手臂、手、头盔）只有一个连接点，就是它的插销；
- * 网格件按顶面凸点数算，1×1 是一个点，2×4 是四个。
+ * 单连接点零件（头、发、手臂、手、头盔、螺旋桨）只有一个连接点，就是它的插销；
+ * 网格件按顶面凸点数算，1×1 是一个点，2×4 是八个。
  */
 export function partPinCount(type: BrickType) {
-  if (partMount(type) === 'point') return 1
-  const [width, depth] = partInfo(type).studs
+  const info = partInfo(type)
+  if (isSinglePinPart(type, info)) return 1
+  const [width, depth] = info.studs
   return width * depth
 }
 
 /**
  * 能不能绕插销转。
  *
- * 多卡点的零件转了会对不上网格，按官方矩阵精确摆放的零件转了就脱离原位，
- * 这两种都不给转，旋转按钮置灰。
+ * 多卡点的零件转了会对不上网格，旋转按钮置灰。
+ * 有官方矩阵（brick.ldraw）的单插销件仍可 spin：spin 加在局部销轴上，
+ * 再经 ldraw.rot 变到世界，不破坏官方姿态。
  */
 export function canSpinBrick(brick: Pick<Brick, 'type' | 'ldraw'>) {
-  if (brick.ldraw) return false
   return partPinCount(brick.type) === 1
+}
+
+/**
+ * 零件局部插销轴（LDraw 坐标）。
+ *
+ * 绝大多数连接孔沿 Y（钉/轴惯例，如螺旋桨 2421、头）；
+ * 少数零件孔沿 Z（内置螺旋桨 6041、手的腕销），绕 Y 会翻面而不是风扇转。
+ */
+export type PartSpinAxis = 'x' | 'y' | 'z'
+
+export function partSpinAxis(type: BrickType): PartSpinAxis {
+  if (type === 'propeller' || type === 'hand') return 'z'
+  return 'y'
 }
 
 /**
  * 绕插销已经转过的角度（度），给按钮上的读数用。
  *
  * 摆动件（手臂）绕的是自己的摆动轴，角度记在 tilt 上；
- * 其余零件绕竖直轴，角度记在 spin 上。
+ * 其余零件绕局部销轴，角度记在 spin 上。
  */
 export function spinAngle(brick: Pick<Brick, 'type' | 'spin' | 'tilt'>) {
   const swing = partInfo(brick.type).swing
@@ -716,7 +761,7 @@ export function spinAngle(brick: Pick<Brick, 'type' | 'spin' | 'tilt'>) {
  * 绕插销转 SPIN_STEP 度，支点不动。
  *
  * 摆动件（手臂）顺着摆动档位的方向继续摆，转到头回到起点；
- * 其余零件绕竖直轴转，转满一圈归零。
+ * 其余零件绕局部销轴转，转满一圈归零。
  */
 export function spinBrick(brick: Brick, step = SPIN_STEP): Brick {
   if (!canSpinBrick(brick)) return brick

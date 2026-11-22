@@ -382,7 +382,10 @@ ${modelRows.join('\n')}
 `
 }
 
-/** 魔法模型零件的 BrickType 目录。 */
+/**
+ * 单插销语义由运行时 brickTypes.isSinglePinPart 按名称识别（Propeller / Minifig Arm…），
+ * 这里不写 mount:'point'：给魔法实例标 point 会叠原点偏移，官方矩阵摆放会歪。
+ */
 function buildPartsModule(partIndex: Map<string, number>) {
   const rows: string[] = []
   for (const key of partIndex.keys()) {

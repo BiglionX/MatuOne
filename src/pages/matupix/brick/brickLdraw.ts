@@ -1,4 +1,4 @@
-import { BRICK_PALETTE, partInfo, partMount, partOrigin, type Brick } from './brickTypes'
+import { BRICK_PALETTE, partInfo, partMount, partOrigin, partSpinAxis, type Brick, type PartSpinAxis } from './brickTypes'
 
 const STUD_LDU = 20
 const HEIGHT_LDU = 24
@@ -79,6 +79,12 @@ function rotateX(deg: number): Mat3 {
   return [1, 0, 0, 0, c, -s, 0, s, c]
 }
 
+function rotateAxis(axis: PartSpinAxis, deg: number): Mat3 {
+  if (axis === 'x') return rotateX(deg)
+  if (axis === 'z') return rotateZ(deg)
+  return rotateY(deg)
+}
+
 // 渲染是 LDraw 翻过来的：Y 朝上、Z 朝观者。换算回去是 X 不变、Y 取反、Z 取反。
 function toLdraw(v: Vec3): Vec3 {
   return [v[0] * STUD_LDU, -v[1] * HEIGHT_LDU, -v[2] * STUD_LDU]
@@ -87,17 +93,18 @@ function toLdraw(v: Vec3): Vec3 {
 /**
  * 把渲染里的摆放换算成 LDraw 的一句放置指令。
  *
- * 渲染端的层级是：位置 -> 亚格偏移 -> 绕 Y 转向 -> 绕连接点摆动/滚角 -> 零件自身。
+ * 渲染端的层级是：位置 -> 亚格偏移 -> 绕 Y 转向 -> 官方矩阵 -> 绕销轴 spin
+ * -> 绕连接点滚角/摆角 -> 零件自身。
  * 网格件的零件自身还带一个「原点相对脚印中心」的偏移，单连接点零件则把原点挪回支点。
  *
- * 推导出来的导出式（θ 转向、ρ 滚角、τ 摆角、o 零件原点、P+A 支点）：
- *   旋转部分 R = Ry(-θ)·Rz(ρ)·Rx(τ)
+ * 推导出来的导出式（θ 转向、σ 销轴旋转、ρ 滚角、τ 摆角、o 零件原点、P+A 支点）：
+ *   旋转部分 R = Ry(-θ)·R_spin(σ)·Rz(ρ)·Rx(τ)
+ *   矩阵件     R = Ry(-θ)·M·R_spin(σ)
  *   网格件落点   base = G(P+A) + Ry(-θ)·G·o
  *   连接点件落点 base = G(P+A)
  * 其中 G = diag(20, -24, -20) 是渲染坐标到 LDraw 的换算。
  *
- * 绕插销的 15° 旋转（spin）是绕支点的竖直轴转，和转向同一个轴，
- * 所以直接并进 θ：θ = rotation + spin。
+ * spin 绕零件局部销轴（默认 LDraw Y，部分件为 Z），不再并进竖直转向角。
  */
 function placement(brick: Brick) {
   const origin = partOrigin(brick.type)
@@ -107,10 +114,12 @@ function placement(brick: Brick) {
     brick.position[1] + anchor[1],
     brick.position[2] + anchor[2],
   ])
-  const theta = brick.rotation + (brick.spin ?? 0)
+  const theta = brick.rotation
+  const sigma = brick.spin ?? 0
   const rho = brick.roll ?? 0
   const tau = brick.tilt ?? 0
   const point = partMount(brick.type) === 'point'
+  const spun = rotateAxis(partSpinAxis(brick.type), sigma)
 
   // LDraw 矩阵件：姿态本来就是官方模型给的矩阵，直接用。
   // 但位置不能直接用官方坐标 —— 渲染时整个模型被平移过（居中 + 贴地），
@@ -123,7 +132,7 @@ function placement(brick: Brick) {
       brick.position[1] + anchor[1] + origin[1],
       brick.position[2] + anchor[2] + origin[2],
     ])
-    const matrix = multiply(rotateY(-theta), brick.ldraw.rot as Mat3)
+    const matrix = multiply(rotateY(-theta), multiply(brick.ldraw.rot as Mat3, spun))
     return { base, matrix }
   }
 
@@ -131,7 +140,7 @@ function placement(brick: Brick) {
   const base: Vec3 = point
     ? pivot
     : [pivot[0] + turned[0], pivot[1] + turned[1], pivot[2] + turned[2]]
-  const matrix = multiply(multiply(rotateY(-theta), rotateZ(rho)), rotateX(tau))
+  const matrix = multiply(multiply(multiply(rotateY(-theta), spun), rotateZ(rho)), rotateX(tau))
   return { base, matrix }
 }
 
