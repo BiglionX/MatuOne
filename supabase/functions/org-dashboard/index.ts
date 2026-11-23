@@ -1,6 +1,7 @@
 // 机构进度看板。完成率只拿已授权关卡做分母，名单只留需要跟进的学生。
 import { empty, json } from '../_shared/http.ts'
-import { calendarWeekStart, lessonIsAuthorized, openMaxLevel, orgAttention, type OrgStatus } from '../_shared/orgStatus.ts'
+import { calendarWeekStart, openMaxLevel, orgAttention, type OrgStatus } from '../_shared/orgStatus.ts'
+import { buildPythonAuthorizedFacts } from '../_shared/pythonProgressFacts.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
 
 Deno.serve(async (req) => {
@@ -46,24 +47,30 @@ Deno.serve(async (req) => {
         { sortOrder: row.sort_order as number, stageSort: Number(row.stage_level) },
       ]),
     )
-    const authorizedLevels = (published ?? []).filter((row) =>
-      lessonIsAuthorized(access, maxStage, row.sort_order as number, Number(row.stage_level)),
-    ).length
-    const completed = new Map<string, number>()
+    const publishedRows = (published ?? []).map((row) => ({
+      sort_order: row.sort_order as number,
+      stage_sort: Number(row.stage_level),
+    }))
     const currentTouch = new Map<string, { completed: boolean; updatedAt: string; sortOrder: number }>()
+    const lessons = [] as { student_id: string; sort_order: number; stage_sort: number; completed: boolean }[]
     for (const row of progress ?? []) {
       const level = levelById.get(row.level_id as string)
       if (!level) continue
-      if (row.completed === true && lessonIsAuthorized(access, maxStage, level.sortOrder, level.stageSort)) {
-        const id = row.student_id as string
-        completed.set(id, (completed.get(id) ?? 0) + 1)
-      }
+      lessons.push({
+        student_id: row.student_id as string,
+        sort_order: level.sortOrder,
+        stage_sort: level.stageSort,
+        completed: row.completed === true,
+      })
       currentTouch.set(`${row.student_id}:${level.sortOrder}`, {
         completed: row.completed === true,
         updatedAt: String(row.updated_at ?? ''),
         sortOrder: level.sortOrder,
       })
     }
+    const facts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, lessons)
+    const authorizedLevels = facts.authorizedLevels
+    const completed = facts.completed
     const latestTyping = new Map<string, { wpm: number; accuracy: number; at: string }>()
     for (const row of typing ?? []) {
       const prev = latestTyping.get(row.student_id as string)
@@ -124,6 +131,7 @@ Deno.serve(async (req) => {
           },
           groupName: groupName.get(student.group_id as string) ?? '未分组',
           completedCount: completed.get(student.id as string) ?? 0,
+          authorizedCompletedCount: completed.get(student.id as string) ?? 0,
           currentOrder: student.current_level_order,
           typing: typingRow ? { wpm: typingRow.wpm, accuracy: typingRow.accuracy } : null,
           lastActiveAt: student.last_active_at ?? '',

@@ -3,7 +3,9 @@ import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { isAcceptableBindCode, normalizeBindCode } from '../_shared/bindCode.ts'
 import { toCurriculumPosition, type CurriculumPositionRow } from '../_shared/curriculumPosition.ts'
 import { empty, json } from '../_shared/http.ts'
+import { openMaxLevel, type OrgStatus } from '../_shared/orgStatus.ts'
 import { parentOrgAccess } from '../_shared/parentOrgAccess.ts'
+import { buildPythonAuthorizedFacts } from '../_shared/pythonProgressFacts.ts'
 import { serviceDb } from '../_shared/staff.ts'
 
 const INVALID_CODE = '绑定码无效或已失效'
@@ -197,13 +199,31 @@ Deno.serve(async (req) => {
       stopped.push({ name: student.name as string, message: '机构服务已停止' })
       continue
     }
-    const [{ data: org }, { data: group }, { data: progress }, { count }, { data: sessions }, { data: typing }] = await Promise.all([
-      db.from('org').select('name').eq('id', student.org_id).maybeSingle(),
+    const [
+      { data: org },
+      { data: group },
+      { data: progress },
+      { count },
+      { data: sessions },
+      { data: typing },
+      { data: grant },
+      { data: published },
+      { data: levelRows },
+    ] = await Promise.all([
+      db.from('org').select('name, status, trial_expire_at, service_end_at').eq('id', student.org_id).maybeSingle(),
       db.from('student_group').select('name').eq('id', student.group_id).maybeSingle(),
       db.from('learning_record').select('level_id, completed, updated_at').eq('student_id', student.id),
       db.from('course_level').select('level_id', { count: 'exact', head: true }).eq('published', true),
       db.from('study_session').select('level_id, started_at, ended_at').eq('student_id', student.id),
       db.from('typing_record').select('practiced_on, wpm, accuracy').eq('student_id', student.id),
+      db.from('org_entitlement')
+        .select('max_level, valid_until')
+        .eq('org_id', student.org_id)
+        .eq('module_id', 'python')
+        .is('revoked_at', null)
+        .maybeSingle(),
+      db.from('course_level').select('sort_order, stage_level').eq('published', true),
+      db.from('course_level').select('level_id, sort_order, stage_level'),
     ])
     const completedRows = (progress ?? []).filter((row) => row.completed === true)
     const completedCount = completedRows.length
@@ -236,6 +256,40 @@ Deno.serve(async (req) => {
       }))
       .sort((a, b) => a.order - b.order)
     const learnedIds = new Set(completedRows.map((row) => row.level_id as string))
+    const { data: effectiveStatus } = await db.rpc('effective_org_status', {
+      p_status: org?.status,
+      p_trial_expire_at: org?.trial_expire_at ?? null,
+      p_service_end_at: org?.service_end_at ?? null,
+    })
+    const effective: OrgStatus =
+      effectiveStatus === 'trial' || effectiveStatus === 'active' || effectiveStatus === 'expired' || effectiveStatus === 'disabled'
+        ? effectiveStatus
+        : 'disabled'
+    const authAccess: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
+    const maxStage = openMaxLevel(
+      grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null,
+    )
+    const levelById = new Map(
+      (levelRows ?? []).map((row) => [
+        row.level_id as string,
+        { sortOrder: row.sort_order as number, stageSort: Number(row.stage_level) },
+      ]),
+    )
+    const publishedRows = (published ?? []).map((row) => ({
+      sort_order: row.sort_order as number,
+      stage_sort: Number(row.stage_level),
+    }))
+    const authLessons = (progress ?? []).flatMap((row) => {
+      const level = levelById.get(row.level_id as string)
+      if (!level) return []
+      return [{
+        student_id: student.id as string,
+        sort_order: level.sortOrder,
+        stage_sort: level.stageSort,
+        completed: row.completed === true,
+      }]
+    })
+    const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, publishedRows, authLessons)
     children.push({
       student: {
         id: student.id,
@@ -252,6 +306,8 @@ Deno.serve(async (req) => {
       currentLevelOrder: order,
       totalLevels: totalLevels || 12,
       completedCount,
+      authorizedLevels: authFacts.authorizedLevels,
+      authorizedCompletedCount: authFacts.completed.get(student.id as string) ?? 0,
       weekly: {
         weekStart: start.toISOString().slice(0, 10),
         sessions: weeklySessions.length,

@@ -19845,6 +19845,25 @@ function decideEnterLevel(input) {
   return { allowed: true, reason: "ok" };
 }
 
+// supabase/functions/_shared/pythonProgressFacts.ts
+function countAuthorizedLevels(access2, maxStage, published) {
+  return published.filter((row) => lessonIsAuthorized(access2, maxStage, row.sort_order, row.stage_sort)).length;
+}
+function countAuthorizedCompletedByStudent(access2, maxStage, lessons) {
+  const completed = /* @__PURE__ */ new Map();
+  for (const lesson of lessons) {
+    if (lesson.completed !== true || !lessonIsAuthorized(access2, maxStage, lesson.sort_order, lesson.stage_sort)) continue;
+    completed.set(lesson.student_id, (completed.get(lesson.student_id) ?? 0) + 1);
+  }
+  return completed;
+}
+function buildPythonAuthorizedFacts(access2, maxStage, published, lessons) {
+  return {
+    authorizedLevels: countAuthorizedLevels(access2, maxStage, published),
+    completed: countAuthorizedCompletedByStudent(access2, maxStage, lessons)
+  };
+}
+
 // supabase/functions/_shared/password.ts
 var SCHEME = "pbkdf2-sha256";
 var ITERATIONS = 1e5;
@@ -59947,9 +59966,11 @@ async function orgStudents(req) {
       authorizedLevels: facts.authorizedLevels,
       students: students.map((student) => {
         const typing = facts.typing.get(student.id);
+        const authorizedCompletedCount = facts.completed.get(student.id) ?? 0;
         return {
           ...student,
-          completed_count: facts.completed.get(student.id) ?? 0,
+          completed_count: authorizedCompletedCount,
+          authorizedCompletedCount,
           typing_wpm: typing?.wpm ?? null,
           typing_accuracy: typing?.accuracy ?? null
         };
@@ -60181,15 +60202,11 @@ async function orgLessonFacts(orgId, effective, studentIds) {
     const prev = typing.get(row.student_id);
     if (!prev || row.created_at > prev.at) typing.set(row.student_id, { wpm: Number(row.wpm), accuracy: Number(row.accuracy), at: row.created_at });
   }
-  const completed = /* @__PURE__ */ new Map();
-  for (const lesson of lessons) {
-    if (lesson.completed !== true || !lessonIsAuthorized(access2, maxStage, lesson.sort_order, lesson.stage_sort)) continue;
-    completed.set(lesson.student_id, (completed.get(lesson.student_id) ?? 0) + 1);
-  }
+  const facts = buildPythonAuthorizedFacts(access2, maxStage, published, lessons);
   return {
-    authorizedLevels: published.filter((row) => lessonIsAuthorized(access2, maxStage, row.sort_order, row.stage_sort)).length,
+    authorizedLevels: facts.authorizedLevels,
     lessons,
-    completed,
+    completed: facts.completed,
     typing
   };
 }
@@ -60294,6 +60311,7 @@ async function orgDashboard(req) {
         },
         groupName: groupName.get(student.group_id) ?? "\u672A\u5206\u7EC4",
         completedCount: facts.completed.get(student.id) ?? 0,
+        authorizedCompletedCount: facts.completed.get(student.id) ?? 0,
         currentOrder: student.current_level_order,
         typing: typingRow ? { wpm: typingRow.wpm, accuracy: typingRow.accuracy } : null,
         lastActiveAt: student.last_active_at ?? ""
@@ -60667,6 +60685,28 @@ async function parentPortal(req) {
        order by cl.sort_order`,
       [student.id, start.toISOString()]
     );
+    const [grant, published, authLessons] = await Promise.all([
+      one(
+        `select max_level, valid_until from public.org_entitlement
+         where org_id = $1 and module_id = 'python' and revoked_at is null`,
+        [student.org_id]
+      ),
+      q(
+        `select cl.sort_order, cl.stage_level as stage_sort
+         from public.course_level cl
+         where cl.published = true`
+      ),
+      q(
+        `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed
+         from public.learning_record lr
+         join public.course_level cl on cl.level_id = lr.level_id
+         where lr.student_id = $1`,
+        [student.id]
+      )
+    ]);
+    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
+    const authAccess = org?.status === "trial" || access2 === "trial" ? "trial" : access2;
+    const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons);
     const toBrief = (row) => ({
       levelId: row.level_id,
       order: row.sort_order,
@@ -60689,6 +60729,8 @@ async function parentPortal(req) {
       currentLevelOrder: order,
       totalLevels: totalLevels || 12,
       completedCount: progress.length,
+      authorizedLevels: authFacts.authorizedLevels,
+      authorizedCompletedCount: authFacts.completed.get(student.id) ?? 0,
       position: await loadCurriculumPosition(student.id),
       weekly: {
         weekStart: start.toISOString().slice(0, 10),

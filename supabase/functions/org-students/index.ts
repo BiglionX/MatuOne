@@ -3,6 +3,7 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { ensureAuthUser, loginEmail } from '../_shared/authUser.ts'
 import { empty, json } from '../_shared/http.ts'
 import { lessonIsAuthorized, openMaxLevel, type OrgStatus } from '../_shared/orgStatus.ts'
+import { buildPythonAuthorizedFacts } from '../_shared/pythonProgressFacts.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
 import { generateBindCode } from '../_shared/bindCode.ts'
 import { generateInitialPassword, hashPassword } from '../_shared/password.ts'
@@ -219,10 +220,12 @@ Deno.serve(async (req) => {
         students: (data ?? []).map((row) => {
           const id = row.id as string
           const typing = extras.typing.get(id)
+          const authorizedCompletedCount = extras.completed.get(id) ?? 0
           return {
             ...row,
             bound_parent_count: counts.get(id) ?? 0,
-            completed_count: extras.completed.get(id) ?? 0,
+            completed_count: authorizedCompletedCount,
+            authorizedCompletedCount,
             typing_wpm: typing?.wpm ?? null,
             typing_accuracy: typing?.accuracy ?? null,
           }
@@ -336,12 +339,15 @@ async function studentListExtras(
   ])
   const access: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
   const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null)
-  const authorizedLevels = (published ?? []).filter((row) =>
-    lessonIsAuthorized(access, maxStage, row.sort_order as number, Number(row.stage_level)),
-  ).length
-  const completed = new Map<string, number>()
+  const publishedRows = (published ?? []).map((row) => ({
+    sort_order: row.sort_order as number,
+    stage_sort: Number(row.stage_level),
+  }))
   const typing = new Map<string, { wpm: number; accuracy: number }>()
-  if (!ids.length) return { authorizedLevels, completed, typing }
+  if (!ids.length) {
+    const emptyFacts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, [])
+    return { authorizedLevels: emptyFacts.authorizedLevels, completed: emptyFacts.completed, typing }
+  }
   const [{ data: progress }, { data: typingRows }, { data: levels }] = await Promise.all([
     db.from('learning_record').select('student_id, level_id, completed').in('student_id', ids).eq('completed', true),
     db.from('typing_record').select('student_id, wpm, accuracy, created_at').in('student_id', ids),
@@ -350,12 +356,17 @@ async function studentListExtras(
   const levelById = new Map(
     (levels ?? []).map((row) => [row.level_id as string, { sortOrder: row.sort_order as number, stageSort: Number(row.stage_level) }]),
   )
-  for (const row of progress ?? []) {
+  const lessons = (progress ?? []).flatMap((row) => {
     const level = levelById.get(row.level_id as string)
-    if (!level || !lessonIsAuthorized(access, maxStage, level.sortOrder, level.stageSort)) continue
-    const id = row.student_id as string
-    completed.set(id, (completed.get(id) ?? 0) + 1)
-  }
+    if (!level) return []
+    return [{
+      student_id: row.student_id as string,
+      sort_order: level.sortOrder,
+      stage_sort: level.stageSort,
+      completed: row.completed === true,
+    }]
+  })
+  const facts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, lessons)
   const latest = new Map<string, { wpm: number; accuracy: number; at: string }>()
   for (const row of typingRows ?? []) {
     const prev = latest.get(row.student_id as string)
@@ -364,5 +375,5 @@ async function studentListExtras(
     }
   }
   for (const [id, row] of latest) typing.set(id, { wpm: row.wpm, accuracy: row.accuracy })
-  return { authorizedLevels, completed, typing }
+  return { authorizedLevels: facts.authorizedLevels, completed: facts.completed, typing }
 }

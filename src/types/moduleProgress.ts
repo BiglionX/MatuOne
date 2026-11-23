@@ -54,7 +54,10 @@ export interface ModuleProgressSummary {
    */
   completed: number | null
   total: number | null
-  /** ISO 时间；无云进度则为 null */
+  /**
+   * ISO 时间；无云进度则为 null。
+   * 回退链：study_session.started_at → learning_record.updated_at → typing_record.created_at，均无则 null。
+   */
   lastStudiedAt: string | null
   /** 模块专属载荷；按 moduleId / detail.kind 收窄 */
   detail: ModuleProgressDetail

@@ -4,6 +4,7 @@ import { validateCoursePackage } from '../supabase/functions/_shared/coursePacka
 import { COURSE_TREE_SQL, groupCourseTree, type CourseTreeSourceRow } from '../supabase/functions/_shared/courseTree'
 import { toCurriculumPosition, type CurriculumPositionRow } from '../supabase/functions/_shared/curriculumPosition'
 import { calendarWeekStart, lessonIsAuthorized, openMaxLevel, orgAttention, seatLimit, type OrgAttention, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
+import { buildPythonAuthorizedFacts } from '../supabase/functions/_shared/pythonProgressFacts'
 import { generateInitialPassword, hashPassword, verifyPassword } from '../supabase/functions/_shared/password'
 import { planStudentImport } from '../supabase/functions/_shared/studentImport'
 import { dbMessage, one, q } from './db'
@@ -550,9 +551,11 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
       authorizedLevels: facts.authorizedLevels,
       students: students.map((student) => {
         const typing = facts.typing.get(student.id)
+        const authorizedCompletedCount = facts.completed.get(student.id) ?? 0
         return {
           ...student,
-          completed_count: facts.completed.get(student.id) ?? 0,
+          completed_count: authorizedCompletedCount,
+          authorizedCompletedCount,
           typing_wpm: typing?.wpm ?? null,
           typing_accuracy: typing?.accuracy ?? null,
         }
@@ -816,15 +819,11 @@ async function orgLessonFacts(orgId: string, effective: OrgStatus, studentIds: s
     const prev = typing.get(row.student_id)
     if (!prev || row.created_at > prev.at) typing.set(row.student_id, { wpm: Number(row.wpm), accuracy: Number(row.accuracy), at: row.created_at })
   }
-  const completed = new Map<string, number>()
-  for (const lesson of lessons) {
-    if (lesson.completed !== true || !lessonIsAuthorized(access, maxStage, lesson.sort_order, lesson.stage_sort)) continue
-    completed.set(lesson.student_id, (completed.get(lesson.student_id) ?? 0) + 1)
-  }
+  const facts = buildPythonAuthorizedFacts(access, maxStage, published, lessons)
   return {
-    authorizedLevels: published.filter((row) => lessonIsAuthorized(access, maxStage, row.sort_order, row.stage_sort)).length,
+    authorizedLevels: facts.authorizedLevels,
     lessons,
-    completed,
+    completed: facts.completed,
     typing,
   }
 }
@@ -954,6 +953,7 @@ async function orgDashboard(req: ApiRequest): Promise<ApiResult> {
         },
         groupName: groupName.get(student.group_id) ?? '未分组',
         completedCount: facts.completed.get(student.id) ?? 0,
+        authorizedCompletedCount: facts.completed.get(student.id) ?? 0,
         currentOrder: student.current_level_order,
         typing: typingRow ? { wpm: typingRow.wpm, accuracy: typingRow.accuracy } : null,
         lastActiveAt: student.last_active_at ?? '',
@@ -1367,6 +1367,28 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
        order by cl.sort_order`,
       [student.id, start.toISOString()],
     )
+    const [grant, published, authLessons] = await Promise.all([
+      one<{ max_level: number; valid_until: string | null }>(
+        `select max_level, valid_until from public.org_entitlement
+         where org_id = $1 and module_id = 'python' and revoked_at is null`,
+        [student.org_id],
+      ),
+      q<{ sort_order: number; stage_sort: number }>(
+        `select cl.sort_order, cl.stage_level as stage_sort
+         from public.course_level cl
+         where cl.published = true`,
+      ),
+      q<{ student_id: string; sort_order: number; stage_sort: number; completed: boolean }>(
+        `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed
+         from public.learning_record lr
+         join public.course_level cl on cl.level_id = lr.level_id
+         where lr.student_id = $1`,
+        [student.id],
+      ),
+    ])
+    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
+    const authAccess: OrgStatus = org?.status === 'trial' || access === 'trial' ? 'trial' : (access as OrgStatus)
+    const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons)
     const toBrief = (row: { level_id: string; sort_order: number; title: string; parent_brief: string | null }) => ({
       levelId: row.level_id,
       order: row.sort_order,
@@ -1389,6 +1411,8 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       currentLevelOrder: order,
       totalLevels: totalLevels || 12,
       completedCount: progress.length,
+      authorizedLevels: authFacts.authorizedLevels,
+      authorizedCompletedCount: authFacts.completed.get(student.id) ?? 0,
       position: await loadCurriculumPosition(student.id),
       weekly: {
         weekStart: start.toISOString().slice(0, 10),
