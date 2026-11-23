@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { bindChild, getParentSession, loadParentHome, logoutParent, lookupChild, unbindChild } from '@/api/parent'
-import { asPythonDetail, dualReadParentHome, mapParentChildToPythonSummary } from '@/api/moduleProgress'
+import {
+  asPythonDetail,
+  dualReadParentHome,
+  formatModuleStatusLabel,
+  mapParentChildToPythonSummary,
+  matupixSummaryForParent,
+} from '@/api/moduleProgress'
 import { WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
 import { FormError } from '@/components/FormError'
@@ -105,6 +111,9 @@ export function ParentHome() {
   const view = children.find((child) => child.student.id === activeId) ?? children[0]
   const pythonProgress = view ? mapParentChildToPythonSummary(view) : null
   const pythonDetail = pythonProgress ? asPythonDetail(pythonProgress) : null
+  const matupixEntitled = view?.enabledModules.includes('matupix') === true
+  const matupixProgress = view ? matupixSummaryForParent(matupixEntitled) : null
+  const matupixStatus = matupixProgress ? formatModuleStatusLabel(matupixProgress) : ''
   const stageLabel = pythonDetail?.stageLabel ?? view?.curriculum.stageLabel ?? ''
   const unitLabel = pythonDetail?.unitLabel ?? view?.curriculum.unitLabel ?? ''
   const unitCompleted = pythonDetail?.unitCompleted ?? view?.curriculum.unitCompleted ?? 0
@@ -374,6 +383,19 @@ export function ParentHome() {
               <div className="mt-4">
                 <WpmChart series={typingChartSeries} />
               </div>
+            </section>
+            <section className="card p-5">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-lg font-semibold text-ink">{matupixProgress?.displayName ?? 'MatuPix'}</h2>
+                <span className="text-sm text-ink-soft">{matupixEntitled ? matupixStatus : '机构未开通 MatuPix'}</span>
+              </div>
+              {matupixEntitled ? (
+                <p className="mt-2 text-sm text-ink-soft">
+                  {matupixProgress?.detail.kind === 'matupix' ? matupixProgress.detail.hint : '作品只保存在这台设备'}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-ink-soft">孩子所在机构尚未开通 MatuPix。</p>
+              )}
             </section>
             <section className="card p-5 opacity-70">
               <div className="flex items-center justify-between">

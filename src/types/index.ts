@@ -349,6 +349,11 @@ export interface ParentChildView {
    * study_session.started_at → learning_record.updated_at → typing_record.created_at；均无则 null。
    */
   lastStudiedAt: string | null
+  /**
+   * 孩子所属机构当前有效开通模块（revoked/过期不含）。
+   * 家长 session 不能调 org-modules，由 parent-portal 只读附带。
+   */
+  enabledModules: Array<'python' | 'matupix'>
   /** 家长看到的是当前 Level 里的单元进度，不是全课程总关数。 */
   curriculum: ParentCurriculumProgress
   weekly: WeeklySummary

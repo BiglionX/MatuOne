@@ -1453,7 +1453,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
        order by cl.sort_order`,
       [student.id, start.toISOString()],
     )
-    const [grant, published, authLessons] = await Promise.all([
+    const [grant, published, authLessons, enabledModuleRows] = await Promise.all([
       one<{ max_level: number; valid_until: string | null }>(
         `select max_level, valid_until from public.org_entitlement
          where org_id = $1 and module_id = 'python' and revoked_at is null`,
@@ -1471,6 +1471,15 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
          where lr.student_id = $1`,
         [student.id],
       ),
+      // 家长不能调 org-modules；只读附带孩子所属机构有效开通模块
+      q<{ module_id: string }>(
+        `select module_id from public.org_entitlement
+         where org_id = $1
+           and module_id in ('python', 'matupix')
+           and revoked_at is null
+           and (valid_until is null or valid_until > now())`,
+        [student.org_id],
+      ),
     ])
     const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
     const authAccess: OrgStatus = org?.status === 'trial' || access === 'trial' ? 'trial' : (access as OrgStatus)
@@ -1486,6 +1495,9 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       title: row.title,
       parentBrief: row.parent_brief,
     })
+    const enabledModules = enabledModuleRows
+      .map((row) => row.module_id)
+      .filter((id): id is 'python' | 'matupix' => id === 'python' || id === 'matupix')
     children.push({
       student: {
         id: student.id,
@@ -1505,6 +1517,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       authorizedLevels: authFacts.authorizedLevels,
       authorizedCompletedCount: authFacts.completed.get(student.id) ?? 0,
       lastStudiedAt,
+      enabledModules,
       position: await loadCurriculumPosition(student.id),
       weekly: {
         weekStart: start.toISOString().slice(0, 10),

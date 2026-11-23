@@ -474,6 +474,7 @@ export function getChildView(studentId: string): ParentChildView {
     authorizedLevels: LEVELS.length,
     authorizedCompletedCount: completedCount,
     lastStudiedAt: student.lastActiveAt?.trim() ? student.lastActiveAt : weekly.lastStudyDate,
+    enabledModules: ['python', 'matupix'],
     curriculum: presentParentProgress(currentOrder),
     weekly: {
       weekStart: new Date().toISOString().slice(0, 10),

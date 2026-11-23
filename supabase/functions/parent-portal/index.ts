@@ -210,6 +210,7 @@ Deno.serve(async (req) => {
       { data: grant },
       { data: published },
       { data: levelRows },
+      { data: enabledModuleRows },
     ] = await Promise.all([
       db.from('org').select('name, status, trial_expire_at, service_end_at').eq('id', student.org_id).maybeSingle(),
       db.from('student_group').select('name').eq('id', student.group_id).maybeSingle(),
@@ -225,6 +226,14 @@ Deno.serve(async (req) => {
         .maybeSingle(),
       db.from('course_level').select('sort_order, stage_level').eq('published', true),
       db.from('course_level').select('level_id, sort_order, stage_level'),
+      // 家长不能调 org-modules；只读附带孩子所属机构有效开通模块
+      db
+        .from('org_entitlement')
+        .select('module_id')
+        .eq('org_id', student.org_id)
+        .in('module_id', ['python', 'matupix'])
+        .is('revoked_at', null)
+        .or('valid_until.is.null,valid_until.gt.now()'),
     ])
     const completedRows = (progress ?? []).filter((row) => row.completed === true)
     const completedCount = completedRows.length
@@ -296,6 +305,9 @@ Deno.serve(async (req) => {
       learningUpdatedAts: (progress ?? []).map((row) => row.updated_at as string | null),
       typingCreatedAts: (typing ?? []).map((row) => row.created_at as string | null),
     })
+    const enabledModules = (enabledModuleRows ?? [])
+      .map((row) => row.module_id as string)
+      .filter((id): id is 'python' | 'matupix' => id === 'python' || id === 'matupix')
     children.push({
       student: {
         id: student.id,
@@ -315,6 +327,7 @@ Deno.serve(async (req) => {
       authorizedLevels: authFacts.authorizedLevels,
       authorizedCompletedCount: authFacts.completed.get(student.id as string) ?? 0,
       lastStudiedAt,
+      enabledModules,
       weekly: {
         weekStart: start.toISOString().slice(0, 10),
         sessions: weeklySessions.length,

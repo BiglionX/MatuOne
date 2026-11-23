@@ -72,12 +72,16 @@ export async function unbindChild(studentId: string): Promise<void> {
 export async function loadParentHome(): Promise<ParentHomeData> {
   const result = await callFunction<{
     children: Array<
-      Omit<ParentChildView, 'curriculum' | 'student' | 'authorizedLevels' | 'authorizedCompletedCount' | 'lastStudiedAt'> & {
+      Omit<
+        ParentChildView,
+        'curriculum' | 'student' | 'authorizedLevels' | 'authorizedCompletedCount' | 'lastStudiedAt' | 'enabledModules'
+      > & {
         student: Omit<Student, 'password' | 'account' | 'bindCode'>
         curriculum?: ParentChildView['curriculum']
         authorizedLevels?: number
         authorizedCompletedCount?: number
         lastStudiedAt?: string | null
+        enabledModules?: Array<'python' | 'matupix'>
       }
     >
     stopped?: ParentStoppedChild[]
@@ -91,6 +95,9 @@ export async function loadParentHome(): Promise<ParentHomeData> {
       authorizedLevels: child.authorizedLevels ?? 0,
       authorizedCompletedCount: child.authorizedCompletedCount ?? 0,
       lastStudiedAt: child.lastStudiedAt ?? null,
+      enabledModules: (child.enabledModules ?? []).filter(
+        (id): id is 'python' | 'matupix' => id === 'python' || id === 'matupix',
+      ),
       student: {
         ...child.student,
         account: '',

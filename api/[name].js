@@ -60813,7 +60813,7 @@ async function parentPortal(req) {
        order by cl.sort_order`,
       [student.id, start.toISOString()]
     );
-    const [grant, published, authLessons] = await Promise.all([
+    const [grant, published, authLessons, enabledModuleRows] = await Promise.all([
       one(
         `select max_level, valid_until from public.org_entitlement
          where org_id = $1 and module_id = 'python' and revoked_at is null`,
@@ -60830,6 +60830,15 @@ async function parentPortal(req) {
          join public.course_level cl on cl.level_id = lr.level_id
          where lr.student_id = $1`,
         [student.id]
+      ),
+      // 家长不能调 org-modules；只读附带孩子所属机构有效开通模块
+      q(
+        `select module_id from public.org_entitlement
+         where org_id = $1
+           and module_id in ('python', 'matupix')
+           and revoked_at is null
+           and (valid_until is null or valid_until > now())`,
+        [student.org_id]
       )
     ]);
     const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
@@ -60846,6 +60855,7 @@ async function parentPortal(req) {
       title: row.title,
       parentBrief: row.parent_brief
     });
+    const enabledModules = enabledModuleRows.map((row) => row.module_id).filter((id) => id === "python" || id === "matupix");
     children.push({
       student: {
         id: student.id,
@@ -60865,6 +60875,7 @@ async function parentPortal(req) {
       authorizedLevels: authFacts.authorizedLevels,
       authorizedCompletedCount: authFacts.completed.get(student.id) ?? 0,
       lastStudiedAt,
+      enabledModules,
       position: await loadCurriculumPosition(student.id),
       weekly: {
         weekStart: start.toISOString().slice(0, 10),
