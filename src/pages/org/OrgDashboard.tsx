@@ -2,10 +2,18 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getOrgSession } from '@/api/orgAuth'
 import {
+  dualReadOrgStudents,
   formatOrgPythonProgressLine,
   mapOrgStudentRowToPythonSummary,
 } from '@/api/moduleProgress'
-import { ApiError, loadOrgDashboard, type OrgAttention, type OrgDashboardView } from '@/api/orgPortal'
+import {
+  ApiError,
+  listOrgStudents,
+  loadOrgDashboard,
+  type OrgAttention,
+  type OrgDashboardView,
+  type OrgStudentListItem,
+} from '@/api/orgPortal'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
 import { CardGridSkeleton, TableSkeleton } from '@/components/Skeleton'
 import { formatDate } from '@/lib/format'
@@ -16,14 +24,61 @@ const ATTENTION_LABEL: Record<OrgAttention, string> = {
   disabled: '已停用',
 }
 
+/** 从契约 summary 汇总：平均完成关卡 / 授权关数 / 分组完成率 */
+function aggregatesFromContract(
+  students: OrgStudentListItem[],
+  groupRows: OrgDashboardView['groupRows'],
+): {
+  authorizedLevels: number
+  avgCompleted: number
+  groupRows: OrgDashboardView['groupRows']
+} {
+  const active = students.filter((student) => student.status === 'active')
+  const summaries = active.map(mapOrgStudentRowToPythonSummary)
+  const authorizedLevels =
+    summaries.find((summary) => summary.availability === 'cloud' && summary.total != null && summary.total > 0)?.total ??
+    active[0]?.authorizedLevels ??
+    0
+  const avgCompleted =
+    active.length === 0
+      ? 0
+      : Math.round(
+          (summaries.reduce((sum, summary) => sum + (summary.completed ?? 0), 0) / active.length) * 10,
+        ) / 10
+
+  return {
+    authorizedLevels,
+    avgCompleted,
+    groupRows: groupRows.map((group) => {
+      const inGroup = active.filter((student) => student.groupId === group.groupId)
+      const done = inGroup.reduce((sum, student) => {
+        const summary = mapOrgStudentRowToPythonSummary(student)
+        return sum + (summary.completed ?? 0)
+      }, 0)
+      const denom = authorizedLevels * inGroup.length
+      return {
+        groupId: group.groupId,
+        name: group.name,
+        students: inGroup.length,
+        rate: inGroup.length && denom ? Math.round((done / denom) * 100) : null,
+      }
+    }),
+  }
+}
+
 export function OrgDashboard() {
   const session = getOrgSession()
   const [dashboard, setDashboard] = useState<OrgDashboardView | null>(null)
+  const [students, setStudents] = useState<OrgStudentListItem[]>([])
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
-    loadOrgDashboard()
-      .then(setDashboard)
+    Promise.all([loadOrgDashboard(), listOrgStudents()])
+      .then(([nextDashboard, nextStudents]) => {
+        setDashboard(nextDashboard)
+        setStudents(nextStudents)
+        dualReadOrgStudents(nextStudents)
+      })
       .catch((error: unknown) => {
         if (error instanceof ApiError) setNotice(error.message)
       })
@@ -45,7 +100,10 @@ export function OrgDashboard() {
     )
   }
 
-  const authorized = dashboard.authorizedLevels
+  const { authorizedLevels: authorized, avgCompleted, groupRows } = aggregatesFromContract(
+    students,
+    dashboard.groupRows,
+  )
   const until = session?.serviceEndAt ?? session?.trialExpireAt
 
   return (
@@ -77,7 +135,7 @@ export function OrgDashboard() {
           { label: '本周活跃', value: String(dashboard.weeklyActive), unit: '人' },
           {
             label: '平均完成关卡',
-            value: String(dashboard.avgCompleted),
+            value: String(avgCompleted),
             unit: authorized > 0 ? `关 / 共 ${authorized} 关` : '尚未开通',
           },
         ].map((card) => (
@@ -95,7 +153,7 @@ export function OrgDashboard() {
         <h2 className="text-lg font-semibold text-ink">分组完成率</h2>
         <p className="mt-1 text-sm text-ink-soft">条形是已完成占已授权关卡的比例。没有学生的分组不计算完成率。</p>
         <div className="mt-5 space-y-5">
-          {dashboard.groupRows.map((group) => (
+          {groupRows.map((group) => (
             <div key={group.groupId}>
               <div className="mb-2 flex justify-between text-sm">
                 <span className="font-medium text-ink">
