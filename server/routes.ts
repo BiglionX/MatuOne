@@ -857,10 +857,49 @@ function presentAttention(
 }
 
 /**
- * 启动器开通列表。orgId 从 student 或 org session 解析，不信任请求体。
- * 返回未 revoke、且未过期（valid_until 为空或仍有效）的模块行。
+ * 机构模块开通。
+ * - list（默认）：启动器开通列表；student / org session；仅未 revoke 且未过期
+ * - manage：机构端管理列表（含已软关）；仅 org
+ * - revoke / restore：本刀仅 matupix；写操作限 org admin；软关用 revoked_at，不物理删除
  */
 async function orgModules(req: ApiRequest): Promise<ApiResult> {
+  const action = typeof req.body.action === 'string' ? req.body.action.trim() : 'list'
+
+  if (action === 'manage' || action === 'revoke' || action === 'restore') {
+    const writing = action === 'revoke' || action === 'restore'
+    const ctx = await orgContext(req, { write: writing, admin: writing })
+    if (!('orgId' in ctx)) return ctx
+
+    if (writing) {
+      const moduleId = typeof req.body.moduleId === 'string' ? req.body.moduleId.trim() : ''
+      if (moduleId !== 'matupix') return fail(400, '本刀仅可开关 matupix')
+
+      if (action === 'revoke') {
+        const updated = await one<{ id: string }>(
+          `update public.org_entitlement
+           set revoked_at = now()
+           where org_id = $1 and module_id = 'matupix' and revoked_at is null
+           returning id`,
+          [ctx.orgId],
+        )
+        if (!updated) return fail(404, '未找到 matupix 开通行，或已关闭')
+      } else {
+        const updated = await one<{ id: string }>(
+          `update public.org_entitlement
+           set revoked_at = null
+           where org_id = $1 and module_id = 'matupix' and revoked_at is not null
+           returning id`,
+          [ctx.orgId],
+        )
+        if (!updated) return fail(404, '未找到已关闭的 matupix，或已开通')
+      }
+    }
+
+    return ok({ modules: await listOrgManagedModules(ctx.orgId) })
+  }
+
+  if (action !== 'list') return fail(400, '不支持的操作')
+
   const session = await readSession(req.header('authorization'))
   if (!session || (session.role !== 'student' && session.role !== 'org')) {
     return fail(401, '未登录')
@@ -909,6 +948,37 @@ async function orgModules(req: ApiRequest): Promise<ApiResult> {
         maxLevel: row.max_level == null ? null : Number(row.max_level),
         validUntil: row.valid_until,
       })),
+  })
+}
+
+async function listOrgManagedModules(orgId: string) {
+  const rows = await q<{
+    module_id: string
+    max_level: number | null
+    valid_until: string | null
+    revoked_at: string | null
+  }>(
+    `select module_id, max_level, valid_until, revoked_at
+     from public.org_entitlement
+     where org_id = $1
+       and module_id in ('python', 'matupix')
+     order by module_id`,
+    [orgId],
+  )
+
+  const now = Date.now()
+  return rows.map((row) => {
+    const revoked = row.revoked_at != null
+    const expired = row.valid_until != null && new Date(row.valid_until).getTime() <= now
+    const enabled = !revoked && !expired
+    return {
+      moduleId: row.module_id as 'python' | 'matupix',
+      maxLevel: row.max_level == null ? null : Number(row.max_level),
+      validUntil: row.valid_until,
+      revokedAt: row.revoked_at,
+      enabled,
+      canToggle: row.module_id === 'matupix',
+    }
   })
 }
 

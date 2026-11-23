@@ -60292,6 +60292,37 @@ function presentAttention(student, facts) {
   });
 }
 async function orgModules(req) {
+  const action = typeof req.body.action === "string" ? req.body.action.trim() : "list";
+  if (action === "manage" || action === "revoke" || action === "restore") {
+    const writing = action === "revoke" || action === "restore";
+    const ctx = await orgContext(req, { write: writing, admin: writing });
+    if (!("orgId" in ctx)) return ctx;
+    if (writing) {
+      const moduleId = typeof req.body.moduleId === "string" ? req.body.moduleId.trim() : "";
+      if (moduleId !== "matupix") return fail4(400, "\u672C\u5200\u4EC5\u53EF\u5F00\u5173 matupix");
+      if (action === "revoke") {
+        const updated = await one(
+          `update public.org_entitlement
+           set revoked_at = now()
+           where org_id = $1 and module_id = 'matupix' and revoked_at is null
+           returning id`,
+          [ctx.orgId]
+        );
+        if (!updated) return fail4(404, "\u672A\u627E\u5230 matupix \u5F00\u901A\u884C\uFF0C\u6216\u5DF2\u5173\u95ED");
+      } else {
+        const updated = await one(
+          `update public.org_entitlement
+           set revoked_at = null
+           where org_id = $1 and module_id = 'matupix' and revoked_at is not null
+           returning id`,
+          [ctx.orgId]
+        );
+        if (!updated) return fail4(404, "\u672A\u627E\u5230\u5DF2\u5173\u95ED\u7684 matupix\uFF0C\u6216\u5DF2\u5F00\u901A");
+      }
+    }
+    return ok4({ modules: await listOrgManagedModules(ctx.orgId) });
+  }
+  if (action !== "list") return fail4(400, "\u4E0D\u652F\u6301\u7684\u64CD\u4F5C");
   const session = await readSession(req.header("authorization"));
   if (!session || session.role !== "student" && session.role !== "org") {
     return fail4(401, "\u672A\u767B\u5F55");
@@ -60334,6 +60365,30 @@ async function orgModules(req) {
       maxLevel: row.max_level == null ? null : Number(row.max_level),
       validUntil: row.valid_until
     }))
+  });
+}
+async function listOrgManagedModules(orgId) {
+  const rows = await q(
+    `select module_id, max_level, valid_until, revoked_at
+     from public.org_entitlement
+     where org_id = $1
+       and module_id in ('python', 'matupix')
+     order by module_id`,
+    [orgId]
+  );
+  const now = Date.now();
+  return rows.map((row) => {
+    const revoked = row.revoked_at != null;
+    const expired = row.valid_until != null && new Date(row.valid_until).getTime() <= now;
+    const enabled = !revoked && !expired;
+    return {
+      moduleId: row.module_id,
+      maxLevel: row.max_level == null ? null : Number(row.max_level),
+      validUntil: row.valid_until,
+      revokedAt: row.revoked_at,
+      enabled,
+      canToggle: row.module_id === "matupix"
+    };
   });
 }
 async function orgDashboard(req) {

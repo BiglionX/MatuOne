@@ -7,6 +7,7 @@ const NAV: { to: string; label: string; admin?: boolean }[] = [
   { to: '/org/dashboard', label: '进度看板' },
   { to: '/org/students', label: '学生管理' },
   { to: '/org/courses', label: '课程管理' },
+  { to: '/org/modules', label: '模块开通' },
   { to: '/org/financial', label: '财务', admin: true },
 ]
 

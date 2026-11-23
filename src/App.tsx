@@ -30,6 +30,7 @@ const OrgCourses = lazy(() => import('@/pages/org/OrgCourses').then((m) => ({ de
 const OrgFinance = lazy(() => import('@/pages/org/OrgFinance').then((m) => ({ default: m.OrgFinance })))
 const OrgDashboard = lazy(() => import('@/pages/org/OrgDashboard').then((m) => ({ default: m.OrgDashboard })))
 const OrgMaterials = lazy(() => import('@/pages/org/OrgMaterials').then((m) => ({ default: m.OrgMaterials })))
+const OrgModules = lazy(() => import('@/pages/org/OrgModules').then((m) => ({ default: m.OrgModules })))
 const OrgCustomCourseEdit = lazy(() => import('@/pages/org/OrgCustomCourseEdit').then((m) => ({ default: m.OrgCustomCourseEdit })))
 
 const ParentLogin = lazy(() => import('@/pages/parent/ParentLogin').then((m) => ({ default: m.ParentLogin })))
@@ -97,6 +98,7 @@ export default function App() {
             <Route path="finance" element={<Navigate to="/org/financial" replace />} />
             <Route path="custom-courses/:courseId/edit" element={<OrgCustomCourseEdit />} />
             <Route path="materials" element={<OrgMaterials />} />
+            <Route path="modules" element={<OrgModules />} />
             <Route path="dashboard" element={<OrgDashboard />} />
           </Route>
 
