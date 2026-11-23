@@ -14,9 +14,8 @@ export interface OrgStudentSummary {
   account: string
   groupName: string
   status: 'active' | 'disabled'
-  currentLevelOrder: number
-  completedCount: number
-  authorizedLevels: number
+  /** 已由 ModuleProgressSummary 格式化的进度一行（第 N 关 · x/y | 尚未开通） */
+  progressLine: string
   typing: { wpm: number; accuracy: number } | null
   lastActiveAt: string
   bindCode: string
@@ -94,11 +93,7 @@ export function OrgStudentProgress({
             </div>
             <div>
               <dt className="text-ink-soft">进度</dt>
-              <dd className="mt-1 text-ink">
-                {summary.authorizedLevels > 0
-                  ? `第 ${summary.currentLevelOrder} 关 · ${summary.completedCount}/${summary.authorizedLevels}`
-                  : '尚未开通'}
-              </dd>
+              <dd className="mt-1 text-ink">{summary.progressLine}</dd>
             </div>
             <div>
               <dt className="text-ink-soft">打字</dt>

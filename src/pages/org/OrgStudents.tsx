@@ -15,7 +15,11 @@ import {
   unbindOrgStudent,
   type OrgStudentListItem,
 } from '@/api/orgPortal'
-import { dualReadOrgStudents } from '@/api/moduleProgress'
+import {
+  dualReadOrgStudents,
+  formatOrgPythonProgressLine,
+  mapOrgStudentRowToPythonSummary,
+} from '@/api/moduleProgress'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
 import { TableSkeleton } from '@/components/Skeleton'
 import { OrgStudentProgress } from '@/components/OrgStudentProgress'
@@ -402,9 +406,7 @@ export function OrgStudents() {
                     </div>
                   </td>
                   <td className="px-6 py-3.5 text-ink-soft">
-                    {student.authorizedLevels > 0
-                      ? `第 ${student.currentLevelOrder} 关 · ${student.completedCount}/${student.authorizedLevels}`
-                      : '尚未开通'}
+                    {formatOrgPythonProgressLine(mapOrgStudentRowToPythonSummary(student))}
                   </td>
                   <td className="px-6 py-3.5 text-ink-soft">
                     {student.typing ? `${student.typing.wpm} WPM · ${student.typing.accuracy}%` : '还没有记录'}
@@ -575,13 +577,12 @@ function ConfirmDialog({
 
 function summaryOf(student: OrgStudentListItem | undefined, groups: Group[]) {
   if (!student) return undefined
+  const progress = mapOrgStudentRowToPythonSummary(student)
   return {
     account: student.account,
     groupName: groups.find((group) => group.id === student.groupId)?.name ?? '未分组',
     status: student.status,
-    currentLevelOrder: student.currentLevelOrder,
-    completedCount: student.completedCount,
-    authorizedLevels: student.authorizedLevels,
+    progressLine: formatOrgPythonProgressLine(progress),
     typing: student.typing,
     lastActiveAt: student.lastActiveAt,
     bindCode: student.bindCode,

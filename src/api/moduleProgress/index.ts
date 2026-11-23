@@ -27,6 +27,7 @@ export {
   diffOrgStudentProgress,
   diffParentChildProgress,
 } from './dualRead'
+export { formatOrgPythonProgressLine, asPythonDetail } from './present'
 
 function moduleMeta(moduleId: ModuleId): { displayName: string; gradeRange?: string } {
   const mod = getModule(moduleId)

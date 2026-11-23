@@ -1,14 +1,30 @@
-interface Point {
-  label: string
+export interface WpmChartPoint {
+  /** 周一起点 ISO 日期（契约 typing.series.at）；有 label 时仅作 key 兜底 */
+  at?: string
+  /** 轴标签；缺省时由 at 推 M/D（与 parent-portal bucket 一致） */
+  label?: string
   wpm: number | null
   accuracy: number | null
+}
+
+function pointLabel(p: WpmChartPoint): string {
+  if (p.label) return p.label
+  if (!p.at) return ''
+  const parts = p.at.split('-')
+  if (parts.length < 3) return p.at
+  return `${Number(parts[1])}/${Number(parts[2])}`
+}
+
+function pointKey(p: WpmChartPoint, index: number): string {
+  return p.at ?? p.label ?? String(index)
 }
 
 /**
  * 家长端极简折线：只画自己孩子的 WPM，准确率用一行文字。
  * 有效数据点少于 2 个时显示「数据积累中」，不画空图。
+ * 接受契约 series（at）或现网 typingSeries（label）；有 label 时优先用，保证 UX 不变。
  */
-export function WpmChart({ series }: { series: Point[] }) {
+export function WpmChart({ series }: { series: WpmChartPoint[] }) {
   const valid = series.filter((p) => p.wpm !== null)
   const latestAccuracy = [...series].reverse().find((p) => p.accuracy !== null)?.accuracy ?? null
 
@@ -35,7 +51,7 @@ export function WpmChart({ series }: { series: Point[] }) {
 
   const points = series
     .map((p, i) => ({ ...p, x: x(i), y: p.wpm === null ? null : y(p.wpm) }))
-    .filter((p) => p.y !== null) as { label: string; wpm: number; x: number; y: number }[]
+    .filter((p): p is WpmChartPoint & { x: number; y: number; wpm: number } => p.y !== null)
 
   return (
     <div>
@@ -58,8 +74,8 @@ export function WpmChart({ series }: { series: Point[] }) {
           strokeWidth={2.5}
           strokeLinejoin="round"
         />
-        {points.map((p) => (
-          <g key={p.label}>
+        {points.map((p, i) => (
+          <g key={pointKey(p, i)}>
             <circle cx={p.x} cy={p.y} r={3.5} fill="var(--brand)" />
             <text x={p.x} y={p.y - 7} textAnchor="middle" fontSize={9} fill="var(--ink-soft)">
               {p.wpm}
@@ -68,8 +84,8 @@ export function WpmChart({ series }: { series: Point[] }) {
         ))}
       </svg>
       <div className="mt-1 flex justify-between px-1 text-xs text-ink-soft">
-        {series.map((p) => (
-          <span key={p.label}>{p.label}</span>
+        {series.map((p, i) => (
+          <span key={pointKey(p, i)}>{pointLabel(p)}</span>
         ))}
       </div>
       {latestAccuracy !== null && (

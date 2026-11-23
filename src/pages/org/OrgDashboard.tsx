@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getOrgSession } from '@/api/orgAuth'
+import {
+  formatOrgPythonProgressLine,
+  mapOrgStudentRowToPythonSummary,
+} from '@/api/moduleProgress'
 import { ApiError, loadOrgDashboard, type OrgAttention, type OrgDashboardView } from '@/api/orgPortal'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
 import { CardGridSkeleton, TableSkeleton } from '@/components/Skeleton'
@@ -140,7 +144,20 @@ export function OrgDashboard() {
                     <td className="px-6 py-3.5 text-ink-soft">{row.groupName}</td>
                     <td className="px-6 py-3.5 text-ink">{ATTENTION_LABEL[row.reason]}</td>
                     <td className="px-6 py-3.5 text-ink-soft">
-                      {authorized > 0 ? `第 ${row.currentOrder} 关 · ${row.completedCount}/${authorized}` : '尚未开通'}
+                      {formatOrgPythonProgressLine(
+                        mapOrgStudentRowToPythonSummary({
+                          id: row.student.id,
+                          name: row.student.name,
+                          status: row.student.status,
+                          currentLevelOrder: row.currentOrder,
+                          lastActiveAt: row.lastActiveAt,
+                          lastStudiedAt: row.lastStudiedAt,
+                          authorizedLevels: authorized,
+                          authorizedCompletedCount: row.authorizedCompletedCount,
+                          completedCount: row.completedCount,
+                          typing: row.typing,
+                        }),
+                      )}
                     </td>
                     <td className="px-6 py-3.5 text-ink-soft">{formatDate(row.lastActiveAt)}</td>
                   </tr>

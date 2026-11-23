@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { bindChild, getParentSession, loadParentHome, logoutParent, lookupChild, unbindChild } from '@/api/parent'
-import { dualReadParentHome } from '@/api/moduleProgress'
+import { asPythonDetail, dualReadParentHome, mapParentChildToPythonSummary } from '@/api/moduleProgress'
 import { WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
 import { FormError } from '@/components/FormError'
@@ -103,6 +103,30 @@ export function ParentHome() {
   if (!session) return <Navigate to="/parent/login" replace />
 
   const view = children.find((child) => child.student.id === activeId) ?? children[0]
+  const pythonProgress = view ? mapParentChildToPythonSummary(view) : null
+  const pythonDetail = pythonProgress ? asPythonDetail(pythonProgress) : null
+  const stageLabel = pythonDetail?.stageLabel ?? view?.curriculum.stageLabel ?? ''
+  const unitLabel = pythonDetail?.unitLabel ?? view?.curriculum.unitLabel ?? ''
+  const unitCompleted = pythonDetail?.unitCompleted ?? view?.curriculum.unitCompleted ?? 0
+  const unitTotal = pythonDetail?.unitTotal ?? view?.curriculum.unitTotal ?? 0
+  const currentLevelTitle = pythonDetail?.currentLevelTitle ?? view?.currentLevelTitle ?? ''
+  const typingChartSeries =
+    pythonDetail?.typing?.series?.map((point) => {
+      const legacy = view?.typingSeries.find((row) => row.weekStart === point.at)
+      return {
+        at: point.at,
+        label: legacy?.label,
+        wpm: point.wpm,
+        accuracy: point.accuracy,
+      }
+    }) ??
+    view?.typingSeries.map((point) => ({
+      at: point.weekStart,
+      label: point.label,
+      wpm: point.wpm,
+      accuracy: point.accuracy,
+    })) ??
+    []
 
   const lookup = async () => {
     const trimmed = code.trim()
@@ -279,10 +303,10 @@ export function ParentHome() {
             <section className="card p-5">
               <h2 className="text-lg font-semibold text-ink">课程进度</h2>
               <p className="mt-4 text-ink">
-                当前学段：<span className="font-semibold">{view.curriculum.stageLabel}</span>
+                当前学段：<span className="font-semibold">{stageLabel}</span>
               </p>
               <p className="mt-2 text-ink">
-                当前单元：<span className="font-semibold">{view.curriculum.unitLabel}</span>
+                当前单元：<span className="font-semibold">{unitLabel}</span>
               </p>
               {view.curriculum.beyondAuthored ? (
                 <p className="mt-4 text-ink">当前阶段的基础内容已学完，进阶课程即将上线</p>
@@ -291,18 +315,18 @@ export function ParentHome() {
                   <p className="mt-2 text-ink">
                     本单元进度：
                     <span className="font-semibold">
-                      {view.curriculum.unitCompleted}/{view.curriculum.unitTotal} 节
+                      {unitCompleted}/{unitTotal} 节
                     </span>
                   </p>
                   <div className="mt-4 h-3 overflow-hidden rounded-full bg-brand-soft">
                     <div
                       className="h-full rounded-full bg-brand"
                       style={{
-                        width: `${view.curriculum.unitTotal ? (view.curriculum.unitCompleted / view.curriculum.unitTotal) * 100 : 0}%`,
+                        width: `${unitTotal ? (unitCompleted / unitTotal) * 100 : 0}%`,
                       }}
                     />
                   </div>
-                  <p className="mt-3 text-sm text-ink-soft">正在学的是「{view.currentLevelTitle}」。这一单元学完，就可以先歇一歇。</p>
+                  <p className="mt-3 text-sm text-ink-soft">正在学的是「{currentLevelTitle}」。这一单元学完，就可以先歇一歇。</p>
                 </>
               )}
             </section>
@@ -348,7 +372,7 @@ export function ParentHome() {
                 <span className="text-sm text-ink-soft">WPM</span>
               </div>
               <div className="mt-4">
-                <WpmChart series={view.typingSeries} />
+                <WpmChart series={typingChartSeries} />
               </div>
             </section>
             <section className="card p-5 opacity-70">
