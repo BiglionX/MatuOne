@@ -5,9 +5,9 @@ import {
   asPythonDetail,
   dualReadParentHome,
   formatModuleStatusLabel,
-  mapParentChildToPythonSummary,
-  matupixSummaryForParent,
+  modulesForParentChild,
 } from '@/api/moduleProgress'
+import type { ModuleProgressSummary } from '@/types/moduleProgress'
 import { WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
 import { FormError } from '@/components/FormError'
@@ -21,6 +21,26 @@ function FeedbackNote({ message, className = '' }: { message: string; className?
   const ok = message === '已绑定' || message === '已解除绑定'
   if (ok) return <p className={`text-sm text-ink ${className}`}>{message}</p>
   return <FormError className={className}>{message}</FormError>
+}
+
+/** 非 python 模块卡：按 availability / detail.kind 通用渲染（页面不按 moduleId 分支） */
+function ParentModuleSection({ summary }: { summary: ModuleProgressSummary }) {
+  if (summary.availability === 'local_only') {
+    const hint =
+      summary.detail.kind === 'matupix'
+        ? summary.detail.hint
+        : '作品只保存在这台设备'
+    return (
+      <section className="card p-5">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-lg font-semibold text-ink">{summary.displayName}</h2>
+          <span className="text-sm text-ink-soft">{formatModuleStatusLabel(summary)}</span>
+        </div>
+        <p className="mt-2 text-sm text-ink-soft">{hint}</p>
+      </section>
+    )
+  }
+  return null
 }
 
 function catalogId(order: number): string {
@@ -109,11 +129,9 @@ export function ParentHome() {
   if (!session) return <Navigate to="/parent/login" replace />
 
   const view = children.find((child) => child.student.id === activeId) ?? children[0]
-  const pythonProgress = view ? mapParentChildToPythonSummary(view) : null
+  const modules = view ? modulesForParentChild(view) : []
+  const pythonProgress = modules.find((m) => m.detail.kind === 'python') ?? null
   const pythonDetail = pythonProgress ? asPythonDetail(pythonProgress) : null
-  const matupixEntitled = view?.enabledModules.includes('matupix') === true
-  const matupixProgress = view ? matupixSummaryForParent(matupixEntitled) : null
-  const matupixStatus = matupixProgress ? formatModuleStatusLabel(matupixProgress) : ''
   const stageLabel = pythonDetail?.stageLabel ?? view?.curriculum.stageLabel ?? ''
   const unitLabel = pythonDetail?.unitLabel ?? view?.curriculum.unitLabel ?? ''
   const unitCompleted = pythonDetail?.unitCompleted ?? view?.curriculum.unitCompleted ?? 0
@@ -136,6 +154,11 @@ export function ParentHome() {
       accuracy: point.accuracy,
     })) ??
     []
+
+  /** 未开通（not_entitled）完全不渲染；python 主卡已单独渲染，其余按 availability/detail.kind */
+  const extraModules = modules.filter(
+    (m) => m.availability !== 'not_entitled' && m.detail.kind !== 'python',
+  )
 
   const lookup = async () => {
     const trimmed = code.trim()
@@ -384,19 +407,9 @@ export function ParentHome() {
                 <WpmChart series={typingChartSeries} />
               </div>
             </section>
-            <section className="card p-5">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-lg font-semibold text-ink">{matupixProgress?.displayName ?? 'MatuPix'}</h2>
-                <span className="text-sm text-ink-soft">{matupixEntitled ? matupixStatus : '机构未开通 MatuPix'}</span>
-              </div>
-              {matupixEntitled ? (
-                <p className="mt-2 text-sm text-ink-soft">
-                  {matupixProgress?.detail.kind === 'matupix' ? matupixProgress.detail.hint : '作品只保存在这台设备'}
-                </p>
-              ) : (
-                <p className="mt-2 text-sm text-ink-soft">孩子所在机构尚未开通 MatuPix。</p>
-              )}
-            </section>
+            {extraModules.map((summary) => (
+              <ParentModuleSection key={summary.moduleId} summary={summary} />
+            ))}
             <section className="card p-5 opacity-70">
               <div className="flex items-center justify-between">
                 <div>

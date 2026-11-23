@@ -3,13 +3,15 @@
  * 本步（S1）仅实现 python；arduino → coming_soon；matupix → local_only 占位。
  */
 import { getModule } from '@/modules/registry'
+import type { ParentChildView } from '@/types'
 import type {
   GetProgressSummary,
   ModuleId,
   ModuleProgressSummary,
   StudentModulesProgressView,
 } from '@/types/moduleProgress'
-import { listOrgPythonModuleProgress, listParentPythonModuleProgress } from './python'
+import { listOrgPythonModuleProgress, listParentPythonModuleProgress, mapParentChildToPythonSummary } from './python'
+import { matupixSummaryForParent } from './present'
 
 export {
   mapOrgStudentRowToPythonSummary,
@@ -33,6 +35,17 @@ export {
   formatModuleStatusLabel,
   matupixSummaryForParent,
 } from './present'
+
+/**
+ * 家长孩子 → 模块摘要列表（python + matupix）。
+ * 适配层可识别模块注册；页面只消费 modules + availability，不硬编码模块名。
+ */
+export function modulesForParentChild(child: ParentChildView): ModuleProgressSummary[] {
+  return [
+    mapParentChildToPythonSummary(child),
+    matupixSummaryForParent(child.enabledModules.includes('matupix')),
+  ]
+}
 
 function moduleMeta(moduleId: ModuleId): { displayName: string; gradeRange?: string } {
   const mod = getModule(moduleId)
@@ -99,7 +112,7 @@ export async function listOrgStudentModuleProgress(): Promise<StudentModulesProg
   return listOrgPythonModuleProgress()
 }
 
-/** 家长端：绑定孩子的模块进度（本步仅含 python；含 stopped 占位） */
+/** 家长端：绑定孩子的模块进度（python + matupix；含 stopped 占位） */
 export async function listParentStudentModuleProgress(): Promise<StudentModulesProgressView[]> {
   return listParentPythonModuleProgress()
 }

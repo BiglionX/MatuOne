@@ -14,6 +14,7 @@ import type {
   StudentModulesProgressView,
 } from '@/types/moduleProgress'
 import type { ParentChildView, ParentStoppedChild } from '@/types'
+import { matupixSummaryForParent } from './present'
 
 const MODULE_ID = 'python' as const
 
@@ -211,13 +212,16 @@ export async function getOrgStudentPythonProgress(studentId: string): Promise<Mo
   return mapOrgStudentRowToPythonSummary(row)
 }
 
-/** 家长：loadParentHome → 每个非 stopped 孩子 + stopped 占位 */
+/** 家长：loadParentHome → 每个非 stopped 孩子 + stopped 占位（含 matupix 摘要） */
 export async function listParentPythonModuleProgress(): Promise<StudentModulesProgressView[]> {
   const home = await loadParentHome()
   const active = home.children.map((child) => ({
     studentId: child.student.id,
     studentName: child.student.name,
-    modules: [mapParentChildToPythonSummary(child)],
+    modules: [
+      mapParentChildToPythonSummary(child),
+      matupixSummaryForParent(child.enabledModules.includes('matupix')),
+    ],
   }))
   const stopped = home.stopped.map((item, index) => ({
     studentId: `stopped:${index}`,
