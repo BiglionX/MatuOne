@@ -60031,6 +60031,7 @@ async function orgStudents(req) {
           ...student,
           completed_count: authorizedCompletedCount,
           authorizedCompletedCount,
+          pythonEnabled: facts.pythonEnabled,
           lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
           typing_wpm: typing?.wpm ?? null,
           typing_accuracy: typing?.accuracy ?? null
@@ -60278,6 +60279,8 @@ async function orgLessonFacts(orgId, effective, studentIds) {
     authorizedLevels: facts.authorizedLevels,
     lessons,
     completed: facts.completed,
+    // 模块开通与 Level 1 免费是两件事；列表/看板与启动器共用同一开通事实。
+    pythonEnabled: maxStage > 0,
     typing,
     lastStudiedAt
   };
