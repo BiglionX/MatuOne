@@ -30,30 +30,24 @@ Deno.serve(async (req) => {
     const maxStage = openMaxLevel(
       grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null,
     )
-    const [{ data: published }, { data: progress }, { data: typing }] = await Promise.all([
-      ctx.db.from('course_level').select('sort_order, unit_id').eq('published', true),
+    const [{ data: published }, { data: progress }, { data: typing }, { data: levelRows }] = await Promise.all([
+      ctx.db.from('course_level').select('sort_order, stage_level').eq('published', true),
       ids.length
         ? ctx.db.from('learning_record').select('student_id, level_id, completed, updated_at').in('student_id', ids)
         : Promise.resolve({ data: [] as { student_id: string; level_id: string; completed: boolean; updated_at: string }[] }),
       ids.length
         ? ctx.db.from('typing_record').select('student_id, wpm, accuracy, created_at').in('student_id', ids)
         : Promise.resolve({ data: [] as { student_id: string; wpm: number; accuracy: number; created_at: string }[] }),
+      ctx.db.from('course_level').select('level_id, sort_order, stage_level'),
     ])
-    const [{ data: units }, { data: semesters }, { data: stages }, { data: levelRows }] = await Promise.all([
-      ctx.db.from('curriculum_unit').select('unit_id, semester_id'),
-      ctx.db.from('curriculum_semester').select('semester_id, stage_id'),
-      ctx.db.from('curriculum_stage').select('stage_id, sort_order'),
-      ctx.db.from('course_level').select('level_id, sort_order, unit_id'),
-    ])
-    const stageByUnit = stageSortByUnit(units ?? [], semesters ?? [], stages ?? [])
     const levelById = new Map(
       (levelRows ?? []).map((row) => [
         row.level_id as string,
-        { sortOrder: row.sort_order as number, stageSort: stageByUnit.get(row.unit_id as string) ?? 0 },
+        { sortOrder: row.sort_order as number, stageSort: Number(row.stage_level) },
       ]),
     )
     const authorizedLevels = (published ?? []).filter((row) =>
-      lessonIsAuthorized(access, maxStage, row.sort_order as number, stageByUnit.get(row.unit_id as string) ?? 0),
+      lessonIsAuthorized(access, maxStage, row.sort_order as number, Number(row.stage_level)),
     ).length
     const completed = new Map<string, number>()
     const currentTouch = new Map<string, { completed: boolean; updatedAt: string; sortOrder: number }>()
@@ -138,13 +132,3 @@ Deno.serve(async (req) => {
     })
   })
 })
-
-function stageSortByUnit(
-  units: { unit_id: string; semester_id: string }[],
-  semesters: { semester_id: string; stage_id: string }[],
-  stages: { stage_id: string; sort_order: number }[],
-): Map<string, number> {
-  const stageSort = new Map(stages.map((stage) => [stage.stage_id, stage.sort_order]))
-  const semesterStage = new Map(semesters.map((semester) => [semester.semester_id, stageSort.get(semester.stage_id) ?? 0]))
-  return new Map(units.map((unit) => [unit.unit_id, semesterStage.get(unit.semester_id) ?? 0]))
-}

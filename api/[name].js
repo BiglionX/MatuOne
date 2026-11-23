@@ -59867,14 +59867,11 @@ async function orgStudents(req) {
         [ctx.orgId]
       ),
       q(
-        `select cl.level_id, cl.sort_order, st.sort_order as stage_sort, cl.title, cl.teaching_intent, cl.teacher_guide,
+        `select cl.level_id, cl.sort_order, cl.stage_level, cl.title, cl.teaching_intent, cl.teacher_guide,
                 coalesce(lr.completed, false) as completed
          from public.course_level cl
          left join public.learning_record lr
            on lr.level_id = cl.level_id and lr.student_id = $1
-         left join public.curriculum_unit u on u.unit_id = cl.unit_id
-         left join public.curriculum_semester se on se.semester_id = u.semester_id
-         left join public.curriculum_stage st on st.stage_id = se.stage_id
          where lr.student_id is not null or cl.sort_order = $2
          order by cl.sort_order`,
         [studentId, student.current_level_order]
@@ -59890,7 +59887,7 @@ async function orgStudents(req) {
         title: row.title,
         completed: row.completed === true,
         current: row.sort_order === student.current_level_order,
-        authorized: lessonIsAuthorized(access2, maxStage, row.sort_order, Number(row.stage_sort)),
+        authorized: lessonIsAuthorized(access2, maxStage, row.sort_order, Number(row.stage_level)),
         teachingIntent: row.teaching_intent,
         teacherGuide: row.teacher_guide
       }))
@@ -60164,20 +60161,14 @@ async function orgLessonFacts(orgId, effective, studentIds) {
   const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
   const access2 = org?.status === "trial" || effective === "trial" ? "trial" : effective;
   const published = await q(
-    `select cl.sort_order, st.sort_order as stage_sort
+    `select cl.sort_order, cl.stage_level as stage_sort
      from public.course_level cl
-     join public.curriculum_unit u on u.unit_id = cl.unit_id
-     join public.curriculum_semester se on se.semester_id = u.semester_id
-     join public.curriculum_stage st on st.stage_id = se.stage_id
      where cl.published = true`
   );
   const lessons = studentIds.length ? await q(
-    `select lr.student_id, cl.sort_order, st.sort_order as stage_sort, lr.completed, lr.updated_at
+    `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed, lr.updated_at
          from public.learning_record lr
          join public.course_level cl on cl.level_id = lr.level_id
-         join public.curriculum_unit u on u.unit_id = cl.unit_id
-         join public.curriculum_semester se on se.semester_id = u.semester_id
-         join public.curriculum_stage st on st.stage_id = se.stage_id
          where lr.student_id = any($1::uuid[])`,
     [studentIds]
   ) : [];

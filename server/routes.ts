@@ -454,20 +454,17 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
       q<{
         level_id: string
         sort_order: number
-        stage_sort: number | null
+        stage_level: number | null
         title: string
         teaching_intent: string | null
         teacher_guide: string | null
         completed: boolean
       }>(
-        `select cl.level_id, cl.sort_order, st.sort_order as stage_sort, cl.title, cl.teaching_intent, cl.teacher_guide,
+        `select cl.level_id, cl.sort_order, cl.stage_level, cl.title, cl.teaching_intent, cl.teacher_guide,
                 coalesce(lr.completed, false) as completed
          from public.course_level cl
          left join public.learning_record lr
            on lr.level_id = cl.level_id and lr.student_id = $1
-         left join public.curriculum_unit u on u.unit_id = cl.unit_id
-         left join public.curriculum_semester se on se.semester_id = u.semester_id
-         left join public.curriculum_stage st on st.stage_id = se.stage_id
          where lr.student_id is not null or cl.sort_order = $2
          order by cl.sort_order`,
         [studentId, student.current_level_order],
@@ -483,7 +480,7 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
         title: row.title,
         completed: row.completed === true,
         current: row.sort_order === student.current_level_order,
-        authorized: lessonIsAuthorized(access, maxStage, row.sort_order, Number(row.stage_sort)),
+        authorized: lessonIsAuthorized(access, maxStage, row.sort_order, Number(row.stage_level)),
         teachingIntent: row.teaching_intent,
         teacherGuide: row.teacher_guide,
       })),
@@ -793,22 +790,17 @@ async function orgLessonFacts(orgId: string, effective: OrgStatus, studentIds: s
   ])
   const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
   const access: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
+  // 授权判定用 course_level.stage_level（产品 Level 1–8），不要用 curriculum_stage.sort_order（年级 G2/G3…）
   const published = await q<{ sort_order: number; stage_sort: number }>(
-    `select cl.sort_order, st.sort_order as stage_sort
+    `select cl.sort_order, cl.stage_level as stage_sort
      from public.course_level cl
-     join public.curriculum_unit u on u.unit_id = cl.unit_id
-     join public.curriculum_semester se on se.semester_id = u.semester_id
-     join public.curriculum_stage st on st.stage_id = se.stage_id
      where cl.published = true`,
   )
   const lessons = studentIds.length
     ? await q<{ student_id: string; sort_order: number; stage_sort: number; completed: boolean; updated_at: string }>(
-        `select lr.student_id, cl.sort_order, st.sort_order as stage_sort, lr.completed, lr.updated_at
+        `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed, lr.updated_at
          from public.learning_record lr
          join public.course_level cl on cl.level_id = lr.level_id
-         join public.curriculum_unit u on u.unit_id = cl.unit_id
-         join public.curriculum_semester se on se.semester_id = u.semester_id
-         join public.curriculum_stage st on st.stage_id = se.stage_id
          where lr.student_id = any($1::uuid[])`,
         [studentIds],
       )
