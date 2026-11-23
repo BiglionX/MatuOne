@@ -84,6 +84,8 @@ export interface OrgStudentListItem extends Student {
   completedCount: number
   authorizedLevels: number
   authorizedCompletedCount: number
+  /** 机构 python 模块是否开通（与启动器同源；旧 API 缺省时按开通处理） */
+  pythonEnabled: boolean
   /** 三链最近学习时间；API 始终返回（无记录为 null） */
   lastStudiedAt: string | null
   typing: { wpm: number; accuracy: number } | null
@@ -104,6 +106,7 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       bound_parent_count?: number
       completed_count?: number
       authorizedCompletedCount?: number
+      pythonEnabled?: boolean
       lastStudiedAt?: string | null
       typing_wpm?: number | null
       typing_accuracy?: number | null
@@ -128,6 +131,7 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       completedCount: authorizedCompletedCount,
       authorizedLevels,
       authorizedCompletedCount,
+      pythonEnabled: row.pythonEnabled ?? true,
       lastStudiedAt: row.lastStudiedAt ?? null,
       typing: row.typing_wpm == null ? null : { wpm: row.typing_wpm, accuracy: row.typing_accuracy ?? 0 },
     }

@@ -51,11 +51,13 @@ function aggregatesFromContract(
     avgCompleted,
     groupRows: groupRows.map((group) => {
       const inGroup = active.filter((student) => student.groupId === group.groupId)
-      const done = inGroup.reduce((sum, student) => {
-        const summary = mapOrgStudentRowToPythonSummary(student)
-        return sum + (summary.completed ?? 0)
-      }, 0)
-      const denom = authorizedLevels * inGroup.length
+      const groupSummaries = inGroup.map(mapOrgStudentRowToPythonSummary)
+      const done = groupSummaries.reduce((sum, summary) => sum + (summary.completed ?? 0), 0)
+      // 未开通 python 的学生不进入分母；整组未开通时 rate=null → 「尚未开通」，不显示 0%。
+      const denom = groupSummaries.reduce(
+        (sum, summary) => sum + (summary.availability === 'cloud' ? summary.total ?? 0 : 0),
+        0,
+      )
       return {
         groupId: group.groupId,
         name: group.name,
@@ -215,6 +217,7 @@ export function OrgDashboard() {
                           authorizedLevels: authorized,
                           authorizedCompletedCount: row.authorizedCompletedCount,
                           completedCount: row.completedCount,
+                          pythonEnabled: students.find((student) => student.id === row.student.id)?.pythonEnabled ?? true,
                           typing: row.typing,
                         }),
                       )}

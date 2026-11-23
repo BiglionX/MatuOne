@@ -18,8 +18,9 @@ import {
 import {
   dualReadOrgStudents,
   formatOrgPythonProgressLine,
-  mapOrgStudentRowToPythonSummary,
+  listOrgStudentModuleProgress,
 } from '@/api/moduleProgress'
+import type { ModuleProgressSummary, StudentModulesProgressView } from '@/types/moduleProgress'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
 import { TableSkeleton } from '@/components/Skeleton'
 import { OrgStudentProgress } from '@/components/OrgStudentProgress'
@@ -34,6 +35,7 @@ export function OrgStudents() {
   const readOnly = getOrgSession()?.readOnly === true
   const [params, setParams] = useSearchParams()
   const [students, setStudents] = useState<OrgStudentListItem[]>([])
+  const [moduleViews, setModuleViews] = useState<StudentModulesProgressView[]>([])
   const [detailId, setDetailId] = useState('')
   const [groups, setGroups] = useState<Group[]>([])
   const [groupFilter, setGroupFilter] = useState('all')
@@ -55,12 +57,22 @@ export function OrgStudents() {
   const [savingStatus, setSavingStatus] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const refreshStudents = () =>
+    Promise.all([listOrgStudents(), listOrgStudentModuleProgress()])
+      .then(([nextStudents, views]) => {
+        setStudents(nextStudents)
+        setModuleViews(views)
+        dualReadOrgStudents(nextStudents, views)
+        return nextStudents
+      })
+
   useEffect(() => {
-    Promise.all([listOrgStudents(), listOrgGroups()])
-      .then(([nextStudents, nextGroups]) => {
+    Promise.all([listOrgStudents(), listOrgGroups(), listOrgStudentModuleProgress()])
+      .then(([nextStudents, nextGroups, views]) => {
         setStudents(nextStudents)
         setGroups(nextGroups)
-        dualReadOrgStudents(nextStudents)
+        setModuleViews(views)
+        dualReadOrgStudents(nextStudents, views)
       })
       .catch((error: unknown) => {
         if (error instanceof ApiError) setNotice(error.message)
@@ -89,9 +101,7 @@ export function OrgStudents() {
       const text = await file.text()
       const result = await importOrgStudents(text)
       setRows(result.rows)
-      const nextStudents = await listOrgStudents()
-      setStudents(nextStudents)
-      dualReadOrgStudents(nextStudents)
+      await refreshStudents()
     } catch (error: unknown) {
       setRows(null)
       setNotice(error instanceof ApiError ? error.message : '导入失败')
@@ -177,6 +187,9 @@ export function OrgStudents() {
   const okCount = rows?.filter((row) => row.ok).length ?? 0
   const failCount = rows ? rows.length - okCount : 0
   const emptyLabel = students.length === 0 ? '还没有学生。先建好分组，再用 CSV 批量导入。' : '这个分组还没有学生。'
+  const progressByStudent = new Map(moduleViews.map((view) => [view.studentId, view]))
+  const pythonSummaryOf = (studentId: string): ModuleProgressSummary | undefined =>
+    progressByStudent.get(studentId)?.modules.find((m) => m.detail.kind === 'python')
 
   return (
     <div className="p-8">
@@ -328,7 +341,7 @@ export function OrgStudents() {
           <TableSkeleton rows={6} cols={6} />
         ) : (
         <div className="overflow-x-auto">
-          <table className="data-table w-full min-w-[1080px] text-sm">
+          <table className="data-table w-full min-w-[1180px] text-sm">
             <thead>
               <tr className="border-b border-line bg-canvas text-left text-ink-soft">
                 <th className="px-6 py-3 font-medium">姓名</th>
@@ -337,7 +350,8 @@ export function OrgStudents() {
                 <th className="px-6 py-3 font-medium">账号状态</th>
                 <th className="px-6 py-3 font-medium">进度</th>
                 <th className="px-6 py-3 font-medium">打字</th>
-                <th className="px-6 py-3 font-medium">最近学习时间</th>
+                <th className="px-6 py-3 font-medium">最近学习</th>
+                <th className="px-6 py-3 font-medium">最近登录</th>
                 <th className="px-6 py-3 font-medium">已绑定家长</th>
                 <th className="px-6 py-3 font-medium">家长绑定码</th>
               </tr>
@@ -345,12 +359,14 @@ export function OrgStudents() {
             <tbody>
               {visible.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-6 py-10 text-center text-ink-soft">
+                  <td colSpan={10} className="px-6 py-10 text-center text-ink-soft">
                     {emptyLabel}
                   </td>
                 </tr>
               )}
-              {visible.map((student) => (
+              {visible.map((student) => {
+                const pythonSummary = pythonSummaryOf(student.id)
+                return (
                 <tr key={student.id} className="border-b border-line last:border-0 hover:bg-canvas/60">
                   <td className="px-6 py-3.5 font-medium text-ink">
                     <button type="button" className="text-brand-strong hover:underline" title="查看学生档案" onClick={() => setParams({ student: student.id })}>
@@ -406,10 +422,13 @@ export function OrgStudents() {
                     </div>
                   </td>
                   <td className="px-6 py-3.5 text-ink-soft">
-                    {formatOrgPythonProgressLine(mapOrgStudentRowToPythonSummary(student))}
+                    {pythonSummary ? formatOrgPythonProgressLine(pythonSummary) : '尚未开通'}
                   </td>
                   <td className="px-6 py-3.5 text-ink-soft">
                     {student.typing ? `${student.typing.wpm} WPM · ${student.typing.accuracy}%` : '还没有记录'}
+                  </td>
+                  <td className="px-6 py-3.5 text-ink-soft">
+                    {formatDate(pythonSummary?.lastStudiedAt ?? student.lastStudiedAt)}
                   </td>
                   <td className="px-6 py-3.5 text-ink-soft">{formatDate(student.lastActiveAt)}</td>
                   <td className="px-6 py-3.5">
@@ -435,7 +454,8 @@ export function OrgStudents() {
                     )}
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -445,7 +465,11 @@ export function OrgStudents() {
       {detailId && (
         <OrgStudentProgress
           studentId={detailId}
-          summary={summaryOf(students.find((student) => student.id === detailId), groups)}
+          summary={summaryOf(
+            students.find((student) => student.id === detailId),
+            groups,
+            pythonSummaryOf(detailId),
+          )}
           onClose={() => setParams({})}
         />
       )}
@@ -575,15 +599,19 @@ function ConfirmDialog({
   )
 }
 
-function summaryOf(student: OrgStudentListItem | undefined, groups: Group[]) {
+function summaryOf(
+  student: OrgStudentListItem | undefined,
+  groups: Group[],
+  pythonSummary: ModuleProgressSummary | undefined,
+) {
   if (!student) return undefined
-  const progress = mapOrgStudentRowToPythonSummary(student)
   return {
     account: student.account,
     groupName: groups.find((group) => group.id === student.groupId)?.name ?? '未分组',
     status: student.status,
-    progressLine: formatOrgPythonProgressLine(progress),
+    progressLine: pythonSummary ? formatOrgPythonProgressLine(pythonSummary) : '尚未开通',
     typing: student.typing,
+    lastStudiedAt: pythonSummary?.lastStudiedAt ?? student.lastStudiedAt,
     lastActiveAt: student.lastActiveAt,
     bindCode: student.bindCode,
     boundParentCount: student.boundParentCount,

@@ -227,6 +227,7 @@ Deno.serve(async (req) => {
             bound_parent_count: counts.get(id) ?? 0,
             completed_count: authorizedCompletedCount,
             authorizedCompletedCount,
+            pythonEnabled: extras.pythonEnabled,
             lastStudiedAt: extras.lastStudiedAt.get(id) ?? null,
             typing_wpm: typing?.wpm ?? null,
             typing_accuracy: typing?.accuracy ?? null,
@@ -341,6 +342,8 @@ async function studentListExtras(
   ])
   const access: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
   const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null)
+  // 模块开通与「Level 1 免费」是两件事：启动器按 module 开通过滤，列表/看板也按同一事实判 not_entitled。
+  const pythonEnabled = maxStage > 0
   const publishedRows = (published ?? []).map((row) => ({
     sort_order: row.sort_order as number,
     stage_sort: Number(row.stage_level),
@@ -351,6 +354,7 @@ async function studentListExtras(
     return {
       authorizedLevels: emptyFacts.authorizedLevels,
       completed: emptyFacts.completed,
+      pythonEnabled,
       typing,
       lastStudiedAt: new Map<string, string | null>(),
     }
@@ -399,5 +403,5 @@ async function studentListExtras(
       created_at: row.created_at as string,
     })),
   })
-  return { authorizedLevels: facts.authorizedLevels, completed: facts.completed, typing, lastStudiedAt }
+  return { authorizedLevels: facts.authorizedLevels, completed: facts.completed, pythonEnabled, typing, lastStudiedAt }
 }

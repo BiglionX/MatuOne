@@ -17,6 +17,9 @@ export interface OrgStudentSummary {
   /** 已由 ModuleProgressSummary 格式化的进度一行（第 N 关 · x/y | 尚未开通） */
   progressLine: string
   typing: { wpm: number; accuracy: number } | null
+  /** 最近真学习（三链 lastStudiedAt） */
+  lastStudiedAt: string | null
+  /** 最近登录/活跃 */
   lastActiveAt: string
   bindCode: string
   boundParentCount: number
@@ -103,6 +106,10 @@ export function OrgStudentProgress({
             </div>
             <div>
               <dt className="text-ink-soft">最近学习</dt>
+              <dd className="mt-1 text-ink">{formatDate(summary.lastStudiedAt)}</dd>
+            </div>
+            <div>
+              <dt className="text-ink-soft">最近登录</dt>
               <dd className="mt-1 text-ink">{formatDate(summary.lastActiveAt)}</dd>
             </div>
             <div>

@@ -1,8 +1,13 @@
 /**
- * S5 进度双读校验（仅开发态）：用现网 row/child 跑 Python 适配器，对比关键字段。
+ * S5 进度双读校验（仅开发态）：对比旧 API 行字段与 list*StudentModuleProgress 的 python 摘要。
  * 不切换渲染真源；不一致 console.warn，一致 debug 汇总。
+ * map* 留在 adapter；页面只传旧行 + list* 视图，不自行 map。
  */
-import type { ModuleProgressSummary, PythonProgressDetail } from '@/types/moduleProgress'
+import type {
+  ModuleProgressSummary,
+  PythonProgressDetail,
+  StudentModulesProgressView,
+} from '@/types/moduleProgress'
 import {
   mapOrgStudentRowToPythonSummary,
   mapParentChildToPythonSummary,
@@ -34,6 +39,11 @@ function pushDiff(diffs: FieldDiff[], field: string, legacy: unknown, mapped: un
 
 function asPythonDetail(summary: ModuleProgressSummary): PythonProgressDetail | null {
   return summary.detail.kind === 'python' ? summary.detail : null
+}
+
+function pythonFromView(view: StudentModulesProgressView | undefined): ModuleProgressSummary | null {
+  if (!view) return null
+  return view.modules.find((m) => m.detail.kind === 'python') ?? null
 }
 
 /** 机构列表行 ↔ ModuleProgressSummary */
@@ -129,13 +139,22 @@ function warnMismatch(
   console.warn(`${LOG_PREFIX} ${scope} mismatch`, { id, name, diffs })
 }
 
-/** 机构学生列表加载后调用（同批数据映射，不另发请求） */
-export function dualReadOrgStudents(rows: OrgPythonProgressSource[]): void {
+/** 机构：旧 list 行 ↔ listOrgStudentModuleProgress 的 python 摘要（views 缺省时 adapter 内 map 兜底，供看板） */
+export function dualReadOrgStudents(
+  rows: OrgPythonProgressSource[],
+  views?: StudentModulesProgressView[],
+): void {
   if (!isProgressDualReadEnabled()) return
 
+  const byId = views ? new Map(views.map((view) => [view.studentId, view])) : null
   let mismatchCount = 0
   for (const row of rows) {
-    const summary = mapOrgStudentRowToPythonSummary(row)
+    const summary = byId ? pythonFromView(byId.get(row.id)) : mapOrgStudentRowToPythonSummary(row)
+    if (!summary) {
+      mismatchCount += 1
+      warnMismatch('org', row.id, row.name, [{ field: 'modules.python', legacy: 'present', mapped: null }])
+      continue
+    }
     const diffs = diffOrgStudentProgress(row, summary)
     if (diffs.length > 0) {
       mismatchCount += 1
@@ -150,13 +169,26 @@ export function dualReadOrgStudents(rows: OrgPythonProgressSource[]): void {
   }
 }
 
-/** 家长 home 加载后调用（同批 children 映射） */
-export function dualReadParentHome(children: ParentPythonProgressSource[]): void {
+/** 家长：旧 children ↔ listParentStudentModuleProgress 的 python 摘要（views 缺省时 adapter 内 map 兜底） */
+export function dualReadParentHome(
+  children: ParentPythonProgressSource[],
+  views?: StudentModulesProgressView[],
+): void {
   if (!isProgressDualReadEnabled()) return
 
+  const byId = views ? new Map(views.map((view) => [view.studentId, view])) : null
   let mismatchCount = 0
   for (const child of children) {
-    const summary = mapParentChildToPythonSummary(child)
+    const summary = byId
+      ? pythonFromView(byId.get(child.student.id))
+      : mapParentChildToPythonSummary(child)
+    if (!summary) {
+      mismatchCount += 1
+      warnMismatch('parent', child.student.id, child.student.name, [
+        { field: 'modules.python', legacy: 'present', mapped: null },
+      ])
+      continue
+    }
     const diffs = diffParentChildProgress(child, summary)
     if (diffs.length > 0) {
       mismatchCount += 1

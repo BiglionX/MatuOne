@@ -5,15 +5,15 @@ import {
   asPythonDetail,
   dualReadParentHome,
   formatModuleStatusLabel,
-  modulesForParentChild,
+  listParentStudentModuleProgress,
 } from '@/api/moduleProgress'
-import type { ModuleProgressSummary } from '@/types/moduleProgress'
+import type { ModuleProgressSummary, StudentModulesProgressView } from '@/types/moduleProgress'
 import { WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
 import { FormError } from '@/components/FormError'
 import { ListSkeleton } from '@/components/Skeleton'
 import { LEARNING_ROADMAP } from '@/data/learningRoadmap'
-import { formatDay } from '@/lib/format'
+import { formatDate, formatDay } from '@/lib/format'
 import type { ParentChildView, ParentLessonBrief, ParentStoppedChild } from '@/types'
 import { ApiError } from '@/lib/apiError'
 
@@ -86,6 +86,7 @@ export function ParentHome() {
   const navigate = useNavigate()
   const session = getParentSession()
   const [children, setChildren] = useState<ParentChildView[]>([])
+  const [moduleViews, setModuleViews] = useState<StudentModulesProgressView[]>([])
   const [activeId, setActiveId] = useState('')
   const [binding, setBinding] = useState(false)
   const [code, setCode] = useState('')
@@ -97,12 +98,13 @@ export function ParentHome() {
   const [roadmapOpen, setRoadmapOpen] = useState(false)
 
   const refresh = () =>
-    loadParentHome()
-      .then((next) => {
+    Promise.all([loadParentHome(), listParentStudentModuleProgress()])
+      .then(([next, views]) => {
         setChildren(next.children)
         setStopped(next.stopped)
+        setModuleViews(views)
         setActiveId((current) => current || next.children[0]?.student.id || '')
-        dualReadParentHome(next.children)
+        dualReadParentHome(next.children, views)
       })
       .catch((error: unknown) => {
         if (error instanceof ApiError && error.status === 401) {
@@ -113,6 +115,7 @@ export function ParentHome() {
         if (error instanceof ApiError && error.status === 403) {
           setChildren([])
           setStopped([])
+          setModuleViews([])
           setActiveId('')
           setFeedback(error.message)
           return
@@ -129,7 +132,10 @@ export function ParentHome() {
   if (!session) return <Navigate to="/parent/login" replace />
 
   const view = children.find((child) => child.student.id === activeId) ?? children[0]
-  const modules = view ? modulesForParentChild(view) : []
+  /** Python 卡按孩子所属机构的模块开通事实渲染；未开通时与机构列表/启动器一致地不出现。 */
+  const pythonEnabled = view ? view.enabledModules.includes('python') : false
+  const modules =
+    (view ? moduleViews.find((row) => row.studentId === view.student.id)?.modules : undefined) ?? []
   const pythonProgress = modules.find((m) => m.detail.kind === 'python') ?? null
   const pythonDetail = pythonProgress ? asPythonDetail(pythonProgress) : null
   const stageLabel = pythonDetail?.stageLabel ?? view?.curriculum.stageLabel ?? ''
@@ -305,6 +311,8 @@ export function ParentHome() {
 
         {view ? (
           <div className="mt-4 space-y-4">
+            {pythonEnabled && (
+              <>
             <section className="card p-5">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-lg font-semibold text-ink">本周学习</h2>
@@ -339,6 +347,10 @@ export function ParentHome() {
               </p>
               <p className="mt-2 text-ink">
                 当前单元：<span className="font-semibold">{unitLabel}</span>
+              </p>
+              <p className="mt-2 text-ink">
+                最近学习：
+                <span className="font-semibold">{formatDate(pythonProgress?.lastStudiedAt)}</span>
               </p>
               {view.curriculum.beyondAuthored ? (
                 <p className="mt-4 text-ink">当前阶段的基础内容已学完，进阶课程即将上线</p>
@@ -379,6 +391,8 @@ export function ParentHome() {
                 查看完整学习路线
               </button>
             </section>
+              </>
+            )}
             <section className="card p-5">
               {confirmUnbind ? (
                 <div>
@@ -398,15 +412,17 @@ export function ParentHome() {
                 </button>
               )}
             </section>
-            <section className="card p-5">
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-lg font-semibold text-ink">打字成长</h2>
-                <span className="text-sm text-ink-soft">WPM</span>
-              </div>
-              <div className="mt-4">
-                <WpmChart series={typingChartSeries} />
-              </div>
-            </section>
+            {pythonEnabled && (
+              <section className="card p-5">
+                <div className="flex items-baseline justify-between">
+                  <h2 className="text-lg font-semibold text-ink">打字成长</h2>
+                  <span className="text-sm text-ink-soft">WPM</span>
+                </div>
+                <div className="mt-4">
+                  <WpmChart series={typingChartSeries} />
+                </div>
+              </section>
+            )}
             {extraModules.map((summary) => (
               <ParentModuleSection key={summary.moduleId} summary={summary} />
             ))}

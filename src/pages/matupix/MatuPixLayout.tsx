@@ -97,7 +97,7 @@ function useMatuPixGate(): GateState {
 }
 
 function MatuPixBlocked({ reason }: { reason: 'not_entitled' | 'check_failed' }) {
-  const title = reason === 'not_entitled' ? '机构未开通 MatuPix' : '暂时无法确认开通状态'
+  const title = reason === 'not_entitled' ? '该模块未开通' : '暂时无法确认开通状态'
   const detail =
     reason === 'not_entitled'
       ? '当前登录所属机构还没有开通 MatuPix 创意工坊。请联系老师或机构管理员开通后再来。'
