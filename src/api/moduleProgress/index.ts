@@ -20,6 +20,13 @@ export {
   getOrgStudentPythonProgress,
 } from './python'
 export type { OrgPythonProgressSource, ParentPythonProgressSource } from './python'
+export {
+  isProgressDualReadEnabled,
+  dualReadOrgStudents,
+  dualReadParentHome,
+  diffOrgStudentProgress,
+  diffParentChildProgress,
+} from './dualRead'
 
 function moduleMeta(moduleId: ModuleId): { displayName: string; gradeRange?: string } {
   const mod = getModule(moduleId)

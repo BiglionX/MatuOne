@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { bindChild, getParentSession, loadParentHome, logoutParent, lookupChild, unbindChild } from '@/api/parent'
+import { dualReadParentHome } from '@/api/moduleProgress'
 import { WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
 import { FormError } from '@/components/FormError'
@@ -75,6 +76,7 @@ export function ParentHome() {
         setChildren(next.children)
         setStopped(next.stopped)
         setActiveId((current) => current || next.children[0]?.student.id || '')
+        dualReadParentHome(next.children)
       })
       .catch((error: unknown) => {
         if (error instanceof ApiError && error.status === 401) {

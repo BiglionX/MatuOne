@@ -15,6 +15,7 @@ import {
   unbindOrgStudent,
   type OrgStudentListItem,
 } from '@/api/orgPortal'
+import { dualReadOrgStudents } from '@/api/moduleProgress'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
 import { TableSkeleton } from '@/components/Skeleton'
 import { OrgStudentProgress } from '@/components/OrgStudentProgress'
@@ -55,6 +56,7 @@ export function OrgStudents() {
       .then(([nextStudents, nextGroups]) => {
         setStudents(nextStudents)
         setGroups(nextGroups)
+        dualReadOrgStudents(nextStudents)
       })
       .catch((error: unknown) => {
         if (error instanceof ApiError) setNotice(error.message)
@@ -83,7 +85,9 @@ export function OrgStudents() {
       const text = await file.text()
       const result = await importOrgStudents(text)
       setRows(result.rows)
-      setStudents(await listOrgStudents())
+      const nextStudents = await listOrgStudents()
+      setStudents(nextStudents)
+      dualReadOrgStudents(nextStudents)
     } catch (error: unknown) {
       setRows(null)
       setNotice(error instanceof ApiError ? error.message : '导入失败')
