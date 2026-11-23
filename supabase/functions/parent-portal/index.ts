@@ -5,6 +5,7 @@ import { toCurriculumPosition, type CurriculumPositionRow } from '../_shared/cur
 import { empty, json } from '../_shared/http.ts'
 import { openMaxLevel, type OrgStatus } from '../_shared/orgStatus.ts'
 import { parentOrgAccess } from '../_shared/parentOrgAccess.ts'
+import { resolveLastStudiedAt } from '../_shared/lastStudiedAt.ts'
 import { buildPythonAuthorizedFacts } from '../_shared/pythonProgressFacts.ts'
 import { serviceDb } from '../_shared/staff.ts'
 
@@ -215,7 +216,7 @@ Deno.serve(async (req) => {
       db.from('learning_record').select('level_id, completed, updated_at').eq('student_id', student.id),
       db.from('course_level').select('level_id', { count: 'exact', head: true }).eq('published', true),
       db.from('study_session').select('level_id, started_at, ended_at').eq('student_id', student.id),
-      db.from('typing_record').select('practiced_on, wpm, accuracy').eq('student_id', student.id),
+      db.from('typing_record').select('practiced_on, wpm, accuracy, created_at').eq('student_id', student.id),
       db.from('org_entitlement')
         .select('max_level, valid_until')
         .eq('org_id', student.org_id)
@@ -290,6 +291,11 @@ Deno.serve(async (req) => {
       }]
     })
     const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, publishedRows, authLessons)
+    const lastStudiedAt = resolveLastStudiedAt({
+      sessionStartedAts: (sessions ?? []).map((row) => row.started_at as string),
+      learningUpdatedAts: (progress ?? []).map((row) => row.updated_at as string | null),
+      typingCreatedAts: (typing ?? []).map((row) => row.created_at as string | null),
+    })
     children.push({
       student: {
         id: student.id,
@@ -308,6 +314,7 @@ Deno.serve(async (req) => {
       completedCount,
       authorizedLevels: authFacts.authorizedLevels,
       authorizedCompletedCount: authFacts.completed.get(student.id as string) ?? 0,
+      lastStudiedAt,
       weekly: {
         weekStart: start.toISOString().slice(0, 10),
         sessions: weeklySessions.length,

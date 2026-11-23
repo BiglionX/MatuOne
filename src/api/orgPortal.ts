@@ -40,9 +40,11 @@ export interface OrgDashboardStudent {
   student: Omit<Student, 'password'>
   groupName: string
   completedCount: number
+  authorizedCompletedCount: number
   currentOrder: number
   typing: { wpm: number; accuracy: number } | null
   lastActiveAt: string
+  lastStudiedAt: string | null
 }
 
 export interface OrgDashboardView {
@@ -78,8 +80,12 @@ export async function createOrgGroup(name: string): Promise<Group[]> {
 
 export interface OrgStudentListItem extends Student {
   boundParentCount: number
+  /** 与 authorizedCompletedCount 同义（S0 后列表 completed_count 即授权内完成数） */
   completedCount: number
   authorizedLevels: number
+  authorizedCompletedCount: number
+  /** 三链最近学习时间；API 始终返回（无记录为 null） */
+  lastStudiedAt: string | null
   typing: { wpm: number; accuracy: number } | null
 }
 
@@ -97,28 +103,35 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       last_active_at: string | null
       bound_parent_count?: number
       completed_count?: number
+      authorizedCompletedCount?: number
+      lastStudiedAt?: string | null
       typing_wpm?: number | null
       typing_accuracy?: number | null
     }[]
   }>('org-students', {}, { role: 'org', headers: { 'x-action': 'list' } })
   const authorizedLevels = result.authorizedLevels ?? 0
-  return result.students.map((row) => ({
-    ...asStudent({
-      id: row.id,
-      orgId: '',
-      groupId: row.group_id,
-      name: row.name,
-      account: row.account,
-      status: row.status,
-      currentLevelOrder: row.current_level_order,
-      lastActiveAt: row.last_active_at ?? '',
-      bindCode: row.bind_code ?? '',
-    }),
-    boundParentCount: row.bound_parent_count ?? 0,
-    completedCount: row.completed_count ?? 0,
-    authorizedLevels,
-    typing: row.typing_wpm == null ? null : { wpm: row.typing_wpm, accuracy: row.typing_accuracy ?? 0 },
-  }))
+  return result.students.map((row) => {
+    const authorizedCompletedCount = row.authorizedCompletedCount ?? row.completed_count ?? 0
+    return {
+      ...asStudent({
+        id: row.id,
+        orgId: '',
+        groupId: row.group_id,
+        name: row.name,
+        account: row.account,
+        status: row.status,
+        currentLevelOrder: row.current_level_order,
+        lastActiveAt: row.last_active_at ?? '',
+        bindCode: row.bind_code ?? '',
+      }),
+      boundParentCount: row.bound_parent_count ?? 0,
+      completedCount: authorizedCompletedCount,
+      authorizedLevels,
+      authorizedCompletedCount,
+      lastStudiedAt: row.lastStudiedAt ?? null,
+      typing: row.typing_wpm == null ? null : { wpm: row.typing_wpm, accuracy: row.typing_accuracy ?? 0 },
+    }
+  })
 }
 
 /** studentId 只用来点名本机构的一名学生，机构身份仍由服务端会话决定。 */

@@ -4,6 +4,7 @@ import { validateCoursePackage } from '../supabase/functions/_shared/coursePacka
 import { COURSE_TREE_SQL, groupCourseTree, type CourseTreeSourceRow } from '../supabase/functions/_shared/courseTree'
 import { toCurriculumPosition, type CurriculumPositionRow } from '../supabase/functions/_shared/curriculumPosition'
 import { calendarWeekStart, lessonIsAuthorized, openMaxLevel, orgAttention, seatLimit, type OrgAttention, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
+import { resolveLastStudiedAt, aggregateLastStudiedAtByStudent } from '../supabase/functions/_shared/lastStudiedAt'
 import { buildPythonAuthorizedFacts } from '../supabase/functions/_shared/pythonProgressFacts'
 import { generateInitialPassword, hashPassword, verifyPassword } from '../supabase/functions/_shared/password'
 import { planStudentImport } from '../supabase/functions/_shared/studentImport'
@@ -556,6 +557,7 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
           ...student,
           completed_count: authorizedCompletedCount,
           authorizedCompletedCount,
+          lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
           typing_wpm: typing?.wpm ?? null,
           typing_accuracy: typing?.accuracy ?? null,
         }
@@ -814,17 +816,30 @@ async function orgLessonFacts(orgId: string, effective: OrgStatus, studentIds: s
         [studentIds],
       )
     : []
+  const sessionRows = studentIds.length
+    ? await q<{ student_id: string; started_at: string }>(
+        'select student_id, started_at from public.study_session where student_id = any($1::uuid[])',
+        [studentIds],
+      )
+    : []
   const typing = new Map<string, { wpm: number; accuracy: number; at: string }>()
   for (const row of typingRows) {
     const prev = typing.get(row.student_id)
     if (!prev || row.created_at > prev.at) typing.set(row.student_id, { wpm: Number(row.wpm), accuracy: Number(row.accuracy), at: row.created_at })
   }
   const facts = buildPythonAuthorizedFacts(access, maxStage, published, lessons)
+  const lastStudiedAt = aggregateLastStudiedAtByStudent({
+    studentIds,
+    sessions: sessionRows,
+    learning: lessons,
+    typing: typingRows,
+  })
   return {
     authorizedLevels: facts.authorizedLevels,
     lessons,
     completed: facts.completed,
     typing,
+    lastStudiedAt,
   }
 }
 
@@ -957,6 +972,7 @@ async function orgDashboard(req: ApiRequest): Promise<ApiResult> {
         currentOrder: student.current_level_order,
         typing: typingRow ? { wpm: typingRow.wpm, accuracy: typingRow.accuracy } : null,
         lastActiveAt: student.last_active_at ?? '',
+        lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
       }]
     }),
   })
@@ -1336,8 +1352,8 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
     const sessions = await q<{ started_at: string; ended_at: string | null }>('select started_at, ended_at from public.study_session where student_id = $1', [
       student.id,
     ])
-    const typing = await q<{ practiced_on: string; wpm: number; accuracy: number }>(
-      'select practiced_on, wpm, accuracy from public.typing_record where student_id = $1',
+    const typing = await q<{ practiced_on: string; wpm: number; accuracy: number; created_at: string }>(
+      'select practiced_on, wpm, accuracy, created_at from public.typing_record where student_id = $1',
       [student.id],
     )
     const totalLevels = countRow?.n ?? 0
@@ -1378,8 +1394,8 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
          from public.course_level cl
          where cl.published = true`,
       ),
-      q<{ student_id: string; sort_order: number; stage_sort: number; completed: boolean }>(
-        `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed
+      q<{ student_id: string; sort_order: number; stage_sort: number; completed: boolean; updated_at: string }>(
+        `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed, lr.updated_at
          from public.learning_record lr
          join public.course_level cl on cl.level_id = lr.level_id
          where lr.student_id = $1`,
@@ -1389,6 +1405,11 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
     const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
     const authAccess: OrgStatus = org?.status === 'trial' || access === 'trial' ? 'trial' : (access as OrgStatus)
     const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons)
+    const lastStudiedAt = resolveLastStudiedAt({
+      sessionStartedAts: sessions.map((row) => row.started_at),
+      learningUpdatedAts: authLessons.map((row) => row.updated_at),
+      typingCreatedAts: typing.map((row) => row.created_at),
+    })
     const toBrief = (row: { level_id: string; sort_order: number; title: string; parent_brief: string | null }) => ({
       levelId: row.level_id,
       order: row.sort_order,
@@ -1413,6 +1434,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       completedCount: progress.length,
       authorizedLevels: authFacts.authorizedLevels,
       authorizedCompletedCount: authFacts.completed.get(student.id) ?? 0,
+      lastStudiedAt,
       position: await loadCurriculumPosition(student.id),
       weekly: {
         weekStart: start.toISOString().slice(0, 10),

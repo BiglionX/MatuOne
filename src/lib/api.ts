@@ -471,6 +471,9 @@ export function getChildView(studentId: string): ParentChildView {
     currentLevelOrder: currentOrder,
     totalLevels: LEVELS.length,
     completedCount,
+    authorizedLevels: LEVELS.length,
+    authorizedCompletedCount: completedCount,
+    lastStudiedAt: student.lastActiveAt?.trim() ? student.lastActiveAt : weekly.lastStudyDate,
     curriculum: presentParentProgress(currentOrder),
     weekly: {
       weekStart: new Date().toISOString().slice(0, 10),

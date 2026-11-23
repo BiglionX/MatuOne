@@ -340,6 +340,15 @@ export interface ParentChildView {
   currentLevelOrder: number
   totalLevels: number
   completedCount: number
+  /** 机构授权范围内关卡总数（试用 Level1=120 等） */
+  authorizedLevels: number
+  /** 授权范围内已完成关卡数 */
+  authorizedCompletedCount: number
+  /**
+   * 最近学习时间 ISO；三链：
+   * study_session.started_at → learning_record.updated_at → typing_record.created_at；均无则 null。
+   */
+  lastStudiedAt: string | null
   /** 家长看到的是当前 Level 里的单元进度，不是全课程总关数。 */
   curriculum: ParentCurriculumProgress
   weekly: WeeklySummary

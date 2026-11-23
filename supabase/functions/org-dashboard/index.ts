@@ -1,6 +1,7 @@
 // 机构进度看板。完成率只拿已授权关卡做分母，名单只留需要跟进的学生。
 import { empty, json } from '../_shared/http.ts'
 import { calendarWeekStart, openMaxLevel, orgAttention, type OrgStatus } from '../_shared/orgStatus.ts'
+import { aggregateLastStudiedAtByStudent } from '../_shared/lastStudiedAt.ts'
 import { buildPythonAuthorizedFacts } from '../_shared/pythonProgressFacts.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
 
@@ -31,7 +32,7 @@ Deno.serve(async (req) => {
     const maxStage = openMaxLevel(
       grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null,
     )
-    const [{ data: published }, { data: progress }, { data: typing }, { data: levelRows }] = await Promise.all([
+    const [{ data: published }, { data: progress }, { data: typing }, { data: levelRows }, { data: sessions }] = await Promise.all([
       ctx.db.from('course_level').select('sort_order, stage_level').eq('published', true),
       ids.length
         ? ctx.db.from('learning_record').select('student_id, level_id, completed, updated_at').in('student_id', ids)
@@ -40,6 +41,9 @@ Deno.serve(async (req) => {
         ? ctx.db.from('typing_record').select('student_id, wpm, accuracy, created_at').in('student_id', ids)
         : Promise.resolve({ data: [] as { student_id: string; wpm: number; accuracy: number; created_at: string }[] }),
       ctx.db.from('course_level').select('level_id, sort_order, stage_level'),
+      ids.length
+        ? ctx.db.from('study_session').select('student_id, started_at').in('student_id', ids)
+        : Promise.resolve({ data: [] as { student_id: string; started_at: string }[] }),
     ])
     const levelById = new Map(
       (levelRows ?? []).map((row) => [
@@ -71,6 +75,21 @@ Deno.serve(async (req) => {
     const facts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, lessons)
     const authorizedLevels = facts.authorizedLevels
     const completed = facts.completed
+    const lastStudiedAt = aggregateLastStudiedAtByStudent({
+      studentIds: ids,
+      sessions: (sessions ?? []).map((row) => ({
+        student_id: row.student_id as string,
+        started_at: row.started_at as string,
+      })),
+      learning: (progress ?? []).map((row) => ({
+        student_id: row.student_id as string,
+        updated_at: row.updated_at as string | null,
+      })),
+      typing: (typing ?? []).map((row) => ({
+        student_id: row.student_id as string,
+        created_at: row.created_at as string,
+      })),
+    })
     const latestTyping = new Map<string, { wpm: number; accuracy: number; at: string }>()
     for (const row of typing ?? []) {
       const prev = latestTyping.get(row.student_id as string)
@@ -135,6 +154,7 @@ Deno.serve(async (req) => {
           currentOrder: student.current_level_order,
           typing: typingRow ? { wpm: typingRow.wpm, accuracy: typingRow.accuracy } : null,
           lastActiveAt: student.last_active_at ?? '',
+          lastStudiedAt: lastStudiedAt.get(student.id as string) ?? null,
         }]
       }),
     })

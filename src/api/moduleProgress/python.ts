@@ -1,7 +1,7 @@
 /**
  * Python 模块进度适配器：纯映射。
  * 授权分子/分母只读现有 API 已返回的 authorizedLevels / authorizedCompletedCount（S0），
- * 不新写授权查询，不 import supabase/functions/_shared/。
+ * lastStudiedAt 优先用 API 三链字段；不新写授权查询，不 import supabase/functions/_shared/。
  */
 import { listOrgStudents, type OrgStudentListItem } from '@/api/orgPortal'
 import { loadParentHome } from '@/api/parent'
@@ -13,7 +13,7 @@ import type {
   PythonProgressDetail,
   StudentModulesProgressView,
 } from '@/types/moduleProgress'
-import type { ParentChildView, ParentStoppedChild, WeeklySummary } from '@/types'
+import type { ParentChildView, ParentStoppedChild } from '@/types'
 
 const MODULE_ID = 'python' as const
 
@@ -86,48 +86,23 @@ function cloudPythonSummary(input: {
   }
 }
 
-/** 机构列表行：S0 后 completedCount ≡ authorizedCompletedCount；亦接受显式字段。 */
+/** 机构列表行：字段已由 OrgStudentListItem 正式声明。 */
 export type OrgPythonProgressSource = Pick<
   OrgStudentListItem,
-  'id' | 'name' | 'status' | 'currentLevelOrder' | 'lastActiveAt' | 'authorizedLevels' | 'completedCount' | 'typing'
-> & {
-  authorizedCompletedCount?: number
-}
+  | 'id'
+  | 'name'
+  | 'status'
+  | 'currentLevelOrder'
+  | 'lastActiveAt'
+  | 'lastStudiedAt'
+  | 'authorizedLevels'
+  | 'authorizedCompletedCount'
+  | 'completedCount'
+  | 'typing'
+>
 
-/**
- * 家长孩子行：S0 在 parent-portal 附加 authorizedLevels / authorizedCompletedCount。
- * 前端 ParentChildView 类型尚未声明时，由调用方保证运行时字段存在。
- */
-export type ParentPythonProgressSource = ParentChildView & {
-  authorizedLevels: number
-  authorizedCompletedCount: number
-}
-
-function resolveAuthorizedCompleted(row: OrgPythonProgressSource): number {
-  return row.authorizedCompletedCount ?? row.completedCount ?? 0
-}
-
-function orgLastStudiedAt(lastActiveAt: string | null | undefined): string | null {
-  const raw = (lastActiveAt ?? '').trim()
-  return raw || null
-}
-
-/**
- * 家长端：weekly.lastStudyDate（当周 study_session 截日）与 student.lastActiveAt 取较新。
- * 完整回退链（全量 study_session → learning_record → typing_record）API 未附带，缺口留给后续切片。
- */
-function parentLastStudiedAt(
-  weekly: WeeklySummary | undefined,
-  lastActiveAt: string | null | undefined,
-): string | null {
-  const candidates: string[] = []
-  const date = weekly?.lastStudyDate?.trim()
-  if (date) candidates.push(date.length <= 10 ? `${date}T00:00:00.000Z` : date)
-  const active = (lastActiveAt ?? '').trim()
-  if (active) candidates.push(active)
-  if (!candidates.length) return null
-  return candidates.reduce((a, b) => (new Date(a).getTime() >= new Date(b).getTime() ? a : b))
-}
+/** 家长孩子行：字段已由 ParentChildView 正式声明。 */
+export type ParentPythonProgressSource = ParentChildView
 
 function mapTypingSeries(
   series: ParentChildView['typingSeries'] | undefined,
@@ -151,12 +126,26 @@ function parentTyping(child: ParentPythonProgressSource): PythonProgressDetail['
   }
 }
 
+/** API 未返回 lastStudiedAt 时的最后兜底（正常路径应始终带字段）。 */
+function fallbackLastStudiedAt(lastActiveAt: string | null | undefined): string | null {
+  const raw = (lastActiveAt ?? '').trim()
+  return raw || null
+}
+
+function resolveLastStudiedAt(
+  apiValue: string | null | undefined,
+  lastActiveAt: string | null | undefined,
+): string | null {
+  if (apiValue !== undefined) return apiValue
+  return fallbackLastStudiedAt(lastActiveAt)
+}
+
 /** 机构学生行 → ModuleProgressSummary（纯函数，易测） */
 export function mapOrgStudentRowToPythonSummary(row: OrgPythonProgressSource): ModuleProgressSummary {
-  const authorizedLevels = row.authorizedLevels ?? 0
+  const authorizedLevels = row.authorizedLevels
   if (authorizedLevels === 0) return notEntitledEmpty('no_data')
 
-  const authorizedCompletedCount = resolveAuthorizedCompleted(row)
+  const authorizedCompletedCount = row.authorizedCompletedCount
   const currentLevelOrder = row.currentLevelOrder
   const meta = levelMeta(currentLevelOrder)
 
@@ -171,13 +160,13 @@ export function mapOrgStudentRowToPythonSummary(row: OrgPythonProgressSource): M
     unitCompleted: null,
     unitTotal: null,
     typing: row.typing,
-    lastStudiedAt: orgLastStudiedAt(row.lastActiveAt),
+    lastStudiedAt: resolveLastStudiedAt(row.lastStudiedAt, row.lastActiveAt),
   })
 }
 
 /** 家长孩子行 → ModuleProgressSummary（纯函数） */
 export function mapParentChildToPythonSummary(child: ParentPythonProgressSource): ModuleProgressSummary {
-  const authorizedLevels = child.authorizedLevels ?? 0
+  const authorizedLevels = child.authorizedLevels
   if (authorizedLevels === 0) return notEntitledEmpty('no_data')
 
   const currentLevelOrder = child.currentLevelOrder || child.student.currentLevelOrder || 1
@@ -188,14 +177,14 @@ export function mapParentChildToPythonSummary(child: ParentPythonProgressSource)
     currentLevelOrder,
     currentLevelId: catalog.currentLevelId,
     currentLevelTitle: child.currentLevelTitle ?? catalog.currentLevelTitle,
-    authorizedCompletedCount: child.authorizedCompletedCount ?? 0,
+    authorizedCompletedCount: child.authorizedCompletedCount,
     authorizedLevels,
     stageLabel: unit.stageLabel,
     unitLabel: unit.unitLabel,
     unitCompleted: unit.unitCompleted,
     unitTotal: unit.unitTotal,
     typing: parentTyping(child),
-    lastStudiedAt: parentLastStudiedAt(child.weekly, child.student.lastActiveAt),
+    lastStudiedAt: resolveLastStudiedAt(child.lastStudiedAt, child.student.lastActiveAt),
   })
 }
 
@@ -225,14 +214,11 @@ export async function getOrgStudentPythonProgress(studentId: string): Promise<Mo
 /** 家长：loadParentHome → 每个非 stopped 孩子 + stopped 占位 */
 export async function listParentPythonModuleProgress(): Promise<StudentModulesProgressView[]> {
   const home = await loadParentHome()
-  const active = home.children.map((child) => {
-    const row = child as ParentPythonProgressSource
-    return {
-      studentId: child.student.id,
-      studentName: child.student.name,
-      modules: [mapParentChildToPythonSummary(row)],
-    }
-  })
+  const active = home.children.map((child) => ({
+    studentId: child.student.id,
+    studentName: child.student.name,
+    modules: [mapParentChildToPythonSummary(child)],
+  }))
   const stopped = home.stopped.map((item, index) => ({
     studentId: `stopped:${index}`,
     studentName: item.name,

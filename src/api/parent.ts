@@ -70,19 +70,29 @@ export async function unbindChild(studentId: string): Promise<void> {
 }
 
 export async function loadParentHome(): Promise<ParentHomeData> {
-  const result = await callFunction<{ children: ParentChildView[]; stopped?: ParentStoppedChild[] }>(
-    'parent-portal',
-    { action: 'home' },
-    { role: 'parent' },
-  )
+  const result = await callFunction<{
+    children: Array<
+      Omit<ParentChildView, 'curriculum' | 'student' | 'authorizedLevels' | 'authorizedCompletedCount' | 'lastStudiedAt'> & {
+        student: Omit<Student, 'password' | 'account' | 'bindCode'>
+        curriculum?: ParentChildView['curriculum']
+        authorizedLevels?: number
+        authorizedCompletedCount?: number
+        lastStudiedAt?: string | null
+      }
+    >
+    stopped?: ParentStoppedChild[]
+  }>('parent-portal', { action: 'home' }, { role: 'parent' })
   return {
     children: result.children.map((child) => ({
       ...child,
       weeklyLessons: child.weeklyLessons ?? [],
       learnedLessons: child.learnedLessons ?? [],
       curriculum: child.curriculum ?? presentParentProgress(child.currentLevelOrder),
+      authorizedLevels: child.authorizedLevels ?? 0,
+      authorizedCompletedCount: child.authorizedCompletedCount ?? 0,
+      lastStudiedAt: child.lastStudiedAt ?? null,
       student: {
-        ...(child.student as Omit<Student, 'password' | 'account' | 'bindCode'>),
+        ...child.student,
         account: '',
         bindCode: '',
         password: '',

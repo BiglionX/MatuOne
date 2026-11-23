@@ -2,7 +2,8 @@
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { ensureAuthUser, loginEmail } from '../_shared/authUser.ts'
 import { empty, json } from '../_shared/http.ts'
-import { lessonIsAuthorized, openMaxLevel, type OrgStatus } from '../_shared/orgStatus.ts'
+import { openMaxLevel, type OrgStatus } from '../_shared/orgStatus.ts'
+import { aggregateLastStudiedAtByStudent } from '../_shared/lastStudiedAt.ts'
 import { buildPythonAuthorizedFacts } from '../_shared/pythonProgressFacts.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
 import { generateBindCode } from '../_shared/bindCode.ts'
@@ -226,6 +227,7 @@ Deno.serve(async (req) => {
             bound_parent_count: counts.get(id) ?? 0,
             completed_count: authorizedCompletedCount,
             authorizedCompletedCount,
+            lastStudiedAt: extras.lastStudiedAt.get(id) ?? null,
             typing_wpm: typing?.wpm ?? null,
             typing_accuracy: typing?.accuracy ?? null,
           }
@@ -346,12 +348,19 @@ async function studentListExtras(
   const typing = new Map<string, { wpm: number; accuracy: number }>()
   if (!ids.length) {
     const emptyFacts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, [])
-    return { authorizedLevels: emptyFacts.authorizedLevels, completed: emptyFacts.completed, typing }
+    return {
+      authorizedLevels: emptyFacts.authorizedLevels,
+      completed: emptyFacts.completed,
+      typing,
+      lastStudiedAt: new Map<string, string | null>(),
+    }
   }
-  const [{ data: progress }, { data: typingRows }, { data: levels }] = await Promise.all([
-    db.from('learning_record').select('student_id, level_id, completed').in('student_id', ids).eq('completed', true),
+  const [{ data: progress }, { data: typingRows }, { data: levels }, { data: sessions }] = await Promise.all([
+    // 授权计数只需 completed=true；updated_at 一并取出供 lastStudiedAt 三链复用
+    db.from('learning_record').select('student_id, level_id, completed, updated_at').in('student_id', ids),
     db.from('typing_record').select('student_id, wpm, accuracy, created_at').in('student_id', ids),
     db.from('course_level').select('level_id, sort_order, stage_level'),
+    db.from('study_session').select('student_id, started_at').in('student_id', ids),
   ])
   const levelById = new Map(
     (levels ?? []).map((row) => [row.level_id as string, { sortOrder: row.sort_order as number, stageSort: Number(row.stage_level) }]),
@@ -375,5 +384,20 @@ async function studentListExtras(
     }
   }
   for (const [id, row] of latest) typing.set(id, { wpm: row.wpm, accuracy: row.accuracy })
-  return { authorizedLevels: facts.authorizedLevels, completed: facts.completed, typing }
+  const lastStudiedAt = aggregateLastStudiedAtByStudent({
+    studentIds: ids,
+    sessions: (sessions ?? []).map((row) => ({
+      student_id: row.student_id as string,
+      started_at: row.started_at as string,
+    })),
+    learning: (progress ?? []).map((row) => ({
+      student_id: row.student_id as string,
+      updated_at: row.updated_at as string | null,
+    })),
+    typing: (typingRows ?? []).map((row) => ({
+      student_id: row.student_id as string,
+      created_at: row.created_at as string,
+    })),
+  })
+  return { authorizedLevels: facts.authorizedLevels, completed: facts.completed, typing, lastStudiedAt }
 }

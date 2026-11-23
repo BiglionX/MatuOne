@@ -19845,6 +19845,66 @@ function decideEnterLevel(input) {
   return { allowed: true, reason: "ok" };
 }
 
+// supabase/functions/_shared/lastStudiedAt.ts
+function maxIso(values) {
+  let best = null;
+  let bestMs = Number.NEGATIVE_INFINITY;
+  for (const raw of values) {
+    if (raw == null) continue;
+    const text = String(raw).trim();
+    if (!text) continue;
+    const ms = new Date(text).getTime();
+    if (!Number.isFinite(ms)) continue;
+    if (ms >= bestMs) {
+      bestMs = ms;
+      best = text;
+    }
+  }
+  return best;
+}
+function resolveLastStudiedAt(input) {
+  return maxIso(input.sessionStartedAts ?? []) ?? maxIso(input.learningUpdatedAts ?? []) ?? maxIso(input.typingCreatedAts ?? []);
+}
+function maxByStudent(rows) {
+  const map = /* @__PURE__ */ new Map();
+  for (const row of rows) {
+    const prev = map.get(row.student_id);
+    if (!prev) {
+      map.set(row.student_id, row.at);
+      continue;
+    }
+    const a = new Date(prev).getTime();
+    const b = new Date(row.at).getTime();
+    if (Number.isFinite(b) && (!Number.isFinite(a) || b >= a)) map.set(row.student_id, row.at);
+  }
+  return map;
+}
+function aggregateLastStudiedAtByStudent(input) {
+  const sessions = maxByStudent(
+    (input.sessions ?? []).flatMap((row) => {
+      const at = row.started_at == null ? "" : String(row.started_at).trim();
+      return at ? [{ student_id: row.student_id, at }] : [];
+    })
+  );
+  const learning = maxByStudent(
+    (input.learning ?? []).flatMap((row) => {
+      const at = row.updated_at == null ? "" : String(row.updated_at).trim();
+      return at ? [{ student_id: row.student_id, at }] : [];
+    })
+  );
+  const typing = maxByStudent(
+    (input.typing ?? []).flatMap((row) => {
+      const at = row.created_at == null ? "" : String(row.created_at).trim();
+      return at ? [{ student_id: row.student_id, at }] : [];
+    })
+  );
+  const out = /* @__PURE__ */ new Map();
+  for (const id of input.studentIds) {
+    out.set(id, sessions.get(id) ?? learning.get(id) ?? typing.get(id) ?? null);
+  }
+  return out;
+}
+
 // supabase/functions/_shared/pythonProgressFacts.ts
 function countAuthorizedLevels(access2, maxStage, published) {
   return published.filter((row) => lessonIsAuthorized(access2, maxStage, row.sort_order, row.stage_sort)).length;
@@ -59971,6 +60031,7 @@ async function orgStudents(req) {
           ...student,
           completed_count: authorizedCompletedCount,
           authorizedCompletedCount,
+          lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
           typing_wpm: typing?.wpm ?? null,
           typing_accuracy: typing?.accuracy ?? null
         };
@@ -60197,17 +60258,28 @@ async function orgLessonFacts(orgId, effective, studentIds) {
     "select student_id, wpm, accuracy, created_at from public.typing_record where student_id = any($1::uuid[])",
     [studentIds]
   ) : [];
+  const sessionRows = studentIds.length ? await q(
+    "select student_id, started_at from public.study_session where student_id = any($1::uuid[])",
+    [studentIds]
+  ) : [];
   const typing = /* @__PURE__ */ new Map();
   for (const row of typingRows) {
     const prev = typing.get(row.student_id);
     if (!prev || row.created_at > prev.at) typing.set(row.student_id, { wpm: Number(row.wpm), accuracy: Number(row.accuracy), at: row.created_at });
   }
   const facts = buildPythonAuthorizedFacts(access2, maxStage, published, lessons);
+  const lastStudiedAt = aggregateLastStudiedAtByStudent({
+    studentIds,
+    sessions: sessionRows,
+    learning: lessons,
+    typing: typingRows
+  });
   return {
     authorizedLevels: facts.authorizedLevels,
     lessons,
     completed: facts.completed,
-    typing
+    typing,
+    lastStudiedAt
   };
 }
 function presentAttention(student, facts) {
@@ -60314,7 +60386,8 @@ async function orgDashboard(req) {
         authorizedCompletedCount: facts.completed.get(student.id) ?? 0,
         currentOrder: student.current_level_order,
         typing: typingRow ? { wpm: typingRow.wpm, accuracy: typingRow.accuracy } : null,
-        lastActiveAt: student.last_active_at ?? ""
+        lastActiveAt: student.last_active_at ?? "",
+        lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null
       }];
     })
   });
@@ -60655,7 +60728,7 @@ async function parentPortal(req) {
       student.id
     ]);
     const typing = await q(
-      "select practiced_on, wpm, accuracy from public.typing_record where student_id = $1",
+      "select practiced_on, wpm, accuracy, created_at from public.typing_record where student_id = $1",
       [student.id]
     );
     const totalLevels = countRow?.n ?? 0;
@@ -60697,7 +60770,7 @@ async function parentPortal(req) {
          where cl.published = true`
       ),
       q(
-        `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed
+        `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed, lr.updated_at
          from public.learning_record lr
          join public.course_level cl on cl.level_id = lr.level_id
          where lr.student_id = $1`,
@@ -60707,6 +60780,11 @@ async function parentPortal(req) {
     const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
     const authAccess = org?.status === "trial" || access2 === "trial" ? "trial" : access2;
     const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons);
+    const lastStudiedAt = resolveLastStudiedAt({
+      sessionStartedAts: sessions.map((row) => row.started_at),
+      learningUpdatedAts: authLessons.map((row) => row.updated_at),
+      typingCreatedAts: typing.map((row) => row.created_at)
+    });
     const toBrief = (row) => ({
       levelId: row.level_id,
       order: row.sort_order,
@@ -60731,6 +60809,7 @@ async function parentPortal(req) {
       completedCount: progress.length,
       authorizedLevels: authFacts.authorizedLevels,
       authorizedCompletedCount: authFacts.completed.get(student.id) ?? 0,
+      lastStudiedAt,
       position: await loadCurriculumPosition(student.id),
       weekly: {
         weekStart: start.toISOString().slice(0, 10),
