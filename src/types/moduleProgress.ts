@@ -109,9 +109,10 @@ export interface PythonProgressDetail {
     accuracy: number
     /**
      * 最近 4 周按周聚合的折线点。
-     * 由 Python 适配器聚合；渲染层只画，不做聚合。
+     * 保留全部周点，缺失周 wpm/accuracy 为 null；at = weekStart。
+     * 由 Python 适配器映射；渲染层自行决定断线或跳过，不做聚合。
      */
-    series?: Array<{ at: string; wpm: number; accuracy: number }>
+    series?: Array<{ at: string; wpm: number | null; accuracy: number | null }>
   } | null
 }
 
