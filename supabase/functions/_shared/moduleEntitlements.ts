@@ -2,9 +2,13 @@
  * 机构模块开通的唯一判定。
  * 所有端只读 org_entitlement 的同一份行，再由这里派生 enabledModules；
  * 不再为单个模块各自计算 xxxEnabled。
+ *
+ * 本文件是关卡授权唯一对外入口，外部禁止直接 import lessonIsAuthorized / isFreeLevel1。
  */
 // @ts-expect-error 边缘函数要带 .ts 后缀，应用这边的 tsconfig 不允许。
 import { PROGRESS_MODULE_IDS, type ProgressModuleId } from './moduleRegistry.ts'
+// @ts-expect-error 边缘函数要带 .ts 后缀，应用这边的 tsconfig 不允许。
+import { lessonIsAuthorized, type EnterLevelReason, type OrgStatus } from './orgStatus.ts'
 
 export type { ProgressModuleId }
 
@@ -28,6 +32,22 @@ export function enabledModuleIds(rows: ModuleEntitlementRow[], now = new Date())
   return PROGRESS_MODULE_IDS.filter((id) =>
     rows.some((row) => row.module_id === id && isEnabledModuleEntitlement(row, now)),
   )
+}
+
+/**
+ * 关卡授权唯一对外入口：先判模块开通，再委托 lessonIsAuthorized 做关卡/阶段判定。
+ * 模块未开通时返回 reason='module_not_entitled'，不会进入 Level 1 免费放行。
+ */
+export function moduleLessonIsAuthorized(
+  moduleId: ProgressModuleId,
+  enabledModules: readonly ProgressModuleId[],
+  status: OrgStatus,
+  maxStage: number,
+  sortOrder: number,
+  stageSort: number,
+): { authorized: boolean; reason?: EnterLevelReason } {
+  if (!enabledModules.includes(moduleId)) return { authorized: false, reason: 'module_not_entitled' }
+  return { authorized: lessonIsAuthorized(status, maxStage, sortOrder, stageSort) }
 }
 
 /** 从同一份行取模块的阶段上限来源；阶段数仍由 openMaxLevel 计算。 */

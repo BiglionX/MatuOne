@@ -6,6 +6,7 @@ import { openMaxLevel, type OrgStatus } from '../_shared/orgStatus.ts'
 import {
   activeGrantOf,
   enabledModuleIds,
+  moduleLessonIsAuthorized,
   type ModuleEntitlementRow,
 } from '../_shared/moduleEntitlements.ts'
 import { aggregateLastStudiedAtByStudent } from '../_shared/lastStudiedAt.ts'
@@ -95,7 +96,8 @@ Deno.serve(async (req) => {
         ])
       if (levelError) return json(500, { message: '读取失败' })
       const access: OrgStatus = org?.status === 'trial' || ctx.status === 'trial' ? 'trial' : ctx.status
-      const grant = activeGrantOf(entitlementRows ?? [], 'python', enabledModuleIds(entitlementRows ?? []))
+      const enabledModules = enabledModuleIds(entitlementRows ?? [])
+      const grant = activeGrantOf(entitlementRows ?? [], 'python', enabledModules)
       const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null)
       const completed = new Map((records ?? []).map((row) => [row.level_id as string, row.completed === true]))
       return json(200, {
@@ -106,7 +108,7 @@ Deno.serve(async (req) => {
           title: row.title,
           completed: completed.get(row.level_id as string) === true,
           current: row.sort_order === student.current_level_order,
-          authorized: lessonIsAuthorized(access, maxStage, Number(row.sort_order), Number(row.stage_level)),
+          authorized: moduleLessonIsAuthorized('python', enabledModules, access, maxStage, Number(row.sort_order), Number(row.stage_level)).authorized,
           teachingIntent: row.teaching_intent,
           teacherGuide: row.teacher_guide,
         })),
@@ -350,7 +352,7 @@ async function studentListExtras(
   }))
   const typing = new Map<string, { wpm: number; accuracy: number }>()
   if (!ids.length) {
-    const emptyFacts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, [])
+    const emptyFacts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, [], enabledModules)
     return {
       authorizedLevels: emptyFacts.authorizedLevels,
       completed: emptyFacts.completed,
@@ -379,7 +381,7 @@ async function studentListExtras(
       completed: row.completed === true,
     }]
   })
-  const facts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, lessons)
+  const facts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, lessons, enabledModules)
   const latest = new Map<string, { wpm: number; accuracy: number; at: string }>()
   for (const row of typingRows ?? []) {
     const prev = latest.get(row.student_id as string)

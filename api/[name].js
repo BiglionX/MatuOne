@@ -19834,10 +19834,14 @@ function isLevelEntitled(rows, orgId, groupId, studentId, order) {
   );
 }
 function decideEnterLevel(input) {
+  const moduleId = input.moduleId ?? "python";
   if (input.levelOrder == null) return { allowed: false, reason: "not_found" };
   if (input.status === "disabled") return { allowed: false, reason: "org_disabled" };
   if (input.status !== "trial" && input.status !== "active") return { allowed: false, reason: "org_expired" };
   if (input.stageLevel == null) return { allowed: false, reason: "not_found" };
+  if (!input.enabledModules.includes(moduleId)) {
+    return { allowed: false, reason: "module_not_entitled" };
+  }
   const free = isFreeLevel1(input.levelOrder, input.stageLevel);
   if (input.status === "trial" && !free) return { allowed: false, reason: "trial_locked" };
   if (!free && !input.entitled) return { allowed: false, reason: "not_entitled" };
@@ -19905,25 +19909,6 @@ function aggregateLastStudiedAtByStudent(input) {
   return out;
 }
 
-// supabase/functions/_shared/pythonProgressFacts.ts
-function countAuthorizedLevels(access2, maxStage, published) {
-  return published.filter((row) => lessonIsAuthorized(access2, maxStage, row.sort_order, row.stage_sort)).length;
-}
-function countAuthorizedCompletedByStudent(access2, maxStage, lessons) {
-  const completed = /* @__PURE__ */ new Map();
-  for (const lesson of lessons) {
-    if (lesson.completed !== true || !lessonIsAuthorized(access2, maxStage, lesson.sort_order, lesson.stage_sort)) continue;
-    completed.set(lesson.student_id, (completed.get(lesson.student_id) ?? 0) + 1);
-  }
-  return completed;
-}
-function buildPythonAuthorizedFacts(access2, maxStage, published, lessons) {
-  return {
-    authorizedLevels: countAuthorizedLevels(access2, maxStage, published),
-    completed: countAuthorizedCompletedByStudent(access2, maxStage, lessons)
-  };
-}
-
 // supabase/functions/_shared/moduleRegistry.ts
 var MODULE_REGISTRY = [
   { module_id: "matupix", has_progress: true, status: "active" },
@@ -19949,9 +19934,35 @@ function enabledModuleIds(rows, now = /* @__PURE__ */ new Date()) {
     (id) => rows.some((row) => row.module_id === id && isEnabledModuleEntitlement(row, now))
   );
 }
+function moduleLessonIsAuthorized(moduleId, enabledModules, status, maxStage, sortOrder, stageSort) {
+  if (!enabledModules.includes(moduleId)) return { authorized: false, reason: "module_not_entitled" };
+  return { authorized: lessonIsAuthorized(status, maxStage, sortOrder, stageSort) };
+}
 function activeGrantOf(rows, moduleId, enabled) {
   if (!enabled.includes(moduleId)) return null;
   return rows.find((row) => row.module_id === moduleId && isEnabledModuleEntitlement(row)) ?? null;
+}
+
+// supabase/functions/_shared/pythonProgressFacts.ts
+function countAuthorizedLevels(access2, maxStage, published, enabledModules) {
+  return published.filter(
+    (row) => moduleLessonIsAuthorized("python", enabledModules, access2, maxStage, row.sort_order, row.stage_sort).authorized
+  ).length;
+}
+function countAuthorizedCompletedByStudent(access2, maxStage, lessons, enabledModules) {
+  const completed = /* @__PURE__ */ new Map();
+  for (const lesson of lessons) {
+    if (lesson.completed !== true) continue;
+    if (!moduleLessonIsAuthorized("python", enabledModules, access2, maxStage, lesson.sort_order, lesson.stage_sort).authorized) continue;
+    completed.set(lesson.student_id, (completed.get(lesson.student_id) ?? 0) + 1);
+  }
+  return completed;
+}
+function buildPythonAuthorizedFacts(access2, maxStage, published, lessons, enabledModules) {
+  return {
+    authorizedLevels: countAuthorizedLevels(access2, maxStage, published, enabledModules),
+    completed: countAuthorizedCompletedByStudent(access2, maxStage, lessons, enabledModules)
+  };
 }
 
 // supabase/functions/_shared/password.ts
@@ -20273,13 +20284,12 @@ async function decideStudentLevel(studentId, levelId) {
   }
   const orderMatch = /^L(\d+)$/i.exec(canonical);
   const levelOrder = orderMatch ? Number(orderMatch[1]) : null;
-  const [entitlements, grant, levelRow] = await Promise.all([
+  const [entitlements, moduleEntitlements, levelRow] = await Promise.all([
     q("select org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at from public.level_entitlement where org_id = $1", [
       student.org_id
     ]),
-    one(
-      `select max_level, valid_until from public.org_entitlement
-       where org_id = $1 and module_id = 'python' and revoked_at is null`,
+    q(
+      "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
       [student.org_id]
     ),
     one(
@@ -20306,11 +20316,13 @@ async function decideStudentLevel(studentId, levelId) {
     levelOrder
   );
   const stageLevel = readStageLevel(levelRow?.stage_level) ?? (levelOrder == null ? null : stageLevelOfOrder(levelOrder));
-  const maxLevel = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
+  const enabledModules = enabledModuleIds(moduleEntitlements);
+  const grant = activeGrantOf(moduleEntitlements, "python", enabledModules);
+  const maxLevel = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null);
   return {
     httpStatus: 200,
     levelId: canonical,
-    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel })
+    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel, enabledModules })
   };
 }
 
@@ -50515,8 +50527,9 @@ function serviceOpen(status) {
 }
 function canOpen(order, completed, focus, access2) {
   const stage = stageLevelOfOrder(order);
-  const free = (access2.status === "trial" || access2.status === "active") && stage != null && isFreeLevel1(order, stage);
-  const entitled = free || isLevelEntitled(access2.spans, access2.orgId, access2.groupId, access2.studentId, order);
+  const moduleOpen = access2.enabledModules.includes("python");
+  const free = moduleLessonIsAuthorized("python", access2.enabledModules, access2.status, 0, order, stage ?? 0).authorized;
+  const entitled = moduleOpen && (free || isLevelEntitled(access2.spans, access2.orgId, access2.groupId, access2.studentId, order));
   const trialOk = access2.status !== "trial" || free;
   return entitled && serviceOpen(access2.status) && trialOk && (completed || order === focus);
 }
@@ -59985,7 +59998,8 @@ async function orgStudents(req) {
         [studentId, student.current_level_order]
       )
     ]);
-    const grant = activeGrantOf(entitlementRows, "python", enabledModuleIds(entitlementRows));
+    const enabledModules = enabledModuleIds(entitlementRows);
+    const grant = activeGrantOf(entitlementRows, "python", enabledModules);
     const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null);
     const access2 = org?.status === "trial" || ctx.status === "trial" ? "trial" : ctx.status;
     return ok4({
@@ -59996,7 +60010,7 @@ async function orgStudents(req) {
         title: row.title,
         completed: row.completed === true,
         current: row.sort_order === student.current_level_order,
-        authorized: lessonIsAuthorized(access2, maxStage, row.sort_order, Number(row.stage_level)),
+        authorized: moduleLessonIsAuthorized("python", enabledModules, access2, maxStage, row.sort_order, Number(row.stage_level)).authorized,
         teachingIntent: row.teaching_intent,
         teacherGuide: row.teacher_guide
       }))
@@ -60299,7 +60313,7 @@ async function orgLessonFacts(orgId, effective, studentIds) {
     const prev = typing.get(row.student_id);
     if (!prev || row.created_at > prev.at) typing.set(row.student_id, { wpm: Number(row.wpm), accuracy: Number(row.accuracy), at: row.created_at });
   }
-  const facts = buildPythonAuthorizedFacts(access2, maxStage, published, lessons);
+  const facts = buildPythonAuthorizedFacts(access2, maxStage, published, lessons, enabledModules);
   const lastStudiedAt = aggregateLastStudiedAtByStudent({
     studentIds,
     sessions: sessionRows,
@@ -60698,12 +60712,17 @@ async function loadStudentAccess(student) {
     student.org_id
   ]);
   const open = entitlements.filter((row) => !row.expires_at || new Date(row.expires_at).getTime() > Date.now());
+  const moduleEntitlements = await q(
+    "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
+    [student.org_id]
+  );
   return {
     status: status ?? "disabled",
     orgId: student.org_id,
     groupId: student.group_id,
     studentId: student.id,
     orgName: org?.name ?? "",
+    enabledModules: enabledModuleIds(moduleEntitlements),
     spans: open.map((row) => ({
       orgId: row.org_id,
       subjectType: row.subject_type,
@@ -60863,7 +60882,7 @@ async function parentPortal(req) {
     const grant = activeGrantOf(entitlementRows, "python", enabledModules);
     const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null);
     const authAccess = org?.status === "trial" || access2 === "trial" ? "trial" : access2;
-    const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons);
+    const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons, enabledModules);
     const lastStudiedAt = resolveLastStudiedAt({
       sessionStartedAts: sessions.map((row) => row.started_at),
       learningUpdatedAts: authLessons.map((row) => row.updated_at),

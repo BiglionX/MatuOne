@@ -8,6 +8,11 @@ import {
   type EnterLevelResult,
   type OrgStatus,
 } from '../supabase/functions/_shared/orgStatus'
+import {
+  activeGrantOf,
+  enabledModuleIds,
+  type ModuleEntitlementRow,
+} from '../supabase/functions/_shared/moduleEntitlements'
 
 export interface EnterDecision {
   httpStatus: number
@@ -52,7 +57,7 @@ export async function decideStudentLevel(studentId: string, levelId: string): Pr
   }
   const orderMatch = /^L(\d+)$/i.exec(canonical)
   const levelOrder = orderMatch ? Number(orderMatch[1]) : null
-  const [entitlements, grant, levelRow] = await Promise.all([
+  const [entitlements, moduleEntitlements, levelRow] = await Promise.all([
     q<{
       org_id: string
       subject_type: 'org' | 'group' | 'student'
@@ -63,9 +68,8 @@ export async function decideStudentLevel(studentId: string, levelId: string): Pr
     }>('select org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at from public.level_entitlement where org_id = $1', [
       student.org_id,
     ]),
-    one<{ max_level: number; valid_until: string | null }>(
-      `select max_level, valid_until from public.org_entitlement
-       where org_id = $1 and module_id = 'python' and revoked_at is null`,
+    q<ModuleEntitlementRow>(
+      'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
       [student.org_id],
     ),
     one<{ stage_level: number | null }>(
@@ -94,10 +98,12 @@ export async function decideStudentLevel(studentId: string, levelId: string): Pr
       levelOrder,
     )
   const stageLevel = readStageLevel(levelRow?.stage_level) ?? (levelOrder == null ? null : stageLevelOfOrder(levelOrder))
-  const maxLevel = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
+  const enabledModules = enabledModuleIds(moduleEntitlements)
+  const grant = activeGrantOf(moduleEntitlements, 'python', enabledModules)
+  const maxLevel = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null)
   return {
     httpStatus: 200,
     levelId: canonical,
-    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel }),
+    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel, enabledModules }),
   }
 }

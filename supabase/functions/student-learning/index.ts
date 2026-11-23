@@ -5,7 +5,13 @@ import { decideEnterLevel } from '../_shared/enterLevel.ts'
 import { normalizeTypingScore } from '../_shared/typingScore.ts'
 import { empty, json } from '../_shared/http.ts'
 import { drillForLevel, reviewChunkOf } from '../_shared/drill_chunks.ts'
-import { isFreeLevel1, isLevelEntitled, levelOrderOf, stageLevelOfOrder } from '../_shared/orgStatus.ts'
+import {
+  moduleLessonIsAuthorized,
+  enabledModuleIds,
+  type ModuleEntitlementRow,
+} from '../_shared/moduleEntitlements.ts'
+import type { OrgStatus } from '../_shared/orgStatus.ts'
+import { isLevelEntitled, levelOrderOf, stageLevelOfOrder } from '../_shared/orgStatus.ts'
 
 function weekStart(date: Date): Date {
   const copy = new Date(date)
@@ -68,7 +74,12 @@ Deno.serve(async (req) => {
 
   if (action === 'typing') {
     // 热身打字没有关卡号。用 L01 走同一套判定：停用、到期、未开通会被拒绝；请求里若带了 levelId，按该关拒绝。
-    const decision = await decideEnterLevel(db, student.id, requestedLevelId || 'L01')
+    const { data: typingModuleRows } = await db
+      .from('org_entitlement')
+      .select('module_id, max_level, valid_until, revoked_at')
+      .eq('org_id', student.org_id)
+    const typingEnabledModules = enabledModuleIds((typingModuleRows ?? []) as ModuleEntitlementRow[])
+    const decision = await decideEnterLevel(db, student.id, requestedLevelId || 'L01', typingEnabledModules)
     if (!decision.result.allowed) return json(decision.httpStatus, decision.result)
     const raw = body.practiceType === 'baseline_keys' ? 'home_row' : body.practiceType
     if (raw !== 'home_row' && raw !== 'keywords' && raw !== 'lesson_embedded') {
@@ -271,6 +282,11 @@ Deno.serve(async (req) => {
     .from('level_entitlement')
     .select('org_id, subject_type, subject_id, level_order_min, level_order_max, expires_at')
     .eq('org_id', student.org_id)
+  const { data: moduleEntitlementRows } = await db
+    .from('org_entitlement')
+    .select('module_id, max_level, valid_until, revoked_at')
+    .eq('org_id', student.org_id)
+  const enabledModules = enabledModuleIds((moduleEntitlementRows ?? []) as ModuleEntitlementRow[])
   const { data: progressRows } = await db.from('learning_record').select('level_id, completed, stars').eq('student_id', student.id)
   const { data: hints } = await db.from('error_hint').select('pattern, friendly_message')
   const { data: group } = await db.from('student_group').select('name').eq('id', student.group_id).maybeSingle()
@@ -300,8 +316,12 @@ Deno.serve(async (req) => {
     const row = progress.get(level.level_id)
     const completed = Boolean(row?.completed)
     const stage = stageLevelOfOrder(order)
-    const free = (status === 'trial' || status === 'active') && stage != null && isFreeLevel1(order, stage)
-    const entitled = free || isLevelEntitled(spans, student.org_id, student.group_id, student.id, order)
+    const moduleOpen = enabledModules.includes('python')
+    const free =
+      moduleOpen &&
+      stage != null &&
+      moduleLessonIsAuthorized('python', enabledModules, status as OrgStatus, 0, order, stage).authorized
+    const entitled = moduleOpen && (free || isLevelEntitled(spans, student.org_id, student.group_id, student.id, order))
     const openStatus = status === 'trial' || status === 'active'
     const trialOk = status !== 'trial' || free
     const unlocked = entitled && openStatus && trialOk && (completed || order === focus)

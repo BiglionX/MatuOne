@@ -3,6 +3,11 @@ import { empty, json } from '../_shared/http.ts'
 import { calendarWeekStart, openMaxLevel, orgAttention, type OrgStatus } from '../_shared/orgStatus.ts'
 import { aggregateLastStudiedAtByStudent } from '../_shared/lastStudiedAt.ts'
 import { buildPythonAuthorizedFacts } from '../_shared/pythonProgressFacts.ts'
+import {
+  activeGrantOf,
+  enabledModuleIds,
+  type ModuleEntitlementRow,
+} from '../_shared/moduleEntitlements.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
 
 Deno.serve(async (req) => {
@@ -10,7 +15,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(405, { message: '只接受 POST' })
 
   return withOrgScope(req, {}, async (ctx) => {
-    const [{ data: students, error }, { data: groups }, { data: org }, { data: grant }] = await Promise.all([
+    const [{ data: students, error }, { data: groups }, { data: org }, { data: moduleRows }] = await Promise.all([
       ctx.db
         .from('student')
         .select('id, name, account, group_id, status, bind_code, current_level_order, last_active_at')
@@ -19,18 +24,18 @@ Deno.serve(async (req) => {
       ctx.db.from('org').select('status').eq('id', ctx.orgId).maybeSingle(),
       ctx.db
         .from('org_entitlement')
-        .select('max_level, valid_until')
-        .eq('org_id', ctx.orgId)
-        .eq('module_id', 'python')
-        .is('revoked_at', null)
-        .maybeSingle(),
+        .select('module_id, max_level, valid_until, revoked_at')
+        .eq('org_id', ctx.orgId),
     ])
     if (error) return json(500, { message: '读取失败' })
 
     const ids = (students ?? []).map((student) => student.id as string)
     const access: OrgStatus = org?.status === 'trial' || ctx.status === 'trial' ? 'trial' : ctx.status
+    const moduleEntitlements = (moduleRows ?? []) as ModuleEntitlementRow[]
+    const enabledModules = enabledModuleIds(moduleEntitlements)
+    const grant = activeGrantOf(moduleEntitlements, 'python', enabledModules)
     const maxStage = openMaxLevel(
-      grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null,
+      grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null,
     )
     const [{ data: published }, { data: progress }, { data: typing }, { data: levelRows }, { data: sessions }] = await Promise.all([
       ctx.db.from('course_level').select('sort_order, stage_level').eq('published', true),
@@ -72,7 +77,7 @@ Deno.serve(async (req) => {
         sortOrder: level.sortOrder,
       })
     }
-    const facts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, lessons)
+    const facts = buildPythonAuthorizedFacts(access, maxStage, publishedRows, lessons, enabledModules)
     const authorizedLevels = facts.authorizedLevels
     const completed = facts.completed
     const lastStudiedAt = aggregateLastStudiedAtByStudent({

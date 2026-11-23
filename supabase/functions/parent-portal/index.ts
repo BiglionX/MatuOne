@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
         completed: row.completed === true,
       }]
     })
-    const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, publishedRows, authLessons)
+    const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, publishedRows, authLessons, enabledModules)
     const lastStudiedAt = resolveLastStudiedAt({
       sessionStartedAts: (sessions ?? []).map((row) => row.started_at as string),
       learningUpdatedAts: (progress ?? []).map((row) => row.updated_at as string | null),

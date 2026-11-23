@@ -39,6 +39,7 @@ const ENTER_COPY: Record<EnterLevelReason, string> = {
   org_expired: '本机构服务已到期，请联系老师',
   org_disabled: '机构已停用，请联系老师',
   trial_locked: '试用期间只能学习 Level 1',
+  module_not_entitled: '该模块未开通，请联系机构',
   not_entitled: '老师还没有为你开通这一关',
   course_locked: '本机构尚未开通该阶段课程，请联系老师',
   not_found: '没有找到这一关',

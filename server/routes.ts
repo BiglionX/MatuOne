@@ -3,12 +3,13 @@ import { normalizeTypingScore } from '../supabase/functions/_shared/typingScore'
 import { validateCoursePackage } from '../supabase/functions/_shared/coursePackage'
 import { COURSE_TREE_SQL, groupCourseTree, type CourseTreeSourceRow } from '../supabase/functions/_shared/courseTree'
 import { toCurriculumPosition, type CurriculumPositionRow } from '../supabase/functions/_shared/curriculumPosition'
-import { calendarWeekStart, lessonIsAuthorized, openMaxLevel, orgAttention, seatLimit, type OrgAttention, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
+import { calendarWeekStart, openMaxLevel, orgAttention, seatLimit, type OrgAttention, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
 import { resolveLastStudiedAt, aggregateLastStudiedAtByStudent } from '../supabase/functions/_shared/lastStudiedAt'
 import { buildPythonAuthorizedFacts } from '../supabase/functions/_shared/pythonProgressFacts'
 import {
   activeGrantOf,
   enabledModuleIds,
+  moduleLessonIsAuthorized,
   type ModuleEntitlementRow,
   type ProgressModuleId,
 } from '../supabase/functions/_shared/moduleEntitlements'
@@ -477,7 +478,8 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
         [studentId, student.current_level_order],
       ),
     ])
-    const grant = activeGrantOf(entitlementRows, 'python', enabledModuleIds(entitlementRows))
+    const enabledModules = enabledModuleIds(entitlementRows)
+    const grant = activeGrantOf(entitlementRows, 'python', enabledModules)
     const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null)
     const access: OrgStatus = org?.status === 'trial' || ctx.status === 'trial' ? 'trial' : ctx.status
     return ok({
@@ -488,7 +490,7 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
         title: row.title,
         completed: row.completed === true,
         current: row.sort_order === student.current_level_order,
-        authorized: lessonIsAuthorized(access, maxStage, row.sort_order, Number(row.stage_level)),
+        authorized: moduleLessonIsAuthorized('python', enabledModules, access, maxStage, row.sort_order, Number(row.stage_level)).authorized,
         teachingIntent: row.teaching_intent,
         teacherGuide: row.teacher_guide,
       })),
@@ -835,7 +837,7 @@ async function orgLessonFacts(orgId: string, effective: OrgStatus, studentIds: s
     const prev = typing.get(row.student_id)
     if (!prev || row.created_at > prev.at) typing.set(row.student_id, { wpm: Number(row.wpm), accuracy: Number(row.accuracy), at: row.created_at })
   }
-  const facts = buildPythonAuthorizedFacts(access, maxStage, published, lessons)
+  const facts = buildPythonAuthorizedFacts(access, maxStage, published, lessons, enabledModules)
   const lastStudiedAt = aggregateLastStudiedAtByStudent({
     studentIds,
     sessions: sessionRows,
@@ -1296,12 +1298,17 @@ async function loadStudentAccess(student: { id: string; org_id: string; group_id
     student.org_id,
   ])
   const open = entitlements.filter((row) => !row.expires_at || new Date(row.expires_at).getTime() > Date.now())
+  const moduleEntitlements = await q<ModuleEntitlementRow>(
+    'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
+    [student.org_id],
+  )
   return {
     status: status ?? 'disabled',
     orgId: student.org_id,
     groupId: student.group_id,
     studentId: student.id,
     orgName: org?.name ?? '',
+    enabledModules: enabledModuleIds(moduleEntitlements),
     spans: open.map((row) => ({
       orgId: row.org_id,
       subjectType: row.subject_type,
@@ -1475,7 +1482,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
     const grant = activeGrantOf(entitlementRows, 'python', enabledModules)
     const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null)
     const authAccess: OrgStatus = org?.status === 'trial' || access === 'trial' ? 'trial' : (access as OrgStatus)
-    const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons)
+    const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons, enabledModules)
     const lastStudiedAt = resolveLastStudiedAt({
       sessionStartedAts: sessions.map((row) => row.started_at),
       learningUpdatedAts: authLessons.map((row) => row.updated_at),

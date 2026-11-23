@@ -1,4 +1,6 @@
-import { isFreeLevel1, isLevelEntitled, stageLevelOfOrder, type EntitlementSpan, type OrgStatus } from '../../supabase/functions/_shared/orgStatus'
+import { isLevelEntitled, stageLevelOfOrder, type EntitlementSpan, type OrgStatus } from '../../supabase/functions/_shared/orgStatus'
+import type { ProgressModuleId } from '../../supabase/functions/_shared/moduleRegistry'
+import { moduleLessonIsAuthorized } from '../../supabase/functions/_shared/moduleEntitlements'
 import {
   CURRICULUM_LEVELS,
   curriculumLevelByOrder,
@@ -26,6 +28,8 @@ export interface AccessContext {
   orgId: string
   groupId: string
   studentId: string
+  /** 与底座 moduleLessonIsAuthorized 同源的模块开通事实 */
+  enabledModules: readonly ProgressModuleId[]
 }
 
 export interface UnitSummary {
@@ -80,8 +84,9 @@ function serviceOpen(status: OrgStatus): boolean {
 
 function canOpen(order: number, completed: boolean, focus: number, access: AccessContext): boolean {
   const stage = stageLevelOfOrder(order)
-  const free = (access.status === 'trial' || access.status === 'active') && stage != null && isFreeLevel1(order, stage)
-  const entitled = free || isLevelEntitled(access.spans, access.orgId, access.groupId, access.studentId, order)
+  const moduleOpen = access.enabledModules.includes('python')
+  const free = moduleLessonIsAuthorized('python', access.enabledModules, access.status, 0, order, stage ?? 0).authorized
+  const entitled = moduleOpen && (free || isLevelEntitled(access.spans, access.orgId, access.groupId, access.studentId, order))
   const trialOk = access.status !== 'trial' || free
   return entitled && serviceOpen(access.status) && trialOk && (completed || order === focus)
 }

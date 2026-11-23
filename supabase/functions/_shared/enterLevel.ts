@@ -10,6 +10,13 @@ import {
   type EnterLevelResult,
   type OrgStatus,
 } from './orgStatus.ts'
+// @ts-expect-error 边缘函数要带 .ts 后缀，应用这边的 tsconfig 不允许。
+import type { ProgressModuleId } from './moduleRegistry.ts'
+import {
+  activeGrantOf,
+  enabledModuleIds,
+  type ModuleEntitlementRow,
+} from './moduleEntitlements.ts'
 
 export interface EnterLevelDecision {
   httpStatus: number
@@ -35,6 +42,7 @@ export async function decideEnterLevel(
   svcDb: SupabaseClient,
   studentId: string,
   levelId: string,
+  callerEnabledModules?: readonly ProgressModuleId[],
 ): Promise<EnterLevelDecision> {
   const canonical = canonicalLevelId(levelId)
   const { data: student } = await svcDb
@@ -54,7 +62,7 @@ export async function decideEnterLevel(
   if (!org) return { httpStatus: 200, levelId: canonical, result: { allowed: false, reason: 'org_disabled' } }
 
   const order = levelOrderOf(canonical)
-  const [{ data: entitlements }, { data: status, error: statusError }, { data: grant, error: grantError }, { data: levelById, error: levelError }, { data: levelByOrder, error: orderError }] =
+  const [{ data: entitlements }, { data: status, error: statusError }, { data: moduleRows, error: grantError }, { data: levelById, error: levelError }, { data: levelByOrder, error: orderError }] =
     await Promise.all([
       svcDb
         .from('level_entitlement')
@@ -67,11 +75,8 @@ export async function decideEnterLevel(
       }),
       svcDb
         .from('org_entitlement')
-        .select('max_level, valid_until')
-        .eq('org_id', student.org_id)
-        .eq('module_id', 'python')
-        .is('revoked_at', null)
-        .maybeSingle(),
+        .select('module_id, max_level, valid_until, revoked_at')
+        .eq('org_id', student.org_id),
       svcDb.from('course_level').select('stage_level').eq('level_id', canonical).maybeSingle(),
       order == null
         ? Promise.resolve({ data: null, error: null })
@@ -101,13 +106,16 @@ export async function decideEnterLevel(
     )
 
   const stageLevel = readStageLevel(levelById?.stage_level) ?? readStageLevel(levelByOrder?.stage_level) ?? (order == null ? null : stageLevelOfOrder(order))
+  const moduleEntitlements = (moduleRows ?? []) as ModuleEntitlementRow[]
+  const enabledModules = callerEnabledModules ?? enabledModuleIds(moduleEntitlements)
+  const grant = activeGrantOf(moduleEntitlements, 'python', enabledModules)
   const maxLevel = openMaxLevel(
-    grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null,
+    grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null,
   )
 
   return {
     httpStatus: 200,
     levelId: canonical,
-    result: judgeEnterLevel({ status, levelOrder: order, entitled, stageLevel, maxLevel }),
+    result: judgeEnterLevel({ status, levelOrder: order, entitled, stageLevel, maxLevel, enabledModules }),
   }
 }

@@ -64,11 +64,17 @@ export type EnterLevelReason =
   | 'org_expired'
   | 'org_disabled'
   | 'trial_locked'
+  | 'module_not_entitled'
   | 'not_entitled'
   | 'course_locked'
   | 'not_found'
 
-/** Level 1（第 1–120 节）对试用和正式机构免费，不看课程包和购买范围。 */
+import type { ModuleId, ProgressModuleId } from './moduleRegistry.ts'
+
+/**
+ * @internal 只允许 moduleEntitlements.ts 和 orgStatus.ts 内部使用，外部请用 moduleLessonIsAuthorized。
+ * Level 1（第 1–120 节）对试用和正式机构免费，不看课程包和购买范围。
+ */
 export function isFreeLevel1(order: number, stageLevel: number): boolean {
   return stageLevel === 1 && Number.isInteger(order) && order >= 1 && order <= LESSONS_PER_STAGE
 }
@@ -76,7 +82,10 @@ export function isFreeLevel1(order: number, stageLevel: number): boolean {
 /** 看板用：已停用、本周没学、当前关超过 3 天没有新进度。本周从北京时间周一开始。 */
 export type OrgAttention = 'disabled' | 'inactive' | 'stuck'
 
-/** 对不上课程阶段时不要当成第 0 阶段放行。阶段序号从 1 起。Level 1 免费，不要求课程包。 */
+/**
+ * @internal 只允许 moduleEntitlements.ts 和 orgStatus.ts 内部使用，外部请用 moduleLessonIsAuthorized。
+ * 对不上课程阶段时不要当成第 0 阶段放行。阶段序号从 1 起。Level 1 免费，不要求课程包。
+ */
 export function lessonIsAuthorized(status: OrgStatus, maxStage: number, sortOrder: number, stageSort: number): boolean {
   if (!Number.isInteger(sortOrder) || sortOrder < 1) return false
   if (!Number.isInteger(stageSort) || stageSort < 1) return false
@@ -187,7 +196,7 @@ export function isLevelEntitled(
 }
 
 /**
- * 顺序固定：机构状态 → Level 1 免费 → 试用范围 → 开通记录 → 课程包阶段。
+ * 顺序固定：机构状态 → 模块开通 → Level 1 免费 → 试用范围 → 开通记录 → 课程包阶段。
  * stageLevel 取 course_level.stage_level。Level 1 不看购买范围；更高阶段超过有效 max_level 时 course_locked。
  * 调用方不要在页面里重算。
  */
@@ -197,11 +206,17 @@ export function decideEnterLevel(input: {
   entitled: boolean
   stageLevel: number | null
   maxLevel: number
+  enabledModules: readonly ProgressModuleId[]
+  moduleId?: ModuleId
 }): EnterLevelResult {
+  const moduleId = input.moduleId ?? 'python'
   if (input.levelOrder == null) return { allowed: false, reason: 'not_found' }
   if (input.status === 'disabled') return { allowed: false, reason: 'org_disabled' }
   if (input.status !== 'trial' && input.status !== 'active') return { allowed: false, reason: 'org_expired' }
   if (input.stageLevel == null) return { allowed: false, reason: 'not_found' }
+  if (!input.enabledModules.includes(moduleId as ProgressModuleId)) {
+    return { allowed: false, reason: 'module_not_entitled' }
+  }
   const free = isFreeLevel1(input.levelOrder, input.stageLevel)
   if (input.status === 'trial' && !free) return { allowed: false, reason: 'trial_locked' }
   if (!free && !input.entitled) return { allowed: false, reason: 'not_entitled' }
