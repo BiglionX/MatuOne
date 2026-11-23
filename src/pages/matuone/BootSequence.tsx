@@ -1,10 +1,11 @@
 import { useEffect, type CSSProperties } from 'react'
+import { listLauncherRegistryModules } from '@/modules/registry'
 import { BrandGlyph } from './BrandGlyph'
 
 /**
  * 启动器开屏：菜单出现之前先播这一段。
  *
- * 节奏：标志描边点亮 → 三项模块自检 → 系统就绪 → 整体淡出，
+ * 节奏：标志描边点亮 → 各项模块自检 → 系统就绪 → 整体淡出，
  * 把画面交还给菜单入场（菜单各元素在 CSS 里用同一套延迟依次浮现）。
  * 背景的星空叙事由 StarfieldCanvas 同时在后面演，两段叠在一起就是完整的开机过程。
  */
@@ -12,11 +13,10 @@ import { BrandGlyph } from './BrandGlyph'
 /** 整段开屏的时长，与 matuone.css 里菜单入场的第一个延迟对齐 */
 export const BOOT_DURATION = 2750
 
-const SELF_CHECK: { label: string; state: 'ok' | 'wait' }[] = [
-  { label: 'matupix 创意工坊', state: 'ok' },
-  { label: 'python 课程模块', state: 'ok' },
-  { label: 'arduino 机器人探索', state: 'wait' },
-]
+const SELF_CHECK = listLauncherRegistryModules().map((mod) => ({
+  label: mod.boot_label,
+  state: (mod.status === 'active' ? 'ok' : 'wait') as 'ok' | 'wait',
+}))
 
 export function BootSequence({ onDone }: { onDone: () => void }) {
   useEffect(() => {

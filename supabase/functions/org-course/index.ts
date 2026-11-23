@@ -56,7 +56,13 @@ async function orgPricing(db: SupabaseClient, orgId: string): Promise<{ studentM
 }
 
 async function packageLevel(db: SupabaseClient, orgId: string): Promise<number | Response> {
-  const { data, error } = await db.from('org_entitlement').select('max_level').eq('org_id', orgId).maybeSingle()
+  const { data, error } = await db
+    .from('org_entitlement')
+    .select('max_level')
+    .eq('org_id', orgId)
+    .eq('module_id', 'python')
+    .is('revoked_at', null)
+    .maybeSingle()
   if (error) return json(500, { message: '读取失败' })
   const level = Number(data?.max_level)
   return Number.isInteger(level) && level > 0 ? level : 0

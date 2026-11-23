@@ -15,7 +15,13 @@ Deno.serve(async (req) => {
         .eq('org_id', ctx.orgId),
       ctx.db.from('student_group').select('id, name').eq('org_id', ctx.orgId),
       ctx.db.from('org').select('status').eq('id', ctx.orgId).maybeSingle(),
-      ctx.db.from('org_entitlement').select('max_level, valid_until').eq('org_id', ctx.orgId).maybeSingle(),
+      ctx.db
+        .from('org_entitlement')
+        .select('max_level, valid_until')
+        .eq('org_id', ctx.orgId)
+        .eq('module_id', 'python')
+        .is('revoked_at', null)
+        .maybeSingle(),
     ])
     if (error) return json(500, { message: '读取失败' })
 

@@ -65,7 +65,13 @@ export async function decideEnterLevel(
         p_trial_expire_at: org.trial_expire_at,
         p_service_end_at: org.service_end_at,
       }),
-      svcDb.from('org_entitlement').select('max_level, valid_until').eq('org_id', student.org_id).maybeSingle(),
+      svcDb
+        .from('org_entitlement')
+        .select('max_level, valid_until')
+        .eq('org_id', student.org_id)
+        .eq('module_id', 'python')
+        .is('revoked_at', null)
+        .maybeSingle(),
       svcDb.from('course_level').select('stage_level').eq('level_id', canonical).maybeSingle(),
       order == null
         ? Promise.resolve({ data: null, error: null })

@@ -156,6 +156,8 @@ export async function dispatch(req: ApiRequest): Promise<ApiResult> {
         return await orgCustomCourses(req)
       case 'org-dashboard':
         return await orgDashboard(req)
+      case 'org-modules':
+        return await orgModules(req)
       case 'student-learning':
         return await studentLearning(req)
       case 'student-custom-courses':
@@ -445,7 +447,8 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
     const [org, grant, lessons] = await Promise.all([
       one<{ status: string }>('select status from public.org where id = $1', [ctx.orgId]),
       one<{ max_level: number; valid_until: string | null }>(
-        'select max_level, valid_until from public.org_entitlement where org_id = $1',
+        `select max_level, valid_until from public.org_entitlement
+         where org_id = $1 and module_id = 'python' and revoked_at is null`,
         [ctx.orgId],
       ),
       q<{
@@ -630,7 +633,11 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
 }
 
 async function orgPackageLevel(orgId: string): Promise<number> {
-  const grant = await one<{ max_level: number }>('select max_level from public.org_entitlement where org_id = $1', [orgId])
+  const grant = await one<{ max_level: number }>(
+    `select max_level from public.org_entitlement
+     where org_id = $1 and module_id = 'python' and revoked_at is null`,
+    [orgId],
+  )
   const level = Number(grant?.max_level)
   return Number.isInteger(level) && level > 0 ? level : 0
 }
@@ -778,7 +785,11 @@ async function orgFinance(req: ApiRequest): Promise<ApiResult> {
 async function orgLessonFacts(orgId: string, effective: OrgStatus, studentIds: string[]) {
   const [org, grant] = await Promise.all([
     one<{ status: string }>('select status from public.org where id = $1', [orgId]),
-    one<{ max_level: number; valid_until: string | null }>('select max_level, valid_until from public.org_entitlement where org_id = $1', [orgId]),
+    one<{ max_level: number; valid_until: string | null }>(
+      `select max_level, valid_until from public.org_entitlement
+       where org_id = $1 and module_id = 'python' and revoked_at is null`,
+      [orgId],
+    ),
   ])
   const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
   const access: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
@@ -836,6 +847,62 @@ function presentAttention(
     lastActiveAt: student.last_active_at,
     currentLevelUpdatedAt: current?.updated_at ?? null,
     currentLevelCompleted: current?.completed === true,
+  })
+}
+
+/**
+ * 启动器开通列表。orgId 从 student 或 org session 解析，不信任请求体。
+ * 返回未 revoke、且未过期（valid_until 为空或仍有效）的模块行。
+ */
+async function orgModules(req: ApiRequest): Promise<ApiResult> {
+  const session = await readSession(req.header('authorization'))
+  if (!session || (session.role !== 'student' && session.role !== 'org')) {
+    return fail(401, '未登录')
+  }
+
+  let orgId: string | null = null
+  if (session.role === 'student') {
+    const student = await one<{ org_id: string; status: string }>(
+      'select org_id, status from public.student where id = $1',
+      [session.subjectId],
+    )
+    if (!student || student.status !== 'active') return fail(401, '未登录')
+    orgId = student.org_id
+  } else {
+    const admin = await one<{ org_id: string; status: string }>(
+      'select org_id, status from public.org_admin where id = $1',
+      [session.subjectId],
+    )
+    if (!admin || admin.status !== 'active') return fail(401, '未登录')
+    orgId = admin.org_id
+  }
+
+  const org = await one<{ status: string; trial_expire_at: string | null; service_end_at: string | null }>(
+    'select status, trial_expire_at, service_end_at from public.org where id = $1',
+    [orgId],
+  )
+  if (!org) return fail(401, '未登录')
+  const status = await effectiveStatus(org)
+  if (!status || status === 'disabled') return fail(403, '机构已停用')
+
+  const rows = await q<{ module_id: string; max_level: number | null; valid_until: string | null }>(
+    `select module_id, max_level, valid_until
+     from public.org_entitlement
+     where org_id = $1
+       and revoked_at is null
+       and (valid_until is null or valid_until > now())
+     order by module_id`,
+    [orgId],
+  )
+
+  return ok({
+    modules: rows
+      .filter((row) => row.module_id === 'python' || row.module_id === 'matupix')
+      .map((row) => ({
+        moduleId: row.module_id as 'python' | 'matupix',
+        maxLevel: row.max_level == null ? null : Number(row.max_level),
+        validUntil: row.valid_until,
+      })),
   })
 }
 

@@ -11,7 +11,7 @@ export interface OrgCourseSettings {
   expiresAt: string
   activatedAt: string
   levelCount: number
-  /** org_entitlement.max_level。0 表示还没有课程包。 */
+  /** org_entitlement(module_id=python).max_level。0 表示还没有课程包。 */
   maxLevel: number
   studentMonthlyPrice: number
   /** 平台底价，元/席/月。来自运营配置。 */

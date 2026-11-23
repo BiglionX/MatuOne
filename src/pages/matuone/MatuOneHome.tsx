@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { listOrgEnabledModules, resolveLauncherOrg } from '@/api/orgModules'
 import { SITE } from '@/config/site'
 import { isLauncherAudioEnabled, playLauncherSound, toggleLauncherAudio } from '@/lib/launcherAudio'
+import { listLauncherRegistryModules } from '@/modules/registry'
+import type { ModuleIconName, TeachingModuleDef } from '@/modules/types'
 import { BrandGlyph } from './BrandGlyph'
 
 /**
@@ -9,66 +12,10 @@ import { BrandGlyph } from './BrandGlyph'
  * 打开就是一个「桌面窗口」，中间是三块板块入口（宽屏横排三列，窄屏竖排），方向键可以在模块之间移动。
  *
  * 菜单本身不会一上来就摆好：MatuOneLayout 先播开屏动画，结束后菜单各元素才依次浮现。
+ * 模块列表来自注册表；有 org session 时按开通记录过滤，游客展示全部 active / coming_soon。
  */
 
-type ModuleIconName = 'python' | 'pix' | 'lock'
-
-interface MatuModule {
-  id: string
-  index: string
-  code: string
-  name: string
-  audience: string
-  summary: string
-  detail: string
-  accent: string
-  icon: ModuleIconName
-  /** 为 null 表示板块还没开发，点下去只给提示 */
-  to: string | null
-  cta: string
-}
-
-const MODULES: MatuModule[] = [
-  {
-    id: 'matupix',
-    index: '01',
-    code: 'PX',
-    name: 'MatuPix 创意搭建',
-    audience: '1—2 年级',
-    summary: '像素画加 3D 积木，动手就有作品。',
-    detail: '浏览器里就能画、能搭，不用装软件、不用注册账号，草稿留在本机。',
-    accent: '#A78BFA',
-    icon: 'pix',
-    to: '/matupix',
-    cta: '打开 MatuPix',
-  },
-  {
-    id: 'python',
-    index: '02',
-    code: 'PY',
-    name: 'Python 课外课',
-    audience: '3 年级以上',
-    summary: '抄下代码、逐行校验、跑出图形。',
-    detail: 'Level 1 共 120 关按单元铺开，孩子自己抄、自己跑、自己改一个参数。',
-    accent: '#5BB8FF',
-    icon: 'python',
-    to: '/student',
-    cta: '进入课程地图',
-  },
-  {
-    id: 'arduino',
-    index: '03',
-    code: 'AR',
-    name: 'Arduino 机器人探索',
-    audience: '筹备中',
-    summary: '传感器、电机，让作品自己动起来。',
-    detail: '下一块拼图：图形化接线与固件上传，硬件套件由机构统一配发。',
-    accent: '#FB923C',
-    icon: 'lock',
-    to: null,
-    cta: '即将上线',
-  },
-]
+type LauncherModule = TeachingModuleDef
 
 const TOP_LINKS = [
   { to: '/curriculum', label: '课程体系' },
@@ -114,15 +61,37 @@ function ModuleIcon({ name }: { name: ModuleIconName }) {
   )
 }
 
-function ModuleCard({ module, onSoon }: { module: MatuModule; onSoon: (message: string) => void }) {
+function isLockedModule(module: LauncherModule): boolean {
+  return module.status === 'coming_soon' || module.entry_path == null
+}
+
+/**
+ * 游客：注册表中 active / coming_soon 全部展示。
+ * 有 org：coming_soon 仍显示锁定卡；active 且 entitlement_required 的需有开通行。
+ */
+export function filterLauncherModules(
+  registry: TeachingModuleDef[],
+  enabledIds: ReadonlySet<string> | null,
+): TeachingModuleDef[] {
+  return registry.filter((mod) => {
+    if (mod.status === 'coming_soon') return true
+    if (mod.status !== 'active') return false
+    if (!mod.entitlement_required) return true
+    // 游客：enabledIds 为 null，不按开通过滤
+    if (enabledIds == null) return true
+    return enabledIds.has(mod.module_id)
+  })
+}
+
+function ModuleCard({ module, onSoon }: { module: LauncherModule; onSoon: (message: string) => void }) {
   const navigate = useNavigate()
   const [launching, setLaunching] = useState(false)
-  const locked = module.to === null
+  const locked = isLockedModule(module)
   const style = { '--accent': module.accent } as CSSProperties
 
   const body = (
     <>
-      <div className="matuone-preview" data-module={module.id}>
+      <div className="matuone-preview" data-module={module.module_id}>
         <span className="relative z-10 flex h-12 w-12 items-center justify-center" style={{ color: module.accent }}>
           <ModuleIcon name={module.icon} />
         </span>
@@ -132,9 +101,9 @@ function ModuleCard({ module, onSoon }: { module: MatuModule; onSoon: (message: 
       </div>
 
       <div className="mt-5 flex items-start justify-between gap-3">
-        <h3 className="text-xl font-bold leading-snug text-ink">{module.name}</h3>
+        <h3 className="text-xl font-bold leading-snug text-ink">{module.display_name}</h3>
         <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-ink-soft">
-          {module.audience}
+          {module.grade_range}
         </span>
       </div>
 
@@ -166,14 +135,14 @@ function ModuleCard({ module, onSoon }: { module: MatuModule; onSoon: (message: 
   function handleActivate(event: React.MouseEvent) {
     if (locked) {
       playLauncherSound('locked')
-      onSoon(`「${module.name}」还在开发中，先玩另外两个板块吧。`)
+      onSoon(`「${module.display_name}」还在开发中，先玩另外两个板块吧。`)
       return
     }
     event.preventDefault()
-    if (launching) return
+    if (launching || !module.entry_path) return
     setLaunching(true)
     playLauncherSound('click')
-    window.setTimeout(() => navigate(module.to as string), 680)
+    window.setTimeout(() => navigate(module.entry_path as string), 680)
   }
 
   if (locked) {
@@ -192,7 +161,7 @@ function ModuleCard({ module, onSoon }: { module: MatuModule; onSoon: (message: 
 
   return (
     <Link
-      to={module.to as string}
+      to={module.entry_path as string}
       data-module-control
       onClick={handleActivate}
       onMouseEnter={() => playLauncherSound('hover')}
@@ -205,6 +174,9 @@ function ModuleCard({ module, onSoon }: { module: MatuModule; onSoon: (message: 
 }
 
 export function MatuOneHome() {
+  const [modules, setModules] = useState<LauncherModule[]>(() =>
+    filterLauncherModules(listLauncherRegistryModules(), null),
+  )
   const [notice, setNotice] = useState<string | null>(null)
   const [clock, setClock] = useState(() => new Date())
   const gridRef = useRef<HTMLDivElement>(null)
@@ -221,6 +193,30 @@ export function MatuOneHome() {
     },
     [],
   )
+
+  useEffect(() => {
+    const registry = listLauncherRegistryModules()
+    const role = resolveLauncherOrg()
+    if (!role) {
+      setModules(filterLauncherModules(registry, null))
+      return
+    }
+    let cancelled = false
+    void listOrgEnabledModules()
+      .then((grants) => {
+        if (cancelled) return
+        const enabled = new Set(grants.map((g) => g.moduleId))
+        setModules(filterLauncherModules(registry, enabled))
+      })
+      .catch(() => {
+        // 开通查询失败时降级为游客视图，避免首屏卡片被藏光
+        if (cancelled) return
+        setModules(filterLauncherModules(registry, null))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function showNotice(message: string) {
     setNotice(message)
@@ -280,7 +276,9 @@ export function MatuOneHome() {
                 <span className="h-3 w-3 rounded-full bg-[#28c840]" />
               </span>
               <p className="font-mono text-[11px] tracking-[0.2em] text-ink-soft">MATUONE · LAUNCHER</p>
-              <p className="ml-auto hidden font-mono text-[11px] text-ink-soft/70 sm:block">3 MODULES · v1.0</p>
+              <p className="ml-auto hidden font-mono text-[11px] text-ink-soft/70 sm:block">
+                {modules.length} MODULES · v1.0
+              </p>
             </div>
 
             <div
@@ -288,8 +286,8 @@ export function MatuOneHome() {
               onKeyDown={onGridKeyDown}
               className="grid gap-3 p-3 md:grid-cols-3"
             >
-              {MODULES.map((module) => (
-                <ModuleCard key={module.id} module={module} onSoon={showNotice} />
+              {modules.map((module) => (
+                <ModuleCard key={module.module_id} module={module} onSoon={showNotice} />
               ))}
             </div>
 
@@ -298,7 +296,7 @@ export function MatuOneHome() {
                 <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
                 系统就绪
               </span>
-              <span>已装载 3 个板块</span>
+              <span>已装载 {modules.length} 个板块</span>
               <span className="ml-auto hidden sm:inline">方向键选择 · Enter 进入</span>
             </div>
           </div>

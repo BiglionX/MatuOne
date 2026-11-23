@@ -84,7 +84,13 @@ Deno.serve(async (req) => {
           ctx.db.from('curriculum_semester').select('semester_id, stage_id'),
           ctx.db.from('curriculum_stage').select('stage_id, sort_order'),
           ctx.db.from('org').select('status').eq('id', ctx.orgId).maybeSingle(),
-          ctx.db.from('org_entitlement').select('max_level, valid_until').eq('org_id', ctx.orgId).maybeSingle(),
+          ctx.db
+            .from('org_entitlement')
+            .select('max_level, valid_until')
+            .eq('org_id', ctx.orgId)
+            .eq('module_id', 'python')
+            .is('revoked_at', null)
+            .maybeSingle(),
         ])
       if (levelError) return json(500, { message: '读取失败' })
       const stageSort = new Map((stages ?? []).map((stage) => [stage.stage_id as string, Number(stage.sort_order)]))
@@ -328,7 +334,12 @@ async function studentListExtras(
   const ids = students.map((student) => student.id)
   const [{ data: org }, { data: grant }, { data: published }, { data: units }, { data: semesters }, { data: stages }] = await Promise.all([
     db.from('org').select('status').eq('id', orgId).maybeSingle(),
-    db.from('org_entitlement').select('max_level, valid_until').eq('org_id', orgId).maybeSingle(),
+    db.from('org_entitlement')
+      .select('max_level, valid_until')
+      .eq('org_id', orgId)
+      .eq('module_id', 'python')
+      .is('revoked_at', null)
+      .maybeSingle(),
     db.from('course_level').select('sort_order, unit_id').eq('published', true),
     db.from('curriculum_unit').select('unit_id, semester_id'),
     db.from('curriculum_semester').select('semester_id, stage_id'),

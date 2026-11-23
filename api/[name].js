@@ -20169,7 +20169,8 @@ async function decideStudentLevel(studentId, levelId) {
       student.org_id
     ]),
     one(
-      "select max_level, valid_until from public.org_entitlement where org_id = $1",
+      `select max_level, valid_until from public.org_entitlement
+       where org_id = $1 and module_id = 'python' and revoked_at is null`,
       [student.org_id]
     ),
     one(
@@ -59619,6 +59620,8 @@ async function dispatch(req) {
         return await orgCustomCourses(req);
       case "org-dashboard":
         return await orgDashboard(req);
+      case "org-modules":
+        return await orgModules(req);
       case "student-learning":
         return await studentLearning(req);
       case "student-custom-courses":
@@ -59859,7 +59862,8 @@ async function orgStudents(req) {
     const [org, grant, lessons] = await Promise.all([
       one("select status from public.org where id = $1", [ctx.orgId]),
       one(
-        "select max_level, valid_until from public.org_entitlement where org_id = $1",
+        `select max_level, valid_until from public.org_entitlement
+         where org_id = $1 and module_id = 'python' and revoked_at is null`,
         [ctx.orgId]
       ),
       q(
@@ -60023,7 +60027,11 @@ async function orgStudents(req) {
   return ok4({ added, rows });
 }
 async function orgPackageLevel(orgId) {
-  const grant = await one("select max_level from public.org_entitlement where org_id = $1", [orgId]);
+  const grant = await one(
+    `select max_level from public.org_entitlement
+     where org_id = $1 and module_id = 'python' and revoked_at is null`,
+    [orgId]
+  );
   const level = Number(grant?.max_level);
   return Number.isInteger(level) && level > 0 ? level : 0;
 }
@@ -60147,7 +60155,11 @@ async function orgFinance(req) {
 async function orgLessonFacts(orgId, effective, studentIds) {
   const [org, grant] = await Promise.all([
     one("select status from public.org where id = $1", [orgId]),
-    one("select max_level, valid_until from public.org_entitlement where org_id = $1", [orgId])
+    one(
+      `select max_level, valid_until from public.org_entitlement
+       where org_id = $1 and module_id = 'python' and revoked_at is null`,
+      [orgId]
+    )
   ]);
   const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
   const access2 = org?.status === "trial" || effective === "trial" ? "trial" : effective;
@@ -60197,6 +60209,51 @@ function presentAttention(student, facts) {
     lastActiveAt: student.last_active_at,
     currentLevelUpdatedAt: current?.updated_at ?? null,
     currentLevelCompleted: current?.completed === true
+  });
+}
+async function orgModules(req) {
+  const session = await readSession(req.header("authorization"));
+  if (!session || session.role !== "student" && session.role !== "org") {
+    return fail4(401, "\u672A\u767B\u5F55");
+  }
+  let orgId = null;
+  if (session.role === "student") {
+    const student = await one(
+      "select org_id, status from public.student where id = $1",
+      [session.subjectId]
+    );
+    if (!student || student.status !== "active") return fail4(401, "\u672A\u767B\u5F55");
+    orgId = student.org_id;
+  } else {
+    const admin = await one(
+      "select org_id, status from public.org_admin where id = $1",
+      [session.subjectId]
+    );
+    if (!admin || admin.status !== "active") return fail4(401, "\u672A\u767B\u5F55");
+    orgId = admin.org_id;
+  }
+  const org = await one(
+    "select status, trial_expire_at, service_end_at from public.org where id = $1",
+    [orgId]
+  );
+  if (!org) return fail4(401, "\u672A\u767B\u5F55");
+  const status = await effectiveStatus(org);
+  if (!status || status === "disabled") return fail4(403, "\u673A\u6784\u5DF2\u505C\u7528");
+  const rows = await q(
+    `select module_id, max_level, valid_until
+     from public.org_entitlement
+     where org_id = $1
+       and revoked_at is null
+       and (valid_until is null or valid_until > now())
+     order by module_id`,
+    [orgId]
+  );
+  return ok4({
+    modules: rows.filter((row) => row.module_id === "python" || row.module_id === "matupix").map((row) => ({
+      moduleId: row.module_id,
+      maxLevel: row.max_level == null ? null : Number(row.max_level),
+      validUntil: row.valid_until
+    }))
   });
 }
 async function orgDashboard(req) {

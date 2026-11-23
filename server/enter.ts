@@ -64,7 +64,8 @@ export async function decideStudentLevel(studentId: string, levelId: string): Pr
       student.org_id,
     ]),
     one<{ max_level: number; valid_until: string | null }>(
-      'select max_level, valid_until from public.org_entitlement where org_id = $1',
+      `select max_level, valid_until from public.org_entitlement
+       where org_id = $1 and module_id = 'python' and revoked_at is null`,
       [student.org_id],
     ),
     one<{ stage_level: number | null }>(
