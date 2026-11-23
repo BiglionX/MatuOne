@@ -17,6 +17,7 @@
 //   5. 把用到的零件文件（含子件）拷进 public/ldraw，渲染端按官方目录找得到。
 //
 // 用法：npx tsx scripts/build-magic-models.ts [--report]
+import { spawnSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
@@ -494,6 +495,16 @@ function main() {
   console.log(`写出 ${OUT_PARTS_FILE}`)
   writeFileSync(OUT_MANIFEST_FILE, buildManifestModule())
   console.log(`写出 ${OUT_MANIFEST_FILE}`)
+
+  // 零件目录一变，原点表必须跟着重生：漏表时导出回退到 height/2，渲染仍用 alignPart，
+  // 两边差一整板高，audit:engine 会红。
+  const origins = spawnSync('npx', ['tsx', 'scripts/gen-part-origins.ts'], {
+    stdio: 'inherit',
+    shell: true,
+  })
+  if (origins.status !== 0) {
+    throw new Error(`gen-part-origins 失败，退出码 ${origins.status ?? 'null'}`)
+  }
 }
 
 main()

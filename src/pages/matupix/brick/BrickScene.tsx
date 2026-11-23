@@ -944,6 +944,14 @@ function BrickModel({
   const spinAroundPin = !point && partPinCount(brick.type) === 1
   const yaw = (brick.rotation * Math.PI) / 180
   const bodyRef = useRef<Group>(null)
+  // 方向盘、挖斗这类单插销细件，实体网格很薄，点选容易被旁边大件抢走。
+  // 用脚印包围盒做隐形点选体，只参与射线，不参与画面。
+  const pickProxy = partPinCount(brick.type) === 1 ? (
+    <mesh visible={false} userData={{ brickPickProxy: true }}>
+      <boxGeometry args={localSize(brick.type)} />
+      <meshBasicMaterial />
+    </mesh>
+  ) : null
   const body = (
     <group ref={bodyRef}>
       {instance ? (
@@ -960,6 +968,7 @@ function BrickModel({
           />
         </mesh>
       )}
+      {pickProxy}
     </group>
   )
   const outline = selected ? <SelectionOutline targetRef={bodyRef} /> : null
@@ -991,6 +1000,7 @@ function BrickModel({
   return (
     <group
       position={position ?? brick.position}
+      userData={{ brickId: brick.id }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerOut={onPointerOut}
@@ -1001,6 +1011,48 @@ function BrickModel({
       </group>
     </group>
   )
+}
+
+/** 点选时，射线附近多个零件里优先体积更小的（方向盘、细杆），避免被大件挡住。 */
+const PICK_DISTANCE_EPS = 0.45
+
+function brickPickVolume(type: BrickType) {
+  const [width, height, depth] = localSize(type)
+  return width * height * depth
+}
+
+function findBrickId(obj: Object3D): string | null {
+  let current: Object3D | null = obj
+  while (current) {
+    const id = current.userData?.brickId
+    if (typeof id === 'string') return id
+    current = current.parent
+  }
+  return null
+}
+
+function resolvePickedBrick(event: ThreeEvent<PointerEvent>, fallback: Brick, bricks: readonly Brick[]): Brick {
+  const hits = event.intersections
+  if (hits.length <= 1) return fallback
+  const nearest = hits[0]?.distance ?? 0
+  const byId = new Map(bricks.map((item) => [item.id, item]))
+  let best = fallback
+  let bestVolume = brickPickVolume(fallback.type)
+  const seen = new Set<string>()
+  for (const hit of hits) {
+    if (hit.distance > nearest + PICK_DISTANCE_EPS) break
+    const id = findBrickId(hit.object)
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    const candidate = byId.get(id)
+    if (!candidate) continue
+    const volume = brickPickVolume(candidate.type)
+    if (volume < bestVolume - 0.05) {
+      best = candidate
+      bestVolume = volume
+    }
+  }
+  return best
 }
 
 function ModelFacts({ hostRef }: { hostRef: RefObject<HTMLElement | null> }) {
@@ -1749,26 +1801,27 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
 
   function onBrickDown(event: ThreeEvent<PointerEvent>, brick: Brick) {
     if (frozenRef.current) return
+    const target = resolvePickedBrick(event, brick, bricks)
     if (toolRef.current === 'select' && event.nativeEvent.button === 0 && !event.nativeEvent.shiftKey) {
-      beginSelectDrag(event, brick)
+      beginSelectDrag(event, target)
       return
     }
     const ny = worldNormalY(event)
     const x = event.point.x
     const z = event.point.z
-    const topPlates = Math.max(0, Math.round(brickTopHeight(brick) * 3))
+    const topPlates = Math.max(0, Math.round(brickTopHeight(target) * 3))
     beginGesture(event, (shift) => {
       if (shift) {
-        handlers.current.onDelete(brick.id)
+        handlers.current.onDelete(target.id)
         return
       }
       const mode = toolRef.current
       if (mode === 'erase') {
-        handlers.current.onDelete(brick.id)
+        handlers.current.onDelete(target.id)
         return
       }
       if (mode === 'select') {
-        handlers.current.onSelect(brick.id)
+        handlers.current.onSelect(target.id)
         return
       }
       if (mode !== 'build') return
@@ -1776,7 +1829,7 @@ export const BrickScene = forwardRef<BrickSceneHandle, BrickSceneProps>(function
         handlers.current.onPlace(x, z, topPlates)
         return
       }
-      handlers.current.onSelect(brick.id)
+      handlers.current.onSelect(target.id)
     })
   }
 

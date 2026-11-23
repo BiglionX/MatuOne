@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react'
 import { MagicGlyph } from './brickMagicIcons'
-import { MAGIC_LARGE, MAGIC_SMALL, type MagicModel } from './brickMagicModels'
+import type { MagicModel } from './brickMagicKinds'
 import { hexToRgba, mixHex, shadeHex, type Brick3dStyle } from './brickCardTone'
 import './brickCard.css'
 
@@ -58,16 +59,39 @@ const CARD_FACE: Record<string, CardFace> = {
   stadium: { fill: '#E4F4E8', edge: '#ACDCB9' },
   sport: { fill: '#FBDEDF', edge: '#F4999D' },
   eiffel: { fill: '#F0F1F2', edge: '#D0D3D6' },
-    skyscraper: { fill: '#FAF3EB', edge: '#F0D9C2' },
+  skyscraper: { fill: '#FAF3EB', edge: '#F0D9C2' },
 }
 
 export function BrickMagicDialog({ onClose, onPick }: BrickMagicDialogProps) {
+  const [small, setSmall] = useState<MagicModel[] | null>(null)
+  const [large, setLarge] = useState<MagicModel[] | null>(null)
+  const [loadError, setLoadError] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    void import('./brickMagicModels')
+      .then((mod) => {
+        if (!alive) return
+        setSmall(mod.MAGIC_SMALL)
+        setLarge(mod.MAGIC_LARGE)
+      })
+      .catch(() => {
+        if (alive) setLoadError(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const ready = small !== null && large !== null
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#163044]/35 p-3" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="brick-magic-title"
+        aria-busy={!ready && !loadError}
         className="max-h-[min(880px,calc(100dvh-1.5rem))] w-full max-w-[720px] overflow-y-auto rounded-[28px] bg-white px-5 pb-6 pt-5 text-ink shadow-[0_24px_60px_rgba(16,36,52,0.28)]"
         onClick={(event) => event.stopPropagation()}
       >
@@ -84,22 +108,30 @@ export function BrickMagicDialog({ onClose, onPick }: BrickMagicDialogProps) {
             × 关闭
           </button>
         </div>
-        <div className="mt-4 grid grid-cols-5 gap-3">
-          {MAGIC_SMALL.map((item) => (
-            <MagicCard key={item.id} model={item} onPick={onPick} />
-          ))}
-        </div>
-        <div className="my-4 border-t border-dashed border-[#E4E7EC]" />
-        <h3 className="mb-3 flex items-center gap-2 text-[18px] font-extrabold leading-6 text-ink">
-          <SceneMark />
-          大场景
-        </h3>
-        <div className="grid grid-cols-5 gap-3">
-          {MAGIC_LARGE.map((item) => (
-            <MagicCard key={item.id} model={item} onPick={onPick} />
-          ))}
-        </div>
-        <AttributionNote />
+        {loadError ? (
+          <p className="mt-6 text-center text-[15px] text-ink-soft">模型目录加载失败，请关掉再试一次。</p>
+        ) : !ready ? (
+          <p className="mt-6 text-center text-[15px] text-ink-soft">正在加载模型目录…</p>
+        ) : (
+          <>
+            <div className="mt-4 grid grid-cols-5 gap-3">
+              {small.map((item) => (
+                <MagicCard key={item.id} model={item} onPick={onPick} />
+              ))}
+            </div>
+            <div className="my-4 border-t border-dashed border-[#E4E7EC]" />
+            <h3 className="mb-3 flex items-center gap-2 text-[18px] font-extrabold leading-6 text-ink">
+              <SceneMark />
+              大场景
+            </h3>
+            <div className="grid grid-cols-5 gap-3">
+              {large.map((item) => (
+                <MagicCard key={item.id} model={item} onPick={onPick} />
+              ))}
+            </div>
+            <AttributionNote />
+          </>
+        )}
       </div>
     </div>
   )

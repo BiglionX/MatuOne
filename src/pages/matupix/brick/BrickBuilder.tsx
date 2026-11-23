@@ -6,7 +6,7 @@ import { BrickMagicDialog } from './BrickMagicDialog'
 import { BrickPartBar } from './BrickPartBar'
 import { BrickPartDialog } from './BrickPartDialog'
 import { BrickVideoDialog } from './BrickVideoDialog'
-import { bricksFromMagic, magicModelById, type MagicModel } from './brickMagicModels'
+import { bricksFromMagic, type MagicModel } from './brickMagicKinds'
 import { frameModel, orbitPose, paintAspect, recordCanvas, videoPlan, type ShotFps, type ShotStyle } from './brickVideo'
 import { rememberPart } from './brickPartMemory'
 import { BrickScene, BRICK_FLOOR_COLOR, type BrickPointerMode, type BrickPreview, type BrickReveal, type BrickSceneHandle, type CameraForward, type CameraPose } from './BrickScene'
@@ -14,6 +14,7 @@ import { BrickToolbar } from './BrickToolbar'
 import { cardToneVars, type Brick3dStyle, type BrickCardTone } from './brickCardTone'
 import './brickCard.css'
 import { loadBrickDraft, saveBrickDraft } from './brickDraft'
+import { syncArmFollowers } from './brickArmFollow'
 import { toLDraw } from './brickLdraw'
 import {
   brickBasePlates,
@@ -232,6 +233,12 @@ export function BrickBuilder() {
     setSelectedId(nextSelected)
   }
 
+  /** 替换一块砖；若是手臂，顺带带走仍插在腕孔上的手。 */
+  function commitBrickUpdate(before: Brick, after: Brick) {
+    pushHistory()
+    commit(syncArmFollowers(before, after, bricksRef.current))
+  }
+
   function rotateSelected(id: string) {
     const current = bricksRef.current
     const brick = current.find((item) => item.id === id)
@@ -241,14 +248,14 @@ export function BrickBuilder() {
       showStatus('这里放不下')
       return
     }
-    pushHistory()
-    commit(current.map((item) => (item.id === id ? rotated : item)))
+    commitBrickUpdate(brick, rotated)
   }
 
   /**
    * 绕插销转 15°。
    *
    * 支点就是插销，转零件不挪位置。多个卡点的零件转了会对不上网格，不给转。
+   * 摆动手臂时，插在腕孔上的手会跟着走。
    */
   function spinSelected() {
     const id = selectedRef.current
@@ -265,8 +272,7 @@ export function BrickBuilder() {
       showStatus('这里放不下')
       return
     }
-    pushHistory()
-    commit(current.map((item) => (item.id === id ? spun : item)))
+    commitBrickUpdate(brick, spun)
   }
 
   function moveSelected(id: string, dx: number, dz: number) {
@@ -281,8 +287,7 @@ export function BrickBuilder() {
       showStatus('这里放不下')
       return
     }
-    pushHistory()
-    commit(current.map((item) => (item.id === id ? moved : item)))
+    commitBrickUpdate(brick, moved)
   }
 
   function moveByKey(key: string) {
@@ -312,8 +317,7 @@ export function BrickBuilder() {
       showStatus('这里放不下')
       return
     }
-    pushHistory()
-    commit(current.map((item) => (item.id === id ? moved : item)))
+    commitBrickUpdate(brick, moved)
   }
 
   function changeLayer(id: string, delta: 1 | -1) {
@@ -328,8 +332,7 @@ export function BrickBuilder() {
       showStatus('这里放不下')
       return
     }
-    pushHistory()
-    commit(current.map((item) => (item.id === id ? moved : item)))
+    commitBrickUpdate(brick, moved)
   }
 
   function clearAll() {
@@ -479,18 +482,21 @@ export function BrickBuilder() {
   }
 
   function exportLDraw() {
-    const { text, fallbackCount } = toLDraw(bricksRef.current, sceneAttribution())
-    rootRef.current?.setAttribute('data-last-ldr', text)
-    if (fallbackCount > 0) showStatus(`${fallbackCount} 块非预设色已映射为默认色`)
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = 'matupix-brick.ldr'
-    document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-    URL.revokeObjectURL(url)
+    // 署名表在魔法数据里，按需加载，避免首屏拖进 ~500KB 模型库。
+    void import('./brickMagicModels').then(({ magicModelById }) => {
+      const { text, fallbackCount } = toLDraw(bricksRef.current, sceneAttribution(magicModelById))
+      rootRef.current?.setAttribute('data-last-ldr', text)
+      if (fallbackCount > 0) showStatus(`${fallbackCount} 块非预设色已映射为默认色`)
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'matupix-brick.ldr'
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(url)
+    })
   }
 
   function soon() {
@@ -533,13 +539,13 @@ export function BrickBuilder() {
    * 官方模型是 CC BY 2.0，衍生作品必须带作者和许可。
    * 同一模型只写一次；砖被删光或换掉了，对应的模型也不用再署。
    */
-  function sceneAttribution() {
+  function sceneAttribution(lookup: (id: string) => MagicModel | null) {
     const used = new Set<string>()
     for (const brick of bricksRef.current) {
       if (brick.magicModel) used.add(brick.magicModel)
     }
     const models = [...used]
-      .map((id) => magicModelById(id))
+      .map((id) => lookup(id))
       .filter((model): model is MagicModel => model !== null)
       .map((model) => ({ label: model.label, author: model.author }))
     return { models }
@@ -815,6 +821,7 @@ export function BrickBuilder() {
               <p className="mt-3 text-lg font-bold leading-6">来放第一块积木吧？</p>
               <p className="mt-2 text-[13px] leading-5 text-ink-soft">选一个零件和一种颜色，然后点一下底板。</p>
               <p className="text-[13px] leading-5 text-ink-soft">拖动背景可以旋转视角。</p>
+              <p className="mt-2 text-[12px] leading-5 text-ink-soft">作品自动草稿在这台设备上，不会上传；换设备或清缓存就看不到了。</p>
               <button
                 type="button"
                 onClick={focusPartPicker}
@@ -878,7 +885,7 @@ export function BrickBuilder() {
             <StudioLogo />
             <div className="min-w-0">
               <h1 className="text-[22px] font-extrabold leading-6 tracking-tight">积木搭建</h1>
-              <p className="text-[13px] leading-4 text-ink-soft">创意工作室</p>
+              <p className="text-[13px] leading-4 text-ink-soft">草稿只留在本机</p>
             </div>
           </div>
           <div className="flex shrink-0 gap-1.5 px-3 pb-2">

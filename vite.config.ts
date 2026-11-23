@@ -22,10 +22,16 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // 积木魔法模型数据约 500KB+，与首屏 BrickBuilder 拆开，打开弹窗再拉。
+          if (/[\\/]brickMagicData\.[jt]sx?$/.test(id)) return 'brick-magic-data'
+          if (/[\\/]brickMagicModels\.[jt]sx?$/.test(id)) return 'brick-magic-models'
+          if (/[\\/]brickMagicParts\.[jt]sx?$/.test(id)) return 'brick-magic-parts'
           if (!id.includes('node_modules') || id.includes('pyodide')) return undefined
           if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
             return 'react'
           }
+          if (/[\\/]node_modules[\\/]three[\\/]/.test(id)) return 'three'
+          if (/[\\/]node_modules[\\/]@react-three[\\/]/.test(id)) return 'r3f'
           return undefined
         },
       },

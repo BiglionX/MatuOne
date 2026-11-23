@@ -15,9 +15,12 @@
 
 ```
 npm run typecheck
+npm run audit:ldraw && npm run audit:origins && npm run audit:magic && npm run audit:files && npm run audit:engine
 npm run e2e
 git commit && git push
 ```
+
+MatuPix 积木页（`/matupix/brick`）改零件或魔法模型后，务必跑完上面五项 brick audit；日常冒烟含在 `e2e/matupix-brick.spec.ts`。
 
 不需要部署任何后端产物，也不需要 Supabase 的 access token。
 

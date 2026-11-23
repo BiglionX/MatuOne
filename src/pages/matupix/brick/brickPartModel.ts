@@ -1,4 +1,4 @@
-import { Box3, Group, LineBasicMaterial, LineSegments, LoadingManager, Mesh, MeshStandardMaterial, type Material, type Object3D } from 'three'
+import { Box3, DoubleSide, Group, LineBasicMaterial, LineSegments, LoadingManager, Mesh, MeshStandardMaterial, type Material, type Object3D } from 'three'
 import { LDrawConditionalLineMaterial } from 'three/examples/jsm/materials/LDrawConditionalLineMaterial.js'
 import { LDrawLoader } from 'three/examples/jsm/loaders/LDrawLoader.js'
 import { MAGIC_PARTS } from './brickMagicParts'
@@ -187,11 +187,23 @@ export const PART_SPIN = 'part-spin'
 // 所以多留一层直接吃 LDraw 矩阵。层级在 align 里面、零件外面，作用在 LDraw 坐标里。
 export const PART_LDRAW_ROT = 'part-ldraw-rot'
 
+function paintDoubleSided(root: Object3D) {
+  // 帆、翼板是单薄面：只画正面时，从背面/侧边看面消失，只剩钉和卡口，像零件飘在空中。
+  root.traverse((obj) => {
+    if (!(obj instanceof Mesh)) return
+    const materials = Array.isArray(obj.material) ? obj.material : [obj.material]
+    for (const material of materials) {
+      if (material && 'side' in material) material.side = DoubleSide
+    }
+  })
+}
+
 async function fetchAligned(type: BrickType) {
   const file = PART_FILE.get(type)
   if (!file) throw new Error(`未知零件 ${type}`)
   const loaded = await getLoader().loadAsync(file)
   stripLines(loaded)
+  paintDoubleSided(loaded)
   // 摆角和滚角必须作用在 LDraw 坐标上：缩放是 XZ 1/20、Y 1/24 的各向异性，
   // 放在缩放之后旋转会被拉歪（45 度摆角看着像 56 度）。
   // 所以在几何外面套多层空的 group：spin → 滚角 → 摆角，支点都是零件的 LDraw 原点。
@@ -272,6 +284,7 @@ export function loadBrickTemplate(type: BrickType) {
 
 function tintMaterial(material: Material, color: string) {
   const next = material.clone()
+  if ('side' in next) next.side = DoubleSide
   if (next instanceof MeshStandardMaterial) {
     const code = next.userData?.code
     if (code === undefined || code === '16') {

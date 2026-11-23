@@ -15,6 +15,7 @@
     "import:level2": "tsx scripts/import-level2.mjs",
     "audit:content": "node scripts/audit-level1.js",
     "build:magic": "tsx scripts/build-magic-models.ts",
+    "gen:origins": "tsx scripts/gen-part-origins.ts",
     "audit:magic": "tsx scripts/audit-magic-models.ts",
     "audit:files": "tsx scripts/audit-magic-files.ts",
     "audit:engine": "tsx scripts/audit-engine.ts",

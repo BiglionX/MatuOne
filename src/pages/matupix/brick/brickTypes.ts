@@ -693,6 +693,7 @@ export function hasOverlap(
 /**
  * AABB 估脚印会夸大、但挂载语义仍是单插销的零件。
  * 螺旋桨等叶子张开后 studs 可能是 4×3，人偶头盔 AABB 常被估成 2×2；
+ * 挖斗 / 铰链活动端 / 转盘上盖的 studs 是多格，但实物只绕一根插销转；
  * 这些不能按 studs 乘积算卡点，否则旋转按钮会被误判成「多卡点」。
  *
  * 注意：这里只影响 pin 计数 / 能否 spin，不改 mount ——
@@ -705,6 +706,19 @@ function isSinglePinPart(type: BrickType, info: BrickPartInfo) {
   if (/\bPropeller\b/i.test(text)) return true
   if (/Minifig (Arm|Hand|Head|Helmet|Hair)\b/i.test(text)) return true
   if (/Steering Stand and Wheel/i.test(text)) return true
+  // 挖斗 / 挖臂：挂在插销上转。带 Holder 的是固定座，不转。
+  if (/(Excavator|Digger) Bucket\b/i.test(text) && !/\bHolder\b/i.test(text)) return true
+  if (/Excavator Arm\b/i.test(text)) return true
+  // 起重机抓斗。
+  if (/Crane Grab|Grab Jaws/i.test(text)) return true
+  // 转盘上盖 / 整体转盘（底座 Base 不转）。
+  if (/\bTurntable\b/i.test(text) && !/\bBase\b/i.test(text)) return true
+  // 铰链：活动端、带 Finger 的锁铰、顶板/转轴/臂/屋顶等绕插销转。
+  // 纯 Base / Holder（且无 Finger）是固定座，不转。
+  if (/\bHinge\b/i.test(text)) {
+    if (/\b(Base|Holder)\b/i.test(text) && !/\bFinger\b/i.test(text)) return false
+    return true
+  }
   return false
 }
 
@@ -742,6 +756,14 @@ export type PartSpinAxis = 'x' | 'y' | 'z'
 
 export function partSpinAxis(type: BrickType): PartSpinAxis {
   if (type === 'propeller' || type === 'hand') return 'z'
+  const info = partInfo(type)
+  const text = `${info.name} ${info.label}`
+  // 挖斗插销沿 LDraw Z（见 784.dat 原点圆柱）。
+  if (/(Excavator|Digger) Bucket\b/i.test(text) && !/\bHolder\b/i.test(text)) return 'z'
+  // 板式铰链的插销多沿局部 X（左右贯指）。
+  if (/\bHinge\b/i.test(text)) return 'x'
+  // 转盘绕竖直轴。
+  if (/\bTurntable\b/i.test(text)) return 'y'
   return 'y'
 }
 

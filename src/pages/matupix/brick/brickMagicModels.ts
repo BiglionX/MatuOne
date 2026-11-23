@@ -9,41 +9,15 @@
 //   ldraw 精确摆放层，不吸附到格子上。
 //
 // 许可：LDraw 官方模型库 CC BY 2.0（需要署名），官方零件库 CC BY 4.0。
+//
+// 体积：brickMagicData 约 500KB+，只应被魔法弹窗 / 导出署名 / 审计脚本引用；
+// BrickBuilder 首屏请走 brickMagicKinds，不要静态 import 本文件。
 import { MAGIC_MODEL_DATA } from './brickMagicData'
 import { MAGIC_PARTS } from './brickMagicParts'
-import type { Brick, BrickType } from './brickTypes'
+import { bricksFromMagic, type MagicModel, type MagicPiece } from './brickMagicKinds'
 
-export type MagicPiece = {
-  /** 零件类型，形如 ldraw:parts/3005。 */
-  type: BrickType
-  /** MatuPix 八色调色板里的颜色。 */
-  color: string
-  /** 渲染坐标里的落点（Y 向上，1 钉 = 20 LDU，1 格高 = 24 LDU）。 */
-  position: [number, number, number]
-  /** LDraw 旋转矩阵，按 a b c / d e f / g h i 存。 */
-  rot: [number, number, number, number, number, number, number, number, number]
-  /** 零件 LDraw 原点在 OMR 模型坐标系里的位置，单位 LDU。导出 .ldr 用。 */
-  pos: [number, number, number]
-}
-
-export type MagicModel = {
-  id: string
-  name: string
-  size: 'small' | 'large'
-  tint: string
-  /** OMR 模型的官方套装名，例如 "7613-1 Track Racer"。 */
-  label: string
-  /** 模型作者，取自模型头的 0 Author: 行。 */
-  author: string
-  /** OMR 模型的官方许可声明。 */
-  license: string
-  /**
-   * 模型包围盒，单位是格（1 格 = 20 LDU = 1 钉）。
-   * 用来把镜头对准模型：模型水平居中、底面贴地，所以中心就在 x/z = 0、y = 高度一半。
-   */
-  bounds: { x: number; y: number; z: number }
-  pieces: MagicPiece[]
-}
+export type { MagicModel, MagicPiece }
+export { bricksFromMagic }
 
 function toPiece(data: (typeof MAGIC_MODEL_DATA)[number]['pieces'][number]): MagicPiece {
   const part = MAGIC_PARTS[data.part]
@@ -79,24 +53,4 @@ export const MAGIC_LARGE = MAGIC_MODELS.filter((item) => item.size === 'large')
 
 export function magicModelById(id: string) {
   return MAGIC_MODELS.find((model) => model.id === id) ?? null
-}
-
-/**
- * 把魔法模型变成场景里的积木。
- *
- * 每个零件都是一块带 LDraw 矩阵的积木：位置是精确落点，rotation 不参与
- * （姿态全在矩阵里），导出 .ldr 时原样带回官方矩阵和原始坐标。
- *
- * magicModel 记下这块砖来自哪个官方模型，导出时用它写 CC BY 署名。
- */
-export function bricksFromMagic(pieces: readonly MagicPiece[], modelId?: string): Brick[] {
-  return pieces.map((piece, index) => ({
-    id: `magic-${index}`,
-    type: piece.type,
-    color: piece.color,
-    position: piece.position,
-    rotation: 0,
-    ldraw: { rot: piece.rot, pos: piece.pos },
-    ...(modelId ? { magicModel: modelId } : {}),
-  }))
 }

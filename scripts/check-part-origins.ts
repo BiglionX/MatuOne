@@ -6,7 +6,11 @@
 //   2) 缩放到 XZ 20 LDU = 1、Y 24 LDU = 1。
 //   3) 用量出来的包围盒把中心对到原点：position = (-centerX, -half - min.y, -centerZ)。
 // 于是 LDraw 原点在对齐后局部坐标里的位置就是 group.position。
+//
+// 目录零件 + 魔法零件都要核对：魔法零件漏表时，导出端会回退到 height/2，
+// 和渲染端的 alignPart 实算差一整板高（典型 4 LDU），audit:engine 会红。
 import { PART_ORIGINS } from '../src/pages/matupix/brick/brickPartOrigins.ts'
+import { MAGIC_PARTS } from '../src/pages/matupix/brick/brickMagicParts.ts'
 import { BRICK_PARTS, partHeight, type BrickType } from '../src/pages/matupix/brick/brickTypes.ts'
 import { emptyBox, IDENTITY, indexLibrary, isEmpty, measure } from './ldraw-geom.ts'
 
@@ -16,13 +20,22 @@ function round3(value: number) {
   return Math.round(value * 1000) / 1000
 }
 
+type Target = { type: BrickType; file: string }
+
+const targets: Target[] = [
+  ...BRICK_PARTS.map((item) => ({ type: item.type, file: `${item.ldraw}.dat` })),
+  ...MAGIC_PARTS.map((item) => ({
+    type: item.type,
+    file: item.path ?? `${item.ldraw}.dat`,
+  })),
+]
+
 let bad = 0
 const rows: string[] = []
 
-for (const item of BRICK_PARTS) {
-  const file = `${item.ldraw}.dat`
+for (const item of targets) {
   const box = emptyBox()
-  measure(file, IDENTITY, box)
+  measure(item.file, IDENTITY, box)
   if (isEmpty(box)) {
     console.log(`!! ${item.type} 量不到几何`)
     bad += 1
@@ -32,7 +45,6 @@ for (const item of BRICK_PARTS) {
   const minX = box.minX / 20
   const maxX = box.maxX / 20
   const minY = -box.maxY / 24
-  const maxY = -box.minY / 24
   const minZ = -box.maxZ / 20
   const maxZ = -box.minZ / 20
   const centerX = (minX + maxX) / 2
@@ -43,10 +55,10 @@ for (const item of BRICK_PARTS) {
     round3(-half - minY),
     round3(-centerZ),
   ]
-  const current = PART_ORIGINS[item.type as BrickType]
+  const current = PART_ORIGINS[item.type]
   if (!current) {
-    console.log(`!! ${item.type} 表里没有`)
     bad += 1
+    rows.push(`  ${item.type.padEnd(28)} 表里没有`)
     continue
   }
   // 表里存到小数点后三位，浮点路径不同会差最后一位。
@@ -54,11 +66,11 @@ for (const item of BRICK_PARTS) {
   if (Math.max(...diff) > 0.002) {
     bad += 1
     rows.push(
-      `  ${item.type.padEnd(20)} 表 [${current.join(', ')}]  实算 [${origin.join(', ')}]  差 [${diff.map((v) => v.toFixed(3)).join(', ')}]`,
+      `  ${item.type.padEnd(28)} 表 [${current.join(', ')}]  实算 [${origin.join(', ')}]  差 [${diff.map((v) => v.toFixed(3)).join(', ')}]`,
     )
   }
 }
 
-console.log(`零件 ${BRICK_PARTS.length} 种，不一致 ${bad} 条`)
+console.log(`零件 ${targets.length} 种（目录 ${BRICK_PARTS.length} + 魔法 ${MAGIC_PARTS.length}），不一致 ${bad} 条`)
 for (const row of rows) console.log(row)
 if (bad) process.exitCode = 1

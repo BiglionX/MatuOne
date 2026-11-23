@@ -20,8 +20,9 @@ npm run typecheck  # 只做类型检查
 | MatuOne | `/` | 项目总入口（启动器）。开屏先播启动动画（标志点亮 + 三个板块自检），结束后菜单各元素才逐项浮现。背景是 Canvas 双极能量场（左冷右暖 + 放射光线 + 冲击波 + 彩色尘埃），按「黑 → 蓝 → 黄 → 蓝 → 黑」呼吸式循环。深色太空桌面 + 游戏窗口，中央三块板块菜单：MatuPix 创意搭建 → `/matupix`、Python 课外课 → `/student`、Arduino 机器人探索（占位，只给提示不跳转）。方向键可选中，点卡片先爆亮再跳转，顶栏可开关音效。独立布局，不套 `MarketingLayout`。 |
 | 营销站 | `/python` `/curriculum` `/pricing` `/apply` `/about` `/faq` `/privacy` `/terms` | 对外获客：价值主张、课程体系、定价、试用申请、关于、常见问题、隐私政策、服务条款 |
 | 入口 | `/enter` | 四张角色卡片（学生 / 机构 / 家长 / 平台后台） |
-| MatuPix | `/matupix` | 并列占位入口，不在 `/enter` 五端卡片里，也不在营销布局内。字母标识、开始创作、返回 `/enter`、页底家长纯文本。 |
-| MatuPix | `/matupix/create` | 16×16 本地创作：画笔、橡皮、调色板、清空、下载 PNG。公开按钮只做本地提示。 |
+| MatuPix | `/matupix` | 并列创意工坊入口，不在 `/enter` 五端卡片里，也不在营销布局内。像素画与 3D 积木入口；作品不上传服务器。 |
+| MatuPix | `/matupix/create` | 16×16 本地创作：画笔、橡皮、调色板、清空、下载 PNG。草稿只留本机 localStorage。 |
+| MatuPix | `/matupix/brick` | 3D 积木搭建：放置/堆叠、撤销、LDraw 导出、魔法模型、拼搭指南与视频。草稿键 `matupix.brick.draft.v1`，只留本机；换设备或清缓存即丢失。无需登录。 |
 | 学生端 | `/student/login` | 演示账号 `chenxiaoman` / `123456` |
 | 学生端 | `/student` | 课程地图（12 关，逐关解锁，显示已闯关数与打字状态） |
 | 学生端 | `/student/lesson/:levelId` | A 看效果 → B 抄代码 → C 改一改 → 完成页 |
