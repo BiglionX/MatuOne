@@ -45,6 +45,8 @@ export interface OrgDashboardStudent {
   typing: { wpm: number; accuracy: number } | null
   lastActiveAt: string
   lastStudiedAt: string | null
+  /** 机构有效开通模块，与家长端/启动器同源 */
+  enabledModules: Array<'python' | 'matupix'>
 }
 
 export interface OrgDashboardView {
@@ -84,8 +86,8 @@ export interface OrgStudentListItem extends Student {
   completedCount: number
   authorizedLevels: number
   authorizedCompletedCount: number
-  /** 机构 python 模块是否开通（与启动器同源；旧 API 缺省时按开通处理） */
-  pythonEnabled: boolean
+  /** 机构有效开通模块；各模块进度只从这里派生，不再各自算 xxxEnabled */
+  enabledModules: Array<'python' | 'matupix'>
   /** 三链最近学习时间；API 始终返回（无记录为 null） */
   lastStudiedAt: string | null
   typing: { wpm: number; accuracy: number } | null
@@ -106,7 +108,7 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       bound_parent_count?: number
       completed_count?: number
       authorizedCompletedCount?: number
-      pythonEnabled?: boolean
+      enabledModules?: Array<'python' | 'matupix'>
       lastStudiedAt?: string | null
       typing_wpm?: number | null
       typing_accuracy?: number | null
@@ -131,7 +133,7 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       completedCount: authorizedCompletedCount,
       authorizedLevels,
       authorizedCompletedCount,
-      pythonEnabled: row.pythonEnabled ?? true,
+      enabledModules: row.enabledModules ?? [],
       lastStudiedAt: row.lastStudiedAt ?? null,
       typing: row.typing_wpm == null ? null : { wpm: row.typing_wpm, accuracy: row.typing_accuracy ?? 0 },
     }

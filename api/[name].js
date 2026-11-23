@@ -19924,6 +19924,24 @@ function buildPythonAuthorizedFacts(access2, maxStage, published, lessons) {
   };
 }
 
+// supabase/functions/_shared/moduleEntitlements.ts
+var PROGRESS_MODULE_IDS = ["python", "matupix"];
+function isEnabledModuleEntitlement(row, now = /* @__PURE__ */ new Date()) {
+  if (row.revoked_at != null) return false;
+  if (!row.valid_until) return true;
+  const end = Date.parse(row.valid_until);
+  return Number.isFinite(end) && end > now.getTime();
+}
+function enabledModuleIds(rows, now = /* @__PURE__ */ new Date()) {
+  return PROGRESS_MODULE_IDS.filter(
+    (id) => rows.some((row) => row.module_id === id && isEnabledModuleEntitlement(row, now))
+  );
+}
+function activeGrantOf(rows, moduleId, enabled) {
+  if (!enabled.includes(moduleId)) return null;
+  return rows.find((row) => row.module_id === moduleId && isEnabledModuleEntitlement(row)) ?? null;
+}
+
 // supabase/functions/_shared/password.ts
 var SCHEME = "pbkdf2-sha256";
 var ITERATIONS = 1e5;
@@ -59938,11 +59956,10 @@ async function orgStudents(req) {
       [studentId, ctx.orgId]
     );
     if (!student) return fail4(404, "\u6CA1\u6709\u8FD9\u540D\u5B66\u751F");
-    const [org, grant, lessons] = await Promise.all([
+    const [org, entitlementRows, lessons] = await Promise.all([
       one("select status from public.org where id = $1", [ctx.orgId]),
-      one(
-        `select max_level, valid_until from public.org_entitlement
-         where org_id = $1 and module_id = 'python' and revoked_at is null`,
+      q(
+        "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
         [ctx.orgId]
       ),
       q(
@@ -59956,7 +59973,8 @@ async function orgStudents(req) {
         [studentId, student.current_level_order]
       )
     ]);
-    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
+    const grant = activeGrantOf(entitlementRows, "python", enabledModuleIds(entitlementRows));
+    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null);
     const access2 = org?.status === "trial" || ctx.status === "trial" ? "trial" : ctx.status;
     return ok4({
       name: student.name,
@@ -60031,7 +60049,7 @@ async function orgStudents(req) {
           ...student,
           completed_count: authorizedCompletedCount,
           authorizedCompletedCount,
-          pythonEnabled: facts.pythonEnabled,
+          enabledModules: facts.enabledModules,
           lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
           typing_wpm: typing?.wpm ?? null,
           typing_accuracy: typing?.accuracy ?? null
@@ -60233,15 +60251,16 @@ async function orgFinance(req) {
   });
 }
 async function orgLessonFacts(orgId, effective, studentIds) {
-  const [org, grant] = await Promise.all([
+  const [org, entitlementRows] = await Promise.all([
     one("select status from public.org where id = $1", [orgId]),
-    one(
-      `select max_level, valid_until from public.org_entitlement
-       where org_id = $1 and module_id = 'python' and revoked_at is null`,
+    q(
+      "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
       [orgId]
     )
   ]);
-  const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
+  const enabledModules = enabledModuleIds(entitlementRows);
+  const grant = activeGrantOf(entitlementRows, "python", enabledModules);
+  const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null);
   const access2 = org?.status === "trial" || effective === "trial" ? "trial" : effective;
   const published = await q(
     `select cl.sort_order, cl.stage_level as stage_sort
@@ -60279,8 +60298,8 @@ async function orgLessonFacts(orgId, effective, studentIds) {
     authorizedLevels: facts.authorizedLevels,
     lessons,
     completed: facts.completed,
-    // 模块开通与 Level 1 免费是两件事；列表/看板与启动器共用同一开通事实。
-    pythonEnabled: maxStage > 0,
+    // 列表/看板/家长端/启动器共用这一份开通事实，不再各自算 xxxEnabled。
+    enabledModules,
     typing,
     lastStudiedAt
   };
@@ -60354,16 +60373,12 @@ async function orgModules(req) {
   const status = await effectiveStatus(org);
   if (!status || status === "disabled") return fail4(403, "\u673A\u6784\u5DF2\u505C\u7528");
   const rows = await q(
-    `select module_id, max_level, valid_until
-     from public.org_entitlement
-     where org_id = $1
-       and revoked_at is null
-       and (valid_until is null or valid_until > now())
-     order by module_id`,
+    "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
     [orgId]
   );
+  const enabled = new Set(enabledModuleIds(rows));
   return ok4({
-    modules: rows.filter((row) => row.module_id === "python" || row.module_id === "matupix").map((row) => ({
+    modules: rows.filter((row) => enabled.has(row.module_id)).map((row) => ({
       moduleId: row.module_id,
       maxLevel: row.max_level == null ? null : Number(row.max_level),
       validUntil: row.valid_until
@@ -60379,17 +60394,14 @@ async function listOrgManagedModules(orgId) {
      order by module_id`,
     [orgId]
   );
-  const now = Date.now();
+  const enabledIds = new Set(enabledModuleIds(rows));
   return rows.map((row) => {
-    const revoked = row.revoked_at != null;
-    const expired = row.valid_until != null && new Date(row.valid_until).getTime() <= now;
-    const enabled = !revoked && !expired;
     return {
       moduleId: row.module_id,
       maxLevel: row.max_level == null ? null : Number(row.max_level),
-      validUntil: row.valid_until,
-      revokedAt: row.revoked_at,
-      enabled,
+      validUntil: row.valid_until ?? null,
+      revokedAt: row.revoked_at ?? null,
+      enabled: enabledIds.has(row.module_id),
       canToggle: row.module_id === "matupix"
     };
   });
@@ -60445,7 +60457,8 @@ async function orgDashboard(req) {
         currentOrder: student.current_level_order,
         typing: typingRow ? { wpm: typingRow.wpm, accuracy: typingRow.accuracy } : null,
         lastActiveAt: student.last_active_at ?? "",
-        lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null
+        lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
+        enabledModules: facts.enabledModules
       }];
     })
   });
@@ -60816,10 +60829,9 @@ async function parentPortal(req) {
        order by cl.sort_order`,
       [student.id, start.toISOString()]
     );
-    const [grant, published, authLessons, enabledModuleRows] = await Promise.all([
-      one(
-        `select max_level, valid_until from public.org_entitlement
-         where org_id = $1 and module_id = 'python' and revoked_at is null`,
+    const [entitlementRows, published, authLessons] = await Promise.all([
+      q(
+        "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
         [student.org_id]
       ),
       q(
@@ -60833,18 +60845,11 @@ async function parentPortal(req) {
          join public.course_level cl on cl.level_id = lr.level_id
          where lr.student_id = $1`,
         [student.id]
-      ),
-      // 家长不能调 org-modules；只读附带孩子所属机构有效开通模块
-      q(
-        `select module_id from public.org_entitlement
-         where org_id = $1
-           and module_id in ('python', 'matupix')
-           and revoked_at is null
-           and (valid_until is null or valid_until > now())`,
-        [student.org_id]
       )
     ]);
-    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null);
+    const enabledModules = enabledModuleIds(entitlementRows);
+    const grant = activeGrantOf(entitlementRows, "python", enabledModules);
+    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null);
     const authAccess = org?.status === "trial" || access2 === "trial" ? "trial" : access2;
     const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons);
     const lastStudiedAt = resolveLastStudiedAt({
@@ -60858,7 +60863,6 @@ async function parentPortal(req) {
       title: row.title,
       parentBrief: row.parent_brief
     });
-    const enabledModules = enabledModuleRows.map((row) => row.module_id).filter((id) => id === "python" || id === "matupix");
     children.push({
       student: {
         id: student.id,

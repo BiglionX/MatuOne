@@ -3,6 +3,11 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { ensureAuthUser, loginEmail } from '../_shared/authUser.ts'
 import { empty, json } from '../_shared/http.ts'
 import { openMaxLevel, type OrgStatus } from '../_shared/orgStatus.ts'
+import {
+  activeGrantOf,
+  enabledModuleIds,
+  type ModuleEntitlementRow,
+} from '../_shared/moduleEntitlements.ts'
 import { aggregateLastStudiedAtByStudent } from '../_shared/lastStudiedAt.ts'
 import { buildPythonAuthorizedFacts } from '../_shared/pythonProgressFacts.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
@@ -75,7 +80,7 @@ Deno.serve(async (req) => {
       if (currentLevel?.level_id) ids.add(currentLevel.level_id as string)
       const idList = [...ids]
       if (!idList.length) return json(200, { name: student.name, lessons: [] })
-      const [{ data: levels, error: levelError }, { data: org }, { data: grant }] =
+      const [{ data: levels, error: levelError }, { data: org }, { data: entitlementRows }] =
         await Promise.all([
           ctx.db
             .from('course_level')
@@ -85,14 +90,12 @@ Deno.serve(async (req) => {
           ctx.db.from('org').select('status').eq('id', ctx.orgId).maybeSingle(),
           ctx.db
             .from('org_entitlement')
-            .select('max_level, valid_until')
-            .eq('org_id', ctx.orgId)
-            .eq('module_id', 'python')
-            .is('revoked_at', null)
-            .maybeSingle(),
+            .select('module_id, max_level, valid_until, revoked_at')
+            .eq('org_id', ctx.orgId),
         ])
       if (levelError) return json(500, { message: '读取失败' })
       const access: OrgStatus = org?.status === 'trial' || ctx.status === 'trial' ? 'trial' : ctx.status
+      const grant = activeGrantOf(entitlementRows ?? [], 'python', enabledModuleIds(entitlementRows ?? []))
       const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null)
       const completed = new Map((records ?? []).map((row) => [row.level_id as string, row.completed === true]))
       return json(200, {
@@ -227,7 +230,7 @@ Deno.serve(async (req) => {
             bound_parent_count: counts.get(id) ?? 0,
             completed_count: authorizedCompletedCount,
             authorizedCompletedCount,
-            pythonEnabled: extras.pythonEnabled,
+            enabledModules: extras.enabledModules,
             lastStudiedAt: extras.lastStudiedAt.get(id) ?? null,
             typing_wpm: typing?.wpm ?? null,
             typing_accuracy: typing?.accuracy ?? null,
@@ -330,20 +333,17 @@ async function studentListExtras(
   students: { id: string }[],
 ) {
   const ids = students.map((student) => student.id)
-  const [{ data: org }, { data: grant }, { data: published }] = await Promise.all([
+  const [{ data: org }, { data: entitlementRows }, { data: published }] = await Promise.all([
     db.from('org').select('status').eq('id', orgId).maybeSingle(),
     db.from('org_entitlement')
-      .select('max_level, valid_until')
-      .eq('org_id', orgId)
-      .eq('module_id', 'python')
-      .is('revoked_at', null)
-      .maybeSingle(),
+      .select('module_id, max_level, valid_until, revoked_at')
+      .eq('org_id', orgId),
     db.from('course_level').select('sort_order, stage_level').eq('published', true),
   ])
   const access: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
+  const enabledModules = enabledModuleIds((entitlementRows ?? []) as ModuleEntitlementRow[])
+  const grant = activeGrantOf((entitlementRows ?? []) as ModuleEntitlementRow[], 'python', enabledModules)
   const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null)
-  // 模块开通与「Level 1 免费」是两件事：启动器按 module 开通过滤，列表/看板也按同一事实判 not_entitled。
-  const pythonEnabled = maxStage > 0
   const publishedRows = (published ?? []).map((row) => ({
     sort_order: row.sort_order as number,
     stage_sort: Number(row.stage_level),
@@ -354,7 +354,7 @@ async function studentListExtras(
     return {
       authorizedLevels: emptyFacts.authorizedLevels,
       completed: emptyFacts.completed,
-      pythonEnabled,
+      enabledModules,
       typing,
       lastStudiedAt: new Map<string, string | null>(),
     }
@@ -403,5 +403,5 @@ async function studentListExtras(
       created_at: row.created_at as string,
     })),
   })
-  return { authorizedLevels: facts.authorizedLevels, completed: facts.completed, pythonEnabled, typing, lastStudiedAt }
+  return { authorizedLevels: facts.authorizedLevels, completed: facts.completed, enabledModules, typing, lastStudiedAt }
 }

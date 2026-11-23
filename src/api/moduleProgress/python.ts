@@ -26,6 +26,11 @@ function pythonMeta(): { displayName: string; gradeRange?: string } {
   }
 }
 
+/** pythonEnabled 在这里派生，不存在独立字段；新增模块只换 MODULE_ID。 */
+function moduleEnabled(modules: readonly ('python' | 'matupix')[]): boolean {
+  return modules.includes(MODULE_ID)
+}
+
 function levelMeta(order: number): { currentLevelId: string | null; currentLevelTitle: string | null } {
   const level = curriculumLevelByOrder(order)
   return {
@@ -99,7 +104,7 @@ export type OrgPythonProgressSource = Pick<
   | 'authorizedLevels'
   | 'authorizedCompletedCount'
   | 'completedCount'
-  | 'pythonEnabled'
+  | 'enabledModules'
   | 'typing'
 >
 
@@ -145,7 +150,7 @@ function resolveLastStudiedAt(
 /** 机构学生行 → ModuleProgressSummary（纯函数，易测） */
 export function mapOrgStudentRowToPythonSummary(row: OrgPythonProgressSource): ModuleProgressSummary {
   const authorizedLevels = row.authorizedLevels
-  if (!row.pythonEnabled || authorizedLevels === 0) return notEntitledEmpty('no_data')
+  if (!moduleEnabled(row.enabledModules) || authorizedLevels === 0) return notEntitledEmpty('no_data')
 
   const authorizedCompletedCount = row.authorizedCompletedCount
   const currentLevelOrder = row.currentLevelOrder
@@ -169,7 +174,7 @@ export function mapOrgStudentRowToPythonSummary(row: OrgPythonProgressSource): M
 /** 家长孩子行 → ModuleProgressSummary（纯函数） */
 export function mapParentChildToPythonSummary(child: ParentPythonProgressSource): ModuleProgressSummary {
   const authorizedLevels = child.authorizedLevels
-  if (!child.enabledModules?.includes('python') || authorizedLevels === 0) return notEntitledEmpty('no_data')
+  if (!moduleEnabled(child.enabledModules ?? []) || authorizedLevels === 0) return notEntitledEmpty('no_data')
 
   const currentLevelOrder = child.currentLevelOrder || child.student.currentLevelOrder || 1
   const unit = presentParentProgress(currentLevelOrder)

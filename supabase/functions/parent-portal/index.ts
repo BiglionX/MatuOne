@@ -7,6 +7,11 @@ import { openMaxLevel, type OrgStatus } from '../_shared/orgStatus.ts'
 import { parentOrgAccess } from '../_shared/parentOrgAccess.ts'
 import { resolveLastStudiedAt } from '../_shared/lastStudiedAt.ts'
 import { buildPythonAuthorizedFacts } from '../_shared/pythonProgressFacts.ts'
+import {
+  activeGrantOf,
+  enabledModuleIds,
+  type ModuleEntitlementRow,
+} from '../_shared/moduleEntitlements.ts'
 import { serviceDb } from '../_shared/staff.ts'
 
 const INVALID_CODE = '绑定码无效或已失效'
@@ -207,10 +212,9 @@ Deno.serve(async (req) => {
       { count },
       { data: sessions },
       { data: typing },
-      { data: grant },
+      { data: entitlementRows },
       { data: published },
       { data: levelRows },
-      { data: enabledModuleRows },
     ] = await Promise.all([
       db.from('org').select('name, status, trial_expire_at, service_end_at').eq('id', student.org_id).maybeSingle(),
       db.from('student_group').select('name').eq('id', student.group_id).maybeSingle(),
@@ -218,22 +222,12 @@ Deno.serve(async (req) => {
       db.from('course_level').select('level_id', { count: 'exact', head: true }).eq('published', true),
       db.from('study_session').select('level_id, started_at, ended_at').eq('student_id', student.id),
       db.from('typing_record').select('practiced_on, wpm, accuracy, created_at').eq('student_id', student.id),
+      // 家长不能调 org-modules；只读附带孩子所属机构的开通行，统一由 enabledModuleIds 派生
       db.from('org_entitlement')
-        .select('max_level, valid_until')
-        .eq('org_id', student.org_id)
-        .eq('module_id', 'python')
-        .is('revoked_at', null)
-        .maybeSingle(),
+        .select('module_id, max_level, valid_until, revoked_at')
+        .eq('org_id', student.org_id),
       db.from('course_level').select('sort_order, stage_level').eq('published', true),
       db.from('course_level').select('level_id, sort_order, stage_level'),
-      // 家长不能调 org-modules；只读附带孩子所属机构有效开通模块
-      db
-        .from('org_entitlement')
-        .select('module_id')
-        .eq('org_id', student.org_id)
-        .in('module_id', ['python', 'matupix'])
-        .is('revoked_at', null)
-        .or('valid_until.is.null,valid_until.gt.now()'),
     ])
     const completedRows = (progress ?? []).filter((row) => row.completed === true)
     const completedCount = completedRows.length
@@ -276,6 +270,9 @@ Deno.serve(async (req) => {
         ? effectiveStatus
         : 'disabled'
     const authAccess: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
+    const entitlementList = (entitlementRows ?? []) as ModuleEntitlementRow[]
+    const enabledModules = enabledModuleIds(entitlementList)
+    const grant = activeGrantOf(entitlementList, 'python', enabledModules)
     const maxStage = openMaxLevel(
       grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until as string | null } : null,
     )
@@ -305,9 +302,6 @@ Deno.serve(async (req) => {
       learningUpdatedAts: (progress ?? []).map((row) => row.updated_at as string | null),
       typingCreatedAts: (typing ?? []).map((row) => row.created_at as string | null),
     })
-    const enabledModules = (enabledModuleRows ?? [])
-      .map((row) => row.module_id as string)
-      .filter((id): id is 'python' | 'matupix' => id === 'python' || id === 'matupix')
     children.push({
       student: {
         id: student.id,

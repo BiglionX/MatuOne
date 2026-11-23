@@ -6,6 +6,12 @@ import { toCurriculumPosition, type CurriculumPositionRow } from '../supabase/fu
 import { calendarWeekStart, lessonIsAuthorized, openMaxLevel, orgAttention, seatLimit, type OrgAttention, type OrgStatus } from '../supabase/functions/_shared/orgStatus'
 import { resolveLastStudiedAt, aggregateLastStudiedAtByStudent } from '../supabase/functions/_shared/lastStudiedAt'
 import { buildPythonAuthorizedFacts } from '../supabase/functions/_shared/pythonProgressFacts'
+import {
+  activeGrantOf,
+  enabledModuleIds,
+  type ModuleEntitlementRow,
+  type ProgressModuleId,
+} from '../supabase/functions/_shared/moduleEntitlements'
 import { generateInitialPassword, hashPassword, verifyPassword } from '../supabase/functions/_shared/password'
 import { planStudentImport } from '../supabase/functions/_shared/studentImport'
 import { dbMessage, one, q } from './db'
@@ -446,11 +452,10 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
       [studentId, ctx.orgId],
     )
     if (!student) return fail(404, '没有这名学生')
-    const [org, grant, lessons] = await Promise.all([
+    const [org, entitlementRows, lessons] = await Promise.all([
       one<{ status: string }>('select status from public.org where id = $1', [ctx.orgId]),
-      one<{ max_level: number; valid_until: string | null }>(
-        `select max_level, valid_until from public.org_entitlement
-         where org_id = $1 and module_id = 'python' and revoked_at is null`,
+      q<ModuleEntitlementRow>(
+        'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
         [ctx.orgId],
       ),
       q<{
@@ -472,7 +477,8 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
         [studentId, student.current_level_order],
       ),
     ])
-    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
+    const grant = activeGrantOf(entitlementRows, 'python', enabledModuleIds(entitlementRows))
+    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null)
     const access: OrgStatus = org?.status === 'trial' || ctx.status === 'trial' ? 'trial' : ctx.status
     return ok({
       name: student.name,
@@ -557,7 +563,7 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
           ...student,
           completed_count: authorizedCompletedCount,
           authorizedCompletedCount,
-          pythonEnabled: facts.pythonEnabled,
+          enabledModules: facts.enabledModules,
           lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
           typing_wpm: typing?.wpm ?? null,
           typing_accuracy: typing?.accuracy ?? null,
@@ -786,15 +792,16 @@ async function orgFinance(req: ApiRequest): Promise<ApiResult> {
 }
 
 async function orgLessonFacts(orgId: string, effective: OrgStatus, studentIds: string[]) {
-  const [org, grant] = await Promise.all([
+  const [org, entitlementRows] = await Promise.all([
     one<{ status: string }>('select status from public.org where id = $1', [orgId]),
-    one<{ max_level: number; valid_until: string | null }>(
-      `select max_level, valid_until from public.org_entitlement
-       where org_id = $1 and module_id = 'python' and revoked_at is null`,
+    q<ModuleEntitlementRow>(
+      'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
       [orgId],
     ),
   ])
-  const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
+  const enabledModules = enabledModuleIds(entitlementRows)
+  const grant = activeGrantOf(entitlementRows, 'python', enabledModules)
+  const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null)
   const access: OrgStatus = org?.status === 'trial' || effective === 'trial' ? 'trial' : effective
   // 授权判定用 course_level.stage_level（产品 Level 1–8），不要用 curriculum_stage.sort_order（年级 G2/G3…）
   const published = await q<{ sort_order: number; stage_sort: number }>(
@@ -839,8 +846,8 @@ async function orgLessonFacts(orgId: string, effective: OrgStatus, studentIds: s
     authorizedLevels: facts.authorizedLevels,
     lessons,
     completed: facts.completed,
-    // 模块开通与 Level 1 免费是两件事；列表/看板与启动器共用同一开通事实。
-    pythonEnabled: maxStage > 0,
+    // 列表/看板/家长端/启动器共用这一份开通事实，不再各自算 xxxEnabled。
+    enabledModules,
     typing,
     lastStudiedAt,
   }
@@ -933,19 +940,15 @@ async function orgModules(req: ApiRequest): Promise<ApiResult> {
   const status = await effectiveStatus(org)
   if (!status || status === 'disabled') return fail(403, '机构已停用')
 
-  const rows = await q<{ module_id: string; max_level: number | null; valid_until: string | null }>(
-    `select module_id, max_level, valid_until
-     from public.org_entitlement
-     where org_id = $1
-       and revoked_at is null
-       and (valid_until is null or valid_until > now())
-     order by module_id`,
+  const rows = await q<ModuleEntitlementRow>(
+    'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
     [orgId],
   )
+  const enabled = new Set(enabledModuleIds(rows))
 
   return ok({
     modules: rows
-      .filter((row) => row.module_id === 'python' || row.module_id === 'matupix')
+      .filter((row) => enabled.has(row.module_id as ProgressModuleId))
       .map((row) => ({
         moduleId: row.module_id as 'python' | 'matupix',
         maxLevel: row.max_level == null ? null : Number(row.max_level),
@@ -955,12 +958,7 @@ async function orgModules(req: ApiRequest): Promise<ApiResult> {
 }
 
 async function listOrgManagedModules(orgId: string) {
-  const rows = await q<{
-    module_id: string
-    max_level: number | null
-    valid_until: string | null
-    revoked_at: string | null
-  }>(
+  const rows = await q<ModuleEntitlementRow>(
     `select module_id, max_level, valid_until, revoked_at
      from public.org_entitlement
      where org_id = $1
@@ -968,18 +966,15 @@ async function listOrgManagedModules(orgId: string) {
      order by module_id`,
     [orgId],
   )
+  const enabledIds = new Set(enabledModuleIds(rows))
 
-  const now = Date.now()
   return rows.map((row) => {
-    const revoked = row.revoked_at != null
-    const expired = row.valid_until != null && new Date(row.valid_until).getTime() <= now
-    const enabled = !revoked && !expired
     return {
       moduleId: row.module_id as 'python' | 'matupix',
       maxLevel: row.max_level == null ? null : Number(row.max_level),
-      validUntil: row.valid_until,
-      revokedAt: row.revoked_at,
-      enabled,
+      validUntil: row.valid_until ?? null,
+      revokedAt: row.revoked_at ?? null,
+      enabled: enabledIds.has(row.module_id as ProgressModuleId),
       canToggle: row.module_id === 'matupix',
     }
   })
@@ -1046,6 +1041,7 @@ async function orgDashboard(req: ApiRequest): Promise<ApiResult> {
         typing: typingRow ? { wpm: typingRow.wpm, accuracy: typingRow.accuracy } : null,
         lastActiveAt: student.last_active_at ?? '',
         lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
+        enabledModules: facts.enabledModules,
       }]
     }),
   })
@@ -1456,10 +1452,9 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
        order by cl.sort_order`,
       [student.id, start.toISOString()],
     )
-    const [grant, published, authLessons, enabledModuleRows] = await Promise.all([
-      one<{ max_level: number; valid_until: string | null }>(
-        `select max_level, valid_until from public.org_entitlement
-         where org_id = $1 and module_id = 'python' and revoked_at is null`,
+    const [entitlementRows, published, authLessons] = await Promise.all([
+      q<ModuleEntitlementRow>(
+        'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
         [student.org_id],
       ),
       q<{ sort_order: number; stage_sort: number }>(
@@ -1474,17 +1469,11 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
          where lr.student_id = $1`,
         [student.id],
       ),
-      // 家长不能调 org-modules；只读附带孩子所属机构有效开通模块
-      q<{ module_id: string }>(
-        `select module_id from public.org_entitlement
-         where org_id = $1
-           and module_id in ('python', 'matupix')
-           and revoked_at is null
-           and (valid_until is null or valid_until > now())`,
-        [student.org_id],
-      ),
     ])
-    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until } : null)
+    // 家长不能调 org-modules；只读附带孩子所属机构的有效开通模块，与列表/看板同源。
+    const enabledModules = enabledModuleIds(entitlementRows)
+    const grant = activeGrantOf(entitlementRows, 'python', enabledModules)
+    const maxStage = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null)
     const authAccess: OrgStatus = org?.status === 'trial' || access === 'trial' ? 'trial' : (access as OrgStatus)
     const authFacts = buildPythonAuthorizedFacts(authAccess, maxStage, published, authLessons)
     const lastStudiedAt = resolveLastStudiedAt({
@@ -1498,9 +1487,6 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       title: row.title,
       parentBrief: row.parent_brief,
     })
-    const enabledModules = enabledModuleRows
-      .map((row) => row.module_id)
-      .filter((id): id is 'python' | 'matupix' => id === 'python' || id === 'matupix')
     children.push({
       student: {
         id: student.id,

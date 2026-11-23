@@ -3,24 +3,25 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { empty, json } from '../_shared/http.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
+import {
+  enabledModuleIds,
+  type ModuleEntitlementRow,
+  type ProgressModuleId,
+} from '../_shared/moduleEntitlements.ts'
 
 type ModuleId = 'python' | 'matupix'
 
-function mapManaged(
-  rows: { module_id: string; max_level: number | null; valid_until: string | null; revoked_at: string | null }[],
-) {
-  const now = Date.now()
+function mapManaged(rows: ModuleEntitlementRow[]) {
+  const enabledIds = new Set(enabledModuleIds(rows))
   return rows
     .filter((row) => row.module_id === 'python' || row.module_id === 'matupix')
     .map((row) => {
-      const revoked = row.revoked_at != null
-      const expired = row.valid_until != null && new Date(row.valid_until).getTime() <= now
       return {
         moduleId: row.module_id as ModuleId,
         maxLevel: row.max_level == null ? null : Number(row.max_level),
         validUntil: (row.valid_until as string | null) ?? null,
         revokedAt: (row.revoked_at as string | null) ?? null,
-        enabled: !revoked && !expired,
+        enabled: enabledIds.has(row.module_id as ProgressModuleId),
         canToggle: row.module_id === 'matupix',
       }
     })
@@ -143,14 +144,13 @@ Deno.serve(async (req) => {
 
   const { data: rows, error } = await db
     .from('org_entitlement')
-    .select('module_id, max_level, valid_until')
+    .select('module_id, max_level, valid_until, revoked_at')
     .eq('org_id', orgId)
-    .is('revoked_at', null)
-    .or('valid_until.is.null,valid_until.gt.now()')
   if (error) return json(500, { message: '读取失败' })
 
+  const enabledIds = new Set(enabledModuleIds((rows ?? []) as ModuleEntitlementRow[]))
   const modules = (rows ?? [])
-    .filter((row) => row.module_id === 'python' || row.module_id === 'matupix')
+    .filter((row) => enabledIds.has(row.module_id as ProgressModuleId))
     .map((row) => ({
       moduleId: row.module_id as ModuleId,
       maxLevel: row.max_level == null ? null : Number(row.max_level),

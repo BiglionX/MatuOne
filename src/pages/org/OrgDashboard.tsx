@@ -217,7 +217,7 @@ export function OrgDashboard() {
                           authorizedLevels: authorized,
                           authorizedCompletedCount: row.authorizedCompletedCount,
                           completedCount: row.completedCount,
-                          pythonEnabled: students.find((student) => student.id === row.student.id)?.pythonEnabled ?? true,
+                          enabledModules: row.enabledModules,
                           typing: row.typing,
                         }),
                       )}
