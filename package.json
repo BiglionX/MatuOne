@@ -22,7 +22,8 @@
     "audit:origins": "tsx scripts/check-part-origins.ts",
     "audit:ldraw": "tsx scripts/check-ldraw.ts",
     "shot:magic": "node scripts/shot-magic.mjs",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:auth": "playwright test e2e/auth-regression.spec.ts"
   },
   "dependencies": {
     "@react-three/drei": "9.122.0",
