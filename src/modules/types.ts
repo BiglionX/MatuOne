@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
+import type { ModuleId } from '../../supabase/functions/_shared/moduleRegistry'
 
-/** 教学模块 ID。开通表当前只落库 python / matupix；arduino 仅注册表占位。 */
-export type ModuleId = 'python' | 'matupix' | 'arduino'
+/** 教学模块 ID 来自共享注册表，不在此另写一份。 */
+export type { ModuleId }
 
 export type ModuleStatus = 'active' | 'coming_soon'
 

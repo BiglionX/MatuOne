@@ -1,5 +1,6 @@
 import { lazy } from 'react'
 import { Route } from 'react-router-dom'
+import { MODULE_IDS } from '../../supabase/functions/_shared/moduleRegistry'
 import type { TeachingModuleDef } from './types'
 
 const MatuPixLayout = lazy(() => import('@/pages/matupix/MatuPixLayout').then((m) => ({ default: m.MatuPixLayout })))
@@ -8,7 +9,7 @@ const MatuPixCreate = lazy(() => import('@/pages/matupix/MatuPixCreate').then((m
 const BrickBuilder = lazy(() => import('@/pages/matupix/brick/BrickBuilder').then((m) => ({ default: m.BrickBuilder })))
 
 export const matupixModule: TeachingModuleDef = {
-  module_id: 'matupix',
+  module_id: MODULE_IDS.matupix,
   display_name: 'MatuPix 创意搭建',
   grade_range: '1—2 年级',
   entry_path: '/matupix',

@@ -3,8 +3,10 @@
  * 所有端只读 org_entitlement 的同一份行，再由这里派生 enabledModules；
  * 不再为单个模块各自计算 xxxEnabled。
  */
-export const PROGRESS_MODULE_IDS = ['python', 'matupix'] as const
-export type ProgressModuleId = (typeof PROGRESS_MODULE_IDS)[number]
+// @ts-expect-error 边缘函数要带 .ts 后缀，应用这边的 tsconfig 不允许。
+import { PROGRESS_MODULE_IDS, type ProgressModuleId } from './moduleRegistry.ts'
+
+export type { ProgressModuleId }
 
 export interface ModuleEntitlementRow {
   [key: string]: unknown
@@ -21,7 +23,7 @@ export function isEnabledModuleEntitlement(row: ModuleEntitlementRow, now = new 
   return Number.isFinite(end) && end > now.getTime()
 }
 
-/** 有效开通模块列表：新增模块只改这里的 PROGRESS_MODULE_IDS。 */
+/** 有效开通模块列表：候选集来自共享注册表，不在本文件手写。 */
 export function enabledModuleIds(rows: ModuleEntitlementRow[], now = new Date()): ProgressModuleId[] {
   return PROGRESS_MODULE_IDS.filter((id) =>
     rows.some((row) => row.module_id === id && isEnabledModuleEntitlement(row, now)),

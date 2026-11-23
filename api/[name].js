@@ -19924,8 +19924,20 @@ function buildPythonAuthorizedFacts(access2, maxStage, published, lessons) {
   };
 }
 
+// supabase/functions/_shared/moduleRegistry.ts
+var MODULE_REGISTRY = [
+  { module_id: "matupix", has_progress: true, status: "active" },
+  { module_id: "python", has_progress: true, status: "active" },
+  { module_id: "arduino", has_progress: false, status: "coming_soon" }
+];
+var MODULE_IDS = Object.fromEntries(
+  MODULE_REGISTRY.map((module) => [module.module_id, module.module_id])
+);
+var PROGRESS_MODULE_IDS = MODULE_REGISTRY.filter((module) => module.has_progress).map(
+  (module) => module.module_id
+);
+
 // supabase/functions/_shared/moduleEntitlements.ts
-var PROGRESS_MODULE_IDS = ["python", "matupix"];
 function isEnabledModuleEntitlement(row, now = /* @__PURE__ */ new Date()) {
   if (row.revoked_at != null) return false;
   if (!row.valid_until) return true;

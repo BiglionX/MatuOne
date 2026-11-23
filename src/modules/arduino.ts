@@ -1,8 +1,9 @@
+import { MODULE_IDS } from '../../supabase/functions/_shared/moduleRegistry'
 import type { TeachingModuleDef } from './types'
 
 /** Arduino 筹备中：启动器显示锁定卡，不可进入，不挂载路由。 */
 export const arduinoModule: TeachingModuleDef = {
-  module_id: 'arduino',
+  module_id: MODULE_IDS.arduino,
   display_name: 'Arduino 机器人探索',
   grade_range: '筹备中',
   entry_path: null,

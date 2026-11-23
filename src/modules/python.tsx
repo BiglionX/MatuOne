@@ -1,5 +1,6 @@
 import { lazy } from 'react'
 import { Route } from 'react-router-dom'
+import { MODULE_IDS } from '../../supabase/functions/_shared/moduleRegistry'
 import type { TeachingModuleDef } from './types'
 
 const StudentLogin = lazy(() => import('@/pages/student/StudentLogin').then((m) => ({ default: m.StudentLogin })))
@@ -10,7 +11,7 @@ const TypingWarmup = lazy(() => import('@/pages/student/TypingWarmup').then((m) 
 const StudentProfile = lazy(() => import('@/pages/student/StudentProfile').then((m) => ({ default: m.StudentProfile })))
 
 export const pythonModule: TeachingModuleDef = {
-  module_id: 'python',
+  module_id: MODULE_IDS.python,
   display_name: 'Python 课外课',
   grade_range: '3 年级以上',
   entry_path: '/student',

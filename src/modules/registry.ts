@@ -1,10 +1,17 @@
+import { MODULE_REGISTRY, type ModuleId } from '../../supabase/functions/_shared/moduleRegistry'
 import { arduinoModule } from './arduino'
 import { matupixModule } from './matupix'
 import { pythonModule } from './python'
-import type { ModuleId, TeachingModuleDef } from './types'
+import type { TeachingModuleDef } from './types'
 
-/** 教学模块唯一注册源。启动器、开屏、App 路由均从此读取。 */
-export const TEACHING_MODULES: TeachingModuleDef[] = [matupixModule, pythonModule, arduinoModule]
+const DEFINITIONS: Record<ModuleId, TeachingModuleDef> = {
+  matupix: matupixModule,
+  python: pythonModule,
+  arduino: arduinoModule,
+}
+
+/** React 侧注册表：清单与顺序取自共享 MODULE_REGISTRY，不在此另写一份。 */
+export const TEACHING_MODULES: TeachingModuleDef[] = MODULE_REGISTRY.map((module) => DEFINITIONS[module.module_id])
 
 export function listModules(): TeachingModuleDef[] {
   return TEACHING_MODULES
