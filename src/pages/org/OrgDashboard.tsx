@@ -160,11 +160,13 @@ export function OrgDashboard() {
                   {group.name}
                   <span className="ml-2 text-ink-soft">{group.students} 人</span>
                 </span>
-                <span className="text-ink-soft">{group.students === 0 ? '还没有学生' : `${group.rate ?? 0}%`}</span>
+                <span className="text-ink-soft">
+                  {group.students === 0 ? '还没有学生' : group.rate == null ? '尚未开通' : `${group.rate}%`}
+                </span>
               </div>
-              {group.students > 0 && (
+              {group.students > 0 && group.rate != null && (
                 <div className="h-3 overflow-hidden rounded-full bg-canvas">
-                  <div className="h-full rounded-full bg-brand" style={{ width: `${group.rate ?? 0}%` }} />
+                  <div className="h-full rounded-full bg-brand" style={{ width: `${group.rate}%` }} />
                 </div>
               )}
             </div>
