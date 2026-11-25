@@ -66,6 +66,8 @@ export function Map() {
   const grouped = groupUnits(units)
   const showCustom = (customCourses?.length ?? 0) > 0
   const tab = showCustom && params.get('tab') === 'custom' ? 'custom' : 'platform'
+  // 模块未开通时先告诉学生原因，而不是只给一张空地图。
+  const moduleBlocked = home != null && !home.moduleEntitled
 
   return (
     <div className="student-shell min-h-screen bg-canvas pb-16">
@@ -140,6 +142,11 @@ export function Map() {
         <p className="text-sm text-ink-soft">当前阶段：{home?.stageTitle || 'Level 1'}</p>
         <h2 className="mt-1 text-3xl font-bold text-ink">{home?.heading || 'Level 1'}</h2>
         <p className="mt-2 text-ink-soft">每个阶段有 6 个单元。点开一个，里面是 20 节小课。</p>
+        {moduleBlocked && (
+          <p className="mt-4 rounded-field bg-warning-soft px-4 py-3 text-sm text-ink">
+            你的机构还没有开通 Python 课外课，这门课的关卡暂时打不开。请联系机构确认开通情况。
+          </p>
+        )}
         {error && <FormError className="mt-4">{error}</FormError>}
         {customNote && !showCustom && <FormError className="mt-4">{customNote}</FormError>}
         {!home && !error && <ListSkeleton rows={3} />}

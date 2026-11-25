@@ -18,7 +18,12 @@ import {
 
 let safetyRestore: (() => Promise<void>) | null = null
 
+/** 需要直连数据库的用例（A1 / A3）靠它改开通状态；本地没配 DATABASE_URL 时先跳过。 */
+const hasDatabase = Boolean(process.env.DATABASE_URL)
+const skipReason = '本地没配 DATABASE_URL（见 .env.test.example）：跳过需要数据库的用例'
+
 test.beforeAll(async () => {
+  if (!hasDatabase) return
   await assertDemoFixtures()
 })
 
@@ -42,6 +47,7 @@ test.describe('A1 Python 未开通三端一致', () => {
   test.describe.configure({ mode: 'serial' })
 
   test('A1 Python 未开通三端一致', async ({ page }) => {
+  test.skip(!hasDatabase, skipReason)
   const original = await snapshotEntitlement('python')
   let restored = false
   const restore = async () => {
@@ -110,6 +116,7 @@ test.describe('A3 Trial + 已开通 Python 的 Level 1 免费放行', () => {
   test.describe.configure({ mode: 'serial' })
 
   test('A3 Trial + 已开通 Python 的 Level 1 免费放行', async ({ page }) => {
+  test.skip(!hasDatabase, skipReason)
   const originalRevoked = await snapshotEntitlement('python')
   const originalStatus = await snapshotOrgStatus()
   let restored = false

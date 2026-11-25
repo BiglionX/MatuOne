@@ -9,8 +9,7 @@ import {
 } from '@/api/orgModules'
 import { OrgAccessNotice } from '@/components/OrgAccessNotice'
 import { getModule } from '@/modules/registry'
-
-const MODULE_ORDER = ['python', 'matupix'] as const
+import { isToggleableModule, PROGRESS_MODULE_IDS } from '@/modules/ids'
 
 export function OrgModules() {
   const session = getOrgSession()
@@ -22,7 +21,7 @@ export function OrgModules() {
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
-  const [confirmRevoke, setConfirmRevoke] = useState(false)
+  const [revokeTarget, setRevokeTarget] = useState<OrgModuleManaged | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -39,16 +38,17 @@ export function OrgModules() {
       .finally(() => setLoading(false))
   }, [])
 
-  async function toggleMatupix(row: OrgModuleManaged) {
+  async function toggleModule(row: OrgModuleManaged) {
     if (!canWrite || !row.canToggle || busy) return
+    if (!isToggleableModule(row.moduleId)) return
     if (row.enabled) {
-      setConfirmRevoke(true)
+      setRevokeTarget(row)
       return
     }
     setBusy(true)
     setNotice('')
     try {
-      const next = await restoreModule('matupix')
+      const next = await restoreModule(row.moduleId)
       setModules(sortModules(next))
     } catch (error: unknown) {
       if (error instanceof ApiError) setNotice(error.message)
@@ -59,12 +59,17 @@ export function OrgModules() {
   }
 
   async function confirmClose() {
+    const target = revokeTarget
+    if (!target || !isToggleableModule(target.moduleId)) {
+      setNotice('没有可关闭的模块')
+      return
+    }
     setBusy(true)
     setNotice('')
     try {
-      const next = await revokeModule('matupix')
+      const next = await revokeModule(target.moduleId)
       setModules(sortModules(next))
-      setConfirmRevoke(false)
+      setRevokeTarget(null)
     } catch (error: unknown) {
       if (error instanceof ApiError) setNotice(error.message)
       else setNotice('关闭失败')
@@ -78,7 +83,7 @@ export function OrgModules() {
       <OrgAccessNotice message={notice} />
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-ink">模块开通</h1>
-        <p className="mt-1 text-sm text-ink-soft">查看本机构已开通的教学模块。MatuPix 可软关或重开；Python 课程包由平台决定。</p>
+        <p className="mt-1 text-sm text-ink-soft">查看本机构已开通的教学模块。可自行开关的模块可在这里软关或重开；其余由平台决定。</p>
       </header>
 
       {loading ? (
@@ -96,11 +101,10 @@ export function OrgModules() {
                   <p className="font-medium text-ink">{name}</p>
                   <p className="mt-1 text-sm text-ink-soft">
                     {row.enabled ? '已开通' : '已关闭'}
-                    {row.moduleId === 'python' && (
+                    {row.maxLevel != null && (
                       <>
                         {' · '}
-                        课程包 Level{' '}
-                        {row.maxLevel == null || row.maxLevel < 1 ? '尚未开通' : `1–${row.maxLevel}`}
+                        课程包 Level 1–{row.maxLevel}
                         <span className="text-ink-soft">（平台决定，只读）</span>
                       </>
                     )}
@@ -114,7 +118,7 @@ export function OrgModules() {
                       className={row.enabled ? 'btn-ghost text-danger' : 'btn-secondary'}
                       disabled={!canWrite || busy}
                       title={!isAdmin ? '需要机构管理员' : readOnly ? '服务已到期，仅可查看' : undefined}
-                      onClick={() => void toggleMatupix(row)}
+                      onClick={() => void toggleModule(row)}
                     >
                       {row.enabled ? '关闭' : '重新开通'}
                     </button>
@@ -132,15 +136,15 @@ export function OrgModules() {
         <p className="mt-4 text-sm text-ink-soft">开关模块需要机构管理员账号。</p>
       )}
 
-      {confirmRevoke && (
+      {revokeTarget && (
         <ConfirmDialog
-          title="关闭 MatuPix"
-          body="关闭后，本机构学生在启动器将看不到 MatuPix，也无法进入 /matupix。学习与本地草稿仍保留，可随时重新开通。"
+          title={`关闭${getModule(revokeTarget.moduleId)?.display_name ?? revokeTarget.moduleId}`}
+          body="关闭后，本机构学生在启动器将看不到这个模块，也无法进入。学习与本地草稿仍保留，可随时重新开通。"
           confirmLabel="确认关闭"
           danger
           busy={busy}
           onCancel={() => {
-            if (!busy) setConfirmRevoke(false)
+            if (!busy) setRevokeTarget(null)
           }}
           onConfirm={() => void confirmClose()}
         />
@@ -151,7 +155,7 @@ export function OrgModules() {
 
 function sortModules(rows: OrgModuleManaged[]): OrgModuleManaged[] {
   return [...rows].sort(
-    (a, b) => MODULE_ORDER.indexOf(a.moduleId) - MODULE_ORDER.indexOf(b.moduleId),
+    (a, b) => PROGRESS_MODULE_IDS.indexOf(a.moduleId) - PROGRESS_MODULE_IDS.indexOf(b.moduleId),
   )
 }
 

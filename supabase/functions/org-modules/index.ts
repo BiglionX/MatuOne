@@ -5,24 +5,24 @@ import { empty, json } from '../_shared/http.ts'
 import { withOrgScope } from '../_shared/orgScope.ts'
 import {
   enabledModuleIds,
+  isToggleableModule,
+  PROGRESS_MODULE_IDS,
   type ModuleEntitlementRow,
   type ProgressModuleId,
 } from '../_shared/moduleEntitlements.ts'
 
-type ModuleId = 'python' | 'matupix'
-
 function mapManaged(rows: ModuleEntitlementRow[]) {
   const enabledIds = new Set(enabledModuleIds(rows))
   return rows
-    .filter((row) => row.module_id === 'python' || row.module_id === 'matupix')
+    .filter((row) => PROGRESS_MODULE_IDS.includes(row.module_id as ProgressModuleId))
     .map((row) => {
       return {
-        moduleId: row.module_id as ModuleId,
+        moduleId: row.module_id as ProgressModuleId,
         maxLevel: row.max_level == null ? null : Number(row.max_level),
         validUntil: (row.valid_until as string | null) ?? null,
         revokedAt: (row.revoked_at as string | null) ?? null,
         enabled: enabledIds.has(row.module_id as ProgressModuleId),
-        canToggle: row.module_id === 'matupix',
+        canToggle: isToggleableModule(row.module_id),
       }
     })
 }
@@ -54,30 +54,30 @@ Deno.serve(async (req) => {
     return withOrgScope(scopedReq, { write: writing, admin: writing }, async (ctx) => {
       if (writing) {
         const moduleId = typeof ctx.body.moduleId === 'string' ? ctx.body.moduleId.trim() : ''
-        if (moduleId !== 'matupix') return json(400, { message: '本刀仅可开关 matupix' })
+        if (!isToggleableModule(moduleId)) return json(400, { message: '该模块不支持机构自行开关' })
 
         if (action === 'revoke') {
           const { data, error } = await ctx.db
             .from('org_entitlement')
             .update({ revoked_at: new Date().toISOString() })
             .eq('org_id', ctx.orgId)
-            .eq('module_id', 'matupix')
+            .eq('module_id', moduleId)
             .is('revoked_at', null)
             .select('id')
             .maybeSingle()
           if (error) return json(500, { message: '关闭失败' })
-          if (!data) return json(404, { message: '未找到 matupix 开通行，或已关闭' })
+          if (!data) return json(404, { message: '未找到该模块的开通行，或已关闭' })
         } else {
           const { data, error } = await ctx.db
             .from('org_entitlement')
             .update({ revoked_at: null })
             .eq('org_id', ctx.orgId)
-            .eq('module_id', 'matupix')
+            .eq('module_id', moduleId)
             .not('revoked_at', 'is', null)
             .select('id')
             .maybeSingle()
           if (error) return json(500, { message: '重开失败' })
-          if (!data) return json(404, { message: '未找到已关闭的 matupix，或已开通' })
+          if (!data) return json(404, { message: '未找到已关闭的该模块，或已开通' })
         }
       }
 
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         .from('org_entitlement')
         .select('module_id, max_level, valid_until, revoked_at')
         .eq('org_id', ctx.orgId)
-        .in('module_id', ['python', 'matupix'])
+        .in('module_id', [...PROGRESS_MODULE_IDS])
         .order('module_id')
       if (error) return json(500, { message: '读取失败' })
       return json(200, { modules: mapManaged(rows ?? []) })
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
   const modules = (rows ?? [])
     .filter((row) => enabledIds.has(row.module_id as ProgressModuleId))
     .map((row) => ({
-      moduleId: row.module_id as ModuleId,
+      moduleId: row.module_id as ProgressModuleId,
       maxLevel: row.max_level == null ? null : Number(row.max_level),
       validUntil: (row.valid_until as string | null) ?? null,
     }))

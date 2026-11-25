@@ -1,6 +1,7 @@
 import type { ParentChildView, ParentHomeData, ParentSession, ParentStoppedChild, Student } from '@/types'
 import { presentParentProgress } from '@/lib/parentProgress'
 import { callFunction, clearAuth, establishSession } from '@/lib/backend'
+import { PROGRESS_MODULE_IDS, type ProgressModuleId } from '@/modules/ids'
 
 const PROFILE = 'cdg.session.parent'
 
@@ -81,7 +82,7 @@ export async function loadParentHome(): Promise<ParentHomeData> {
         authorizedLevels?: number
         authorizedCompletedCount?: number
         lastStudiedAt?: string | null
-        enabledModules?: Array<'python' | 'matupix'>
+        enabledModules?: string[]
       }
     >
     stopped?: ParentStoppedChild[]
@@ -95,8 +96,8 @@ export async function loadParentHome(): Promise<ParentHomeData> {
       authorizedLevels: child.authorizedLevels ?? 0,
       authorizedCompletedCount: child.authorizedCompletedCount ?? 0,
       lastStudiedAt: child.lastStudiedAt ?? null,
-      enabledModules: (child.enabledModules ?? []).filter(
-        (id): id is 'python' | 'matupix' => id === 'python' || id === 'matupix',
+      enabledModules: (child.enabledModules ?? []).filter((id): id is ProgressModuleId =>
+        (PROGRESS_MODULE_IDS as readonly string[]).includes(id),
       ),
       student: {
         ...child.student,

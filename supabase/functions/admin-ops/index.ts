@@ -1,13 +1,17 @@
 // 平台台账、线索、收费、看板。身份从 platform_staff 读取。
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { empty, json } from '../_shared/http.ts'
+import {
+  isEnabledModuleEntitlement,
+  PROGRESS_MODULE_IDS,
+} from '../_shared/moduleEntitlements.ts'
 import { generateInitialPassword, hashPassword } from '../_shared/password.ts'
 import { requireStaff } from '../_shared/staff.ts'
 
 function fail(error: { message: string }): Response {
   const line = error.message.split('\n')[0]?.replace(/^ERROR:\s*/, '') ?? ''
   if (line.includes('forbidden') || line.includes('42501')) return json(403, { message: '需要平台权限' })
-  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成', '区域服务商不存在', '区域服务商已停用', '密码哈希无效']
+  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成', '区域服务商不存在', '区域服务商已停用', '密码哈希无效', '请选择模块', '阶段上限', '该机构未开通', '该模块没有阶段上限', '该模块已经']
   if (known.some((item) => line.includes(item))) return json(400, { message: line })
   return json(500, { message: '操作失败' })
 }
@@ -31,7 +35,25 @@ function logSummary(action: string, detail: Record<string, unknown>): string {
   if (action === '续费') return `${detail.type ?? '续费'} · ${detail.seats ?? '—'} 席 · ¥${detail.amount ?? '—'}`
   if (action === '停用') return `停用前为${STATUS_LABEL[String(detail.previousStatus)] ?? '原状态'}`
   if (action === '恢复') return `恢复为${STATUS_LABEL[String(detail.status)] ?? '可登录'}`
+  if (action === '模块调整') return `${detail.moduleId ?? '—'} 阶段上限 ${detail.previousMaxLevel ?? '—'} → ${detail.maxLevel ?? '—'}`
+  if (action === '模块开关') return `${detail.moduleId ?? '—'} ${detail.revoked ? '已关闭' : '已重开'}`
   return ''
+}
+
+/** 平台侧模块视图：候选集来自共享注册表，含已软关的行，不在此硬编码模块名。 */
+function mapAdminModules(rows: { module_id: string; max_level: number | null; valid_until: string | null; revoked_at: string | null }[]) {
+  const now = new Date()
+  return PROGRESS_MODULE_IDS.map((moduleId) => {
+    const row = rows.find((item) => item.module_id === moduleId)
+    return {
+      moduleId,
+      maxLevel: row?.max_level ?? null,
+      validUntil: row?.valid_until ?? null,
+      revokedAt: row?.revoked_at ?? null,
+      enabled: row ? isEnabledModuleEntitlement(row, now) : false,
+      hasLevelLimit: row?.max_level != null,
+    }
+  })
 }
 
 async function orgDetail(db: SupabaseClient, orgIdValue: unknown): Promise<Response> {
@@ -52,12 +74,13 @@ async function orgDetail(db: SupabaseClient, orgIdValue: unknown): Promise<Respo
   })
   if (statusError) return json(500, { message: '读取失败' })
 
-  const [{ count: activeStudents, error: studentError }, { data: students, error: idError }, { data: logs, error: logError }] = await Promise.all([
+  const [{ count: activeStudents, error: studentError }, { data: students, error: idError }, { data: logs, error: logError }, { data: entitlements, error: entitlementError }] = await Promise.all([
     db.from('student').select('id', { count: 'exact', head: true }).eq('org_id', orgId).eq('status', 'active'),
     db.from('student').select('id').eq('org_id', orgId),
     db.from('provision_log').select('id, action, operator, detail, created_at').eq('org_id', orgId).order('created_at', { ascending: false }),
+    db.from('org_entitlement').select('module_id, max_level, valid_until, revoked_at').eq('org_id', orgId),
   ])
-  if (studentError || idError || logError) return json(500, { message: '读取失败' })
+  if (studentError || idError || logError || entitlementError) return json(500, { message: '读取失败' })
 
   const studentIds = (students ?? []).map((row) => String(row.id))
   let boundParents = 0
@@ -92,6 +115,7 @@ async function orgDetail(db: SupabaseClient, orgIdValue: unknown): Promise<Respo
       serviceEndAt: org.service_end_at,
       status: typeof status === 'string' ? status : org.status,
     },
+    modules: mapAdminModules(entitlements ?? []),
     logs: (logs ?? []).map((row) => ({
       id: row.id,
       action: row.action,
@@ -209,6 +233,27 @@ Deno.serve(async (req) => {
       p_action: body.manualAction,
       p_staff_id: auth.staff.id,
     })
+    if (error) return fail(error)
+    return json(200, { ok: true })
+  }
+
+  if (action === 'set-module-level' || action === 'set-module-revoked') {
+    const orgId = typeof body.orgId === 'string' ? body.orgId.trim() : ''
+    if (!UUID.test(orgId)) return json(404, { message: '机构不存在' })
+    const moduleId = typeof body.moduleId === 'string' ? body.moduleId.trim() : ''
+    const { error } = action === 'set-module-level'
+      ? await auth.db.rpc('set_org_module_level', {
+          p_org_id: orgId,
+          p_module_id: moduleId,
+          p_max_level: Number(body.maxLevel),
+          p_staff_id: auth.staff.id,
+        })
+      : await auth.db.rpc('set_org_module_revoked', {
+          p_org_id: orgId,
+          p_module_id: moduleId,
+          p_revoked: Boolean(body.revoked),
+          p_staff_id: auth.staff.id,
+        })
     if (error) return fail(error)
     return json(200, { ok: true })
   }

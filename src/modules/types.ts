@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import type { ModuleId } from '../../supabase/functions/_shared/moduleRegistry'
+import type { ModuleId, ProgressModuleId, ToggleableModuleId } from './ids'
 
 /** 教学模块 ID 来自共享注册表，不在此另写一份。 */
-export type { ModuleId }
+export type { ModuleId, ProgressModuleId, ToggleableModuleId }
 
 export type ModuleStatus = 'active' | 'coming_soon'
 

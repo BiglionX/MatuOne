@@ -1,8 +1,10 @@
 import type { OrgDetailPayload, OrgLedgerQuery, OrgLedgerRow, ProvisionOrgInput, ProvisionOrgResult } from '@/types/orgAdmin'
 import type { BillingInput, BillingRecord, InvoiceStatus, LeadRow, OpsOverview } from '@/types/ops'
 import { callFunction, clearAuth, establishSession } from '@/lib/backend'
+import type { ModuleId } from '@/modules/types'
 
 export type { OrgDetail, OrgDetailPayload, OrgLedgerQuery, OrgLedgerRow, ProvisionLog, ProvisionOrgInput, ProvisionOrgResult } from '@/types/orgAdmin'
+export type { OrgModuleAdminRow } from '@/types/orgAdmin'
 export { ApiError } from '@/lib/apiError'
 
 const PROFILE = 'cdg.session.platform'
@@ -150,4 +152,14 @@ export function setInvoiceStatus(recordId: string, invoiceStatus: InvoiceStatus)
 
 export function setOrgManualStatus(orgId: string, manualAction: '停用' | '恢复'): Promise<void> {
   return callFunction('admin-ops', { action: 'status', orgId, manualAction }, { role: 'platform' })
+}
+
+/** 平台调整模块的课程阶段上限（仅按阶段授权的模块可调）。 */
+export function setOrgModuleLevel(orgId: string, moduleId: ModuleId, maxLevel: number): Promise<void> {
+  return callFunction('admin-ops', { action: 'set-module-level', orgId, moduleId, maxLevel }, { role: 'platform' })
+}
+
+/** 平台软关 / 重开模块（软关，不物理删除）。 */
+export function setOrgModuleRevoked(orgId: string, moduleId: ModuleId, revoked: boolean): Promise<void> {
+  return callFunction('admin-ops', { action: 'set-module-revoked', orgId, moduleId, revoked }, { role: 'platform' })
 }

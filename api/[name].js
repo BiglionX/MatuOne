@@ -19911,9 +19911,9 @@ function aggregateLastStudiedAtByStudent(input) {
 
 // supabase/functions/_shared/moduleRegistry.ts
 var MODULE_REGISTRY = [
-  { module_id: "matupix", has_progress: true, status: "active" },
-  { module_id: "python", has_progress: true, status: "active" },
-  { module_id: "arduino", has_progress: false, status: "coming_soon" }
+  { module_id: "matupix", has_progress: true, status: "active", org_toggleable: true },
+  { module_id: "python", has_progress: true, status: "active", org_toggleable: false },
+  { module_id: "arduino", has_progress: false, status: "coming_soon", org_toggleable: false }
 ];
 var MODULE_IDS = Object.fromEntries(
   MODULE_REGISTRY.map((module) => [module.module_id, module.module_id])
@@ -19921,6 +19921,12 @@ var MODULE_IDS = Object.fromEntries(
 var PROGRESS_MODULE_IDS = MODULE_REGISTRY.filter((module) => module.has_progress).map(
   (module) => module.module_id
 );
+var TOGGLEABLE_MODULE_IDS = MODULE_REGISTRY.filter((module) => module.org_toggleable).map(
+  (module) => module.module_id
+);
+function isToggleableModule(moduleId) {
+  return TOGGLEABLE_MODULE_IDS.includes(moduleId);
+}
 
 // supabase/functions/_shared/moduleEntitlements.ts
 function isEnabledModuleEntitlement(row, now = /* @__PURE__ */ new Date()) {
@@ -60347,25 +60353,25 @@ async function orgModules(req) {
     if (!("orgId" in ctx)) return ctx;
     if (writing) {
       const moduleId = typeof req.body.moduleId === "string" ? req.body.moduleId.trim() : "";
-      if (moduleId !== "matupix") return fail4(400, "\u672C\u5200\u4EC5\u53EF\u5F00\u5173 matupix");
+      if (!isToggleableModule(moduleId)) return fail4(400, "\u8BE5\u6A21\u5757\u4E0D\u652F\u6301\u673A\u6784\u81EA\u884C\u5F00\u5173");
       if (action === "revoke") {
         const updated = await one(
           `update public.org_entitlement
            set revoked_at = now()
-           where org_id = $1 and module_id = 'matupix' and revoked_at is null
+           where org_id = $1 and module_id = $2 and revoked_at is null
            returning id`,
-          [ctx.orgId]
+          [ctx.orgId, moduleId]
         );
-        if (!updated) return fail4(404, "\u672A\u627E\u5230 matupix \u5F00\u901A\u884C\uFF0C\u6216\u5DF2\u5173\u95ED");
+        if (!updated) return fail4(404, "\u672A\u627E\u5230\u8BE5\u6A21\u5757\u7684\u5F00\u901A\u884C\uFF0C\u6216\u5DF2\u5173\u95ED");
       } else {
         const updated = await one(
           `update public.org_entitlement
            set revoked_at = null
-           where org_id = $1 and module_id = 'matupix' and revoked_at is not null
+           where org_id = $1 and module_id = $2 and revoked_at is not null
            returning id`,
-          [ctx.orgId]
+          [ctx.orgId, moduleId]
         );
-        if (!updated) return fail4(404, "\u672A\u627E\u5230\u5DF2\u5173\u95ED\u7684 matupix\uFF0C\u6216\u5DF2\u5F00\u901A");
+        if (!updated) return fail4(404, "\u672A\u627E\u5230\u5DF2\u5173\u95ED\u7684\u8BE5\u6A21\u5757\uFF0C\u6216\u5DF2\u5F00\u901A");
       }
     }
     return ok4({ modules: await listOrgManagedModules(ctx.orgId) });
@@ -60416,9 +60422,9 @@ async function listOrgManagedModules(orgId) {
     `select module_id, max_level, valid_until, revoked_at
      from public.org_entitlement
      where org_id = $1
-       and module_id in ('python', 'matupix')
+       and module_id = any($2::text[])
      order by module_id`,
-    [orgId]
+    [orgId, [...PROGRESS_MODULE_IDS]]
   );
   const enabledIds = new Set(enabledModuleIds(rows));
   return rows.map((row) => {
@@ -60428,7 +60434,7 @@ async function listOrgManagedModules(orgId) {
       validUntil: row.valid_until ?? null,
       revokedAt: row.revoked_at ?? null,
       enabled: enabledIds.has(row.module_id),
-      canToggle: row.module_id === "matupix"
+      canToggle: isToggleableModule(row.module_id)
     };
   });
 }
@@ -60691,6 +60697,9 @@ async function studentLearning(req) {
     stageLevel: home.stageLevel,
     stageTitle: home.stageTitle,
     stageSubtitle: home.stageSubtitle,
+    enabledModules: access2.enabledModules,
+    // 本接口就是 Python 模块的接口：模块未开通时前端直接告知原因。
+    moduleEntitled: access2.enabledModules.includes("python"),
     units: home.units,
     currentUnitId: home.currentUnitId,
     entries,
@@ -61421,6 +61430,20 @@ function jsonObject(value) {
   }
   return {};
 }
+function platformModuleRows(rows) {
+  const now = /* @__PURE__ */ new Date();
+  return PROGRESS_MODULE_IDS.map((moduleId) => {
+    const row = rows.find((item) => item.module_id === moduleId);
+    return {
+      moduleId,
+      maxLevel: row?.max_level ?? null,
+      validUntil: row?.valid_until ?? null,
+      revokedAt: row?.revoked_at ?? null,
+      enabled: row ? isEnabledModuleEntitlement(row, now) : false,
+      hasLevelLimit: row?.max_level != null
+    };
+  });
+}
 async function orgDetail(req) {
   const orgId = typeof req.body.orgId === "string" ? req.body.orgId.trim() : "";
   if (!STUDENT_UUID.test(orgId)) return fail4(404, "\u673A\u6784\u4E0D\u5B58\u5728");
@@ -61430,7 +61453,7 @@ async function orgDetail(req) {
     [orgId]
   );
   if (!org) return fail4(404, "\u673A\u6784\u4E0D\u5B58\u5728");
-  const [statusRow, students, parents, logs] = await Promise.all([
+  const [statusRow, students, parents, logs, entitlements] = await Promise.all([
     one("select public.effective_org_status($1, $2, $3) as status", [org.status, org.trial_expire_at, org.service_end_at]),
     one("select count(*)::int as total from public.student where org_id = $1 and status = 'active'", [orgId]),
     one(
@@ -61443,6 +61466,10 @@ async function orgDetail(req) {
     ),
     q(
       "select id, action, operator, detail, created_at from public.provision_log where org_id = $1 order by created_at desc",
+      [orgId]
+    ),
+    q(
+      "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
       [orgId]
     )
   ]);
@@ -61462,6 +61489,7 @@ async function orgDetail(req) {
       serviceEndAt: org.service_end_at,
       status: statusRow?.status ?? org.status
     },
+    modules: platformModuleRows(entitlements),
     logs: logs.map((row) => ({
       id: row.id,
       action: row.action,
@@ -61476,7 +61504,7 @@ async function adminOps(req) {
   const financeOk = action === "ledger" || action === "overview" || action === "billing" || action === "invoice" || action === "quote" || action === "detail" || action === "settings";
   const staff = await requireStaff(req, financeOk ? ["ops", "finance"] : ["ops"]);
   if ("status" in staff) return staff;
-  const known = ["\u8BB0\u5F55\u7C7B\u578B", "\u5E2D\u4F4D\u6570", "\u673A\u6784\u4E0D\u5B58\u5728", "\u8BD5\u7528\u8BB0\u5F55", "\u624B\u5DE5\u6539\u4EF7", "\u91D1\u989D", "\u8BF7\u586B\u5199\u670D\u52A1\u671F", "\u5F00\u7968\u72B6\u6001", "\u6536\u8D39\u8BB0\u5F55", "\u53EA\u80FD\u505C\u7528", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8FD9\u4E2A\u72B6\u6001", "\u6700\u4F4E\u5E2D\u4F4D", "\u5E73\u53F0\u5E95\u4EF7", "\u8BD5\u7528\u5929\u6570", "\u5206\u6210\u6BD4\u4F8B", "\u7F3A\u5C11\u5E73\u53F0\u5E95\u4EF7", "\u7F3A\u5C11\u4EE3\u7406\u5206\u6210", "\u533A\u57DF\u670D\u52A1\u5546\u4E0D\u5B58\u5728", "\u533A\u57DF\u670D\u52A1\u5546\u5DF2\u505C\u7528", "\u5BC6\u7801\u54C8\u5E0C\u65E0\u6548"];
+  const known = ["\u8BB0\u5F55\u7C7B\u578B", "\u5E2D\u4F4D\u6570", "\u673A\u6784\u4E0D\u5B58\u5728", "\u8BD5\u7528\u8BB0\u5F55", "\u624B\u5DE5\u6539\u4EF7", "\u91D1\u989D", "\u8BF7\u586B\u5199\u670D\u52A1\u671F", "\u5F00\u7968\u72B6\u6001", "\u6536\u8D39\u8BB0\u5F55", "\u53EA\u80FD\u505C\u7528", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8FD9\u4E2A\u72B6\u6001", "\u6700\u4F4E\u5E2D\u4F4D", "\u5E73\u53F0\u5E95\u4EF7", "\u8BD5\u7528\u5929\u6570", "\u5206\u6210\u6BD4\u4F8B", "\u7F3A\u5C11\u5E73\u53F0\u5E95\u4EF7", "\u7F3A\u5C11\u4EE3\u7406\u5206\u6210", "\u533A\u57DF\u670D\u52A1\u5546\u4E0D\u5B58\u5728", "\u533A\u57DF\u670D\u52A1\u5546\u5DF2\u505C\u7528", "\u5BC6\u7801\u54C8\u5E0C\u65E0\u6548", "\u8BF7\u9009\u62E9\u6A21\u5757", "\u9636\u6BB5\u4E0A\u9650", "\u8BE5\u673A\u6784\u672A\u5F00\u901A", "\u8BE5\u6A21\u5757\u6CA1\u6709\u9636\u6BB5\u4E0A\u9650", "\u8BE5\u6A21\u5757\u5DF2\u7ECF"];
   if (action === "issue-agent-account") {
     const agentId = typeof req.body.agentId === "string" ? req.body.agentId : "";
     try {
@@ -61558,6 +61586,33 @@ async function adminOps(req) {
       await q("select public.set_org_manual_status($1, $2, $3)", [req.body.orgId, req.body.manualAction, staff.id]);
       return ok4({ ok: true });
     } catch (error) {
+      return friendly(error, known, "\u64CD\u4F5C\u5931\u8D25");
+    }
+  }
+  if (action === "set-module-level" || action === "set-module-revoked") {
+    const orgId = typeof req.body.orgId === "string" ? req.body.orgId.trim() : "";
+    if (!STUDENT_UUID.test(orgId)) return fail4(404, "\u673A\u6784\u4E0D\u5B58\u5728");
+    const moduleId = typeof req.body.moduleId === "string" ? req.body.moduleId.trim() : "";
+    try {
+      if (action === "set-module-level") {
+        await q("select public.set_org_module_level($1, $2, $3, $4)", [
+          orgId,
+          moduleId,
+          Number(req.body.maxLevel),
+          staff.id
+        ]);
+      } else {
+        await q("select public.set_org_module_revoked($1, $2, $3, $4)", [
+          orgId,
+          moduleId,
+          Boolean(req.body.revoked),
+          staff.id
+        ]);
+      }
+      return ok4({ ok: true });
+    } catch (error) {
+      const line = dbMessage(error).split("\n")[0]?.replace(/^ERROR:\s*/, "") ?? "";
+      if (line.includes("forbidden") || line.includes("42501")) return fail4(403, "\u9700\u8981\u5E73\u53F0\u8FD0\u8425\u6743\u9650");
       return friendly(error, known, "\u64CD\u4F5C\u5931\u8D25");
     }
   }

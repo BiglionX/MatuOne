@@ -2,6 +2,8 @@
    全站类型定义集中在此文件
    ============================================================ */
 
+import type { ProgressModuleId } from '@/modules/ids'
+
 /** 角色 */
 export type Role = 'student' | 'org' | 'parent' | 'admin'
 
@@ -353,7 +355,7 @@ export interface ParentChildView {
    * 孩子所属机构当前有效开通模块（revoked/过期不含）。
    * 家长 session 不能调 org-modules，由 parent-portal 只读附带。
    */
-  enabledModules: Array<'python' | 'matupix'>
+  enabledModules: ProgressModuleId[]
   /** 家长看到的是当前 Level 里的单元进度，不是全课程总关数。 */
   curriculum: ParentCurriculumProgress
   weekly: WeeklySummary

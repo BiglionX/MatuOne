@@ -17,8 +17,10 @@
  * 可覆盖默认的 not_entitled →「机构未开通」。
  */
 
-/** 教学模块 ID：与注册表 / org_entitlement.module_id 对齐（封闭联合，仅已注册模块） */
-export type ModuleId = 'python' | 'matupix' | 'arduino'
+/** 教学模块 ID：与注册表 / org_entitlement.module_id 对齐（来自共享注册表，不另写一份） */
+import type { ModuleId } from '@/modules/ids'
+
+export type { ModuleId }
 
 /**
  * 开通态 vs 进度可达态（必须可区分）

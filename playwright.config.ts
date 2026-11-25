@@ -1,12 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { defineConfig } from '@playwright/test'
 
+/**
+ * 读 .env.test（没有就当没配）。
+ * - CI：没有 DATABASE_URL 直接报错，避免「静默跑空」。
+ * - 本地：只警告。需要数据库的用例会自己 skip（见 e2e/auth-regression.spec.ts），
+ *   不需要数据库的用例（例如游客直达 /matupix）照常跑。
+ */
 function loadTestEnv(): void {
   let raw = ''
   try {
     raw = readFileSync('.env.test', 'utf8')
   } catch {
-    throw new Error('缺少 .env.test。远程 E2E 需要在这里填写线上 DATABASE_URL。')
+    raw = ''
   }
   for (const line of raw.split(/\r?\n/)) {
     const trimmed = line.trim()
@@ -16,7 +22,11 @@ function loadTestEnv(): void {
     const value = matched[2].trim().replace(/^['"]|['"]$/g, '')
     process.env[matched[1]] = value
   }
-  if (!process.env.DATABASE_URL) throw new Error('.env.test 里没有 DATABASE_URL')
+  if (process.env.DATABASE_URL) return
+  if (process.env.CI === 'true') {
+    throw new Error('CI 缺少 DATABASE_URL：门禁回归必须直连数据库，请在 workflow secrets 里补上。')
+  }
+  console.warn('[e2e] 没有 DATABASE_URL：需要数据库的用例会跳过。模板见 .env.test.example。')
 }
 
 loadTestEnv()

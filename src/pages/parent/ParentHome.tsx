@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { bindChild, getParentSession, loadParentHome, logoutParent, lookupChild, unbindChild } from '@/api/parent'
 import {
-  asPythonDetail,
   dualReadParentHome,
+  findCloudModule,
+  formatModuleHint,
   formatModuleStatusLabel,
   listParentStudentModuleProgress,
 } from '@/api/moduleProgress'
@@ -23,24 +24,26 @@ function FeedbackNote({ message, className = '' }: { message: string; className?
   return <FormError className={className}>{message}</FormError>
 }
 
-/** 非 python 模块卡：按 availability / detail.kind 通用渲染（页面不按 moduleId 分支） */
+/**
+ * 模块卡：按 availability 通用渲染（页面不按模块名分支）。
+ * 未开通（not_entitled）不出现 —— 与机构列表 / 启动器口径一致。
+ */
 function ParentModuleSection({ summary }: { summary: ModuleProgressSummary }) {
-  if (summary.availability === 'local_only') {
-    const hint =
-      summary.detail.kind === 'matupix'
-        ? summary.detail.hint
-        : '作品只保存在这台设备'
-    return (
-      <section className="card p-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-semibold text-ink">{summary.displayName}</h2>
-          <span className="text-sm text-ink-soft">{formatModuleStatusLabel(summary)}</span>
-        </div>
-        <p className="mt-2 text-sm text-ink-soft">{hint}</p>
-      </section>
-    )
-  }
-  return null
+  if (summary.availability === 'not_entitled') return null
+  const label = formatModuleStatusLabel(summary)
+  const hint = formatModuleHint(summary)
+  return (
+    <section className="card p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-lg font-semibold text-ink">{summary.displayName}</h2>
+        {label && <span className="text-sm text-ink-soft">{label}</span>}
+      </div>
+      {hint && <p className="mt-2 text-sm text-ink-soft">{hint}</p>}
+      {summary.availability === 'cloud' && summary.completed != null && summary.total != null && (
+        <p className="mt-2 text-sm text-ink-soft">已学 {summary.completed} / {summary.total} 节</p>
+      )}
+    </section>
+  )
 }
 
 function catalogId(order: number): string {
@@ -132,38 +135,28 @@ export function ParentHome() {
   if (!session) return <Navigate to="/parent/login" replace />
 
   const view = children.find((child) => child.student.id === activeId) ?? children[0]
-  /** Python 卡按孩子所属机构的模块开通事实渲染；未开通时与机构列表/启动器一致地不出现。 */
-  const pythonEnabled = view ? view.enabledModules.includes('python') : false
   const modules =
     (view ? moduleViews.find((row) => row.studentId === view.student.id)?.modules : undefined) ?? []
-  const pythonProgress = modules.find((m) => m.detail.kind === 'python') ?? null
-  const pythonDetail = pythonProgress ? asPythonDetail(pythonProgress) : null
-  const stageLabel = pythonDetail?.stageLabel ?? view?.curriculum.stageLabel ?? ''
-  const unitLabel = pythonDetail?.unitLabel ?? view?.curriculum.unitLabel ?? ''
-  const unitCompleted = pythonDetail?.unitCompleted ?? view?.curriculum.unitCompleted ?? 0
-  const unitTotal = pythonDetail?.unitTotal ?? view?.curriculum.unitTotal ?? 0
-  const currentLevelTitle = pythonDetail?.currentLevelTitle ?? view?.currentLevelTitle ?? ''
+  /** 主卡：唯一带云进度的模块（当前是 Python 课程）。页面不按模块名分支。 */
+  const cloudModule = findCloudModule(modules)
+  /** 学习记录区块按「有没有云进度」显示，不再判断具体模块名。 */
+  const courseOpened = cloudModule != null
+  const stageLabel = view?.curriculum.stageLabel ?? ''
+  const unitLabel = view?.curriculum.unitLabel ?? ''
+  const unitCompleted = view?.curriculum.unitCompleted ?? 0
+  const unitTotal = view?.curriculum.unitTotal ?? 0
+  const currentLevelTitle = view?.currentLevelTitle ?? ''
   const typingChartSeries =
-    pythonDetail?.typing?.series?.map((point) => {
-      const legacy = view?.typingSeries.find((row) => row.weekStart === point.at)
-      return {
-        at: point.at,
-        label: legacy?.label,
-        wpm: point.wpm,
-        accuracy: point.accuracy,
-      }
-    }) ??
     view?.typingSeries.map((point) => ({
       at: point.weekStart,
       label: point.label,
       wpm: point.wpm,
       accuracy: point.accuracy,
-    })) ??
-    []
+    })) ?? []
 
-  /** 未开通（not_entitled）完全不渲染；python 主卡已单独渲染，其余按 availability/detail.kind */
+  /** 未开通（not_entitled）完全不渲染；云进度主卡已单独渲染，其余按 availability 通用渲染。 */
   const extraModules = modules.filter(
-    (m) => m.availability !== 'not_entitled' && m.detail.kind !== 'python',
+    (m) => m.availability !== 'not_entitled' && m !== cloudModule,
   )
 
   const lookup = async () => {
@@ -311,7 +304,7 @@ export function ParentHome() {
 
         {view ? (
           <div className="mt-4 space-y-4">
-            {pythonEnabled && (
+            {courseOpened && (
               <>
             <section className="card p-5">
               <div className="flex items-baseline justify-between">
@@ -350,7 +343,7 @@ export function ParentHome() {
               </p>
               <p className="mt-2 text-ink">
                 最近学习：
-                <span className="font-semibold">{formatDate(pythonProgress?.lastStudiedAt)}</span>
+                <span className="font-semibold">{formatDate(cloudModule?.lastStudiedAt)}</span>
               </p>
               {view.curriculum.beyondAuthored ? (
                 <p className="mt-4 text-ink">当前阶段的基础内容已学完，进阶课程即将上线</p>
@@ -412,7 +405,7 @@ export function ParentHome() {
                 </button>
               )}
             </section>
-            {pythonEnabled && (
+            {courseOpened && (
               <section className="card p-5">
                 <div className="flex items-baseline justify-between">
                   <h2 className="text-lg font-semibold text-ink">打字成长</h2>

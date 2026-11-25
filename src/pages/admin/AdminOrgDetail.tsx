@@ -9,12 +9,16 @@ import {
   saveBilling,
   setInvoiceStatus,
   setOrgManualStatus,
+  setOrgModuleLevel,
+  setOrgModuleRevoked,
   type OrgDetail,
+  type OrgModuleAdminRow,
   type ProvisionLog,
 } from '@/api/adminOrgs'
 import { formatDate } from '@/lib/format'
 import { FormError } from '@/components/FormError'
 import { CardGridSkeleton, TableSkeleton } from '@/components/Skeleton'
+import { getModule } from '@/modules/registry'
 import type { OrgStatus } from '@/types/orgAdmin'
 import type { BillingInput, BillingRecord, BillingType, InvoiceStatus } from '@/types/ops'
 
@@ -47,10 +51,21 @@ function isOrgStatus(value: string): value is OrgStatus {
   return value === 'trial' || value === 'active' || value === 'expired' || value === 'disabled'
 }
 
+/** 模块开通状态文案：已关闭 / 已过期 / 已开通 / 未开通。 */
+function moduleStatusLabel(row: OrgModuleAdminRow): string {
+  if (row.revokedAt) return '已关闭'
+  if (!row.enabled && row.validUntil) return '已过期'
+  if (row.enabled) return '已开通'
+  return '未开通'
+}
+
 export function AdminOrgDetail() {
   const { orgId = '' } = useParams()
   const [tab, setTab] = useState<TabId>('overview')
   const [org, setOrg] = useState<OrgDetail | null>(null)
+  const [modules, setModules] = useState<OrgModuleAdminRow[]>([])
+  const [levelDraft, setLevelDraft] = useState<Record<string, string>>({})
+  const [savingModuleId, setSavingModuleId] = useState<string | null>(null)
   const [logs, setLogs] = useState<ProvisionLog[]>([])
   const [records, setRecords] = useState<BillingRecord[]>([])
   const [students, setStudents] = useState<AdminStudentList | null>(null)
@@ -66,6 +81,12 @@ export function AdminOrgDetail() {
     return Promise.all([loadOrgDetail(orgId), listBilling(orgId)])
       .then(([detail, nextRecords]) => {
         setOrg(detail.org)
+        setModules(detail.modules ?? [])
+        setLevelDraft(
+          Object.fromEntries(
+            (detail.modules ?? []).map((row) => [row.moduleId, row.maxLevel == null ? '' : String(row.maxLevel)]),
+          ),
+        )
         setLogs(detail.logs)
         setRecords(nextRecords)
       })
@@ -73,6 +94,37 @@ export function AdminOrgDetail() {
         setOrg(null)
         setError(err instanceof ApiError ? err.message : '读取失败')
       })
+  }
+
+  const saveModuleLevel = async (row: OrgModuleAdminRow) => {
+    const value = Number(levelDraft[row.moduleId] ?? '')
+    if (!Number.isInteger(value) || value < 1 || value > 8) {
+      setNotice('阶段上限需要在 1–8 之间')
+      return
+    }
+    setSavingModuleId(row.moduleId)
+    setNotice('')
+    try {
+      await setOrgModuleLevel(orgId, row.moduleId, value)
+      await reload()
+    } catch (err: unknown) {
+      setNotice(err instanceof ApiError ? err.message : '保存失败')
+    } finally {
+      setSavingModuleId(null)
+    }
+  }
+
+  const toggleModule = async (row: OrgModuleAdminRow) => {
+    setSavingModuleId(row.moduleId)
+    setNotice('')
+    try {
+      await setOrgModuleRevoked(orgId, row.moduleId, !row.revokedAt)
+      await reload()
+    } catch (err: unknown) {
+      setNotice(err instanceof ApiError ? err.message : '操作失败')
+    } finally {
+      setSavingModuleId(null)
+    }
   }
 
   useEffect(() => {
@@ -174,6 +226,81 @@ export function AdminOrgDetail() {
                 <p className="text-sm text-ink-soft">绑定家长</p>
                 <p className="mt-2 text-2xl font-bold text-ink">{org.boundParents}</p>
               </article>
+            </section>
+
+            <section className="card p-5">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-lg font-semibold text-ink">已开通模块</h2>
+                <p className="text-sm text-ink-soft">未开通的模块，学生端会提示联系机构。</p>
+              </div>
+              {modules.length === 0 ? (
+                <p className="mt-3 text-sm text-ink-soft">没有可开通的模块。</p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {modules.map((row) => {
+                    const meta = getModule(row.moduleId)
+                    const draft = levelDraft[row.moduleId] ?? ''
+                    const dirty = row.hasLevelLimit && Number(draft) !== row.maxLevel
+                    const busy = savingModuleId === row.moduleId
+                    return (
+                      <div
+                        key={row.moduleId}
+                        className="grid gap-3 border-b border-line pb-3 last:border-0 last:pb-0 sm:grid-cols-[1fr_auto_auto] sm:items-center"
+                      >
+                        <div>
+                          <p className="font-medium text-ink">{meta?.display_name ?? row.moduleId}</p>
+                          <p className="text-sm text-ink-soft">
+                            {moduleStatusLabel(row)}
+                            {row.validUntil ? ` · 有效期至 ${dayLabel(row.validUntil)}` : ''}
+                            {row.hasLevelLimit ? ` · 阶段上限 ${row.maxLevel}` : ''}
+                          </p>
+                        </div>
+                        {row.hasLevelLimit ? (
+                          <label className="text-sm text-ink-soft">
+                            阶段上限
+                            <input
+                              className="field mt-1 w-24"
+                              type="number"
+                              min={1}
+                              max={8}
+                              value={draft}
+                              onChange={(event) =>
+                                setLevelDraft((prev) => ({ ...prev, [row.moduleId]: event.target.value }))
+                              }
+                            />
+                          </label>
+                        ) : (
+                          <span className="text-sm text-ink-soft">无阶段上限</span>
+                        )}
+                        <div className="flex gap-2">
+                          {row.hasLevelLimit && (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              disabled={busy || !dirty}
+                              onClick={() => {
+                                void saveModuleLevel(row)
+                              }}
+                            >
+                              保存上限
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            disabled={busy}
+                            onClick={() => {
+                              void toggleModule(row)
+                            }}
+                          >
+                            {row.revokedAt ? '重开' : '关闭'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </section>
 
             <div className="flex flex-wrap gap-3">

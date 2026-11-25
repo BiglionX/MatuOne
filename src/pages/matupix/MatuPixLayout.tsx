@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { listOrgEnabledModules, resolveLauncherOrg } from '@/api/orgModules'
+import { MODULE_IDS } from '@/modules/ids'
 
 /** 与 usePageMeta 同一套写法：og/twitter 标签共用一份文档，增量覆盖就行 */
 function setMeta(name: string, content: string, attr: 'name' | 'property' = 'name') {
@@ -61,6 +62,9 @@ type GateState =
  * MatuPix 入口门禁（阶段 2）：
  * - 游客（无学生/机构 session）：本机可用，直接放行
  * - 有业务 session：须机构已开通 matupix（org-modules）；未开通或校验失败均不静默放行
+ *
+ * 口径写死：家长 session 不隶属机构，按游客处理（作品只在本机，不需要机构开通）。
+ * resolveLauncherOrg() 只认学生 / 机构两类 session，家长会落到「无 session」分支。
  */
 function useMatuPixGate(): GateState {
   const [gate, setGate] = useState<GateState>(() =>
@@ -79,7 +83,7 @@ function useMatuPixGate(): GateState {
     void listOrgEnabledModules()
       .then((grants) => {
         if (cancelled) return
-        const enabled = grants.some((g) => g.moduleId === 'matupix')
+        const enabled = grants.some((g) => g.moduleId === MODULE_IDS.matupix)
         setGate(enabled ? { status: 'allowed' } : { status: 'blocked', reason: 'not_entitled' })
       })
       .catch(() => {

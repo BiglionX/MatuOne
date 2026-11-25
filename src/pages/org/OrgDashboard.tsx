@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { getOrgSession } from '@/api/orgAuth'
 import {
   dualReadOrgStudents,
-  formatOrgPythonProgressLine,
+  formatOrgProgressLine,
   mapOrgStudentRowToPythonSummary,
 } from '@/api/moduleProgress'
 import {
@@ -206,7 +206,7 @@ export function OrgDashboard() {
                     <td className="px-6 py-3.5 text-ink-soft">{row.groupName}</td>
                     <td className="px-6 py-3.5 text-ink">{ATTENTION_LABEL[row.reason]}</td>
                     <td className="px-6 py-3.5 text-ink-soft">
-                      {formatOrgPythonProgressLine(
+                      {formatOrgProgressLine(
                         mapOrgStudentRowToPythonSummary({
                           id: row.student.id,
                           name: row.student.name,

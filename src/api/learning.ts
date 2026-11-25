@@ -1,5 +1,6 @@
 import type { Level, MapEntry, PracticeType } from '@/types'
 import type { CurriculumLevelKind } from '@/types/curriculum'
+import type { ProgressModuleId } from '@/modules/types'
 import { ApiError } from '@/lib/apiError'
 import { callFunction } from '@/lib/backend'
 import { rememberHints, rememberLevels } from '@/lib/levelCatalog'
@@ -38,6 +39,10 @@ export interface LearningHome {
   stageLevel: number
   stageTitle: string
   stageSubtitle: string
+  /** 机构已开通的模块（服务端从 session 解析，不信任前端） */
+  enabledModules: ProgressModuleId[]
+  /** 本模块（Python）是否已开通；false 时前端直接提示联系机构 */
+  moduleEntitled: boolean
   units: UnitSummary[]
   currentUnitId: string
   /** 只含当前单元，地图展开其他单元时改走 getLevelsByUnit。 */

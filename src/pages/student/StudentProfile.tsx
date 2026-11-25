@@ -1,19 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { loadLearningHome, type LearningHome } from '@/api/learning'
+import {
+  findCloudModule,
+  formatModuleHint,
+  formatModuleStatusLabel,
+  listStudentModuleSummaries,
+} from '@/api/moduleProgress'
 import { getCurrentStudent, logoutStudent } from '@/api/studentAuth'
 import { Stars, WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
+import type { ModuleProgressSummary } from '@/types/moduleProgress'
 
 /** 学生用户中心：我是谁、学到哪、打字练得怎么样，以及退出登录 */
 export function StudentProfile() {
   const navigate = useNavigate()
   const student = getCurrentStudent()
   const [home, setHome] = useState<LearningHome | null>(null)
+  const [moduleCards, setModuleCards] = useState<ModuleProgressSummary[]>([])
 
   useEffect(() => {
     if (!student) return
-    loadLearningHome().then(setHome).catch(() => setHome(null))
+    loadLearningHome()
+      .then((next) => {
+        setHome(next)
+        // 模块清单挂掉不影响个人进度，单独降级为空清单。
+        return listStudentModuleSummaries(next).catch(() => [] as ModuleProgressSummary[])
+      })
+      .then(setModuleCards)
+      .catch(() => setHome(null))
   }, [student?.id])
 
   if (!student) return <Navigate to="/student/login" replace />
@@ -26,6 +41,8 @@ export function StudentProfile() {
   const currentLevel = entries.find((item) => item.current) ?? entries.find((item) => !item.completed)
   const typing = home?.typingSeries ?? []
   const lastTyping = [...typing].reverse().find((point) => point.wpm !== null)
+  /** 主卡：唯一带云进度的模块（页面不按模块名分支）。 */
+  const cloudCard = findCloudModule(moduleCards)
   const lastActive = (() => {
     if (!student.lastActiveAt) return '还没有学习记录'
     const date = new Date(student.lastActiveAt)
@@ -113,6 +130,33 @@ export function StudentProfile() {
             <p className="mt-4 rounded-field bg-canvas px-4 py-3 text-sm text-ink">
               {`现在在学：${home?.heading ?? '课程'} · ${currentUnit?.title ?? '本单元'} · ${currentLevel?.title ?? '下一节'}`}
             </p>
+          </div>
+
+          <div className="card p-6">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-lg font-semibold text-ink">我的模块</h2>
+              <span className="text-sm text-ink-soft">{moduleCards.length} 个</span>
+            </div>
+            <div className="mt-4 divide-y divide-line">
+              {moduleCards.map((card) => {
+                const label = formatModuleStatusLabel(card)
+                const hint = formatModuleHint(card)
+                return (
+                  <div key={card.moduleId} className="py-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="font-medium text-ink">{card.displayName}</p>
+                      <span className="shrink-0 text-sm text-ink-soft">{label || '已开通'}</span>
+                    </div>
+                    {hint && <p className="mt-1 text-sm text-ink-soft">{hint}</p>}
+                    {card === cloudCard && card.completed != null && card.total != null && (
+                      <p className="mt-1 text-sm text-ink-soft">
+                        已学 {card.completed} / {card.total} 节
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
           <div className="card p-6">

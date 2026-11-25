@@ -6,11 +6,12 @@
  * 本文件是关卡授权唯一对外入口，外部禁止直接 import lessonIsAuthorized / isFreeLevel1。
  */
 // @ts-expect-error 边缘函数要带 .ts 后缀，应用这边的 tsconfig 不允许。
-import { PROGRESS_MODULE_IDS, type ProgressModuleId } from './moduleRegistry.ts'
+import { isToggleableModule, PROGRESS_MODULE_IDS, TOGGLEABLE_MODULE_IDS, type ProgressModuleId, type ToggleableModuleId } from './moduleRegistry.ts'
 // @ts-expect-error 边缘函数要带 .ts 后缀，应用这边的 tsconfig 不允许。
 import { lessonIsAuthorized, type EnterLevelReason, type OrgStatus } from './orgStatus.ts'
 
-export type { ProgressModuleId }
+export type { ProgressModuleId, ToggleableModuleId }
+export { isToggleableModule, PROGRESS_MODULE_IDS, TOGGLEABLE_MODULE_IDS }
 
 export interface ModuleEntitlementRow {
   [key: string]: unknown

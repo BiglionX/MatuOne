@@ -9,7 +9,10 @@ import { buildPythonAuthorizedFacts } from '../supabase/functions/_shared/python
 import {
   activeGrantOf,
   enabledModuleIds,
+  isEnabledModuleEntitlement,
+  isToggleableModule,
   moduleLessonIsAuthorized,
+  PROGRESS_MODULE_IDS,
   type ModuleEntitlementRow,
   type ProgressModuleId,
 } from '../supabase/functions/_shared/moduleEntitlements'
@@ -884,26 +887,26 @@ async function orgModules(req: ApiRequest): Promise<ApiResult> {
 
     if (writing) {
       const moduleId = typeof req.body.moduleId === 'string' ? req.body.moduleId.trim() : ''
-      if (moduleId !== 'matupix') return fail(400, '本刀仅可开关 matupix')
+      if (!isToggleableModule(moduleId)) return fail(400, '该模块不支持机构自行开关')
 
       if (action === 'revoke') {
         const updated = await one<{ id: string }>(
           `update public.org_entitlement
            set revoked_at = now()
-           where org_id = $1 and module_id = 'matupix' and revoked_at is null
+           where org_id = $1 and module_id = $2 and revoked_at is null
            returning id`,
-          [ctx.orgId],
+          [ctx.orgId, moduleId],
         )
-        if (!updated) return fail(404, '未找到 matupix 开通行，或已关闭')
+        if (!updated) return fail(404, '未找到该模块的开通行，或已关闭')
       } else {
         const updated = await one<{ id: string }>(
           `update public.org_entitlement
            set revoked_at = null
-           where org_id = $1 and module_id = 'matupix' and revoked_at is not null
+           where org_id = $1 and module_id = $2 and revoked_at is not null
            returning id`,
-          [ctx.orgId],
+          [ctx.orgId, moduleId],
         )
-        if (!updated) return fail(404, '未找到已关闭的 matupix，或已开通')
+        if (!updated) return fail(404, '未找到已关闭的该模块，或已开通')
       }
     }
 
@@ -952,7 +955,7 @@ async function orgModules(req: ApiRequest): Promise<ApiResult> {
     modules: rows
       .filter((row) => enabled.has(row.module_id as ProgressModuleId))
       .map((row) => ({
-        moduleId: row.module_id as 'python' | 'matupix',
+        moduleId: row.module_id as ProgressModuleId,
         maxLevel: row.max_level == null ? null : Number(row.max_level),
         validUntil: row.valid_until,
       })),
@@ -964,20 +967,20 @@ async function listOrgManagedModules(orgId: string) {
     `select module_id, max_level, valid_until, revoked_at
      from public.org_entitlement
      where org_id = $1
-       and module_id in ('python', 'matupix')
+       and module_id = any($2::text[])
      order by module_id`,
-    [orgId],
+    [orgId, [...PROGRESS_MODULE_IDS]],
   )
   const enabledIds = new Set(enabledModuleIds(rows))
 
   return rows.map((row) => {
     return {
-      moduleId: row.module_id as 'python' | 'matupix',
+      moduleId: row.module_id as ProgressModuleId,
       maxLevel: row.max_level == null ? null : Number(row.max_level),
       validUntil: row.valid_until ?? null,
       revokedAt: row.revoked_at ?? null,
       enabled: enabledIds.has(row.module_id as ProgressModuleId),
-      canToggle: row.module_id === 'matupix',
+      canToggle: isToggleableModule(row.module_id),
     }
   })
 }
@@ -1269,6 +1272,9 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
     stageLevel: home.stageLevel,
     stageTitle: home.stageTitle,
     stageSubtitle: home.stageSubtitle,
+    enabledModules: access.enabledModules,
+    // 本接口就是 Python 模块的接口：模块未开通时前端直接告知原因。
+    moduleEntitled: access.enabledModules.includes('python'),
     units: home.units,
     currentUnitId: home.currentUnitId,
     entries,
@@ -2133,6 +2139,29 @@ function jsonObject(value: unknown): Record<string, unknown> {
   return {}
 }
 
+interface OrgModuleAdminRow extends ModuleEntitlementRow {
+  module_id: string
+  max_level: number | null
+  valid_until: string | null
+  revoked_at: string | null
+}
+
+/** 平台侧模块视图：候选集来自共享注册表，含已软关的行，不在此硬编码模块名。 */
+function platformModuleRows(rows: OrgModuleAdminRow[]) {
+  const now = new Date()
+  return PROGRESS_MODULE_IDS.map((moduleId) => {
+    const row = rows.find((item) => item.module_id === moduleId)
+    return {
+      moduleId,
+      maxLevel: row?.max_level ?? null,
+      validUntil: row?.valid_until ?? null,
+      revokedAt: row?.revoked_at ?? null,
+      enabled: row ? isEnabledModuleEntitlement(row, now) : false,
+      hasLevelLimit: row?.max_level != null,
+    }
+  })
+}
+
 async function orgDetail(req: ApiRequest): Promise<ApiResult> {
   const orgId = typeof req.body.orgId === 'string' ? req.body.orgId.trim() : ''
   if (!STUDENT_UUID.test(orgId)) return fail(404, '机构不存在')
@@ -2154,7 +2183,7 @@ async function orgDetail(req: ApiRequest): Promise<ApiResult> {
     [orgId],
   )
   if (!org) return fail(404, '机构不存在')
-  const [statusRow, students, parents, logs] = await Promise.all([
+  const [statusRow, students, parents, logs, entitlements] = await Promise.all([
     one<{ status: string }>('select public.effective_org_status($1, $2, $3) as status', [org.status, org.trial_expire_at, org.service_end_at]),
     one<{ total: number }>("select count(*)::int as total from public.student where org_id = $1 and status = 'active'", [orgId]),
     one<{ total: number }>(
@@ -2167,6 +2196,10 @@ async function orgDetail(req: ApiRequest): Promise<ApiResult> {
     ),
     q<{ id: string; action: string; operator: string; detail: unknown; created_at: string }>(
       'select id, action, operator, detail, created_at from public.provision_log where org_id = $1 order by created_at desc',
+      [orgId],
+    ),
+    q<OrgModuleAdminRow>(
+      'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
       [orgId],
     ),
   ])
@@ -2186,6 +2219,7 @@ async function orgDetail(req: ApiRequest): Promise<ApiResult> {
       serviceEndAt: org.service_end_at,
       status: statusRow?.status ?? org.status,
     },
+    modules: platformModuleRows(entitlements),
     logs: logs.map((row) => ({
       id: row.id,
       action: row.action,
@@ -2201,7 +2235,7 @@ async function adminOps(req: ApiRequest): Promise<ApiResult> {
   const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote' || action === 'detail' || action === 'settings'
   const staff = await requireStaff(req, financeOk ? ['ops', 'finance'] : ['ops'])
   if ('status' in staff) return staff
-  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成', '区域服务商不存在', '区域服务商已停用', '密码哈希无效']
+  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成', '区域服务商不存在', '区域服务商已停用', '密码哈希无效', '请选择模块', '阶段上限', '该机构未开通', '该模块没有阶段上限', '该模块已经']
   if (action === 'issue-agent-account') {
     const agentId = typeof req.body.agentId === 'string' ? req.body.agentId : ''
     try {
@@ -2283,6 +2317,33 @@ async function adminOps(req: ApiRequest): Promise<ApiResult> {
       await q('select public.set_org_manual_status($1, $2, $3)', [req.body.orgId, req.body.manualAction, staff.id])
       return ok({ ok: true })
     } catch (error) {
+      return friendly(error, known, '操作失败')
+    }
+  }
+  if (action === 'set-module-level' || action === 'set-module-revoked') {
+    const orgId = typeof req.body.orgId === 'string' ? req.body.orgId.trim() : ''
+    if (!STUDENT_UUID.test(orgId)) return fail(404, '机构不存在')
+    const moduleId = typeof req.body.moduleId === 'string' ? req.body.moduleId.trim() : ''
+    try {
+      if (action === 'set-module-level') {
+        await q('select public.set_org_module_level($1, $2, $3, $4)', [
+          orgId,
+          moduleId,
+          Number(req.body.maxLevel),
+          staff.id,
+        ])
+      } else {
+        await q('select public.set_org_module_revoked($1, $2, $3, $4)', [
+          orgId,
+          moduleId,
+          Boolean(req.body.revoked),
+          staff.id,
+        ])
+      }
+      return ok({ ok: true })
+    } catch (error) {
+      const line = dbMessage(error).split('\n')[0]?.replace(/^ERROR:\s*/, '') ?? ''
+      if (line.includes('forbidden') || line.includes('42501')) return fail(403, '需要平台运营权限')
       return friendly(error, known, '操作失败')
     }
   }

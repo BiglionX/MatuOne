@@ -17,7 +17,8 @@ import {
 } from '@/api/orgPortal'
 import {
   dualReadOrgStudents,
-  formatOrgPythonProgressLine,
+  findCloudModule,
+  formatOrgProgressLine,
   listOrgStudentModuleProgress,
 } from '@/api/moduleProgress'
 import type { ModuleProgressSummary, StudentModulesProgressView } from '@/types/moduleProgress'
@@ -188,8 +189,9 @@ export function OrgStudents() {
   const failCount = rows ? rows.length - okCount : 0
   const emptyLabel = students.length === 0 ? '还没有学生。先建好分组，再用 CSV 批量导入。' : '这个分组还没有学生。'
   const progressByStudent = new Map(moduleViews.map((view) => [view.studentId, view]))
-  const pythonSummaryOf = (studentId: string): ModuleProgressSummary | undefined =>
-    progressByStudent.get(studentId)?.modules.find((m) => m.detail.kind === 'python')
+  /** 进度列取带云进度的模块摘要（页面不按模块名分支）。 */
+  const cloudSummaryOf = (studentId: string): ModuleProgressSummary | undefined =>
+    findCloudModule(progressByStudent.get(studentId)?.modules ?? []) ?? undefined
 
   return (
     <div className="p-8">
@@ -365,7 +367,7 @@ export function OrgStudents() {
                 </tr>
               )}
               {visible.map((student) => {
-                const pythonSummary = pythonSummaryOf(student.id)
+                const cloudSummary = cloudSummaryOf(student.id)
                 return (
                 <tr key={student.id} className="border-b border-line last:border-0 hover:bg-canvas/60">
                   <td className="px-6 py-3.5 font-medium text-ink">
@@ -422,13 +424,13 @@ export function OrgStudents() {
                     </div>
                   </td>
                   <td className="px-6 py-3.5 text-ink-soft">
-                    {pythonSummary ? formatOrgPythonProgressLine(pythonSummary) : '尚未开通'}
+                    {cloudSummary ? formatOrgProgressLine(cloudSummary) : '尚未开通'}
                   </td>
                   <td className="px-6 py-3.5 text-ink-soft">
                     {student.typing ? `${student.typing.wpm} WPM · ${student.typing.accuracy}%` : '还没有记录'}
                   </td>
                   <td className="px-6 py-3.5 text-ink-soft">
-                    {formatDate(pythonSummary?.lastStudiedAt ?? student.lastStudiedAt)}
+                    {formatDate(cloudSummary?.lastStudiedAt ?? student.lastStudiedAt)}
                   </td>
                   <td className="px-6 py-3.5 text-ink-soft">{formatDate(student.lastActiveAt)}</td>
                   <td className="px-6 py-3.5">
@@ -468,7 +470,7 @@ export function OrgStudents() {
           summary={summaryOf(
             students.find((student) => student.id === detailId),
             groups,
-            pythonSummaryOf(detailId),
+            cloudSummaryOf(detailId),
           )}
           onClose={() => setParams({})}
         />
@@ -602,16 +604,16 @@ function ConfirmDialog({
 function summaryOf(
   student: OrgStudentListItem | undefined,
   groups: Group[],
-  pythonSummary: ModuleProgressSummary | undefined,
+  cloudSummary: ModuleProgressSummary | undefined,
 ) {
   if (!student) return undefined
   return {
     account: student.account,
     groupName: groups.find((group) => group.id === student.groupId)?.name ?? '未分组',
     status: student.status,
-    progressLine: pythonSummary ? formatOrgPythonProgressLine(pythonSummary) : '尚未开通',
+    progressLine: cloudSummary ? formatOrgProgressLine(cloudSummary) : '尚未开通',
     typing: student.typing,
-    lastStudiedAt: pythonSummary?.lastStudiedAt ?? student.lastStudiedAt,
+    lastStudiedAt: cloudSummary?.lastStudiedAt ?? student.lastStudiedAt,
     lastActiveAt: student.lastActiveAt,
     bindCode: student.bindCode,
     boundParentCount: student.boundParentCount,

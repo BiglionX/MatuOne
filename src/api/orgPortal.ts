@@ -2,6 +2,7 @@ import type { OrgFinanceView } from '@/types/orgFinance'
 import type { Group, ImportRowResult, Student } from '@/types'
 import type { OrgStudentProgress } from '@/types/orgProgress'
 import { callFunction } from '@/lib/backend'
+import type { ProgressModuleId } from '@/modules/ids'
 
 export { ApiError } from '@/lib/apiError'
 
@@ -46,7 +47,7 @@ export interface OrgDashboardStudent {
   lastActiveAt: string
   lastStudiedAt: string | null
   /** 机构有效开通模块，与家长端/启动器同源 */
-  enabledModules: Array<'python' | 'matupix'>
+  enabledModules: ProgressModuleId[]
 }
 
 export interface OrgDashboardView {
@@ -87,7 +88,7 @@ export interface OrgStudentListItem extends Student {
   authorizedLevels: number
   authorizedCompletedCount: number
   /** 机构有效开通模块；各模块进度只从这里派生，不再各自算 xxxEnabled */
-  enabledModules: Array<'python' | 'matupix'>
+  enabledModules: ProgressModuleId[]
   /** 三链最近学习时间；API 始终返回（无记录为 null） */
   lastStudiedAt: string | null
   typing: { wpm: number; accuracy: number } | null
@@ -108,7 +109,7 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       bound_parent_count?: number
       completed_count?: number
       authorizedCompletedCount?: number
-      enabledModules?: Array<'python' | 'matupix'>
+      enabledModules?: ProgressModuleId[]
       lastStudiedAt?: string | null
       typing_wpm?: number | null
       typing_accuracy?: number | null

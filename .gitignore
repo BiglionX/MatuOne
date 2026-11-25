@@ -14,6 +14,7 @@ supabase/.temp
 .env
 .env.*
 !.env.example
+!.env.test.example
 
 /data/
 
@@ -25,6 +26,9 @@ Thumbs.db
 # 临时诊断/截图脚本
 tmp-*
 _magic-shots
+
+# 迁移前的逻辑备份（生产数据，不进仓库）
+backups/
 
 # 本地 LDraw 源库（OMR 模型 + 官方零件 + 索引，体积很大）。
 # 只用于 scripts/build-magic-models.ts 取材，生成结果已入库，源库不入库。

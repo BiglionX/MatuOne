@@ -8,18 +8,19 @@ import { loadParentHome } from '@/api/parent'
 import { curriculumLevelByOrder } from '@/data/fullCurriculum'
 import { presentParentProgress } from '@/lib/parentProgress'
 import { getModule } from '@/modules/registry'
+import { MODULE_IDS, type ProgressModuleId } from '@/modules/ids'
 import type {
   ModuleProgressSummary,
   PythonProgressDetail,
   StudentModulesProgressView,
 } from '@/types/moduleProgress'
 import type { ParentChildView, ParentStoppedChild } from '@/types'
-import { matupixSummaryForParent } from './present'
+import { matupixSummary } from './present'
 
-const MODULE_ID = 'python' as const
+const MODULE_ID = MODULE_IDS.python
 
 function pythonMeta(): { displayName: string; gradeRange?: string } {
-  const mod = getModule('python')
+  const mod = getModule(MODULE_ID)
   return {
     displayName: mod?.display_name ?? 'Python 课外课',
     gradeRange: mod?.grade_range,
@@ -27,7 +28,7 @@ function pythonMeta(): { displayName: string; gradeRange?: string } {
 }
 
 /** pythonEnabled 在这里派生，不存在独立字段；新增模块只换 MODULE_ID。 */
-function moduleEnabled(modules: readonly ('python' | 'matupix')[]): boolean {
+function moduleEnabled(modules: readonly ProgressModuleId[]): boolean {
   return modules.includes(MODULE_ID)
 }
 
@@ -210,14 +211,6 @@ export async function listOrgPythonModuleProgress(): Promise<StudentModulesProgr
   }))
 }
 
-/** 机构本机构点名一名学生（内部仍走 listOrgStudents，不信任前端 orgId） */
-export async function getOrgStudentPythonProgress(studentId: string): Promise<ModuleProgressSummary | null> {
-  const students = await listOrgStudents()
-  const row = students.find((s) => s.id === studentId)
-  if (!row) return null
-  return mapOrgStudentRowToPythonSummary(row)
-}
-
 /** 家长：loadParentHome → 每个非 stopped 孩子 + stopped 占位（含 matupix 摘要） */
 export async function listParentPythonModuleProgress(): Promise<StudentModulesProgressView[]> {
   const home = await loadParentHome()
@@ -226,7 +219,7 @@ export async function listParentPythonModuleProgress(): Promise<StudentModulesPr
     studentName: child.student.name,
     modules: [
       mapParentChildToPythonSummary(child),
-      matupixSummaryForParent(child.enabledModules.includes('matupix')),
+      matupixSummary(child.enabledModules.includes('matupix')),
     ],
   }))
   const stopped = home.stopped.map((item, index) => ({

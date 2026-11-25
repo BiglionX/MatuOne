@@ -394,6 +394,8 @@ Deno.serve(async (req) => {
     stageLevel: position?.stage.sortOrder ?? 1,
     stageTitle: position?.stage.title ?? 'Level 1',
     stageSubtitle: '基础入门',
+    enabledModules,
+    moduleEntitled: moduleOpen,
     units,
     currentUnitId,
     entries: entries.filter((entry) => published.find((level) => level.level_id === entry.levelId)?.unit_id === currentUnitId),
