@@ -40,6 +40,8 @@ begin
   end loop;
 end $$;
 
+-- 重跑友好：先删再加。否则第二次执行会因为约束已存在而报错，迁移就不是幂等的。
+alter table public.org_entitlement drop constraint if exists org_entitlement_module_id_fkey;
 alter table public.org_entitlement add constraint org_entitlement_module_id_fkey
   foreign key (module_id) references public.teaching_module (module_id);
 
