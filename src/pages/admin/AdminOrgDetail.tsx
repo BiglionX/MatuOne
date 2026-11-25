@@ -9,8 +9,7 @@ import {
   saveBilling,
   setInvoiceStatus,
   setOrgManualStatus,
-  setOrgModuleLevel,
-  setOrgModuleRevoked,
+  setOrgModuleEnabled,
   type OrgDetail,
   type OrgModuleAdminRow,
   type ProvisionLog,
@@ -51,8 +50,10 @@ function isOrgStatus(value: string): value is OrgStatus {
   return value === 'trial' || value === 'active' || value === 'expired' || value === 'disabled'
 }
 
-/** 模块开通状态文案：已关闭 / 已过期 / 已开通 / 未开通。 */
+/** 模块开通状态文案：筹备中 / 未开通 / 已开通 / 已关闭 / 已过期。 */
 function moduleStatusLabel(row: OrgModuleAdminRow): string {
+  if (row.status === 'coming_soon') return '筹备中'
+  if (!row.granted) return '未开通'
   if (row.revokedAt) return '已关闭'
   if (!row.enabled && row.validUntil) return '已过期'
   if (row.enabled) return '已开通'
@@ -105,7 +106,12 @@ export function AdminOrgDetail() {
     setSavingModuleId(row.moduleId)
     setNotice('')
     try {
-      await setOrgModuleLevel(orgId, row.moduleId, value)
+      // 保持当前开关状态：已关闭的模块只改上限，不被顺手重开。
+      const keepEnabled = row.revokedAt == null
+      await setOrgModuleEnabled(orgId, row.moduleId, keepEnabled, {
+        maxLevel: value,
+        validUntil: row.validUntil,
+      })
       await reload()
     } catch (err: unknown) {
       setNotice(err instanceof ApiError ? err.message : '保存失败')
@@ -118,10 +124,37 @@ export function AdminOrgDetail() {
     setSavingModuleId(row.moduleId)
     setNotice('')
     try {
-      await setOrgModuleRevoked(orgId, row.moduleId, !row.revokedAt)
+      // 目标状态与当前相反：已开通就关闭（enabled=false），已关闭就重开（enabled=true）。
+      const nextEnabled = row.revokedAt != null
+      await setOrgModuleEnabled(orgId, row.moduleId, nextEnabled, {
+        maxLevel: row.maxLevel,
+        validUntil: row.validUntil,
+      })
       await reload()
     } catch (err: unknown) {
       setNotice(err instanceof ApiError ? err.message : '操作失败')
+    } finally {
+      setSavingModuleId(null)
+    }
+  }
+
+  /** 首次开通：机构还没有这个模块的开通行。有效期跟机构服务期走。 */
+  const grantModule = async (row: OrgModuleAdminRow) => {
+    const value = Number(levelDraft[row.moduleId] ?? '')
+    if (row.hasLevelLimit && (!Number.isInteger(value) || value < 1 || value > 8)) {
+      setNotice('阶段上限需要在 1–8 之间')
+      return
+    }
+    setSavingModuleId(row.moduleId)
+    setNotice('')
+    try {
+      await setOrgModuleEnabled(orgId, row.moduleId, true, {
+        maxLevel: row.hasLevelLimit ? value : null,
+        validUntil: org?.serviceEndAt ?? org?.trialExpireAt ?? null,
+      })
+      await reload()
+    } catch (err: unknown) {
+      setNotice(err instanceof ApiError ? err.message : '开通失败')
     } finally {
       setSavingModuleId(null)
     }
@@ -230,7 +263,7 @@ export function AdminOrgDetail() {
 
             <section className="card p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="text-lg font-semibold text-ink">已开通模块</h2>
+                <h2 className="text-lg font-semibold text-ink">模块开通</h2>
                 <p className="text-sm text-ink-soft">未开通的模块，学生端会提示联系机构。</p>
               </div>
               {modules.length === 0 ? (
@@ -252,7 +285,7 @@ export function AdminOrgDetail() {
                           <p className="text-sm text-ink-soft">
                             {moduleStatusLabel(row)}
                             {row.validUntil ? ` · 有效期至 ${dayLabel(row.validUntil)}` : ''}
-                            {row.hasLevelLimit ? ` · 阶段上限 ${row.maxLevel}` : ''}
+                            {row.hasLevelLimit && row.maxLevel != null ? ` · 阶段上限 ${row.maxLevel}` : ''}
                           </p>
                         </div>
                         {row.hasLevelLimit ? (
@@ -273,7 +306,7 @@ export function AdminOrgDetail() {
                           <span className="text-sm text-ink-soft">无阶段上限</span>
                         )}
                         <div className="flex gap-2">
-                          {row.hasLevelLimit && (
+                          {row.hasLevelLimit && row.granted && (
                             <button
                               type="button"
                               className="btn-secondary"
@@ -285,16 +318,31 @@ export function AdminOrgDetail() {
                               保存上限
                             </button>
                           )}
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            disabled={busy}
-                            onClick={() => {
-                              void toggleModule(row)
-                            }}
-                          >
-                            {row.revokedAt ? '重开' : '关闭'}
-                          </button>
+                          {row.status === 'coming_soon' ? (
+                            <span className="text-sm text-ink-soft">筹备中，暂不可开通</span>
+                          ) : row.granted ? (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              disabled={busy}
+                              onClick={() => {
+                                void toggleModule(row)
+                              }}
+                            >
+                              {row.revokedAt ? '重开' : '关闭'}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              disabled={busy}
+                              onClick={() => {
+                                void grantModule(row)
+                              }}
+                            >
+                              开通
+                            </button>
+                          )}
                         </div>
                       </div>
                     )

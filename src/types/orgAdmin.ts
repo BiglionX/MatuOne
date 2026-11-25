@@ -55,17 +55,21 @@ export interface ProvisionLog {
   createdAt: string
 }
 
-/** 平台侧模块视图行：候选集来自注册表，含已软关的行。 */
+/** 平台侧模块视图行：候选集来自数据库模块清单，含已软关与从未开通过的模块。 */
 export interface OrgModuleAdminRow {
   moduleId: ModuleId
   /** 课程阶段上限；该模块不按阶段授权时为 null */
   maxLevel: number | null
   validUntil: string | null
   revokedAt: string | null
+  /** 该机构是否已有开通行；没有行＝还没开通过 */
+  granted: boolean
   /** 当前是否算已开通（未软关且未过期） */
   enabled: boolean
   /** 该模块是否有阶段上限（可调） */
   hasLevelLimit: boolean
+  /** 模块清单里的状态：active 可开通，coming_soon 筹备中 */
+  status: 'active' | 'coming_soon'
 }
 
 export interface OrgDetailPayload {

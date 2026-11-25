@@ -175,7 +175,55 @@ test('teaching_module 迁移种子与共享注册表同源', () => {
   for (const module of MODULE_REGISTRY) {
     assert.ok(sql.includes(`'${module.module_id}'`), `迁移里缺少模块 ${module.module_id}`)
   }
-  assert.ok(sql.includes("references public.teaching_module"), 'org_entitlement.module_id 仍没引用 teaching_module')
+  assert.ok(sql.includes('references public.teaching_module'), 'org_entitlement.module_id 仍没引用 teaching_module')
+})
+
+test('模块清单事实源在数据库：后台读 teaching_module，并且能首次开通', () => {
+  const routes = readSource('server/routes.ts')
+  assert.ok(routes.includes('from public.teaching_module'), '后台模块列表没有读 teaching_module 清单')
+  assert.ok(routes.includes('set-module-enabled'), '后台没有首次开通模块的入口')
+  assert.ok(routes.includes('set_org_module_enabled'), '后台没有调用 set_org_module_enabled')
+
+  const migration = readSource('supabase/migrations/20261125120000_platform_module_grant.sql')
+  assert.ok(
+    migration.includes('create or replace function public.set_org_module_enabled'),
+    '缺少 set_org_module_enabled 函数',
+  )
+  assert.ok(migration.includes("'模块开通'"), '开通记录没有区分「首次开通」')
+  assert.ok(
+    migration.includes("v_module.status <> 'active'"),
+    '没有挡住筹备中的模块被开通',
+  )
+})
+
+test('模块开关只有一个入口：前端不再并排两套开关 API', () => {
+  const api = readSource('src/api/adminOrgs.ts')
+  assert.ok(api.includes('setOrgModuleEnabled'), '前端缺少统一的模块开关 API')
+  assert.ok(!api.includes('setOrgModuleLevel'), '前端还留着只调阶段上限的旧入口')
+  assert.ok(!api.includes('setOrgModuleRevoked'), '前端还留着只调软关的旧入口')
+
+  const page = readSource('src/pages/admin/AdminOrgDetail.tsx')
+  assert.ok(page.includes('grantModule'), '后台页面没有首次开通的处理')
+  assert.ok(page.includes("'coming_soon'"), '后台页面没处理筹备中的模块')
+})
+
+test('模块开关的目标状态不能写反：关闭发 false，重开发 true', () => {
+  const page = readSource('src/pages/admin/AdminOrgDetail.tsx')
+  const toggleStart = page.indexOf('const toggleModule')
+  const levelStart = page.indexOf('const saveModuleLevel')
+  const grantStart = page.indexOf('const grantModule')
+  assert.ok(toggleStart > 0 && levelStart > 0 && grantStart > toggleStart, '后台页面缺少模块开关处理函数')
+
+  const toggle = page.slice(toggleStart, grantStart)
+  assert.ok(
+    /revokedAt\s*!=\s*null/.test(toggle),
+    'toggleModule 应按目标状态取反：已关闭（revokedAt 非空）才发 enabled=true',
+  )
+  const level = page.slice(levelStart, toggleStart)
+  assert.ok(
+    /revokedAt\s*==\s*null/.test(level),
+    'saveModuleLevel 应保持当前开关状态：已关闭的模块只改上限，不被顺手重开',
+  )
 })
 
 test('页面不再按模块名分支：一律走 availability', () => {

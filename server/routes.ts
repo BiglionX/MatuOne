@@ -16,6 +16,7 @@ import {
   type ModuleEntitlementRow,
   type ProgressModuleId,
 } from '../supabase/functions/_shared/moduleEntitlements'
+import { MODULE_REGISTRY, type ModuleId } from '../supabase/functions/_shared/moduleRegistry'
 import { generateInitialPassword, hashPassword, verifyPassword } from '../supabase/functions/_shared/password'
 import { planStudentImport } from '../supabase/functions/_shared/studentImport'
 import { dbMessage, one, q } from './db'
@@ -2123,6 +2124,12 @@ function provisionSummary(action: string, detail: Record<string, unknown>): stri
   if (action === '续费') return `${detail.type ?? '续费'} · ${detail.seats ?? '—'} 席 · ¥${detail.amount ?? '—'}`
   if (action === '停用') return `停用前为${ORG_STATUS_LABEL[String(detail.previousStatus)] ?? '原状态'}`
   if (action === '恢复') return `恢复为${ORG_STATUS_LABEL[String(detail.status)] ?? '可登录'}`
+  // 模块类动作：模块清单事实源在 teaching_module，这里只用模块 id 说明，不另存一份显示名。
+  if (action === '模块开通') return `开通模块 ${detail.moduleId ?? '—'}`
+  if (action === '模块开关') return `${detail.enabled ? '开启' : '关闭'}模块 ${detail.moduleId ?? '—'}`
+  if (action === '模块调整') {
+    return `模块 ${detail.moduleId ?? '—'} 阶段上限 ${detail.previousMaxLevel ?? '—'} → ${detail.maxLevel ?? '—'}`
+  }
   return ''
 }
 
@@ -2139,27 +2146,40 @@ function jsonObject(value: unknown): Record<string, unknown> {
   return {}
 }
 
-interface OrgModuleAdminRow extends ModuleEntitlementRow {
+interface PlatformModuleRow extends ModuleEntitlementRow {
   module_id: string
+  /** 该模块是否按课程阶段授权（要带阶段上限） */
+  level_based: boolean
+  /** 模块清单里的状态：active / coming_soon */
+  status: string
+  /** 该机构是否已有开通行；没有行就是还没开通过 */
+  granted: boolean
   max_level: number | null
   valid_until: string | null
   revoked_at: string | null
 }
 
-/** 平台侧模块视图：候选集来自共享注册表，含已软关的行，不在此硬编码模块名。 */
-function platformModuleRows(rows: OrgModuleAdminRow[]) {
+/** 前端代码认识的模块 ID；数据库清单里没在前端注册的模块不展示。 */
+const KNOWN_MODULE_IDS = new Set<string>(MODULE_REGISTRY.map((module) => module.module_id))
+
+/**
+ * 平台侧模块视图：候选集来自数据库的 teaching_module（模块清单事实源），
+ * 含已软关的和从未开通过的模块；前端只展示代码注册表认得的那几个。
+ */
+function platformModuleRows(rows: PlatformModuleRow[]) {
   const now = new Date()
-  return PROGRESS_MODULE_IDS.map((moduleId) => {
-    const row = rows.find((item) => item.module_id === moduleId)
-    return {
-      moduleId,
-      maxLevel: row?.max_level ?? null,
-      validUntil: row?.valid_until ?? null,
-      revokedAt: row?.revoked_at ?? null,
-      enabled: row ? isEnabledModuleEntitlement(row, now) : false,
-      hasLevelLimit: row?.max_level != null,
-    }
-  })
+  return rows
+    .filter((row) => KNOWN_MODULE_IDS.has(row.module_id))
+    .map((row) => ({
+      moduleId: row.module_id as ModuleId,
+      maxLevel: row.max_level == null ? null : Number(row.max_level),
+      validUntil: row.valid_until ?? null,
+      revokedAt: row.revoked_at ?? null,
+      granted: row.granted,
+      enabled: row.granted && isEnabledModuleEntitlement(row, now),
+      hasLevelLimit: row.level_based,
+      status: row.status,
+    }))
 }
 
 async function orgDetail(req: ApiRequest): Promise<ApiResult> {
@@ -2198,8 +2218,18 @@ async function orgDetail(req: ApiRequest): Promise<ApiResult> {
       'select id, action, operator, detail, created_at from public.provision_log where org_id = $1 order by created_at desc',
       [orgId],
     ),
-    q<OrgModuleAdminRow>(
-      'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
+    q<PlatformModuleRow>(
+      `select tm.module_id,
+              tm.level_based,
+              tm.status,
+              (e.module_id is not null) as granted,
+              e.max_level,
+              e.valid_until,
+              e.revoked_at
+       from public.teaching_module tm
+       left join public.org_entitlement e
+         on e.org_id = $1 and e.module_id = tm.module_id
+       order by tm.module_id`,
       [orgId],
     ),
   ])
@@ -2235,7 +2265,7 @@ async function adminOps(req: ApiRequest): Promise<ApiResult> {
   const financeOk = action === 'ledger' || action === 'overview' || action === 'billing' || action === 'invoice' || action === 'quote' || action === 'detail' || action === 'settings'
   const staff = await requireStaff(req, financeOk ? ['ops', 'finance'] : ['ops'])
   if ('status' in staff) return staff
-  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成', '区域服务商不存在', '区域服务商已停用', '密码哈希无效', '请选择模块', '阶段上限', '该机构未开通', '该模块没有阶段上限', '该模块已经']
+  const known = ['记录类型', '席位数', '机构不存在', '试用记录', '手工改价', '金额', '请填写服务期', '开票状态', '收费记录', '只能停用', '线索不存在', '这个状态', '最低席位', '平台底价', '试用天数', '分成比例', '缺少平台底价', '缺少代理分成', '区域服务商不存在', '区域服务商已停用', '密码哈希无效', '请选择模块', '阶段上限', '该机构未开通', '该模块没有阶段上限', '该模块已经', '模块未登记', '筹备中']
   if (action === 'issue-agent-account') {
     const agentId = typeof req.body.agentId === 'string' ? req.body.agentId : ''
     try {
@@ -2320,12 +2350,25 @@ async function adminOps(req: ApiRequest): Promise<ApiResult> {
       return friendly(error, known, '操作失败')
     }
   }
-  if (action === 'set-module-level' || action === 'set-module-revoked') {
+  if (action === 'set-module-enabled' || action === 'set-module-level' || action === 'set-module-revoked') {
     const orgId = typeof req.body.orgId === 'string' ? req.body.orgId.trim() : ''
     if (!STUDENT_UUID.test(orgId)) return fail(404, '机构不存在')
     const moduleId = typeof req.body.moduleId === 'string' ? req.body.moduleId.trim() : ''
     try {
-      if (action === 'set-module-level') {
+      if (action === 'set-module-enabled') {
+        // 首次开通 / 重开 / 关闭统一入口：没有开通行就新建，有则改状态。
+        const enabled = Boolean(req.body.enabled)
+        const maxLevel = req.body.maxLevel == null ? null : Number(req.body.maxLevel)
+        const validUntil = typeof req.body.validUntil === 'string' && req.body.validUntil ? req.body.validUntil : null
+        await q('select public.set_org_module_enabled($1, $2, $3, $4, $5::timestamptz, $6)', [
+          orgId,
+          moduleId,
+          enabled,
+          maxLevel,
+          validUntil,
+          staff.id,
+        ])
+      } else if (action === 'set-module-level') {
         await q('select public.set_org_module_level($1, $2, $3, $4)', [
           orgId,
           moduleId,

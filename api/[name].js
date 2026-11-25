@@ -61416,6 +61416,11 @@ function provisionSummary(action, detail) {
   if (action === "\u7EED\u8D39") return `${detail.type ?? "\u7EED\u8D39"} \xB7 ${detail.seats ?? "\u2014"} \u5E2D \xB7 \xA5${detail.amount ?? "\u2014"}`;
   if (action === "\u505C\u7528") return `\u505C\u7528\u524D\u4E3A${ORG_STATUS_LABEL[String(detail.previousStatus)] ?? "\u539F\u72B6\u6001"}`;
   if (action === "\u6062\u590D") return `\u6062\u590D\u4E3A${ORG_STATUS_LABEL[String(detail.status)] ?? "\u53EF\u767B\u5F55"}`;
+  if (action === "\u6A21\u5757\u5F00\u901A") return `\u5F00\u901A\u6A21\u5757 ${detail.moduleId ?? "\u2014"}`;
+  if (action === "\u6A21\u5757\u5F00\u5173") return `${detail.enabled ? "\u5F00\u542F" : "\u5173\u95ED"}\u6A21\u5757 ${detail.moduleId ?? "\u2014"}`;
+  if (action === "\u6A21\u5757\u8C03\u6574") {
+    return `\u6A21\u5757 ${detail.moduleId ?? "\u2014"} \u9636\u6BB5\u4E0A\u9650 ${detail.previousMaxLevel ?? "\u2014"} \u2192 ${detail.maxLevel ?? "\u2014"}`;
+  }
   return "";
 }
 function jsonObject(value) {
@@ -61430,19 +61435,19 @@ function jsonObject(value) {
   }
   return {};
 }
+var KNOWN_MODULE_IDS = new Set(MODULE_REGISTRY.map((module) => module.module_id));
 function platformModuleRows(rows) {
   const now = /* @__PURE__ */ new Date();
-  return PROGRESS_MODULE_IDS.map((moduleId) => {
-    const row = rows.find((item) => item.module_id === moduleId);
-    return {
-      moduleId,
-      maxLevel: row?.max_level ?? null,
-      validUntil: row?.valid_until ?? null,
-      revokedAt: row?.revoked_at ?? null,
-      enabled: row ? isEnabledModuleEntitlement(row, now) : false,
-      hasLevelLimit: row?.max_level != null
-    };
-  });
+  return rows.filter((row) => KNOWN_MODULE_IDS.has(row.module_id)).map((row) => ({
+    moduleId: row.module_id,
+    maxLevel: row.max_level == null ? null : Number(row.max_level),
+    validUntil: row.valid_until ?? null,
+    revokedAt: row.revoked_at ?? null,
+    granted: row.granted,
+    enabled: row.granted && isEnabledModuleEntitlement(row, now),
+    hasLevelLimit: row.level_based,
+    status: row.status
+  }));
 }
 async function orgDetail(req) {
   const orgId = typeof req.body.orgId === "string" ? req.body.orgId.trim() : "";
@@ -61469,7 +61474,17 @@ async function orgDetail(req) {
       [orgId]
     ),
     q(
-      "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
+      `select tm.module_id,
+              tm.level_based,
+              tm.status,
+              (e.module_id is not null) as granted,
+              e.max_level,
+              e.valid_until,
+              e.revoked_at
+       from public.teaching_module tm
+       left join public.org_entitlement e
+         on e.org_id = $1 and e.module_id = tm.module_id
+       order by tm.module_id`,
       [orgId]
     )
   ]);
@@ -61504,7 +61519,7 @@ async function adminOps(req) {
   const financeOk = action === "ledger" || action === "overview" || action === "billing" || action === "invoice" || action === "quote" || action === "detail" || action === "settings";
   const staff = await requireStaff(req, financeOk ? ["ops", "finance"] : ["ops"]);
   if ("status" in staff) return staff;
-  const known = ["\u8BB0\u5F55\u7C7B\u578B", "\u5E2D\u4F4D\u6570", "\u673A\u6784\u4E0D\u5B58\u5728", "\u8BD5\u7528\u8BB0\u5F55", "\u624B\u5DE5\u6539\u4EF7", "\u91D1\u989D", "\u8BF7\u586B\u5199\u670D\u52A1\u671F", "\u5F00\u7968\u72B6\u6001", "\u6536\u8D39\u8BB0\u5F55", "\u53EA\u80FD\u505C\u7528", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8FD9\u4E2A\u72B6\u6001", "\u6700\u4F4E\u5E2D\u4F4D", "\u5E73\u53F0\u5E95\u4EF7", "\u8BD5\u7528\u5929\u6570", "\u5206\u6210\u6BD4\u4F8B", "\u7F3A\u5C11\u5E73\u53F0\u5E95\u4EF7", "\u7F3A\u5C11\u4EE3\u7406\u5206\u6210", "\u533A\u57DF\u670D\u52A1\u5546\u4E0D\u5B58\u5728", "\u533A\u57DF\u670D\u52A1\u5546\u5DF2\u505C\u7528", "\u5BC6\u7801\u54C8\u5E0C\u65E0\u6548", "\u8BF7\u9009\u62E9\u6A21\u5757", "\u9636\u6BB5\u4E0A\u9650", "\u8BE5\u673A\u6784\u672A\u5F00\u901A", "\u8BE5\u6A21\u5757\u6CA1\u6709\u9636\u6BB5\u4E0A\u9650", "\u8BE5\u6A21\u5757\u5DF2\u7ECF"];
+  const known = ["\u8BB0\u5F55\u7C7B\u578B", "\u5E2D\u4F4D\u6570", "\u673A\u6784\u4E0D\u5B58\u5728", "\u8BD5\u7528\u8BB0\u5F55", "\u624B\u5DE5\u6539\u4EF7", "\u91D1\u989D", "\u8BF7\u586B\u5199\u670D\u52A1\u671F", "\u5F00\u7968\u72B6\u6001", "\u6536\u8D39\u8BB0\u5F55", "\u53EA\u80FD\u505C\u7528", "\u7EBF\u7D22\u4E0D\u5B58\u5728", "\u8FD9\u4E2A\u72B6\u6001", "\u6700\u4F4E\u5E2D\u4F4D", "\u5E73\u53F0\u5E95\u4EF7", "\u8BD5\u7528\u5929\u6570", "\u5206\u6210\u6BD4\u4F8B", "\u7F3A\u5C11\u5E73\u53F0\u5E95\u4EF7", "\u7F3A\u5C11\u4EE3\u7406\u5206\u6210", "\u533A\u57DF\u670D\u52A1\u5546\u4E0D\u5B58\u5728", "\u533A\u57DF\u670D\u52A1\u5546\u5DF2\u505C\u7528", "\u5BC6\u7801\u54C8\u5E0C\u65E0\u6548", "\u8BF7\u9009\u62E9\u6A21\u5757", "\u9636\u6BB5\u4E0A\u9650", "\u8BE5\u673A\u6784\u672A\u5F00\u901A", "\u8BE5\u6A21\u5757\u6CA1\u6709\u9636\u6BB5\u4E0A\u9650", "\u8BE5\u6A21\u5757\u5DF2\u7ECF", "\u6A21\u5757\u672A\u767B\u8BB0", "\u7B79\u5907\u4E2D"];
   if (action === "issue-agent-account") {
     const agentId = typeof req.body.agentId === "string" ? req.body.agentId : "";
     try {
@@ -61589,12 +61604,24 @@ async function adminOps(req) {
       return friendly(error, known, "\u64CD\u4F5C\u5931\u8D25");
     }
   }
-  if (action === "set-module-level" || action === "set-module-revoked") {
+  if (action === "set-module-enabled" || action === "set-module-level" || action === "set-module-revoked") {
     const orgId = typeof req.body.orgId === "string" ? req.body.orgId.trim() : "";
     if (!STUDENT_UUID.test(orgId)) return fail4(404, "\u673A\u6784\u4E0D\u5B58\u5728");
     const moduleId = typeof req.body.moduleId === "string" ? req.body.moduleId.trim() : "";
     try {
-      if (action === "set-module-level") {
+      if (action === "set-module-enabled") {
+        const enabled = Boolean(req.body.enabled);
+        const maxLevel = req.body.maxLevel == null ? null : Number(req.body.maxLevel);
+        const validUntil = typeof req.body.validUntil === "string" && req.body.validUntil ? req.body.validUntil : null;
+        await q("select public.set_org_module_enabled($1, $2, $3, $4, $5::timestamptz, $6)", [
+          orgId,
+          moduleId,
+          enabled,
+          maxLevel,
+          validUntil,
+          staff.id
+        ]);
+      } else if (action === "set-module-level") {
         await q("select public.set_org_module_level($1, $2, $3, $4)", [
           orgId,
           moduleId,

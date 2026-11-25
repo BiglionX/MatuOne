@@ -154,12 +154,26 @@ export function setOrgManualStatus(orgId: string, manualAction: '停用' | '恢�
   return callFunction('admin-ops', { action: 'status', orgId, manualAction }, { role: 'platform' })
 }
 
-/** 平台调整模块的课程阶段上限（仅按阶段授权的模块可调）。 */
-export function setOrgModuleLevel(orgId: string, moduleId: ModuleId, maxLevel: number): Promise<void> {
-  return callFunction('admin-ops', { action: 'set-module-level', orgId, moduleId, maxLevel }, { role: 'platform' })
-}
-
-/** 平台软关 / 重开模块（软关，不物理删除）。 */
-export function setOrgModuleRevoked(orgId: string, moduleId: ModuleId, revoked: boolean): Promise<void> {
-  return callFunction('admin-ops', { action: 'set-module-revoked', orgId, moduleId, revoked }, { role: 'platform' })
+/**
+ * 平台开关模块的开通状态：首次开通 / 重开 / 关闭走同一个入口。
+ * maxLevel 只对按阶段授权的模块有意义；validUntil 为空表示不设有效期。
+ */
+export function setOrgModuleEnabled(
+  orgId: string,
+  moduleId: ModuleId,
+  enabled: boolean,
+  options: { maxLevel?: number | null; validUntil?: string | null } = {},
+): Promise<void> {
+  return callFunction(
+    'admin-ops',
+    {
+      action: 'set-module-enabled',
+      orgId,
+      moduleId,
+      enabled,
+      maxLevel: options.maxLevel ?? null,
+      validUntil: options.validUntil ?? null,
+    },
+    { role: 'platform' },
+  )
 }
