@@ -4,6 +4,32 @@ export type ModuleBlockArgType = 'number' | 'string' | 'boolean' | 'select'
 export type ModuleComparisonOperator = '==' | '!=' | '<' | '<=' | '>' | '>='
 export type ModuleScalar = string | number | boolean
 
+/**
+ * 控制积木的分支形状。
+ *
+ * then：只有「成立时」一支，嵌套体放在 BODY 输入里。
+ * then_else：还有「不成立时」一支，成立分支放 BODY，不成立分支放 ELSE。
+ */
+export type ModuleBlockBranchShape = 'then' | 'then_else'
+
+/**
+ * 控制积木的分支形状登记表，按积木类型固定。
+ *
+ * 形状不能由关卡正文随意改：Blockly 的积木定义按类型全局缓存，
+ * 同一个类型在两关里形状不一致，工作区的插槽就会对不上。
+ */
+const BLOCK_BRANCH_SHAPES: Record<string, ModuleBlockBranchShape> = {
+  repeat: 'then',
+  if_wall_ahead: 'then',
+  if_path_ahead: 'then_else',
+  if_else: 'then_else',
+}
+
+/** 取控制积木的分支形状；没登记过的类型按单分支处理。 */
+export function branchShapeOf(blockType: string): ModuleBlockBranchShape {
+  return BLOCK_BRANCH_SHAPES[blockType] ?? 'then'
+}
+
 /** 场景形态：grid 网格闯关 / stage 自由舞台。 */
 export type ModuleSceneType = 'grid' | 'stage'
 
@@ -25,6 +51,8 @@ export interface ModuleAvailableBlock {
   kind: ModuleBlockKind
   color?: string
   args: ModuleBlockArgDefinition[]
+  /** 控制积木的分支形状，由积木类型固定；动作积木恒为 then。 */
+  branches: ModuleBlockBranchShape
 }
 
 export interface GridPosition {
@@ -38,6 +66,36 @@ export interface ModuleLevelEntity {
   x: number
   y: number
   initial_state?: Record<string, ModuleScalar>
+}
+
+/**
+ * 提示的引导目标。
+ *
+ * workspace 盯着工作区，run 盯着运行按钮，block 盯着某种积木。
+ * 小精灵弹提示时按这个字段高亮，不用在前端写死「该拖哪一块」。
+ */
+export interface ModuleHintFocus {
+  target: 'workspace' | 'run' | 'block'
+  /** target 为 block 时必填：积木类型，例如 move_forward。 */
+  blockType?: string
+}
+
+/** 关卡视觉开关。 */
+export interface ModuleLevelVisuals {
+  /** 画出机器人走过的轨迹，用来做「画直线」这类任务。 */
+  show_trail?: boolean
+}
+
+/** 课内打字活动；目标串由 TypingTrainer 逐组结算。 */
+export interface ModuleTypingActivity {
+  targets: string[]
+  /** true 表示打字没完成前不进入积木挑战。 */
+  required?: boolean
+}
+
+/** 课前/课后的附加活动，目前只有打字一种。 */
+export interface ModuleLevelActivities {
+  typing?: ModuleTypingActivity
 }
 
 /** 网格场景。字段和早期的 body.map 完全一致，只是换了位置。 */
@@ -111,7 +169,13 @@ export interface ModuleBlockInstance {
   type: string
   args: Record<string, ModuleScalar>
   next?: ModuleBlockInstance | null
-  children?: ModuleBlockInstance[]
+  /**
+   * 控制积木的分支体。
+   *
+   * then 形状：一串链头，按顺序依次执行。
+   * then_else 形状：固定两项，[成立分支, 不成立分支]，空分支写 null。
+   */
+  children?: (ModuleBlockInstance | null)[]
 }
 
 export interface ModuleLevelBody {
@@ -133,7 +197,11 @@ export interface ModuleLevelBody {
     stop_on_success: boolean
     move_duration_ms: number
   }
-  hints: { trigger: string; text: string }[]
+  hints: { trigger: string; text: string; focus?: ModuleHintFocus }[]
+  /** 视觉开关；旧关卡没有这一项时按默认值渲染。 */
+  visuals?: ModuleLevelVisuals
+  /** 附加活动；旧关卡没有这一项时只有积木挑战。 */
+  activities?: ModuleLevelActivities
   completion: {
     stars: 0 | 1 | 2 | 3
     success_text: string
@@ -257,6 +325,14 @@ function parseAvailableBlocks(value: unknown): ModuleAvailableBlock[] {
       category: string(row.category, `${path}.category`),
       kind: kind as ModuleBlockKind,
       args,
+      branches: branchShapeOf(type),
+    }
+    if (row.branches !== undefined) {
+      // 正文可以写明形状，但只能和登记表一致，写错了直接报错。
+      const declared = string(row.branches, `${path}.branches`)
+      if (declared !== block.branches) {
+        fail(`${path}.branches`, `积木 ${type} 的分支形状固定为 ${block.branches}`)
+      }
     }
     if (row.color !== undefined) block.color = string(row.color, `${path}.color`)
     return block
@@ -465,7 +541,10 @@ function parseBlockInstance(
   const block: ModuleBlockInstance = { id: string(row.id, `${path}.id`), type, args }
   if (row.next !== undefined && row.next !== null) block.next = parseBlockInstance(row.next, `${path}.next`, available)
   if (row.children !== undefined) {
-    block.children = array(row.children, `${path}.children`).map((child, index) => parseBlockInstance(child, `${path}.children[${index}]`, available))
+    block.children = array(row.children, `${path}.children`).map((child, index) =>
+      // then_else 形状的积木用 null 表示空分支。
+      child === null ? null : parseBlockInstance(child, `${path}.children[${index}]`, available),
+    )
   }
   return block
 }
@@ -493,6 +572,18 @@ function parseRuntime(value: unknown): ModuleLevelBody['runtime'] {
   }
 }
 
+function parseHintFocus(value: unknown, path: string): ModuleHintFocus {
+  const row = record(value, path)
+  const target = string(row.target, `${path}.target`)
+  if (target !== 'workspace' && target !== 'run' && target !== 'block') {
+    fail(`${path}.target`, '必须是 workspace、run 或 block')
+  }
+  const focus: ModuleHintFocus = { target }
+  if (row.blockType !== undefined) focus.blockType = string(row.blockType, `${path}.blockType`)
+  if (target === 'block' && !focus.blockType) fail(`${path}.blockType`, '目标是 block 时必须给出积木类型')
+  return focus
+}
+
 function parseHints(value: unknown): ModuleLevelBody['hints'] {
   const triggers = new Set<string>()
   return array(value, 'hints').map((item, index) => {
@@ -501,8 +592,35 @@ function parseHints(value: unknown): ModuleLevelBody['hints'] {
     const trigger = string(row.trigger, `${path}.trigger`)
     if (triggers.has(trigger)) fail(`${path}.trigger`, '提示触发条件重复')
     triggers.add(trigger)
-    return { trigger, text: string(row.text, `${path}.text`) }
+    const hint: ModuleLevelBody['hints'][number] = { trigger, text: string(row.text, `${path}.text`) }
+    if (row.focus !== undefined && row.focus !== null) hint.focus = parseHintFocus(row.focus, `${path}.focus`)
+    return hint
   })
+}
+
+function parseVisuals(value: unknown): ModuleLevelVisuals | undefined {
+  if (value === undefined || value === null) return undefined
+  const row = record(value, 'visuals')
+  const visuals: ModuleLevelVisuals = {}
+  if (row.show_trail !== undefined) visuals.show_trail = boolean(row.show_trail, 'visuals.show_trail')
+  return visuals
+}
+
+function parseActivities(value: unknown): ModuleLevelActivities | undefined {
+  if (value === undefined || value === null) return undefined
+  const row = record(value, 'activities')
+  const activities: ModuleLevelActivities = {}
+  if (row.typing !== undefined && row.typing !== null) {
+    const typingRow = record(row.typing, 'activities.typing')
+    const targets = array(typingRow.targets, 'activities.typing.targets').map((target, index) =>
+      string(target, `activities.typing.targets[${index}]`),
+    )
+    if (!targets.length) fail('activities.typing.targets', '不能为空')
+    const typing: ModuleTypingActivity = { targets }
+    if (typingRow.required !== undefined) typing.required = boolean(typingRow.required, 'activities.typing.required')
+    activities.typing = typing
+  }
+  return activities
 }
 
 function parseCompletion(value: unknown): ModuleLevelBody['completion'] {
@@ -537,7 +655,7 @@ export function parseModuleLevelBody(raw: unknown): ModuleLevelBody {
     scene = parseScene(row.scene, sceneType)
   }
 
-  return {
+  const body: ModuleLevelBody = {
     schema_version: version,
     scene_type: sceneType,
     scene,
@@ -548,6 +666,11 @@ export function parseModuleLevelBody(raw: unknown): ModuleLevelBody {
     hints: parseHints(row.hints),
     completion: parseCompletion(row.completion),
   }
+  const visuals = parseVisuals(row.visuals)
+  if (visuals) body.visuals = visuals
+  const activities = parseActivities(row.activities)
+  if (activities) body.activities = activities
+  return body
 }
 
 /** 网格关卡取场景；舞台关卡没有网格场景时直接报错。 */

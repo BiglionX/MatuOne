@@ -1,5 +1,8 @@
+import { branchShapeOf } from './moduleLevelBody'
 import type {
   GridHeading,
+  GridPosition,
+  ModuleBlockBranchShape,
   ModuleComparisonOperator,
   ModuleGridScene,
   ModuleLevelBody,
@@ -13,7 +16,13 @@ export interface BlockExecutionNode {
   type: string
   args: Record<string, ModuleScalar>
   next?: BlockExecutionNode | null
-  children?: BlockExecutionNode[]
+  /**
+   * 控制积木的分支体。
+   *
+   * then 形状：一串链头，按顺序依次执行。
+   * then_else 形状：固定两项，[成立分支, 不成立分支]，空分支写 null。
+   */
+  children?: (BlockExecutionNode | null)[]
 }
 
 export interface ActorState {
@@ -21,6 +30,10 @@ export interface ActorState {
   y: number
   heading: GridHeading
   completed: boolean
+  /** 已经吃掉的收集物 id；每次运行重新开始，不跨关卡保存。 */
+  collectedEntityIds: string[]
+  /** 机器人走过的格子，用来画轨迹。 */
+  trail: GridPosition[]
 }
 
 export interface ExecutionFrame {
@@ -91,8 +104,15 @@ export function evaluateModuleSuccess(check: ModuleSuccessCheck, body: ModuleLev
   return check.conditions.some((condition) => evaluateModuleSuccess(condition, body, state))
 }
 
+/** 可以被角色吃掉的实体类型；其余实体只是场景装饰。 */
+const COLLECTIBLE_TYPES = new Set(['coin', 'star', 'gem', 'heart'])
+
 function copyState(state: ActorState): ActorState {
-  return { ...state }
+  return {
+    ...state,
+    collectedEntityIds: [...state.collectedEntityIds],
+    trail: [...state.trail],
+  }
 }
 
 /** 工作区积木总数：顶层积木 + next 链 + 嵌套子块。和 Blockly 自己的 maxBlocks 口径一致。 */
@@ -130,6 +150,7 @@ export function interpretModuleLevel(body: ModuleLevelBody, blocks: readonly (Bl
   }
 
   const availableTypes = new Set(body.available_blocks.map((block) => block.type))
+  const availableByType = new Map(body.available_blocks.map((block) => [block.type, block]))
   const steps: ExecutionFrame[] = []
   let state = createInitialActorState(body)
   let failure: ModuleExecutionResult['failure']
@@ -158,6 +179,18 @@ export function interpretModuleLevel(body: ModuleLevelBody, blocks: readonly (Bl
       }
     } else {
       state = { ...state, x: next.x, y: next.y }
+      // 走到格子上了：记轨迹，并吃掉这一格上的收集物。
+      state.trail = [...state.trail, { x: next.x, y: next.y }]
+      const picked = scene.entities.filter(
+        (entity) =>
+          COLLECTIBLE_TYPES.has(entity.type) &&
+          entity.x === next.x &&
+          entity.y === next.y &&
+          !state.collectedEntityIds.includes(entity.id),
+      )
+      if (picked.length) {
+        state.collectedEntityIds = [...state.collectedEntityIds, ...picked.map((entity) => entity.id)]
+      }
     }
 
     state.completed = evaluateModuleSuccess(body.success_check, body, state)
@@ -177,6 +210,13 @@ export function interpretModuleLevel(body: ModuleLevelBody, blocks: readonly (Bl
     return scene.obstacles.some((item) => item.x === next.x && item.y === next.y)
   }
 
+  /** 前面有路：正前方那一格在地图里，而且不是障碍物。 */
+  const pathAhead = (): boolean => !wallAhead()
+
+  /** 控制积木的分支形状：正文声明优先，没声明就按登记表。 */
+  const branchShape = (type: string): ModuleBlockBranchShape =>
+    availableByType.get(type)?.branches ?? branchShapeOf(type)
+
   const executeChain = (first: BlockExecutionNode | null | undefined) => {
     let node = first
     while (node) {
@@ -195,9 +235,25 @@ export function interpretModuleLevel(body: ModuleLevelBody, blocks: readonly (Bl
    */
   const executeChildren = (node: BlockExecutionNode) => {
     for (const child of node.children ?? []) {
+      if (!child) continue
       executeChain(child)
       if (failure || truncated || stopOnSuccess()) return
     }
+  }
+
+  /**
+   * 执行条件积木的分支。
+   *
+   * then 形状：条件成立就跑整个嵌套体。
+   * then_else 形状：children[0] 是成立分支，children[1] 是不成立分支。
+   */
+  const executeBranch = (node: BlockExecutionNode, taken: boolean) => {
+    if (branchShape(node.type) === 'then_else') {
+      const branch = taken ? node.children?.[0] ?? null : node.children?.[1] ?? null
+      executeChain(branch)
+      return
+    }
+    if (taken) executeChildren(node)
   }
 
   const executeNode = (node: BlockExecutionNode) => {
@@ -214,7 +270,19 @@ export function interpretModuleLevel(body: ModuleLevelBody, blocks: readonly (Bl
       return
     }
     if (node.type === 'if_wall_ahead') {
-      if (wallAhead()) executeChildren(node)
+      executeBranch(node, wallAhead())
+      return
+    }
+    if (node.type === 'if_path_ahead') {
+      executeBranch(node, pathAhead())
+      return
+    }
+    if (node.type === 'if_else') {
+      const condition = node.args.condition
+      if (condition !== 'wall_ahead' && condition !== 'path_ahead') {
+        throw new Error(`关卡 body 校验失败：if_else.condition 只能是 wall_ahead 或 path_ahead，实际是 ${String(condition)}`)
+      }
+      executeBranch(node, condition === 'wall_ahead' ? wallAhead() : pathAhead())
       return
     }
     if (outOfSteps()) {
@@ -265,6 +333,10 @@ export function createInitialActorState(body: ModuleLevelBody): ActorState {
     y: scene.start.y,
     heading: scene.start.heading,
     completed: false,
+    collectedEntityIds: scene.entities
+      .filter((entity) => COLLECTIBLE_TYPES.has(entity.type) && entity.x === scene.start.x && entity.y === scene.start.y)
+      .map((entity) => entity.id),
+    trail: [{ x: scene.start.x, y: scene.start.y }],
   }
   state.completed = evaluateModuleSuccess(body.success_check, body, state)
   return state

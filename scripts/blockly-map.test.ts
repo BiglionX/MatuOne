@@ -6,6 +6,8 @@ import { applyLinearUnlock, summarizeBlocklyProgress } from '../server/blocklyMa
 
 const OUTLINE_MIGRATION = 'supabase/migrations/20261126120000_blockly_curriculum_outline.sql'
 const RENAME_MIGRATION = 'supabase/migrations/20261126140000_blockly_term_level_names.sql'
+/** 第一学期扩容到 80 关的迁移，地图结构的新口径以它为准。 */
+const EXPAND_MIGRATION = 'supabase/migrations/20261126160000_blockly_level_1_80_generated.sql'
 
 /** 从大纲迁移里抠出学期、单元、关卡三层，验证地图要渲染的数据本身是自洽的。 */
 function readOutline(): { terms: string[]; units: { unitId: string; termId: string }[]; levels: { levelId: string; sortOrder: number; termId: string; unitId: string }[] } {
@@ -185,4 +187,38 @@ test('改名迁移与大纲迁移的学期名一致', () => {
   const renameSql = readFileSync(path.join(process.cwd(), RENAME_MIGRATION), 'utf8')
   const titles = [...renameSql.matchAll(/set title = '([^']+)'/g)].map((match) => match[1])
   assert.deepEqual(titles, ['Level 0', 'Level 1', 'Level 2', 'Level 3'])
+})
+
+test('扩容迁移把第一学期改成 80 课、5 个单元各 16 课', () => {
+  const sql = readFileSync(path.join(process.cwd(), EXPAND_MIGRATION), 'utf8')
+  assert.match(sql, /level_cap = 80,/)
+  assert.match(sql, /weeks = 16,/)
+
+  const units = [...sql.matchAll(/\('blockly', '(blk-g1-fall-u\d)', 'blk-g1-fall', '([^']+)'/g)].map((match) => match[1])
+  assert.equal(units.length, 5)
+  const caps = [...sql.matchAll(/array\[[^\]]*\], 16, (\d)\)/g)].map((match) => match[1])
+  assert.deepEqual(caps, ['1', '2', '3', '4', '5'])
+})
+
+test('扩容迁移把后三个学期的占位关卡挪到预留号段，不跟第一学期撞号', () => {
+  const sql = readFileSync(path.join(process.cwd(), EXPAND_MIGRATION), 'utf8')
+  // 第一学期用掉 001-080，后三个学期分别挪到 081-095 / 161-175 / 241-255。
+  const renames = [...sql.matchAll(/level_id = '(blk-\d+)',\s*\n\s*sort_order = (\d+),/g)].map((match) => ({
+    levelId: match[1],
+    sortOrder: Number(match[2]),
+  }))
+  assert.equal(renames.length, 45)
+  assert.deepEqual(
+    renames.map((item) => item.sortOrder),
+    [
+      ...Array.from({ length: 15 }, (_, index) => index + 81),
+      ...Array.from({ length: 15 }, (_, index) => index + 161),
+      ...Array.from({ length: 15 }, (_, index) => index + 241),
+    ],
+  )
+  // 挪走之后，第一学期的 001-080 号段里不再有别的学期的关卡。
+  for (const levelId of renames.map((item) => item.levelId)) {
+    const order = Number(levelId.slice(4))
+    assert.ok(order > 80, `${levelId} 还压在第一学期的 001-080 号段里`)
+  }
 })
