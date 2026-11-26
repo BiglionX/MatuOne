@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import type { Block, Field, MenuOption, WorkspaceSvg } from 'blockly'
+import type { Block, Field, Flyout, MenuOption, WorkspaceSvg } from 'blockly'
 import type {
   ModuleAvailableBlock,
   ModuleBlockArgDefinition,
@@ -388,6 +388,13 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
           move: { scrollbars: true, drag: true, wheel: true },
         })
         workspaceRef.current = workspace
+        // Blockly 13 的焦点管理在拖拽开始时会把焦点移到拖拽层，toolbox 随之失焦，
+        // Blockly 就把 flyout 自动收起来。结果是孩子拖走一块积木后工具箱空了，
+        // 必须再点一次分类才能接着拖——托辅班的孩子多半直接放弃。
+        // 关掉 autoClose 让工具箱常驻，积木随时能继续拖。
+        // getFlyout() 的静态类型是 IFlyout，setAutoClose 只在 FlyoutBase 上有。
+        const flyout = workspace.getToolbox()?.getFlyout() as Flyout | null
+        flyout?.setAutoClose(false)
         // 铺初始积木不是学生操作，别把闲置计时白重置一次。
         suppressRef.current = true
         loadInitialBlocks(workspace, initialBlocks, availableBlocks)

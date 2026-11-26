@@ -161,32 +161,32 @@ async function findVisibleFlyoutBlock(page: Page): Promise<{ x: number; y: numbe
 }
 
 /**
- * 拿一块 flyout 里可见的积木。
+ * 工具箱（flyout）当前的状态：宽度和真正可见的积木数。
  *
- * Blockly 把 flyout 的块拖走后不会自动复原（blk-002 只有一个分类、一个块），
- * 所以先点分类收起、再点展开，逼 Blockly 重新 show 一次 flyout。
+ * 宽度为 0 说明工具箱被收起了——这正是 Blockly 13 的老毛病：
+ * 拖走一块积木时焦点移到拖拽层，toolbox 失焦就把 flyout 关了。
  */
-async function ensureFlyoutBlock(page: Page): Promise<{ x: number; y: number }> {
-  const direct = await findVisibleFlyoutBlock(page)
-  if (direct) return direct
-  const categories = page.locator('.blocklyToolboxCategory')
-  const total = await categories.count()
-  for (let i = 0; i < total; i += 1) {
-    await categories.nth(i).click()
-    await page.waitForTimeout(600)
-    const hit = await findVisibleFlyoutBlock(page)
-    if (hit) return hit
-    await categories.nth(i).click()
-    await page.waitForTimeout(600)
-    const again = await findVisibleFlyoutBlock(page)
-    if (again) return again
-  }
-  throw new Error('flyout 里找不到可见积木')
+async function flyoutState(page: Page): Promise<{ width: number; visible: number }> {
+  return page.evaluate(() => {
+    const host = document.querySelector('.blocklyFlyout')
+    if (!host) return { width: 0, visible: 0 }
+    const visible = Array.from(host.querySelectorAll('.blocklyDraggable')).filter((el) => {
+      const r = el.getBoundingClientRect()
+      return r.width > 4 && r.height > 4
+    }).length
+    return { width: Math.round(host.getBoundingClientRect().width), visible }
+  })
 }
 
-/** 从 flyout 里拖一块积木到工作区的指定屏幕坐标。 */
+/**
+ * 从 flyout 里拖一块积木到工作区的指定屏幕坐标。
+ *
+ * 工具箱是常驻的（见 BlocklyWorkspace 里的 setAutoClose(false)），
+ * 所以拖走一块之后 flyout 里那块还在原位，不用再点一次分类才能接着拖。
+ */
 async function dragBlockFromFlyout(page: Page, toX: number, toY: number): Promise<void> {
-  const from = await ensureFlyoutBlock(page)
+  const from = await findVisibleFlyoutBlock(page)
+  if (!from) throw new Error('工具箱里找不到可拖的积木')
   await page.mouse.move(from.x, from.y)
   await page.mouse.down()
   await page.mouse.move(from.x + 12, from.y + 12, { steps: 5 })
@@ -464,7 +464,7 @@ test.describe('绘本情境导入与课前复习', () => {
  * 顺便验证拖出来的两块能自动吸附成一条链。
  */
 test.describe('真实拖积木', () => {
-  test('从工具箱拖两块「前进」连起来，能走到终点', async ({ page }) => {
+  test('拖走一块后工具箱不收起，可以直接接着拖', async ({ page }) => {
     await loginStudent(page)
     // blk-002 只有一个分类、一块积木（前进），正好用来验证拖拽 + 吸附。
     await stubLevel(page, 'blk-002')
@@ -477,11 +477,23 @@ test.describe('真实拖积木', () => {
       return { x: r.x, y: r.y, width: r.width, height: r.height }
     })
 
+    // 工具箱一进来就是开着的，「前进」直接看得见，不用先点【动作】。
+    const before = await flyoutState(page)
+    expect(before.width).toBeGreaterThan(0)
+    expect(before.visible).toBeGreaterThan(0)
+
     await dragBlockFromFlyout(page, canvas.x + canvas.width * 0.3, canvas.y + canvas.height * 0.25)
     let placed = await workspaceBlocks(page)
     expect(placed).toHaveLength(1)
 
-    // 第二块落在第一块底边下方，Blockly 会自动吸附成一条链。
+    // 关键回归点：拖走一块之后工具箱不能被收起。
+    // Blockly 13 会在拖拽开始时把焦点移到拖拽层，toolbox 随之失焦并自动关闭 flyout，
+    // 结果是孩子必须再点一次分类才能接着拖。这里锁住「工具箱常驻」这个行为。
+    const after = await flyoutState(page)
+    expect(after.width).toBeGreaterThan(0)
+    expect(after.visible).toBeGreaterThan(0)
+
+    // 第二块：全程不点分类，直接接着拖，并自动吸附成一条链。
     const first = placed[0]
     await dragBlockFromFlyout(page, first.x + first.w / 2, first.y + first.h + 16)
     placed = await workspaceBlocks(page)
