@@ -5,6 +5,7 @@ import test from 'node:test'
 import { applyLinearUnlock, summarizeBlocklyProgress } from '../server/blocklyMap.ts'
 
 const OUTLINE_MIGRATION = 'supabase/migrations/20261126120000_blockly_curriculum_outline.sql'
+const RENAME_MIGRATION = 'supabase/migrations/20261126140000_blockly_term_level_names.sql'
 
 /** 从大纲迁移里抠出学期、单元、关卡三层，验证地图要渲染的数据本身是自洽的。 */
 function readOutline(): { terms: string[]; units: { unitId: string; termId: string }[]; levels: { levelId: string; sortOrder: number; termId: string; unitId: string }[] } {
@@ -21,6 +22,16 @@ function readOutline(): { terms: string[]; units: { unitId: string; termId: stri
     unitId: match[4],
   }))
   return { terms, units, levels }
+}
+
+/** 从大纲迁移里抠出学期展示名，确认已经改成 Level 序列、不带年级语义。 */
+function readTermTitles(): { termId: string; title: string; stageLabel: string }[] {
+  const sql = readFileSync(path.join(process.cwd(), OUTLINE_MIGRATION), 'utf8')
+  return [...sql.matchAll(/\('blockly', '(blk-g\d-[a-z]+)', '([^']+)', '([^']+)', '(fall|spring)'/g)].map((match) => ({
+    termId: match[1],
+    title: match[2],
+    stageLabel: match[3],
+  }))
 }
 
 test('第一关永远解锁，后面要等前一关通关', () => {
@@ -162,4 +173,16 @@ test('批量汇总按学生隔离，且每名学生都有默认值', () => {
   assert.equal(result.size, 2)
   assert.deepEqual(result.get('student-a'), { completedCount: 1, currentLevelTitle: 'L 型路线' })
   assert.deepEqual(result.get('student-b'), { completedCount: 1, currentLevelTitle: '直走' })
+})
+
+test('学期展示名是 Level 序列，不再出现年级语义', () => {
+  const terms = readTermTitles()
+  assert.deepEqual(terms.map((term) => term.title), ['Level 0', 'Level 1', 'Level 2', 'Level 3'])
+  assert.deepEqual([...new Set(terms.map((term) => term.stageLabel))], ['Blockly 课程线'])
+})
+
+test('改名迁移与大纲迁移的学期名一致', () => {
+  const renameSql = readFileSync(path.join(process.cwd(), RENAME_MIGRATION), 'utf8')
+  const titles = [...renameSql.matchAll(/set title = '([^']+)'/g)].map((match) => match[1])
+  assert.deepEqual(titles, ['Level 0', 'Level 1', 'Level 2', 'Level 3'])
 })

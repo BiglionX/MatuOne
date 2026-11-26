@@ -6,10 +6,10 @@
 --   课时 level_id  blk-001 … blk-060，课程线内线性编号
 --
 -- 学期划分
---   一年级上 001-015  计算思维启蒙   顺序 / 转弯 / 循环 / 条件      网格闯关
---   一年级下 016-030  逻辑进阶       变量计分 / 多条件 / 自定义函数  带交互网格
---   二年级上 031-045  简单游戏项目    舞台 / 外观 / 随机 / 碰撞       2 个小游戏
---   二年级下 046-060  复杂游戏项目    多角色 / 克隆 / 广播 / 计分     1 个大游戏
+--   Level 0  001-015  计算思维启蒙   顺序 / 转弯 / 循环 / 条件      网格闯关
+--   Level 1  016-030  逻辑进阶       变量计分 / 多条件 / 自定义函数  带交互网格
+--   Level 2  031-045  简单游戏项目    舞台 / 外观 / 随机 / 碰撞       2 个小游戏
+--   Level 3  046-060  复杂游戏项目    多角色 / 克隆 / 广播 / 计分     1 个大游戏
 --
 -- 学期一的单元切分是 2/2/2/5/4，其余学期是 3/3/3/3/3：
 -- 前 6 关（直走 → L 型转弯 → 长直道 → 画正方形 → 遇墙转弯 → 走迷宫）正好落在三个单元的边界上，
@@ -24,13 +24,13 @@
 insert into public.module_term
   (module_id, term_id, title, stage_label, term_code, sort_order, weeks, level_cap, summary)
 values
-  ('blockly', 'blk-g1-fall', '一年级上', '一年级', 'fall', 1, 15, 15,
+  ('blockly', 'blk-g1-fall', 'Level 0', 'Blockly 课程线', 'fall', 1, 15, 15,
    '计算思维启蒙：顺序、转弯、循环、条件。形式是网格闯关。'),
-  ('blockly', 'blk-g1-spring', '一年级下', '一年级', 'spring', 2, 15, 15,
+  ('blockly', 'blk-g1-spring', 'Level 1', 'Blockly 课程线', 'spring', 2, 15, 15,
    '逻辑进阶：变量计分、多条件判断、自定义函数。形式是带一点交互的网格闯关。'),
-  ('blockly', 'blk-g2-fall', '二年级上', '二年级', 'fall', 3, 15, 15,
+  ('blockly', 'blk-g2-fall', 'Level 2', 'Blockly 课程线', 'fall', 3, 15, 15,
    '简单游戏项目开发：自由舞台、角色外观、随机数、碰撞检测。完成 2 个简单小游戏。'),
-  ('blockly', 'blk-g2-spring', '二年级下', '二年级', 'spring', 4, 15, 15,
+  ('blockly', 'blk-g2-spring', 'Level 3', 'Blockly 课程线', 'spring', 4, 15, 15,
    '复杂游戏项目开发：多角色协作、克隆、广播事件、计分系统。完成 1 个大游戏。')
 on conflict (module_id, term_id) do update set
   title = excluded.title,
@@ -47,7 +47,7 @@ on conflict (module_id, term_id) do update set
 insert into public.module_unit
   (module_id, unit_id, term_id, title, summary, scene_form, knowledge_tags, level_cap, sort_order)
 values
-  -- 一年级上
+  -- Level 0
   ('blockly', 'blk-g1-fall-u1', 'blk-g1-fall', '走和转',
    '顺序前进和转向，先让机器人动起来。', 'grid',
    array['sequence', 'move', 'turn'], 2, 1),
@@ -63,7 +63,7 @@ values
   ('blockly', 'blk-g1-fall-u5', 'blk-g1-fall', '学期作品',
    '自己设计一条路线，完成学期作品和期末挑战。', 'grid',
    array['project', 'design'], 4, 5),
-  -- 一年级下
+  -- Level 1
   ('blockly', 'blk-g1-spring-u1', 'blk-g1-spring', '变量是个小盒子',
    '认识变量，学会给变量赋值和改变它。', 'grid_interactive',
    array['variable', 'assignment'], 3, 1),
@@ -79,7 +79,7 @@ values
   ('blockly', 'blk-g1-spring-u5', 'blk-g1-spring', '逻辑大挑战',
    '综合运用变量、条件和函数，完成学期作品。', 'grid_interactive',
    array['project', 'variable', 'condition'], 3, 5),
-  -- 二年级上
+  -- Level 2
   ('blockly', 'blk-g2-fall-u1', 'blk-g2-fall', '舞台和角色',
    '认识舞台，把角色放到舞台上并让它动起来。', 'stage',
    array['stage', 'sprite', 'coordinate'], 3, 1),
@@ -95,7 +95,7 @@ values
   ('blockly', 'blk-g2-fall-u5', 'blk-g2-fall', '我的第一个小游戏',
    '拆解并完成接苹果和打地鼠两个小游戏。', 'stage',
    array['project', 'game'], 3, 5),
-  -- 二年级下
+  -- Level 3
   ('blockly', 'blk-g2-spring-u1', 'blk-g2-spring', '角色会说话',
    '多角色协作，用广播在角色之间传消息。', 'stage',
    array['sprite', 'broadcast'], 3, 1),
@@ -129,28 +129,28 @@ on conflict (module_id, unit_id) do update set
 -- 「带一点交互」这种单元形态记在 module_unit.scene_form 上，不下放到关卡。
 with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, badge, minutes, scene_type) as (
   values
-    -- 一年级上 · U1 走和转
+    -- Level 0 · U1 走和转
     ('blk-001', 1, 'blk-g1-fall', 'blk-g1-fall-u1', '直走',
      '把“前进”积木拖到工作区，让机器人从起点走到终点', 'new',
      array['sequence', 'move'], null::text, 15, 'grid'),
     ('blk-002', 2, 'blk-g1-fall', 'blk-g1-fall-u1', 'L 型路线',
      '向前走三步，右转，再走三步到达终点', 'new',
      array['sequence', 'turn'], null::text, 15, 'grid'),
-    -- 一年级上 · U2 循环和嵌套
+    -- Level 0 · U2 循环和嵌套
     ('blk-003', 3, 'blk-g1-fall', 'blk-g1-fall-u2', '长直道',
      '用“重复执行”积木走完一条长直道', 'new',
      array['loop'], null::text, 15, 'grid'),
     ('blk-004', 4, 'blk-g1-fall', 'blk-g1-fall-u2', '画正方形',
      '用内外两层循环绕出一个正方形，再走到终点', 'new',
      array['loop', 'nested_loop'], null::text, 15, 'grid'),
-    -- 一年级上 · U3 条件和综合
+    -- Level 0 · U3 条件和综合
     ('blk-005', 5, 'blk-g1-fall', 'blk-g1-fall-u3', '遇墙转弯',
      '前面有墙就右转，一直走到终点', 'new',
      array['condition', 'loop'], null::text, 15, 'grid'),
     ('blk-006', 6, 'blk-g1-fall', 'blk-g1-fall-u3', '走迷宫',
      '用重复和转弯，走出弯弯绕绕的迷宫', 'project',
      array['sequence', 'turn', 'loop', 'condition'], 'first_maze', 20, 'grid'),
-    -- 一年级上 · U4 巩固练习
+    -- Level 0 · U4 巩固练习
     ('blk-007', 7, 'blk-g1-fall', 'blk-g1-fall-u4', '多走两格',
      '连续用两块“前进”，让机器人一次走完两步', 'practice',
      array['sequence', 'move'], null::text, 15, 'grid'),
@@ -166,7 +166,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-011', 11, 'blk-g1-fall', 'blk-g1-fall-u4', '复习闯关',
      '把这一学期学过的积木混合起来闯一关', 'practice',
      array['sequence', 'turn', 'loop', 'condition'], null::text, 15, 'grid'),
-    -- 一年级上 · U5 学期作品
+    -- Level 0 · U5 学期作品
     ('blk-012', 12, 'blk-g1-fall', 'blk-g1-fall-u5', '路线设计',
      '自己设计一条路线，先在纸上画出来再写程序', 'new',
      array['design', 'sequence'], null::text, 20, 'grid'),
@@ -179,7 +179,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-015', 15, 'blk-g1-fall', 'blk-g1-fall-u5', '期末挑战',
      '在限定积木数量内完成最难的一条路线', 'project',
      array['project', 'sequence', 'turn', 'loop', 'condition'], 'term1_master', 25, 'grid'),
-    -- 一年级下 · U1 变量是个小盒子
+    -- Level 1 · U1 变量是个小盒子
     ('blk-016', 16, 'blk-g1-spring', 'blk-g1-spring-u1', '新建一个变量',
      '做一个小盒子，把一个数字放进去', 'new',
      array['variable'], null::text, 15, 'grid'),
@@ -189,7 +189,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-018', 18, 'blk-g1-spring', 'blk-g1-spring-u1', '变量跟着走',
      '让机器人每走一步就把变量加一', 'practice',
      array['variable', 'loop'], null::text, 15, 'grid'),
-    -- 一年级下 · U2 分数怎么算
+    -- Level 1 · U2 分数怎么算
     ('blk-019', 19, 'blk-g1-spring', 'blk-g1-spring-u2', '分数加一',
      '每走到一个目标就给分数加一', 'new',
      array['score', 'variable'], null::text, 15, 'grid'),
@@ -199,7 +199,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-021', 21, 'blk-g1-spring', 'blk-g1-spring-u2', '最高分是多少',
      '走完一轮后读出这一轮的最高分', 'practice',
      array['score', 'variable'], null::text, 15, 'grid'),
-    -- 一年级下 · U3 多个条件一起用
+    -- Level 1 · U3 多个条件一起用
     ('blk-022', 22, 'blk-g1-spring', 'blk-g1-spring-u3', '两个条件都要满足',
      '只有同时满足两个条件时才加分', 'new',
      array['condition', 'and'], null::text, 15, 'grid'),
@@ -209,7 +209,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-024', 24, 'blk-g1-spring', 'blk-g1-spring-u3', '三档判断',
      '把分数分成三档，每档走不同的路线', 'practice',
      array['condition'], null::text, 15, 'grid'),
-    -- 一年级下 · U4 自己的小帮手
+    -- Level 1 · U4 自己的小帮手
     ('blk-025', 25, 'blk-g1-spring', 'blk-g1-spring-u4', '定义一个小帮手',
      '把重复的一段动作做成自己的积木', 'new',
      array['function'], null::text, 15, 'grid'),
@@ -219,7 +219,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-027', 27, 'blk-g1-spring', 'blk-g1-spring-u4', '带参数的小帮手',
      '给小帮手带上不同的数字，做出不同的动作', 'practice',
      array['function', 'parameter'], null::text, 15, 'grid'),
-    -- 一年级下 · U5 逻辑大挑战
+    -- Level 1 · U5 逻辑大挑战
     ('blk-028', 28, 'blk-g1-spring', 'blk-g1-spring-u5', '复习闯关',
      '把变量、条件和函数混合起来闯一关', 'practice',
      array['variable', 'condition', 'function'], null::text, 20, 'grid'),
@@ -229,7 +229,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-030', 30, 'blk-g1-spring', 'blk-g1-spring-u5', '计分小游戏',
      '做一个能加分、能扣分、能显示分数的小游戏', 'project',
      array['project', 'score', 'variable', 'function'], 'term2_master', 25, 'grid'),
-    -- 二年级上 · U1 舞台和角色
+    -- Level 2 · U1 舞台和角色
     ('blk-031', 31, 'blk-g2-fall', 'blk-g2-fall-u1', '认识舞台',
      '认识舞台的坐标，把角色放到指定位置', 'new',
      array['stage', 'coordinate'], null::text, 15, 'stage'),
@@ -239,7 +239,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-033', 33, 'blk-g2-fall', 'blk-g2-fall-u1', '角色走一走',
      '用方向键让角色在舞台上移动', 'practice',
      array['sprite', 'event'], null::text, 15, 'stage'),
-    -- 二年级上 · U2 角色换装
+    -- Level 2 · U2 角色换装
     ('blk-034', 34, 'blk-g2-fall', 'blk-g2-fall-u2', '换个造型',
      '给角色准备两个造型，按条件切换', 'new',
      array['costume'], null::text, 15, 'stage'),
@@ -249,7 +249,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-036', 36, 'blk-g2-fall', 'blk-g2-fall-u2', '说一句话',
      '让角色在舞台上显示一句话', 'practice',
      array['effect', 'say'], null::text, 15, 'stage'),
-    -- 二年级上 · U3 随机的小惊喜
+    -- Level 2 · U3 随机的小惊喜
     ('blk-037', 37, 'blk-g2-fall', 'blk-g2-fall-u3', '随机一个数',
      '让电脑随机给出一个数字', 'new',
      array['random'], null::text, 15, 'stage'),
@@ -259,7 +259,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-039', 39, 'blk-g2-fall', 'blk-g2-fall-u3', '随机节奏',
      '用随机数决定角色下一次动得多快', 'practice',
      array['random', 'loop'], null::text, 15, 'stage'),
-    -- 二年级上 · U4 碰到了怎么办
+    -- Level 2 · U4 碰到了怎么办
     ('blk-040', 40, 'blk-g2-fall', 'blk-g2-fall-u4', '碰到就加分',
      '角色接到苹果时给它加分', 'new',
      array['collision', 'score'], null::text, 15, 'stage'),
@@ -269,7 +269,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-042', 42, 'blk-g2-fall', 'blk-g2-fall-u4', '接住三个',
      '一局之内连续接住三个苹果', 'practice',
      array['collision', 'score', 'condition'], null::text, 15, 'stage'),
-    -- 二年级上 · U5 我的第一个小游戏
+    -- Level 2 · U5 我的第一个小游戏
     ('blk-043', 43, 'blk-g2-fall', 'blk-g2-fall-u5', '接苹果：拆解',
      '把接苹果这个游戏拆成几个步骤', 'new',
      array['project', 'design'], null::text, 20, 'stage'),
@@ -279,7 +279,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-045', 45, 'blk-g2-fall', 'blk-g2-fall-u5', '打地鼠：完成',
      '做出一个能玩的打地鼠小游戏', 'project',
      array['project', 'collision', 'random', 'score'], 'term3_master', 25, 'stage'),
-    -- 二年级下 · U1 角色会说话
+    -- Level 3 · U1 角色会说话
     ('blk-046', 46, 'blk-g2-spring', 'blk-g2-spring-u1', '第二个角色登场',
      '在同一个舞台上放进两个角色', 'new',
      array['sprite'], null::text, 15, 'stage'),
@@ -289,7 +289,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-048', 48, 'blk-g2-spring', 'blk-g2-spring-u1', '听到消息就行动',
      '角色收到消息后做出自己的反应', 'practice',
      array['broadcast', 'event'], null::text, 15, 'stage'),
-    -- 二年级下 · U2 复制出新角色
+    -- Level 3 · U2 复制出新角色
     ('blk-049', 49, 'blk-g2-spring', 'blk-g2-spring-u2', '复制一个',
      '用克隆积木复制出一个新角色', 'new',
      array['clone'], null::text, 15, 'stage'),
@@ -299,7 +299,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-051', 51, 'blk-g2-spring', 'blk-g2-spring-u2', '用完就收走',
      '把用完的克隆体从舞台上清掉', 'practice',
      array['clone', 'effect'], null::text, 15, 'stage'),
-    -- 二年级下 · U3 一起跑起来
+    -- Level 3 · U3 一起跑起来
     ('blk-052', 52, 'blk-g2-spring', 'blk-g2-spring-u3', '按键就开始',
      '按下按键才启动的程序', 'new',
      array['event'], null::text, 15, 'stage'),
@@ -309,7 +309,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-054', 54, 'blk-g2-spring', 'blk-g2-spring-u3', '一直重复的事',
      '用循环让一段程序一直重复', 'practice',
      array['loop', 'event'], null::text, 15, 'stage'),
-    -- 二年级下 · U4 分数和规则
+    -- Level 3 · U4 分数和规则
     ('blk-055', 55, 'blk-g2-spring', 'blk-g2-spring-u4', '三条命',
      '给玩家三条命，碰到危险就少一条', 'new',
      array['lives', 'condition'], null::text, 15, 'stage'),
@@ -319,7 +319,7 @@ with lvl(level_id, sort_order, term_id, unit_id, title, goal, level_type, tags, 
     ('blk-057', 57, 'blk-g2-spring', 'blk-g2-spring-u4', '谁先赢',
      '加上胜负判定，分高的一方获胜', 'practice',
      array['rule', 'condition'], null::text, 15, 'stage'),
-    -- 二年级下 · U5 大型项目：飞机大战
+    -- Level 3 · U5 大型项目：飞机大战
     ('blk-058', 58, 'blk-g2-spring', 'blk-g2-spring-u5', '飞机大战：拆解',
      '把飞机大战拆成角色、敌人、子弹和计分几块', 'new',
      array['project', 'design'], null::text, 20, 'stage'),

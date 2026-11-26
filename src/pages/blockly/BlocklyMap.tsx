@@ -81,7 +81,7 @@ export function BlocklyMap() {
 
         {terms.length > 0 && (
           <>
-            <nav className="flex flex-wrap gap-2" aria-label="选择学期">
+            <nav className="flex flex-wrap gap-2" aria-label="选择 Level">
               {terms.map((term) => {
                 const active = term.termId === activeTerm?.termId
                 const done = countTerm(term)

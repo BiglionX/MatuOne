@@ -5,7 +5,7 @@
 --      20261114000000 已把 curriculum_semester.title 改写成 "Level 1 / Level 2"，
 --      语义是课程序列号，不是学校年级。
 --   2. curriculum_semester 上有 unique (stage_id, term)，一个年级段只允许一个 fall / 一个 spring，
---      装不下 Blockly 需要的「一上 / 一下 / 二上 / 二下」四条并列学期。
+--      装不下 Blockly 需要的「Level 0 / Level 1 / Level 2 / Level 3」四条并列学期。
 --   3. 项目已定调：新模块与 Python 物理隔离 + module_id 隔离（module_level 表就是这么来的）。
 --      这里沿用同一思路：新表一律带 module_id，不碰 Python 的外键。
 --
@@ -17,9 +17,9 @@
 create table if not exists public.module_term (
   module_id text not null references public.teaching_module (module_id),
   term_id text not null,
-  /** 展示名，例如「一年级上」。 */
+  /** 展示名，例如「Level 0」。 */
   title text not null,
-  /** 学段名，例如「一年级」。 */
+  /** 课程线名，例如「Blockly 课程线」。 */
   stage_label text not null,
   /** 季节：fall 秋季学期 / spring 春季学期。 */
   term_code text not null check (term_code in ('fall', 'spring')),
@@ -40,7 +40,7 @@ create table if not exists public.module_term (
 );
 
 comment on table public.module_term is
-  '模块课程线的学期表。与 Python 的 curriculum_semester 物理隔离：一行是「某模块的某个学期」，例如 blockly 的「一年级上」。';
+  '模块课程线的学期表。与 Python 的 curriculum_semester 物理隔离：一行是「某模块的某个学期」，例如 blockly 的「Level 0」。';
 
 comment on column public.module_term.module_id is
   '所属模块，取值来自 public.teaching_module。blockly 用它区分于 python 与 easy-robot。';
@@ -49,10 +49,10 @@ comment on column public.module_term.term_id is
   '模块内学期编号，约定 blk-g1-fall / blk-g1-spring / blk-g2-fall / blk-g2-spring。';
 
 comment on column public.module_term.title is
-  '学期展示名，例如「一年级上」。';
+  '学期展示名，例如「Level 0」。课程线内的顺序编号，不跟学校年级绑定。';
 
 comment on column public.module_term.stage_label is
-  '学段展示名，例如「一年级」。';
+  '课程线展示名，例如「Blockly 课程线」。';
 
 comment on column public.module_term.term_code is
   '季节：fall / spring。用于按上下学期排序展示。';
