@@ -7,13 +7,15 @@ import { getCurrentStudent } from '@/api/studentAuth'
 import { BrandMark } from '@/components/BrandMark'
 import { Skeleton } from '@/components/Skeleton'
 import { ApiError } from '@/lib/apiError'
-import { parseModuleLevelBody, gridSceneOf, type ModuleLevelBody } from '@/modules/curriculum/moduleLevelBody'
+import { isGameSoundEnabled, playGameSound, toggleGameSound } from '@/lib/gameSounds'
+import { parseModuleLevelBody, gridSceneOf, type ModuleHintFocus, type ModuleLevelBody } from '@/modules/curriculum/moduleLevelBody'
 import {
   createInitialActorState,
   interpretModuleLevel,
   type ActorState,
   type ModuleExecutionResult,
 } from '@/modules/curriculum/moduleLevelInterpreter'
+import { BlocklyNpc } from './BlocklyNpc'
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from './BlocklyWorkspace'
 import { GridStage } from './GridStage'
 
@@ -69,6 +71,13 @@ export function BlocklyLesson() {
   const [errorTaps, setErrorTaps] = useState(0)
   const [message, setMessage] = useState('')
   const [loadError, setLoadError] = useState('')
+  // 关卡音效默认关着，学生自己在顶栏打开。
+  const [soundOn, setSoundOn] = useState(isGameSoundEnabled())
+  // 学生每做一次操作就加一，小精灵靠它判断「有人操作」还是「干等着」。
+  const [activityToken, setActivityToken] = useState(0)
+  const [runFailed, setRunFailed] = useState(false)
+  // 小精灵点名要盯的东西：工作区、运行按钮或者某一块积木。
+  const [focus, setFocus] = useState<ModuleHintFocus | null>(null)
 
   useEffect(() => {
     if (!student) return
@@ -81,6 +90,9 @@ export function BlocklyLesson() {
     setCompleted(false)
     setMessage('')
     setErrorTaps(0)
+    setRunFailed(false)
+    setFocus(null)
+    setActivityToken((value) => value + 1)
 
     void enterLevel(levelId, MODULE_IDS.blockly)
       .then(async (decision) => {
@@ -113,6 +125,14 @@ export function BlocklyLesson() {
     setWorkspaceReady(ready)
   }, [])
 
+  const handleBlocksChange = useCallback(() => {
+    setActivityToken((token) => token + 1)
+  }, [])
+
+  const handleFocusChange = useCallback((next: ModuleHintFocus | null) => {
+    setFocus(next)
+  }, [])
+
   const run = async () => {
     if (!body || !workspaceReady || isRunning || isSaving) return
     const token = runTokenRef.current + 1
@@ -120,21 +140,35 @@ export function BlocklyLesson() {
     setIsRunning(true)
     setCompleted(false)
     setMessage('')
+    setRunFailed(false)
+    setActivityToken((value) => value + 1)
     setActorState(createInitialActorState(body))
 
     try {
       const tree = workspaceRef.current?.getExecutionTree() ?? []
       if (!tree.length) {
         setErrorTaps((count) => count + 1)
+        setRunFailed(true)
         setMessage(body.hints.find((hint) => hint.trigger === 'initial')?.text ?? '先把积木拖到工作区，再点运行。')
         return
       }
 
       const result = interpretModuleLevel(body, tree)
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      // 起点的收集物在初始状态里就吃掉了，只算之后新吃到的。
+      let collected = createInitialActorState(body).collectedEntityIds.length
       for (const frame of result.steps) {
         if (runTokenRef.current !== token) return
         setActorState(frame.state)
+        if (frame.blocked) {
+          playGameSound('bump')
+        } else if (frame.moved) {
+          playGameSound('step')
+          if (frame.state.collectedEntityIds.length > collected) {
+            collected = frame.state.collectedEntityIds.length
+            playGameSound('coin')
+          }
+        }
         const duration = reduceMotion ? 0 : frame.moved ? body.runtime.move_duration_ms : Math.min(180, body.runtime.move_duration_ms)
         await wait(duration)
       }
@@ -142,6 +176,8 @@ export function BlocklyLesson() {
 
       if (!result.completed) {
         setErrorTaps((count) => count + 1)
+        setRunFailed(true)
+        playGameSound('fail')
         setMessage(body.hints.find((hint) => hint.trigger === 'not_completed')?.text ?? resultMessage(result))
         return
       }
@@ -150,9 +186,12 @@ export function BlocklyLesson() {
       await completeLevel(levelId, body.completion.stars, errorTaps, MODULE_IDS.blockly)
       if (runTokenRef.current !== token) return
       setCompleted(true)
+      playGameSound('win')
     } catch (error: unknown) {
       if (runTokenRef.current !== token) return
       setErrorTaps((count) => count + 1)
+      setRunFailed(true)
+      playGameSound('fail')
       setMessage(error instanceof Error ? error.message : '程序没有运行成功，请再试一次')
     } finally {
       if (runTokenRef.current === token) {
@@ -170,6 +209,8 @@ export function BlocklyLesson() {
     setCompleted(false)
     setMessage('')
     setErrorTaps(0)
+    setRunFailed(false)
+    setActivityToken((value) => value + 1)
     if (body) setActorState(createInitialActorState(body))
   }
 
@@ -215,6 +256,15 @@ export function BlocklyLesson() {
             <p className="truncate text-sm text-ink-soft">{lesson.goal}</p>
           </div>
           <span className="ml-auto rounded-field bg-success-soft px-3 py-2 text-sm font-semibold text-success">Blockly</span>
+          <button
+            type="button"
+            className="btn-ghost px-3"
+            aria-pressed={soundOn}
+            aria-label={soundOn ? '关闭关卡音效' : '打开关卡音效'}
+            onClick={() => setSoundOn(toggleGameSound())}
+          >
+            {soundOn ? '🔊' : '🔇'}
+          </button>
         </div>
       </header>
 
@@ -228,7 +278,12 @@ export function BlocklyLesson() {
               </div>
               <span className="text-sm text-ink-soft">最多 {body.workspace.max_blocks} 块积木</span>
             </div>
-            <GridStage scene={gridSceneOf(body)} actorState={actorState} animationDurationMs={body.runtime.move_duration_ms} />
+            <GridStage
+              scene={gridSceneOf(body)}
+              actorState={actorState}
+              animationDurationMs={body.runtime.move_duration_ms}
+              showTrail={body.visuals?.show_trail ?? false}
+            />
             <p className="mt-4 text-sm text-ink-soft" aria-live="polite">
               {message || body.hints.find((hint) => hint.trigger === 'initial')?.text || '拖一块积木，再点运行。'}
             </p>
@@ -248,11 +303,16 @@ export function BlocklyLesson() {
               initialBlocks={body.workspace.initial_blocks}
               maxBlocks={body.workspace.max_blocks}
               onReadyChange={handleWorkspaceReady}
+              onBlocksChange={handleBlocksChange}
+              highlightBlockType={focus?.target === 'block' ? focus.blockType ?? null : null}
+              focusWorkspace={focus?.target === 'workspace'}
             />
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                className="btn-primary px-8 text-lg disabled:cursor-not-allowed disabled:opacity-50"
+                className={`btn-primary px-8 text-lg disabled:cursor-not-allowed disabled:opacity-50 ${
+                  focus?.target === 'run' ? 'matu-focus-ring' : ''
+                }`}
                 disabled={!workspaceReady || isRunning || isSaving}
                 onClick={() => void run()}
               >
@@ -263,6 +323,15 @@ export function BlocklyLesson() {
           </section>
         </div>
       </main>
+
+      <BlocklyNpc
+        hints={body.hints}
+        availableBlocks={body.available_blocks}
+        activityToken={activityToken}
+        runFailed={runFailed}
+        completed={completed}
+        onFocusChange={handleFocusChange}
+      />
 
       {completed ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-canvas/95 px-6" role="dialog" aria-modal="true" aria-labelledby="completion-title">

@@ -22,12 +22,20 @@ interface BlocklyWorkspaceProps {
   initialBlocks: ModuleBlockInstance[]
   maxBlocks: number
   onReadyChange?: (ready: boolean) => void
+  /** 学生增删或移动积木时回调，参数是当前积木总数。 */
+  onBlocksChange?: (blockCount: number) => void
+  /** 要闪一下的积木类型；小精灵点名要拖哪一块时用。 */
+  highlightBlockType?: string | null
+  /** 工作区整体要闪烁时为 true。 */
+  focusWorkspace?: boolean
 }
 
 type BlocklyRuntime = typeof import('blockly')
 
 /** 控制积木的嵌套体输入名，和解释器里的 children 一一对应。 */
 const BODY_INPUT = 'BODY'
+/** then_else 形状控制积木的「不成立时」分支输入名，对应 children[1]。 */
+const ELSE_INPUT = 'ELSE'
 
 /** Blockly 的删除光标默认指向 .cur 二进制资源；本地只提供精灵图，改用系统光标避
 免请求不存在的文件。 */
@@ -79,26 +87,36 @@ function createArgField(blockly: BlocklyRuntime, arg: ModuleBlockArgDefinition):
 /**
  * 积木注册表：遍历本关 available_blocks 动态注册，不再写死 move_forward。
  *
- * kind 决定积木形状：动作/传感器积木是一条语句，制积木额外带一个嵌套体输入。
+ * kind 决定积木形状：动作/传感器积木是一条语句，控制积木额外带一个嵌套体输入。
+ * branches 决定控制积木有几支：then 只有「成立时」，then_else 还有「不成立时」。
  */
 export function defineAvailableBlocks(blockly: BlocklyRuntime, availableBlocks: ModuleAvailableBlock[]) {
   for (const definition of availableBlocks) {
     if (blockly.Blocks[definition.type]) continue
+    const shape = definition.branches ?? 'then'
     blockly.Blocks[definition.type] = {
       init(this: Block) {
         this.setColour(definition.color ?? KIND_COLORS[definition.kind])
+        // 有参数的积木用参数说明自己；then_else 的积木要同时显示块名和参数。
+        if (shape === 'then_else' || !definition.args.length) {
+          this.appendDummyInput().appendField(definition.label)
+        }
         if (definition.args.length) {
           const input = this.appendDummyInput()
           for (const arg of definition.args) {
             input.appendField(arg.label)
             input.appendField(createArgField(blockly, arg), arg.name)
           }
-        } else {
-          this.appendDummyInput().appendField(definition.label)
         }
         this.setPreviousStatement(true)
         this.setNextStatement(true)
-        if (definition.kind === 'control') this.appendStatementInput(BODY_INPUT)
+        if (definition.kind === 'control') {
+          this.appendStatementInput(BODY_INPUT)
+          if (shape === 'then_else') {
+            this.appendDummyInput().appendField('否则')
+            this.appendStatementInput(ELSE_INPUT)
+          }
+        }
       },
     }
   }
@@ -129,7 +147,14 @@ function readChain(block: Block | null, definitions: ModuleAvailableBlock[]): Bl
   const node: BlockExecutionNode = { type: block.type, args: readArgs(block, definition) }
   const bodyInput = block.getInput(BODY_INPUT)
   const child = readChain(bodyInput?.connection?.targetBlock() ?? null, definitions)
-  if (child) node.children = [child]
+  if ((definition.branches ?? 'then') === 'then_else') {
+    // children 固定两项：成立分支、不成立分支，空分支留 null。
+    const elseInput = block.getInput(ELSE_INPUT)
+    const elseChild = readChain(elseInput?.connection?.targetBlock() ?? null, definitions)
+    node.children = [child, elseChild]
+  } else if (child) {
+    node.children = [child]
+  }
   node.next = readChain(block.getNextBlock(), definitions)
   return node
 }
@@ -172,9 +197,22 @@ function createBlock(
   const children = instance.children ?? []
   if (children.length) {
     const bodyInput = block.getInput(BODY_INPUT)
-    const childHead = buildChain(workspace, children, availableBlocks)
-    if (bodyInput?.connection && childHead?.previousConnection) {
-      bodyInput.connection.connect(childHead.previousConnection)
+    if ((definition?.branches ?? 'then') === 'then_else') {
+      // 成立分支接 BODY，不成立分支接 ELSE，两支各自独立不串在一起。
+      const thenHead = buildChain(workspace, children[0] ? [children[0]] : [], availableBlocks)
+      if (bodyInput?.connection && thenHead?.previousConnection) {
+        bodyInput.connection.connect(thenHead.previousConnection)
+      }
+      const elseInput = block.getInput(ELSE_INPUT)
+      const elseHead = buildChain(workspace, children[1] ? [children[1]] : [], availableBlocks)
+      if (elseInput?.connection && elseHead?.previousConnection) {
+        elseInput.connection.connect(elseHead.previousConnection)
+      }
+    } else {
+      const childHead = buildChain(workspace, children.filter((child): child is ModuleBlockInstance => child !== null), availableBlocks)
+      if (bodyInput?.connection && childHead?.previousConnection) {
+        bodyInput.connection.connect(childHead.previousConnection)
+      }
     }
   }
   if (instance.next) {
@@ -220,14 +258,62 @@ export function loadInitialBlocks(workspace: WorkspaceSvg, initialBlocks: Module
   workspace.scrollCenter()
 }
 
+/**
+ * 在工作区或工具箱里找到指定类型的积木。
+ *
+ * 工作区里已经放过一块的话直接用它；否则去工具箱找——分类工具箱一次只展开一个分类，
+ * 所以先把每个分类轮流选中，再在 flyout 工作区里翻积木，找到就停在那个分类。
+ */
+function findHighlightBlock(workspace: WorkspaceSvg, type: string): Block | null {
+  const placed = workspace.getAllBlocks(false).find((block) => block.type === type)
+  if (placed) return placed
+
+  const toolbox = workspace.getToolbox()
+  if (!toolbox) return null
+  const original = toolbox.getSelectedItem()
+  for (const item of toolbox.getToolboxItems()) {
+    if (!item.isSelectable()) continue
+    toolbox.setSelectedItem(item)
+    const flyoutWorkspace = toolbox.getFlyout()?.getWorkspace()
+    const match = flyoutWorkspace?.getAllBlocks(false).find((block) => block.type === type)
+    if (match) return match
+  }
+  if (original) toolbox.setSelectedItem(original)
+  return null
+}
+
+/** 工作区里的积木其实都是 BlockSvg，只有它才拿得到自己的 SVG 根节点。 */
+function svgGroupOf(block: Block): SVGElement | null {
+  const target = block as unknown as { getSvgRoot?: () => SVGGElement }
+  return typeof target.getSvgRoot === 'function' ? target.getSvgRoot() : null
+}
+
+/** 给目标积木加上闪烁的类名；type 为空时把之前的高亮撤掉。 */
+function applyBlockHighlight(workspace: WorkspaceSvg, type: string | null) {
+  // 工具箱的 flyout 是另一个 SVG，得在整个注入容器里找。
+  const host = workspace.getInjectionDiv()
+  for (const group of host.querySelectorAll('.matu-block-highlight')) {
+    group.classList.remove('matu-block-highlight')
+  }
+  if (!type) return
+  try {
+    const target = findHighlightBlock(workspace, type)
+    if (target) svgGroupOf(target)?.classList.add('matu-block-highlight')
+  } catch {
+    // 工具箱还没准备好就下次再试，高亮失败不该把整个页面带崩。
+  }
+}
+
 /** Blockly 只在组件挂载后动态导入；类型导入会在构建时擦除。 */
 export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorkspaceProps>(function BlocklyWorkspace(
-  { availableBlocks, initialBlocks, maxBlocks, onReadyChange },
+  { availableBlocks, initialBlocks, maxBlocks, onReadyChange, onBlocksChange, highlightBlockType, focusWorkspace },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null)
   const workspaceRef = useRef<WorkspaceSvg | null>(null)
   const definitionsRef = useRef(availableBlocks)
+  /** 铺初始积木和「重新开始」时不算学生操作，不往外抛变化通知。 */
+  const suppressRef = useRef(false)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
 
@@ -243,10 +329,33 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
     reset() {
       const workspace = workspaceRef.current
       if (!workspace) return
+      suppressRef.current = true
       workspace.clear()
       loadInitialBlocks(workspace, initialBlocks, definitionsRef.current)
+      suppressRef.current = false
     },
   }), [initialBlocks])
+
+  // 学生动了积木就通知外面一声，小精灵靠它判断「有人操作」还是「干等着」。
+  useEffect(() => {
+    const workspace = workspaceRef.current
+    if (!workspace || !onBlocksChange) return
+    const handleChange = (event: { type: string; isUiEvent?: boolean }) => {
+      if (event.isUiEvent || suppressRef.current) return
+      // Blockly 13 的事件类型值就是 create / delete / move 这三个短名。
+      if (event.type !== 'create' && event.type !== 'delete' && event.type !== 'move') return
+      onBlocksChange(workspace.getAllBlocks(false).length)
+    }
+    workspace.addChangeListener(handleChange)
+    return () => workspace.removeChangeListener(handleChange)
+  }, [onBlocksChange, ready])
+
+  // 小精灵点名某一块积木时，让它在工具箱里闪起来。
+  useEffect(() => {
+    const workspace = workspaceRef.current
+    if (!workspace || !ready) return
+    applyBlockHighlight(workspace, highlightBlockType ?? null)
+  }, [highlightBlockType, ready])
 
   useEffect(() => {
     const host = hostRef.current
@@ -279,7 +388,10 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
           move: { scrollbars: true, drag: true, wheel: true },
         })
         workspaceRef.current = workspace
+        // 铺初始积木不是学生操作，别把闲置计时白重置一次。
+        suppressRef.current = true
         loadInitialBlocks(workspace, initialBlocks, availableBlocks)
+        suppressRef.current = false
         setReady(true)
         onReadyChange?.(true)
       })
@@ -297,7 +409,11 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
   }, [availableBlocks, initialBlocks, maxBlocks, onReadyChange])
 
   return (
-    <div className="blockly-workspace relative min-h-[360px] overflow-hidden rounded-3xl border border-slate-200 bg-white">
+    <div
+      className={`blockly-workspace relative min-h-[360px] overflow-hidden rounded-3xl border bg-white ${
+        focusWorkspace ? 'matu-focus-ring border-amber-400' : 'border-slate-200'
+      }`}
+    >
       <style>{BLOCKLY_CURSOR_CSS}</style>
       <div ref={hostRef} className="h-[360px] w-full" />
       {!ready && !error ? (
