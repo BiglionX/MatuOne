@@ -12,7 +12,9 @@ import {
   activeGrantOf,
   enabledModuleIds,
   type ModuleEntitlementRow,
+  type ProgressModuleId,
 } from '../supabase/functions/_shared/moduleEntitlements'
+import { findModuleLevel } from './moduleLevels'
 
 export interface EnterDecision {
   httpStatus: number
@@ -33,7 +35,35 @@ function isOrgStatus(value: unknown): value is OrgStatus {
   return value === 'trial' || value === 'active' || value === 'expired' || value === 'disabled'
 }
 
-export async function decideStudentLevel(studentId: string, levelId: string): Promise<EnterDecision> {
+/** 新模块没有 Python 的 L数字 序号和课程阶段，只校验机构状态、模块开通与已发布关卡。 */
+async function decideModuleStudentLevel(
+  orgId: string,
+  status: OrgStatus,
+  moduleId: ProgressModuleId,
+  levelId: string,
+): Promise<EnterDecision> {
+  if (status === 'disabled') return { httpStatus: 200, levelId, result: { allowed: false, reason: 'org_disabled' } }
+  if (status !== 'trial' && status !== 'active') return { httpStatus: 200, levelId, result: { allowed: false, reason: 'org_expired' } }
+
+  const [level, moduleEntitlements] = await Promise.all([
+    findModuleLevel(moduleId, levelId),
+    q<ModuleEntitlementRow>(
+      'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
+      [orgId],
+    ),
+  ])
+  if (!level) return { httpStatus: 200, levelId, result: { allowed: false, reason: 'not_found' } }
+  if (!enabledModuleIds(moduleEntitlements).includes(moduleId)) {
+    return { httpStatus: 200, levelId, result: { allowed: false, reason: 'module_not_entitled' } }
+  }
+  return { httpStatus: 200, levelId, result: { allowed: true, reason: 'ok' } }
+}
+
+export async function decideStudentLevel(
+  studentId: string,
+  levelId: string,
+  moduleId: ProgressModuleId = 'python',
+): Promise<EnterDecision> {
   const canonical = canonicalLevelId(levelId)
   const student = await one<{ id: string; org_id: string; group_id: string; status: string }>(
     'select id, org_id, group_id, status from public.student where id = $1',
@@ -55,6 +85,10 @@ export async function decideStudentLevel(studentId: string, levelId: string): Pr
   if (!isOrgStatus(statusRow?.status)) {
     return { httpStatus: 500, levelId: canonical, result: { allowed: false, reason: 'not_found' } }
   }
+  if (moduleId !== 'python') {
+    return decideModuleStudentLevel(student.org_id, statusRow.status, moduleId, canonical)
+  }
+
   const orderMatch = /^L(\d+)$/i.exec(canonical)
   const levelOrder = orderMatch ? Number(orderMatch[1]) : null
   const [entitlements, moduleEntitlements, levelRow] = await Promise.all([
@@ -99,11 +133,11 @@ export async function decideStudentLevel(studentId: string, levelId: string): Pr
     )
   const stageLevel = readStageLevel(levelRow?.stage_level) ?? (levelOrder == null ? null : stageLevelOfOrder(levelOrder))
   const enabledModules = enabledModuleIds(moduleEntitlements)
-  const grant = activeGrantOf(moduleEntitlements, 'python', enabledModules)
+  const grant = activeGrantOf(moduleEntitlements, moduleId, enabledModules)
   const maxLevel = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null)
   return {
     httpStatus: 200,
     levelId: canonical,
-    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel, enabledModules }),
+    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel, enabledModules, moduleId }),
   }
 }

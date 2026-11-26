@@ -1,6 +1,7 @@
 import type { Level, MapEntry, PracticeType } from '@/types'
 import type { CurriculumLevelKind } from '@/types/curriculum'
 import type { ProgressModuleId } from '@/modules/types'
+import type { ModuleLevelLesson } from '@/api/studentLevel'
 import { ApiError } from '@/lib/apiError'
 import { callFunction } from '@/lib/backend'
 import { rememberHints, rememberLevels } from '@/lib/levelCatalog'
@@ -79,12 +80,21 @@ export async function loadLevel(levelId: string): Promise<{ level: Level; review
   return { level, reviewChunk }
 }
 
+export function loadModuleLevel(moduleId: ProgressModuleId, levelId: string): Promise<{ level: ModuleLevelLesson }> {
+  return callFunction('student-learning', { action: 'level', moduleId, levelId }, { role: 'student' })
+}
+
 export function touchLevel(levelId: string): Promise<{ ok: true }> {
   return callFunction('student-learning', { action: 'touch', levelId }, { role: 'student' })
 }
 
-export function completeLevel(levelId: string, stars: 0 | 1 | 2 | 3, errorTaps: number): Promise<{ ok: true }> {
-  return callFunction('student-learning', { action: 'complete', levelId, stars, errorTaps }, { role: 'student' })
+export function completeLevel(
+  levelId: string,
+  stars: 0 | 1 | 2 | 3,
+  errorTaps: number,
+  moduleId: ProgressModuleId = 'python',
+): Promise<{ ok: true }> {
+  return callFunction('student-learning', { action: 'complete', levelId, stars, errorTaps, moduleId }, { role: 'student' })
 }
 
 /** 巩固副本完成。学生身份由服务端会话决定，奖励文案也由课文决定。 */

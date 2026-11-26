@@ -1,0 +1,274 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, Navigate } from 'react-router-dom'
+import { MODULE_IDS } from '../../../supabase/functions/_shared/moduleRegistry'
+import { completeLevel, loadModuleLevel } from '@/api/learning'
+import { enterLevel, type EnterLevelReason, type ModuleLevelLesson } from '@/api/studentLevel'
+import { getCurrentStudent } from '@/api/studentAuth'
+import { BrandMark } from '@/components/BrandMark'
+import { Skeleton } from '@/components/Skeleton'
+import { ApiError } from '@/lib/apiError'
+import { parseModuleLevelBody, type ModuleLevelBody } from '@/modules/curriculum/moduleLevelBody'
+import {
+  createInitialActorState,
+  interpretModuleLevel,
+  type ActorState,
+  type ModuleExecutionResult,
+} from '@/modules/curriculum/moduleLevelInterpreter'
+import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from './BlocklyWorkspace'
+import { GridStage } from './GridStage'
+
+const LEVEL_ID = 'blk-001'
+const MAP_HREF = '/student'
+
+const ENTER_COPY: Record<EnterLevelReason, string> = {
+  ok: '',
+  unauthenticated: '请先登录',
+  org_expired: '本机构服务已到期，请联系老师',
+  org_disabled: '机构已停用，请联系老师',
+  trial_locked: '试用期间只能学习 Level 1',
+  module_not_entitled: '该模块未开通，请联系机构',
+  not_entitled: '老师还没有为你开通这一关',
+  course_locked: '本机构尚未开通该阶段课程，请联系老师',
+  not_found: '没有找到这一关',
+}
+
+function wait(durationMs: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, durationMs))
+}
+
+function resultMessage(result: ModuleExecutionResult): string {
+  if (result.completed) return ''
+  if (result.failure === 'max_steps') return '程序还没有到终点，试试减少步骤。'
+  if (result.blocked) return '前面走不动了，检查一下角色朝向和障碍物。'
+  return '角色还没有到终点，再检查一下程序。'
+}
+
+export function BlocklyLesson() {
+  const student = getCurrentStudent()
+  const workspaceRef = useRef<BlocklyWorkspaceHandle>(null)
+  const runTokenRef = useRef(0)
+  const [lesson, setLesson] = useState<ModuleLevelLesson | null>(null)
+  const [body, setBody] = useState<ModuleLevelBody | null>(null)
+  const [gate, setGate] = useState<Awaited<ReturnType<typeof enterLevel>> | null>(null)
+  const [workspaceReady, setWorkspaceReady] = useState(false)
+  const [actorState, setActorState] = useState<ActorState | null>(null)
+  const [isRunning, setIsRunning] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [completed, setCompleted] = useState(false)
+  const [errorTaps, setErrorTaps] = useState(0)
+  const [message, setMessage] = useState('')
+  const [loadError, setLoadError] = useState('')
+
+  useEffect(() => {
+    if (!student) return
+    let alive = true
+    setLesson(null)
+    setBody(null)
+    setGate(null)
+    setWorkspaceReady(false)
+    setLoadError('')
+    setCompleted(false)
+    setMessage('')
+    setErrorTaps(0)
+
+    void enterLevel(LEVEL_ID, MODULE_IDS.blockly)
+      .then(async (decision) => {
+        if (!alive) return
+        setGate(decision)
+        if (!decision.allowed) return
+        const loaded = await loadModuleLevel(MODULE_IDS.blockly, LEVEL_ID)
+        if (!alive) return
+        const parsed = parseModuleLevelBody(loaded.level.body)
+        setLesson(loaded.level)
+        setBody(parsed)
+        setActorState(createInitialActorState(parsed))
+      })
+      .catch((error: unknown) => {
+        if (!alive) return
+        if (error instanceof ApiError && error.status === 404) {
+          setGate({ allowed: false, reason: 'not_found' })
+          return
+        }
+        setLoadError(error instanceof Error ? error.message : '这一关没有打开，请稍后再试')
+      })
+
+    return () => {
+      alive = false
+      runTokenRef.current += 1
+    }
+  }, [student?.id])
+
+  const handleWorkspaceReady = useCallback((ready: boolean) => {
+    setWorkspaceReady(ready)
+  }, [])
+
+  const run = async () => {
+    if (!body || !workspaceReady || isRunning || isSaving) return
+    const token = runTokenRef.current + 1
+    runTokenRef.current = token
+    setIsRunning(true)
+    setCompleted(false)
+    setMessage('')
+    setActorState(createInitialActorState(body))
+
+    try {
+      const sequence = workspaceRef.current?.getExecutionSequence() ?? []
+      if (!sequence.length) {
+        setErrorTaps((count) => count + 1)
+        setMessage(body.hints.find((hint) => hint.trigger === 'initial')?.text ?? '先把积木拖到工作区，再点运行。')
+        return
+      }
+
+      const result = interpretModuleLevel(body, sequence)
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      for (const frame of result.steps) {
+        if (runTokenRef.current !== token) return
+        setActorState(frame.state)
+        const duration = reduceMotion ? 0 : frame.moved ? body.runtime.move_duration_ms : Math.min(180, body.runtime.move_duration_ms)
+        await wait(duration)
+      }
+      if (runTokenRef.current !== token) return
+
+      if (!result.completed) {
+        setErrorTaps((count) => count + 1)
+        setMessage(body.hints.find((hint) => hint.trigger === 'not_completed')?.text ?? resultMessage(result))
+        return
+      }
+
+      setIsSaving(true)
+      await completeLevel(LEVEL_ID, body.completion.stars, errorTaps, MODULE_IDS.blockly)
+      if (runTokenRef.current !== token) return
+      setCompleted(true)
+    } catch (error: unknown) {
+      if (runTokenRef.current !== token) return
+      setErrorTaps((count) => count + 1)
+      setMessage(error instanceof Error ? error.message : '程序没有运行成功，请再试一次')
+    } finally {
+      if (runTokenRef.current === token) {
+        setIsRunning(false)
+        setIsSaving(false)
+      }
+    }
+  }
+
+  const retry = () => {
+    runTokenRef.current += 1
+    workspaceRef.current?.reset()
+    setIsRunning(false)
+    setIsSaving(false)
+    setCompleted(false)
+    setMessage('')
+    setErrorTaps(0)
+    if (body) setActorState(createInitialActorState(body))
+  }
+
+  if (!student) return <Navigate to="/student/login" replace />
+
+  if (loadError) {
+    return (
+      <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
+        <p className="text-xl text-ink">{loadError}</p>
+        <Link to={MAP_HREF} className="btn-primary">回到课程地图</Link>
+      </div>
+    )
+  }
+
+  if (gate && !gate.allowed) {
+    return (
+      <div className="student-shell flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
+        <p className="text-xl text-ink">{ENTER_COPY[gate.reason]}</p>
+        <Link to={MAP_HREF} className="btn-primary">回到课程地图</Link>
+      </div>
+    )
+  }
+
+  if (!lesson || !body || !actorState || !gate) {
+    return (
+      <div className="student-shell flex min-h-screen items-center justify-center bg-canvas" role="status" aria-label="正在打开这一关">
+        <div className="grid w-full max-w-6xl gap-6 px-6 lg:grid-cols-2 lg:px-8">
+          <Skeleton className="h-80 rounded-3xl" />
+          <Skeleton className="h-80 rounded-3xl" />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="student-shell flex min-h-screen flex-col bg-canvas">
+      <header className="border-b border-line bg-white">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-4 p-6 lg:px-8">
+          <Link to={MAP_HREF} className="btn-ghost px-2" aria-label="返回课程地图">←</Link>
+          <BrandMark size={30} />
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold text-ink">第 1 关 · {lesson.title}</h1>
+            <p className="truncate text-sm text-ink-soft">{lesson.goal}</p>
+          </div>
+          <span className="ml-auto rounded-field bg-success-soft px-3 py-2 text-sm font-semibold text-success">Blockly</span>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl flex-1 p-6 lg:p-8">
+        <div className="grid items-start gap-6 lg:grid-cols-2">
+          <section className="card p-5 sm:p-6" aria-labelledby="stage-title">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-brand-strong">看角色走一走</p>
+                <h2 id="stage-title" className="mt-1 text-xl font-bold text-ink">从起点到终点</h2>
+              </div>
+              <span className="text-sm text-ink-soft">最多 {body.workspace.max_blocks} 块积木</span>
+            </div>
+            <GridStage map={body.map} actorState={actorState} animationDurationMs={body.runtime.move_duration_ms} />
+            <p className="mt-4 text-sm text-ink-soft" aria-live="polite">
+              {message || body.hints.find((hint) => hint.trigger === 'initial')?.text || '拖一块积木，再点运行。'}
+            </p>
+          </section>
+
+          <section className="space-y-4" aria-labelledby="workspace-title">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-brand-strong">动手试一试</p>
+                <h2 id="workspace-title" className="mt-1 text-xl font-bold text-ink">搭建你的程序</h2>
+              </div>
+              <span className="text-sm text-ink-soft">最多 {body.workspace.max_blocks} 块积木</span>
+            </div>
+            <BlocklyWorkspace
+              ref={workspaceRef}
+              availableBlocks={body.available_blocks}
+              initialBlocks={body.workspace.initial_blocks}
+              maxBlocks={body.workspace.max_blocks}
+              onReadyChange={handleWorkspaceReady}
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="btn-primary px-8 text-lg disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!workspaceReady || isRunning || isSaving}
+                onClick={() => void run()}
+              >
+                {isSaving ? '正在记录…' : isRunning ? '运行中…' : '运行'}
+              </button>
+              <button type="button" className="btn-secondary" disabled={isRunning || isSaving} onClick={retry}>重新开始</button>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      {completed ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-canvas/95 px-6" role="dialog" aria-modal="true" aria-labelledby="completion-title">
+          <div className="card fade-up w-full max-w-xl p-10 text-center">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success-soft text-4xl text-success">✓</div>
+            <h2 id="completion-title" className="mt-6 text-3xl font-bold text-ink">这一关完成了</h2>
+            <p className="mt-3 text-ink-soft">{body.completion.success_text}</p>
+            <p className="mt-4 text-lg tracking-[0.2em] text-amber-500" aria-label={`${body.completion.stars} 星`}>
+              {'★'.repeat(body.completion.stars)}{'☆'.repeat(3 - body.completion.stars)}
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <button type="button" className="btn-primary px-8" onClick={retry}>再试一次</button>
+              <Link to={MAP_HREF} className="btn-secondary">回到课程地图</Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}

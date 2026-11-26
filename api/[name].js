@@ -19913,7 +19913,10 @@ function aggregateLastStudiedAtByStudent(input) {
 var MODULE_REGISTRY = [
   { module_id: "matupix", has_progress: true, status: "active", org_toggleable: true },
   { module_id: "python", has_progress: true, status: "active", org_toggleable: false },
-  { module_id: "arduino", has_progress: false, status: "coming_soon", org_toggleable: false }
+  { module_id: "arduino", has_progress: false, status: "coming_soon", org_toggleable: false },
+  // 新模块：整模块开关由平台开通，不交给机构自行开关（与 python 一致）。
+  { module_id: "blockly", has_progress: true, status: "active", org_toggleable: false },
+  { module_id: "easy-robot", has_progress: true, status: "active", org_toggleable: false }
 ];
 var MODULE_IDS = Object.fromEntries(
   MODULE_REGISTRY.map((module) => [module.module_id, module.module_id])
@@ -20254,6 +20257,27 @@ function dbMessage(error) {
   return error instanceof Error ? error.message : "";
 }
 
+// server/moduleLevels.ts
+async function findModuleLevel(moduleId, levelId) {
+  const requested = levelId.trim();
+  if (!requested) return null;
+  return one(
+    `select module_id, level_id, sort_order, title, goal, body
+     from public.module_level
+     where module_id = $1 and level_id = $2 and published = true
+     limit 1`,
+    [moduleId, requested]
+  );
+}
+function lessonFromModuleLevel(row) {
+  return {
+    title: row.title,
+    goal: row.goal,
+    body: row.body,
+    sort_order: Number(row.sort_order)
+  };
+}
+
 // server/enter.ts
 function canonicalLevelId(levelId) {
   const trimmed = levelId.trim();
@@ -20266,7 +20290,23 @@ function canonicalLevelId(levelId) {
 function isOrgStatus(value) {
   return value === "trial" || value === "active" || value === "expired" || value === "disabled";
 }
-async function decideStudentLevel(studentId, levelId) {
+async function decideModuleStudentLevel(orgId, status, moduleId, levelId) {
+  if (status === "disabled") return { httpStatus: 200, levelId, result: { allowed: false, reason: "org_disabled" } };
+  if (status !== "trial" && status !== "active") return { httpStatus: 200, levelId, result: { allowed: false, reason: "org_expired" } };
+  const [level, moduleEntitlements] = await Promise.all([
+    findModuleLevel(moduleId, levelId),
+    q(
+      "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
+      [orgId]
+    )
+  ]);
+  if (!level) return { httpStatus: 200, levelId, result: { allowed: false, reason: "not_found" } };
+  if (!enabledModuleIds(moduleEntitlements).includes(moduleId)) {
+    return { httpStatus: 200, levelId, result: { allowed: false, reason: "module_not_entitled" } };
+  }
+  return { httpStatus: 200, levelId, result: { allowed: true, reason: "ok" } };
+}
+async function decideStudentLevel(studentId, levelId, moduleId = "python") {
   const canonical = canonicalLevelId(levelId);
   const student = await one(
     "select id, org_id, group_id, status from public.student where id = $1",
@@ -20287,6 +20327,9 @@ async function decideStudentLevel(studentId, levelId) {
   ]);
   if (!isOrgStatus(statusRow?.status)) {
     return { httpStatus: 500, levelId: canonical, result: { allowed: false, reason: "not_found" } };
+  }
+  if (moduleId !== "python") {
+    return decideModuleStudentLevel(student.org_id, statusRow.status, moduleId, canonical);
   }
   const orderMatch = /^L(\d+)$/i.exec(canonical);
   const levelOrder = orderMatch ? Number(orderMatch[1]) : null;
@@ -20323,12 +20366,12 @@ async function decideStudentLevel(studentId, levelId) {
   );
   const stageLevel = readStageLevel(levelRow?.stage_level) ?? (levelOrder == null ? null : stageLevelOfOrder(levelOrder));
   const enabledModules = enabledModuleIds(moduleEntitlements);
-  const grant = activeGrantOf(moduleEntitlements, "python", enabledModules);
+  const grant = activeGrantOf(moduleEntitlements, moduleId, enabledModules);
   const maxLevel = openMaxLevel(grant ? { maxLevel: Number(grant.max_level), validUntil: grant.valid_until ?? null } : null);
   return {
     httpStatus: 200,
     levelId: canonical,
-    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel, enabledModules })
+    result: decideEnterLevel({ status: statusRow.status, levelOrder, entitled, stageLevel, maxLevel, enabledModules, moduleId })
   };
 }
 
@@ -50416,10 +50459,13 @@ function missingRelation(error) {
   return message.includes("does not exist");
 }
 async function readProgressMarks(studentId) {
-  const sql = (table, withBonus) => `select cl.sort_order, src.completed, src.stars${withBonus ? ", src.bonus_completed" : ""}
+  const sql = (table, withBonus) => {
+    const moduleFilter = table === "learning_record" ? ` and src.module_id = 'python'` : "";
+    return `select cl.sort_order, src.completed, src.stars${withBonus ? ", src.bonus_completed" : ""}
      from public.${table} src
      join public.course_level cl on cl.level_id = src.level_id
-     where src.student_id = $1`;
+     where src.student_id = $1${moduleFilter}`;
+  };
   const mapRows = (rows) => rows.map((row) => ({
     order: Number(row.sort_order),
     completed: Boolean(row.completed),
@@ -50444,7 +50490,11 @@ async function readProgressMarks(studentId) {
     }
   }
 }
-async function resolveStoredLevel(requested) {
+async function resolveStoredLevel(requested, moduleId = "python") {
+  if (moduleId !== "python") {
+    const stored = await findModuleLevel(moduleId, requested);
+    return stored ? { levelId: stored.level_id, order: Number(stored.sort_order) } : null;
+  }
   const direct = await one(
     "select level_id, sort_order from public.course_level where level_id = $1",
     [requested]
@@ -59642,28 +59692,47 @@ function missingRelation2(error) {
 }
 async function readLevelProgress(studentId) {
   try {
-    return await q("select level_id, completed, stars from public.learning_record where student_id = $1", [studentId]);
+    return await q(`select level_id, completed, stars from public.learning_record where student_id = $1 and module_id = 'python'`, [studentId]);
   } catch (error) {
     if (!missingRelation2(error)) throw error;
     return await q("select level_id, completed, stars from public.level_progress where student_id = $1", [studentId]);
   }
 }
-async function writeLevelProgress(studentId, levelId, stars, taps) {
+async function writeLevelProgress(studentId, levelId, stars, taps, moduleId = "python") {
   try {
-    await q(
-      `insert into public.learning_record (student_id, level_id, completed, stars, change_done, error_taps, runs)
-       values ($1, $2, true, $3, true, $4, 1)
-       on conflict (student_id, level_id) do update set
-         completed = true,
-         stars = excluded.stars,
-         change_done = true,
-         error_taps = excluded.error_taps,
-         runs = public.learning_record.runs + 1,
-         updated_at = now()`,
-      [studentId, levelId, stars, taps]
-    );
+    if (moduleId === "python") {
+      await q(
+        `insert into public.learning_record (student_id, level_id, completed, stars, change_done, error_taps, runs)
+         values ($1, $2, true, $3, true, $4, 1)
+         on conflict (student_id, level_id) do update set
+           completed = true,
+           stars = excluded.stars,
+           change_done = true,
+           error_taps = excluded.error_taps,
+           runs = public.learning_record.runs + 1,
+           updated_at = now()`,
+        [studentId, levelId, stars, taps]
+      );
+    } else {
+      const written = await q(
+        `insert into public.learning_record (student_id, module_id, level_id, completed, stars, change_done, error_taps, runs)
+         values ($1, $2, $3, true, $4, true, $5, 1)
+         on conflict (student_id, level_id) do update set
+           completed = true,
+           stars = excluded.stars,
+           change_done = true,
+           error_taps = excluded.error_taps,
+           runs = public.learning_record.runs + 1,
+           updated_at = now()
+         where public.learning_record.module_id = excluded.module_id
+         returning module_id`,
+        [studentId, moduleId, levelId, stars, taps]
+      );
+      if (!written.length) throw new Error("\u5173\u5361\u7F16\u53F7\u5DF2\u88AB\u5176\u4ED6\u6A21\u5757\u5360\u7528");
+    }
   } catch (error) {
     if (!missingRelation2(error)) throw error;
+    if (moduleId !== "python") throw error;
     const existing = await one("select id, runs from public.level_progress where student_id = $1 and level_id = $2", [
       studentId,
       levelId
@@ -59691,6 +59760,14 @@ async function loadCurriculumPosition(studentId) {
 }
 function isOrgStatus2(value) {
   return value === "trial" || value === "active" || value === "expired" || value === "disabled";
+}
+function readProgressModuleId(body) {
+  const raw = body.moduleId;
+  if (raw == null) return "python";
+  if (typeof raw !== "string") return null;
+  const moduleId = raw.trim();
+  if (!moduleId) return "python";
+  return PROGRESS_MODULE_IDS.includes(moduleId) ? moduleId : null;
 }
 async function effectiveStatus(org) {
   const row = await one("select effective_org_status($1, $2, $3) as status", [
@@ -59998,7 +60075,7 @@ async function orgStudents(req) {
                 coalesce(lr.completed, false) as completed
          from public.course_level cl
          left join public.learning_record lr
-           on lr.level_id = cl.level_id and lr.student_id = $1
+           on lr.level_id = cl.level_id and lr.student_id = $1 and lr.module_id = 'python'
          where lr.student_id is not null or cl.sort_order = $2
          order by cl.sort_order`,
         [studentId, student.current_level_order]
@@ -60303,7 +60380,7 @@ async function orgLessonFacts(orgId, effective, studentIds) {
     `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed, lr.updated_at
          from public.learning_record lr
          join public.course_level cl on cl.level_id = lr.level_id
-         where lr.student_id = any($1::uuid[])`,
+         where lr.student_id = any($1::uuid[]) and lr.module_id = 'python'`,
     [studentIds]
   ) : [];
   const typingRows = studentIds.length ? await q(
@@ -60570,17 +60647,23 @@ async function studentLearning(req) {
     return ok4({ ok: true });
   }
   if (action === "complete") {
-    const decision = await decideStudentLevel(student.id, requestedLevelId);
+    const moduleId = readProgressModuleId(req.body);
+    if (!moduleId) return fail4(400, "\u6A21\u5757\u4E0D\u5B58\u5728");
+    const decision = await decideStudentLevel(student.id, requestedLevelId, moduleId);
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result };
-    const stored = await resolveStoredLevel(decision.levelId);
+    const stored = await resolveStoredLevel(decision.levelId, moduleId);
     const stars = Number(req.body.stars);
     const errorTaps = Number(req.body.errorTaps ?? 0);
     if (!stored || !Number.isInteger(stars) || stars < 0 || stars > 3) return fail4(400, "\u5B8C\u6210\u8BB0\u5F55\u4E0D\u5B8C\u6574");
     await q("update public.study_session set ended_at = now() where student_id = $1 and ended_at is null", [student.id]);
     const taps = Number.isFinite(errorTaps) ? errorTaps : 0;
-    await writeLevelProgress(student.id, stored.levelId, stars, taps);
-    if (stored.order + 1 > student.current_level_order) {
-      await q("update public.student set current_level_order = $2, last_active_at = now() where id = $1", [student.id, stored.order + 1]);
+    await writeLevelProgress(student.id, stored.levelId, stars, taps, moduleId);
+    if (moduleId === "python") {
+      if (stored.order + 1 > student.current_level_order) {
+        await q("update public.student set current_level_order = $2, last_active_at = now() where id = $1", [student.id, stored.order + 1]);
+      } else {
+        await q("update public.student set last_active_at = now() where id = $1", [student.id]);
+      }
     } else {
       await q("update public.student set last_active_at = now() where id = $1", [student.id]);
     }
@@ -60593,7 +60676,7 @@ async function studentLearning(req) {
     const storedCopy = await findCourseLevel(decision.levelId);
     const bonus = readBonusChallenge(bodyBonus(storedCopy?.body));
     if (!stored || !bonus) return fail4(400, "\u8FD9\u4E00\u5173\u6CA1\u6709\u5DE9\u56FA\u7EC3\u4E60");
-    const done = await one("select completed from public.learning_record where student_id = $1 and level_id = $2", [
+    const done = await one(`select completed from public.learning_record where student_id = $1 and level_id = $2 and module_id = 'python'`, [
       student.id,
       stored.levelId
     ]);
@@ -60630,7 +60713,7 @@ async function studentLearning(req) {
       `select cl.sort_order, cl.body
        from public.learning_record lr
        join public.course_level cl on cl.level_id = lr.level_id
-       where lr.student_id = $1 and lr.completed = true
+       where lr.student_id = $1 and lr.completed = true and lr.module_id = 'python'
        order by lr.updated_at desc
        limit 5`,
       [student.id]
@@ -60643,13 +60726,21 @@ async function studentLearning(req) {
     return ok4({ items });
   }
   if (action === "level") {
-    const decision = await decideStudentLevel(student.id, requestedLevelId);
+    const moduleId = readProgressModuleId(req.body);
+    if (!moduleId) return fail4(400, "\u6A21\u5757\u4E0D\u5B58\u5728");
+    const decision = await decideStudentLevel(student.id, requestedLevelId, moduleId);
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result };
-    const storedCopy = await findCourseLevel(decision.levelId);
-    const level = storedCopy ? lessonFromStored(storedCopy) : null;
+    if (moduleId === "python") {
+      const storedCopy2 = await findCourseLevel(decision.levelId);
+      const level2 = storedCopy2 ? lessonFromStored(storedCopy2) : null;
+      if (!level2) return fail4(404, "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173");
+      const hints2 = await q("select pattern, friendly_message from public.error_hint");
+      return ok4({ level: level2, reviewChunk: await reviewChunkFor(level2.order, level2.drill_chunk ?? null), hints: hints2 });
+    }
+    const storedCopy = await findModuleLevel(moduleId, decision.levelId);
+    const level = storedCopy ? lessonFromModuleLevel(storedCopy) : null;
     if (!level) return fail4(404, "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173");
-    const hints2 = await q("select pattern, friendly_message from public.error_hint");
-    return ok4({ level, reviewChunk: await reviewChunkFor(level.order, level.drill_chunk ?? null), hints: hints2 });
+    return ok4({ level });
   }
   const access2 = await loadStudentAccess(student);
   const marks = await readProgressMarks(student.id);
@@ -60754,9 +60845,11 @@ async function studentEnter(req) {
   if ("status" in auth) return { status: 401, body: { allowed: false, reason: "unauthenticated" } };
   const student = await one("select status from public.student where id = $1", [auth.subjectId]);
   if (!student || student.status !== "active") return { status: 401, body: { allowed: false, reason: "unauthenticated" } };
+  const moduleId = readProgressModuleId(req.body);
+  if (!moduleId) return fail4(400, "\u6A21\u5757\u4E0D\u5B58\u5728");
   const levelRaw = req.body.levelId;
   const levelId = typeof levelRaw === "number" && Number.isInteger(levelRaw) ? String(levelRaw) : typeof levelRaw === "string" ? levelRaw : "";
-  const decision = await decideStudentLevel(auth.subjectId, levelId);
+  const decision = await decideStudentLevel(auth.subjectId, levelId, moduleId);
   return { status: decision.httpStatus, body: decision.result };
 }
 var INVALID_CODE = "\u7ED1\u5B9A\u7801\u65E0\u6548\u6216\u5DF2\u5931\u6548";
@@ -60857,7 +60950,7 @@ async function parentPortal(req) {
       `select cl.level_id, cl.sort_order, cl.title, cl.parent_brief
        from public.learning_record lr
        join public.course_level cl on cl.level_id = lr.level_id
-       where lr.student_id = $1 and lr.completed = true
+       where lr.student_id = $1 and lr.completed = true and lr.module_id = 'python'
        order by cl.sort_order`,
       [student.id]
     );
@@ -60865,7 +60958,7 @@ async function parentPortal(req) {
       `select cl.level_id, cl.sort_order, cl.title, cl.parent_brief
        from public.learning_record lr
        join public.course_level cl on cl.level_id = lr.level_id
-       where lr.student_id = $1 and lr.completed = true and lr.updated_at >= $2
+       where lr.student_id = $1 and lr.completed = true and lr.module_id = 'python' and lr.updated_at >= $2
        order by cl.sort_order`,
       [student.id, start.toISOString()]
     );
@@ -60883,7 +60976,7 @@ async function parentPortal(req) {
         `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed, lr.updated_at
          from public.learning_record lr
          join public.course_level cl on cl.level_id = lr.level_id
-         where lr.student_id = $1`,
+         where lr.student_id = $1 and lr.module_id = 'python'`,
         [student.id]
       )
     ]);

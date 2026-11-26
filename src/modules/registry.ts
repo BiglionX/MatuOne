@@ -1,5 +1,7 @@
 import { MODULE_REGISTRY, type ModuleId } from '../../supabase/functions/_shared/moduleRegistry'
 import { arduinoModule } from './arduino'
+import { blocklyModule } from './blockly'
+import { easyRobotModule } from './easyRobot'
 import { matupixModule } from './matupix'
 import { pythonModule } from './python'
 import type { TeachingModuleDef } from './types'
@@ -8,6 +10,8 @@ const DEFINITIONS: Record<ModuleId, TeachingModuleDef> = {
   matupix: matupixModule,
   python: pythonModule,
   arduino: arduinoModule,
+  blockly: blocklyModule,
+  'easy-robot': easyRobotModule,
 }
 
 /** React 侧注册表：清单与顺序取自共享 MODULE_REGISTRY，不在此另写一份。 */

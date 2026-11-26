@@ -22,7 +22,7 @@
     "audit:origins": "tsx scripts/check-part-origins.ts",
     "audit:ldraw": "tsx scripts/check-ldraw.ts",
     "shot:magic": "node scripts/shot-magic.mjs",
-    "test": "tsx --test scripts/typing-stats.test.ts scripts/gate-rules.test.ts",
+    "test": "tsx --test scripts/typing-stats.test.ts scripts/gate-rules.test.ts scripts/module-level-body.test.ts scripts/module-level-interpreter.test.ts",
     "test:gates": "tsx --test scripts/gate-rules.test.ts",
     "e2e": "playwright test",
     "e2e:auth": "playwright test e2e/auth-regression.spec.ts"
@@ -31,6 +31,7 @@
     "@react-three/drei": "9.122.0",
     "@react-three/fiber": "8.18.0",
     "@supabase/supabase-js": "^2.119.0",
+    "blockly": "13.5.0",
     "pg": "^8.23.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

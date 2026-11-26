@@ -1,7 +1,9 @@
 import { buildPlayableLevel } from '../src/lib/lessonMaterial'
 import { curriculumLevelByOrder, curriculumUnitById } from '../src/data/fullCurriculum'
 import type { ProgressMark } from '../src/lib/curriculumState'
+import type { ProgressModuleId } from '../supabase/functions/_shared/moduleRegistry'
 import { one, q } from './db'
+import { findModuleLevel } from './moduleLevels'
 
 function orderOf(levelId: string): number | null {
   const matched = /^L(\d+)$/i.exec(levelId.trim())
@@ -17,11 +19,14 @@ function missingRelation(error: unknown): boolean {
 
 /** 进度只按 student_id 取，不带 org_id。序号用来和目录对齐。 */
 export async function readProgressMarks(studentId: string): Promise<ProgressMark[]> {
-  const sql = (table: 'learning_record' | 'level_progress', withBonus: boolean) =>
-    `select cl.sort_order, src.completed, src.stars${withBonus ? ', src.bonus_completed' : ''}
+  const sql = (table: 'learning_record' | 'level_progress', withBonus: boolean) => {
+    // level_progress 是旧表，没有 module_id 列；只有 learning_record 需要按模块过滤。
+    const moduleFilter = table === 'learning_record' ? ` and src.module_id = 'python'` : ''
+    return `select cl.sort_order, src.completed, src.stars${withBonus ? ', src.bonus_completed' : ''}
      from public.${table} src
      join public.course_level cl on cl.level_id = src.level_id
-     where src.student_id = $1`
+     where src.student_id = $1${moduleFilter}`
+  }
   const mapRows = (rows: { sort_order: number; completed: boolean; stars: number; bonus_completed?: boolean }[]): ProgressMark[] =>
     rows.map((row) => ({
       order: Number(row.sort_order),
@@ -49,10 +54,17 @@ export async function readProgressMarks(studentId: string): Promise<ProgressMark
 }
 
 /**
- * 目录编号是 L0001，已经入库的旧行仍是 L01。
- * 先按 level_id，再按序号找到那一行；没有就补一行，好让学习记录的外键能写上。
+ * Python 目录编号是 L0001，已经入库的旧行仍是 L01；新模块只按 module_level 精确匹配。
  */
-export async function resolveStoredLevel(requested: string): Promise<{ levelId: string; order: number } | null> {
+export async function resolveStoredLevel(
+  requested: string,
+  moduleId: ProgressModuleId = 'python',
+): Promise<{ levelId: string; order: number } | null> {
+  if (moduleId !== 'python') {
+    const stored = await findModuleLevel(moduleId, requested)
+    return stored ? { levelId: stored.level_id, order: Number(stored.sort_order) } : null
+  }
+
   const direct = await one<{ level_id: string; sort_order: number }>(
     'select level_id, sort_order from public.course_level where level_id = $1',
     [requested],

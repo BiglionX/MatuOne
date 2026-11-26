@@ -22,6 +22,7 @@ import { planStudentImport } from '../supabase/functions/_shared/studentImport'
 import { dbMessage, one, q } from './db'
 import { decideStudentLevel } from './enter'
 import { readProgressMarks, resolveStoredLevel } from './curriculum'
+import { findModuleLevel, lessonFromModuleLevel } from './moduleLevels'
 import { readBonusChallenge } from '../src/lib/bonusChallenge'
 import { readDrillChunk } from '../src/lib/drillChunk'
 import { reviewChunkOf } from '../supabase/functions/_shared/drill_chunks'
@@ -55,29 +56,56 @@ function missingRelation(error: unknown): boolean {
 
 async function readLevelProgress(studentId: string): Promise<{ level_id: string; completed: boolean; stars: number }[]> {
   try {
-    return await q('select level_id, completed, stars from public.learning_record where student_id = $1', [studentId])
+    return await q(`select level_id, completed, stars from public.learning_record where student_id = $1 and module_id = 'python'`, [studentId])
   } catch (error) {
     if (!missingRelation(error)) throw error
     return await q('select level_id, completed, stars from public.level_progress where student_id = $1', [studentId])
   }
 }
 
-async function writeLevelProgress(studentId: string, levelId: string, stars: number, taps: number): Promise<void> {
+async function writeLevelProgress(
+  studentId: string,
+  levelId: string,
+  stars: number,
+  taps: number,
+  moduleId: ProgressModuleId = 'python',
+): Promise<void> {
   try {
-    await q(
-      `insert into public.learning_record (student_id, level_id, completed, stars, change_done, error_taps, runs)
-       values ($1, $2, true, $3, true, $4, 1)
-       on conflict (student_id, level_id) do update set
-         completed = true,
-         stars = excluded.stars,
-         change_done = true,
-         error_taps = excluded.error_taps,
-         runs = public.learning_record.runs + 1,
-         updated_at = now()`,
-      [studentId, levelId, stars, taps],
-    )
+    if (moduleId === 'python') {
+      await q(
+        `insert into public.learning_record (student_id, level_id, completed, stars, change_done, error_taps, runs)
+         values ($1, $2, true, $3, true, $4, 1)
+         on conflict (student_id, level_id) do update set
+           completed = true,
+           stars = excluded.stars,
+           change_done = true,
+           error_taps = excluded.error_taps,
+           runs = public.learning_record.runs + 1,
+           updated_at = now()`,
+        [studentId, levelId, stars, taps],
+      )
+    } else {
+      const written = await q<{ module_id: string }>(
+        `insert into public.learning_record (student_id, module_id, level_id, completed, stars, change_done, error_taps, runs)
+         values ($1, $2, $3, true, $4, true, $5, 1)
+         on conflict (student_id, level_id) do update set
+           completed = true,
+           stars = excluded.stars,
+           change_done = true,
+           error_taps = excluded.error_taps,
+           runs = public.learning_record.runs + 1,
+           updated_at = now()
+         where public.learning_record.module_id = excluded.module_id
+         returning module_id`,
+        [studentId, moduleId, levelId, stars, taps],
+      )
+      // 主键仍按 (student_id, level_id)；跨模块同号时拒绝覆盖，保护 Python 进度。
+      if (!written.length) throw new Error('关卡编号已被其他模块占用')
+    }
   } catch (error) {
     if (!missingRelation(error)) throw error
+    // 新模块必须写 learning_record.module_id，不能回落到没有模块维度的旧表。
+    if (moduleId !== 'python') throw error
     const existing = await one<{ id: string; runs: number }>('select id, runs from public.level_progress where student_id = $1 and level_id = $2', [
       studentId,
       levelId,
@@ -107,6 +135,15 @@ async function loadCurriculumPosition(studentId: string) {
 
 function isOrgStatus(value: unknown): value is OrgStatus {
   return value === 'trial' || value === 'active' || value === 'expired' || value === 'disabled'
+}
+
+function readProgressModuleId(body: Record<string, unknown>): ProgressModuleId | null {
+  const raw = body.moduleId
+  if (raw == null) return 'python'
+  if (typeof raw !== 'string') return null
+  const moduleId = raw.trim()
+  if (!moduleId) return 'python'
+  return (PROGRESS_MODULE_IDS as readonly string[]).includes(moduleId) ? (moduleId as ProgressModuleId) : null
 }
 
 async function effectiveStatus(org: { status: string; trial_expire_at: string | null; service_end_at: string | null }): Promise<OrgStatus | null> {
@@ -476,7 +513,7 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
                 coalesce(lr.completed, false) as completed
          from public.course_level cl
          left join public.learning_record lr
-           on lr.level_id = cl.level_id and lr.student_id = $1
+           on lr.level_id = cl.level_id and lr.student_id = $1 and lr.module_id = 'python'
          where lr.student_id is not null or cl.sort_order = $2
          order by cl.sort_order`,
         [studentId, student.current_level_order],
@@ -820,7 +857,7 @@ async function orgLessonFacts(orgId: string, effective: OrgStatus, studentIds: s
         `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed, lr.updated_at
          from public.learning_record lr
          join public.course_level cl on cl.level_id = lr.level_id
-         where lr.student_id = any($1::uuid[])`,
+         where lr.student_id = any($1::uuid[]) and lr.module_id = 'python'`,
         [studentIds],
       )
     : []
@@ -1144,18 +1181,25 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
     return ok({ ok: true })
   }
   if (action === 'complete') {
-    const decision = await decideStudentLevel(student.id, requestedLevelId)
+    const moduleId = readProgressModuleId(req.body)
+    if (!moduleId) return fail(400, '模块不存在')
+    const decision = await decideStudentLevel(student.id, requestedLevelId, moduleId)
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
-    const stored = await resolveStoredLevel(decision.levelId)
+    const stored = await resolveStoredLevel(decision.levelId, moduleId)
     const stars = Number(req.body.stars)
     const errorTaps = Number(req.body.errorTaps ?? 0)
     if (!stored || !Number.isInteger(stars) || stars < 0 || stars > 3) return fail(400, '完成记录不完整')
     await q('update public.study_session set ended_at = now() where student_id = $1 and ended_at is null', [student.id])
     const taps = Number.isFinite(errorTaps) ? errorTaps : 0
-    await writeLevelProgress(student.id, stored.levelId, stars, taps)
-    if (stored.order + 1 > student.current_level_order) {
-      await q('update public.student set current_level_order = $2, last_active_at = now() where id = $1', [student.id, stored.order + 1])
+    await writeLevelProgress(student.id, stored.levelId, stars, taps, moduleId)
+    if (moduleId === 'python') {
+      if (stored.order + 1 > student.current_level_order) {
+        await q('update public.student set current_level_order = $2, last_active_at = now() where id = $1', [student.id, stored.order + 1])
+      } else {
+        await q('update public.student set last_active_at = now() where id = $1', [student.id])
+      }
     } else {
+      // 新模块完成只更新活跃时间；current_level_order 是 Python 游标，不能被模块内 sort_order 污染。
       await q('update public.student set last_active_at = now() where id = $1', [student.id])
     }
     return ok({ ok: true })
@@ -1167,7 +1211,7 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
     const storedCopy = await findCourseLevel(decision.levelId)
     const bonus = readBonusChallenge(bodyBonus(storedCopy?.body))
     if (!stored || !bonus) return fail(400, '这一关没有巩固练习')
-    const done = await one<{ completed: boolean }>('select completed from public.learning_record where student_id = $1 and level_id = $2', [
+    const done = await one<{ completed: boolean }>(`select completed from public.learning_record where student_id = $1 and level_id = $2 and module_id = 'python'`, [
       student.id,
       stored.levelId,
     ])
@@ -1204,7 +1248,7 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
       `select cl.sort_order, cl.body
        from public.learning_record lr
        join public.course_level cl on cl.level_id = lr.level_id
-       where lr.student_id = $1 and lr.completed = true
+       where lr.student_id = $1 and lr.completed = true and lr.module_id = 'python'
        order by lr.updated_at desc
        limit 5`,
       [student.id],
@@ -1217,13 +1261,22 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
     return ok({ items })
   }
   if (action === 'level') {
-    const decision = await decideStudentLevel(student.id, requestedLevelId)
+    const moduleId = readProgressModuleId(req.body)
+    if (!moduleId) return fail(400, '模块不存在')
+    const decision = await decideStudentLevel(student.id, requestedLevelId, moduleId)
     if (!decision.result.allowed) return { status: decision.httpStatus, body: decision.result }
-    const storedCopy = await findCourseLevel(decision.levelId)
-    const level = storedCopy ? lessonFromStored(storedCopy) : null
+    if (moduleId === 'python') {
+      const storedCopy = await findCourseLevel(decision.levelId)
+      const level = storedCopy ? lessonFromStored(storedCopy) : null
+      if (!level) return fail(404, '没有找到这一关')
+      const hints = await q('select pattern, friendly_message from public.error_hint')
+      return ok({ level, reviewChunk: await reviewChunkFor(level.order, level.drill_chunk ?? null), hints })
+    }
+
+    const storedCopy = await findModuleLevel(moduleId, decision.levelId)
+    const level = storedCopy ? lessonFromModuleLevel(storedCopy) : null
     if (!level) return fail(404, '没有找到这一关')
-    const hints = await q('select pattern, friendly_message from public.error_hint')
-    return ok({ level, reviewChunk: await reviewChunkFor(level.order, level.drill_chunk ?? null), hints })
+    return ok({ level })
   }
 
   const access = await loadStudentAccess(student)
@@ -1340,9 +1393,11 @@ async function studentEnter(req: ApiRequest): Promise<ApiResult> {
   if ('status' in auth) return { status: 401, body: { allowed: false, reason: 'unauthenticated' } }
   const student = await one<{ status: string }>('select status from public.student where id = $1', [auth.subjectId])
   if (!student || student.status !== 'active') return { status: 401, body: { allowed: false, reason: 'unauthenticated' } }
+  const moduleId = readProgressModuleId(req.body)
+  if (!moduleId) return fail(400, '模块不存在')
   const levelRaw = req.body.levelId
   const levelId = typeof levelRaw === 'number' && Number.isInteger(levelRaw) ? String(levelRaw) : typeof levelRaw === 'string' ? levelRaw : ''
-  const decision = await decideStudentLevel(auth.subjectId, levelId)
+  const decision = await decideStudentLevel(auth.subjectId, levelId, moduleId)
   return { status: decision.httpStatus, body: decision.result }
 }
 
@@ -1454,7 +1509,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       `select cl.level_id, cl.sort_order, cl.title, cl.parent_brief
        from public.learning_record lr
        join public.course_level cl on cl.level_id = lr.level_id
-       where lr.student_id = $1 and lr.completed = true
+       where lr.student_id = $1 and lr.completed = true and lr.module_id = 'python'
        order by cl.sort_order`,
       [student.id],
     )
@@ -1462,7 +1517,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       `select cl.level_id, cl.sort_order, cl.title, cl.parent_brief
        from public.learning_record lr
        join public.course_level cl on cl.level_id = lr.level_id
-       where lr.student_id = $1 and lr.completed = true and lr.updated_at >= $2
+       where lr.student_id = $1 and lr.completed = true and lr.module_id = 'python' and lr.updated_at >= $2
        order by cl.sort_order`,
       [student.id, start.toISOString()],
     )
@@ -1480,7 +1535,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
         `select lr.student_id, cl.sort_order, cl.stage_level as stage_sort, lr.completed, lr.updated_at
          from public.learning_record lr
          join public.course_level cl on cl.level_id = lr.level_id
-         where lr.student_id = $1`,
+         where lr.student_id = $1 and lr.module_id = 'python'`,
         [student.id],
       ),
     ])

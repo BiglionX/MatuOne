@@ -84,7 +84,7 @@ test('模块清单只有一份：前端常量直接来自后端注册表', () =>
 })
 
 test('模块策略锁死：只有 MatuPix 机构可自行开关，Arduino 还没进度', () => {
-  assert.deepEqual(PROGRESS_MODULE_IDS, ['matupix', 'python'])
+  assert.deepEqual(PROGRESS_MODULE_IDS, ['matupix', 'python', 'blockly', 'easy-robot'])
   assert.deepEqual(TOGGLEABLE_MODULE_IDS, ['matupix'])
   assert.equal(isToggleableModule('matupix'), true)
   assert.equal(isToggleableModule('python'), false)
@@ -171,7 +171,10 @@ test('家长会话按游客口径：不触发机构开通校验', () => {
 })
 
 test('teaching_module 迁移种子与共享注册表同源', () => {
-  const sql = readSource('supabase/migrations/20261125110000_teaching_module_catalog.sql')
+  const sql = [
+    readSource('supabase/migrations/20261125110000_teaching_module_catalog.sql'),
+    readSource('supabase/migrations/20261125130000_module_level_multi_module.sql'),
+  ].join('\n')
   for (const module of MODULE_REGISTRY) {
     assert.ok(sql.includes(`'${module.module_id}'`), `迁移里缺少模块 ${module.module_id}`)
   }

@@ -52,6 +52,7 @@ function matupixLocalSummary(): ModuleProgressSummary {
 /**
  * 按 moduleId 取进度摘要。
  * - arduino：筹备中（注册表 status = coming_soon）
+ * - blockly / easy-robot：模块已注册、机构可开通，但关卡与进度还没上线，同样按筹备中展示
  * - matupix：本机进度占位。此处不判断机构开通与否 —— 判断开通请用
  *   listStudentModuleSummaries / matupixSummary(entitled)
  * - python：本函数没有「当前学生 session」单点数据源，请改用
@@ -59,6 +60,7 @@ function matupixLocalSummary(): ModuleProgressSummary {
  */
 export const getProgressSummary: GetProgressSummary = async (moduleId) => {
   if (moduleId === 'arduino') return comingSoonSummary('arduino')
+  if (moduleId === 'blockly' || moduleId === 'easy-robot') return comingSoonSummary(moduleId)
   if (moduleId === 'matupix') return matupixLocalSummary()
   if (moduleId === 'python') {
     throw new Error(

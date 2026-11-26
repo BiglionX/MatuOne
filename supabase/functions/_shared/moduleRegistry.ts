@@ -8,6 +8,9 @@ export const MODULE_REGISTRY = [
   { module_id: 'matupix', has_progress: true, status: 'active', org_toggleable: true },
   { module_id: 'python', has_progress: true, status: 'active', org_toggleable: false },
   { module_id: 'arduino', has_progress: false, status: 'coming_soon', org_toggleable: false },
+  // 新模块：整模块开关由平台开通，不交给机构自行开关（与 python 一致）。
+  { module_id: 'blockly', has_progress: true, status: 'active', org_toggleable: false },
+  { module_id: 'easy-robot', has_progress: true, status: 'active', org_toggleable: false },
 ] as const
 
 export type ModuleId = (typeof MODULE_REGISTRY)[number]['module_id']
