@@ -87,6 +87,8 @@ export interface OrgStudentListItem extends Student {
   completedCount: number
   authorizedLevels: number
   authorizedCompletedCount: number
+  /** 图形化编程已通关数，与 Python 进度分开统计。 */
+  blocklyCompletedCount: number
   /** 机构有效开通模块；各模块进度只从这里派生，不再各自算 xxxEnabled */
   enabledModules: ProgressModuleId[]
   /** 三链最近学习时间；API 始终返回（无记录为 null） */
@@ -109,6 +111,7 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       bound_parent_count?: number
       completed_count?: number
       authorizedCompletedCount?: number
+      blocklyCompletedCount?: number
       enabledModules?: ProgressModuleId[]
       lastStudiedAt?: string | null
       typing_wpm?: number | null
@@ -134,6 +137,7 @@ export async function listOrgStudents(): Promise<OrgStudentListItem[]> {
       completedCount: authorizedCompletedCount,
       authorizedLevels,
       authorizedCompletedCount,
+      blocklyCompletedCount: row.blocklyCompletedCount ?? 0,
       enabledModules: row.enabledModules ?? [],
       lastStudiedAt: row.lastStudiedAt ?? null,
       typing: row.typing_wpm == null ? null : { wpm: row.typing_wpm, accuracy: row.typing_accuracy ?? 0 },

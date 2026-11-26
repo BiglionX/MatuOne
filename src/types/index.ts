@@ -334,6 +334,12 @@ export interface ParentLessonBrief {
   parentBrief: string | null
 }
 
+export interface BlocklyProgress {
+  completedCount: number
+  /** 第一个未通关关卡标题；全部通关时为 null。 */
+  currentLevelTitle: string | null
+}
+
 export interface ParentChildView {
   student: Student
   groupName: string
@@ -346,6 +352,8 @@ export interface ParentChildView {
   authorizedLevels: number
   /** 授权范围内已完成关卡数 */
   authorizedCompletedCount: number
+  /** 图形化编程进度，与 Python 统计分开返回。 */
+  blocklyProgress: BlocklyProgress
   /**
    * 最近学习时间 ISO；三链：
    * study_session.started_at → learning_record.updated_at → typing_record.created_at；均无则 null。

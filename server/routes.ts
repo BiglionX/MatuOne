@@ -23,7 +23,7 @@ import { dbMessage, one, q } from './db'
 import { decideStudentLevel } from './enter'
 import { readProgressMarks, resolveStoredLevel } from './curriculum'
 import { findModuleLevel, lessonFromModuleLevel } from './moduleLevels'
-import { buildBlocklyMap } from './blocklyMap'
+import { buildBlocklyMap, readBlocklyProgressByStudent } from './blocklyMap'
 import { readBonusChallenge } from '../src/lib/bonusChallenge'
 import { readDrillChunk } from '../src/lib/drillChunk'
 import { reviewChunkOf } from '../supabase/functions/_shared/drill_chunks'
@@ -597,7 +597,11 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
        from public.student s where s.org_id = $1`,
       [ctx.orgId],
     )
-    const facts = await orgLessonFacts(ctx.orgId, ctx.status, students.map((student) => student.id))
+    const studentIds = students.map((student) => student.id)
+    const [facts, blocklyProgress] = await Promise.all([
+      orgLessonFacts(ctx.orgId, ctx.status, studentIds),
+      readBlocklyProgressByStudent(studentIds),
+    ])
     return ok({
       authorizedLevels: facts.authorizedLevels,
       students: students.map((student) => {
@@ -607,6 +611,7 @@ async function orgStudents(req: ApiRequest): Promise<ApiResult> {
           ...student,
           completed_count: authorizedCompletedCount,
           authorizedCompletedCount,
+          blocklyCompletedCount: blocklyProgress.get(student.id)?.completedCount ?? 0,
           enabledModules: facts.enabledModules,
           lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
           typing_wpm: typing?.wpm ?? null,
@@ -1537,7 +1542,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
        order by cl.sort_order`,
       [student.id, start.toISOString()],
     )
-    const [entitlementRows, published, authLessons] = await Promise.all([
+    const [entitlementRows, published, authLessons, blocklyProgress] = await Promise.all([
       q<ModuleEntitlementRow>(
         'select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1',
         [student.org_id],
@@ -1554,6 +1559,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
          where lr.student_id = $1 and lr.module_id = 'python'`,
         [student.id],
       ),
+      readBlocklyProgressByStudent([student.id]),
     ])
     // 家长不能调 org-modules；只读附带孩子所属机构的有效开通模块，与列表/看板同源。
     const enabledModules = enabledModuleIds(entitlementRows)
@@ -1590,6 +1596,7 @@ async function parentPortal(req: ApiRequest): Promise<ApiResult> {
       completedCount: progress.length,
       authorizedLevels: authFacts.authorizedLevels,
       authorizedCompletedCount: authFacts.completed.get(student.id) ?? 0,
+      blocklyProgress: blocklyProgress.get(student.id) ?? { completedCount: 0, currentLevelTitle: null },
       lastStudiedAt,
       enabledModules,
       position: await loadCurriculumPosition(student.id),

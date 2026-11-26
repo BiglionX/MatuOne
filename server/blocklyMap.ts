@@ -52,6 +52,51 @@ export interface BlocklyMap {
   totalCount: number
 }
 
+export interface BlocklyProgressSummary {
+  completedCount: number
+  /** 第一个未通关关卡标题；全部通关时为 null。 */
+  currentLevelTitle: string | null
+}
+
+export interface BlocklyProgressLevel {
+  levelId: string
+  sortOrder: number
+  title: string
+}
+
+export interface BlocklyProgressRecord {
+  studentId: string
+  levelId: string
+  completed: boolean
+}
+
+/** 家长端与机构端共用同一套 Blockly 进度口径，且只认已发布的有效关卡。 */
+export function summarizeBlocklyProgress(
+  studentIds: readonly string[],
+  levels: readonly BlocklyProgressLevel[],
+  records: readonly BlocklyProgressRecord[],
+): Map<string, BlocklyProgressSummary> {
+  const ordered = [...levels].sort((a, b) => a.sortOrder - b.sortOrder)
+  const levelIds = new Set(ordered.map((level) => level.levelId))
+  const completedByStudent = new Map<string, Set<string>>()
+  for (const record of records) {
+    if (!record.completed || !levelIds.has(record.levelId)) continue
+    const completed = completedByStudent.get(record.studentId) ?? new Set<string>()
+    completed.add(record.levelId)
+    completedByStudent.set(record.studentId, completed)
+  }
+  return new Map<string, BlocklyProgressSummary>(
+    [...new Set(studentIds)].map((studentId) => {
+      const completed = completedByStudent.get(studentId) ?? new Set<string>()
+      const current = ordered.find((level) => !completed.has(level.levelId)) ?? null
+      return [studentId, {
+        completedCount: completed.size,
+        currentLevelTitle: current?.title ?? null,
+      }] as const
+    }),
+  )
+}
+
 /** 解锁判定只需要排序和通关状态，抽出来做纯函数便于单测。 */
 export interface BlocklyLevelSeed {
   levelId: string
@@ -205,4 +250,31 @@ export async function buildBlocklyMap(studentId: string, moduleId = 'blockly'): 
     completedCount,
     totalCount: levels.length,
   }
+}
+
+/** 家长端/机构端批量读取；progress 查询必须显式限定 blockly，避免混入 Python。 */
+export async function readBlocklyProgressByStudent(
+  studentIds: readonly string[],
+): Promise<Map<string, BlocklyProgressSummary>> {
+  const ids = [...new Set(studentIds)]
+  if (!ids.length) return new Map()
+  const [levels, records] = await Promise.all([
+    q<{ level_id: string; sort_order: number; title: string }>(
+      `select level_id, sort_order, title
+       from public.module_level
+       where module_id = 'blockly' and published = true
+       order by sort_order`,
+    ),
+    q<{ student_id: string; level_id: string; completed: boolean }>(
+      `select student_id, level_id, completed
+       from public.learning_record
+       where student_id = any($1::uuid[]) and module_id = 'blockly'`,
+      [ids],
+    ),
+  ])
+  return summarizeBlocklyProgress(
+    ids,
+    levels.map((row) => ({ levelId: row.level_id, sortOrder: Number(row.sort_order), title: row.title })),
+    records.map((row) => ({ studentId: row.student_id, levelId: row.level_id, completed: row.completed === true })),
+  )
 }

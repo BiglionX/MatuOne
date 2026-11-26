@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { applyLinearUnlock } from '../server/blocklyMap.ts'
+import { applyLinearUnlock, summarizeBlocklyProgress } from '../server/blocklyMap.ts'
 
 const OUTLINE_MIGRATION = 'supabase/migrations/20261126120000_blockly_curriculum_outline.sql'
 
@@ -115,4 +115,51 @@ test('关卡序号 1 到 60 连续且不重复', () => {
   const orders = levels.map((level) => level.sortOrder).sort((a, b) => a - b)
   assert.deepEqual(orders, Array.from({ length: 60 }, (_, index) => index + 1))
   assert.equal(new Set(levels.map((level) => level.levelId)).size, 60)
+})
+
+const progressLevels = [
+  { levelId: 'blk-001', sortOrder: 1, title: '直走' },
+  { levelId: 'blk-002', sortOrder: 2, title: 'L 型路线' },
+  { levelId: 'blk-003', sortOrder: 3, title: '长直道' },
+]
+
+test('没有 Blockly 记录时显示 0 关，并指向第一关', () => {
+  const result = summarizeBlocklyProgress(['student-a'], progressLevels, [])
+  assert.deepEqual(result.get('student-a'), { completedCount: 0, currentLevelTitle: '直走' })
+})
+
+test('Blockly 汇总只认有效已发布关卡，不受 Python 和未完成记录干扰', () => {
+  const result = summarizeBlocklyProgress(['student-a'], progressLevels, [
+    { studentId: 'student-a', levelId: 'blk-001', completed: true },
+    { studentId: 'student-a', levelId: 'blk-002', completed: false },
+    { studentId: 'student-a', levelId: 'L0001', completed: true },
+    { studentId: 'student-a', levelId: 'blk-999', completed: true },
+  ])
+  assert.deepEqual(result.get('student-a'), { completedCount: 1, currentLevelTitle: 'L 型路线' })
+})
+
+test('关卡顺序打乱时仍取第一个未通关关卡', () => {
+  const result = summarizeBlocklyProgress(['student-a'], [progressLevels[2], progressLevels[0], progressLevels[1]], [
+    { studentId: 'student-a', levelId: 'blk-001', completed: true },
+  ])
+  assert.deepEqual(result.get('student-a'), { completedCount: 1, currentLevelTitle: 'L 型路线' })
+})
+
+test('全部通关时不再虚构下一关', () => {
+  const result = summarizeBlocklyProgress(['student-a'], progressLevels, progressLevels.map((level) => ({
+    studentId: 'student-a',
+    levelId: level.levelId,
+    completed: true,
+  })))
+  assert.deepEqual(result.get('student-a'), { completedCount: 3, currentLevelTitle: null })
+})
+
+test('批量汇总按学生隔离，且每名学生都有默认值', () => {
+  const result = summarizeBlocklyProgress(['student-a', 'student-b', 'student-a'], progressLevels, [
+    { studentId: 'student-a', levelId: 'blk-001', completed: true },
+    { studentId: 'student-b', levelId: 'blk-002', completed: true },
+  ])
+  assert.equal(result.size, 2)
+  assert.deepEqual(result.get('student-a'), { completedCount: 1, currentLevelTitle: 'L 型路线' })
+  assert.deepEqual(result.get('student-b'), { completedCount: 1, currentLevelTitle: '直走' })
 })

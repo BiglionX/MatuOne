@@ -343,7 +343,7 @@ export function OrgStudents() {
           <TableSkeleton rows={6} cols={6} />
         ) : (
         <div className="overflow-x-auto">
-          <table className="data-table w-full min-w-[1180px] text-sm">
+          <table className="data-table w-full min-w-[1320px] text-sm">
             <thead>
               <tr className="border-b border-line bg-canvas text-left text-ink-soft">
                 <th className="px-6 py-3 font-medium">姓名</th>
@@ -351,6 +351,7 @@ export function OrgStudents() {
                 <th className="px-6 py-3 font-medium">分组</th>
                 <th className="px-6 py-3 font-medium">账号状态</th>
                 <th className="px-6 py-3 font-medium">进度</th>
+                <th className="px-6 py-3 font-medium">图形化通关数</th>
                 <th className="px-6 py-3 font-medium">打字</th>
                 <th className="px-6 py-3 font-medium">最近学习</th>
                 <th className="px-6 py-3 font-medium">最近登录</th>
@@ -361,7 +362,7 @@ export function OrgStudents() {
             <tbody>
               {visible.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-6 py-10 text-center text-ink-soft">
+                  <td colSpan={11} className="px-6 py-10 text-center text-ink-soft">
                     {emptyLabel}
                   </td>
                 </tr>
@@ -426,6 +427,7 @@ export function OrgStudents() {
                   <td className="px-6 py-3.5 text-ink-soft">
                     {cloudSummary ? formatOrgProgressLine(cloudSummary) : '尚未开通'}
                   </td>
+                  <td className="px-6 py-3.5 text-ink">{student.blocklyCompletedCount}</td>
                   <td className="px-6 py-3.5 text-ink-soft">
                     {student.typing ? `${student.typing.wpm} WPM · ${student.typing.accuracy}%` : '还没有记录'}
                   </td>

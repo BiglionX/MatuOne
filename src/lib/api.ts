@@ -473,6 +473,7 @@ export function getChildView(studentId: string): ParentChildView {
     completedCount,
     authorizedLevels: LEVELS.length,
     authorizedCompletedCount: completedCount,
+    blocklyProgress: { completedCount: 0, currentLevelTitle: null },
     lastStudiedAt: student.lastActiveAt?.trim() ? student.lastActiveAt : weekly.lastStudyDate,
     enabledModules: ['python', 'matupix'],
     curriculum: presentParentProgress(currentOrder),

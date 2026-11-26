@@ -50535,6 +50535,145 @@ async function resolveStoredLevel(requested, moduleId = "python") {
   return created ? { levelId: created.level_id, order: Number(created.sort_order) } : null;
 }
 
+// server/blocklyMap.ts
+function summarizeBlocklyProgress(studentIds, levels, records) {
+  const ordered = [...levels].sort((a, b) => a.sortOrder - b.sortOrder);
+  const levelIds = new Set(ordered.map((level) => level.levelId));
+  const completedByStudent = /* @__PURE__ */ new Map();
+  for (const record of records) {
+    if (!record.completed || !levelIds.has(record.levelId)) continue;
+    const completed = completedByStudent.get(record.studentId) ?? /* @__PURE__ */ new Set();
+    completed.add(record.levelId);
+    completedByStudent.set(record.studentId, completed);
+  }
+  return new Map(
+    [...new Set(studentIds)].map((studentId) => {
+      const completed = completedByStudent.get(studentId) ?? /* @__PURE__ */ new Set();
+      const current = ordered.find((level) => !completed.has(level.levelId)) ?? null;
+      return [studentId, {
+        completedCount: completed.size,
+        currentLevelTitle: current?.title ?? null
+      }];
+    })
+  );
+}
+function applyLinearUnlock(seeds) {
+  const ordered = [...seeds].sort((a, b) => a.sortOrder - b.sortOrder);
+  let previousCompleted = true;
+  return ordered.map((seed) => {
+    const unlocked = previousCompleted;
+    previousCompleted = seed.completed;
+    return { ...seed, unlocked };
+  });
+}
+async function buildBlocklyMap(studentId, moduleId = "blockly") {
+  const [termRows, unitRows, levelRows, progressRows] = await Promise.all([
+    q(
+      `select term_id, title, stage_label, summary, sort_order, weeks
+       from public.module_term
+       where module_id = $1
+       order by sort_order`,
+      [moduleId]
+    ),
+    q(
+      `select unit_id, term_id, title, summary, scene_form, sort_order
+       from public.module_unit
+       where module_id = $1
+       order by term_id, sort_order`,
+      [moduleId]
+    ),
+    q(
+      `select level_id, title, sort_order, term_id, unit_id, level_type, milestone_badge, is_placeholder
+       from public.module_level
+       where module_id = $1 and published = true
+       order by sort_order`,
+      [moduleId]
+    ),
+    q(
+      `select level_id, completed
+       from public.learning_record
+       where student_id = $1 and module_id = $2`,
+      [studentId, moduleId]
+    )
+  ]);
+  const completedIds = new Set(progressRows.filter((row) => row.completed).map((row) => row.level_id));
+  const levels = applyLinearUnlock(
+    levelRows.map((row) => ({
+      levelId: row.level_id,
+      title: row.title,
+      sortOrder: Number(row.sort_order),
+      termId: row.term_id ?? "",
+      unitId: row.unit_id ?? "",
+      levelType: row.level_type,
+      milestoneBadge: row.milestone_badge,
+      isPlaceholder: Boolean(row.is_placeholder),
+      completed: completedIds.has(row.level_id)
+    }))
+  );
+  const levelsByUnit2 = /* @__PURE__ */ new Map();
+  for (const level of levels) {
+    if (!level.unitId) continue;
+    const bucket = levelsByUnit2.get(level.unitId);
+    if (bucket) bucket.push(level);
+    else levelsByUnit2.set(level.unitId, [level]);
+  }
+  const unitsByTerm = /* @__PURE__ */ new Map();
+  for (const row of unitRows) {
+    const unit = {
+      unitId: row.unit_id,
+      termId: row.term_id,
+      title: row.title,
+      summary: row.summary,
+      sceneForm: row.scene_form,
+      sortOrder: Number(row.sort_order),
+      levels: levelsByUnit2.get(row.unit_id) ?? []
+    };
+    const bucket = unitsByTerm.get(unit.termId);
+    if (bucket) bucket.push(unit);
+    else unitsByTerm.set(unit.termId, [unit]);
+  }
+  const terms = termRows.map((row) => ({
+    termId: row.term_id,
+    title: row.title,
+    stageLabel: row.stage_label,
+    summary: row.summary,
+    sortOrder: Number(row.sort_order),
+    weeks: Number(row.weeks),
+    units: unitsByTerm.get(row.term_id) ?? []
+  }));
+  const completedCount = levels.filter((level) => level.completed).length;
+  const currentTerm = terms.find((term) => term.units.some((unit) => unit.levels.some((level) => !level.completed))) ?? terms[terms.length - 1] ?? null;
+  return {
+    terms,
+    currentTermId: currentTerm?.termId ?? "",
+    completedCount,
+    totalCount: levels.length
+  };
+}
+async function readBlocklyProgressByStudent(studentIds) {
+  const ids = [...new Set(studentIds)];
+  if (!ids.length) return /* @__PURE__ */ new Map();
+  const [levels, records] = await Promise.all([
+    q(
+      `select level_id, sort_order, title
+       from public.module_level
+       where module_id = 'blockly' and published = true
+       order by sort_order`
+    ),
+    q(
+      `select student_id, level_id, completed
+       from public.learning_record
+       where student_id = any($1::uuid[]) and module_id = 'blockly'`,
+      [ids]
+    )
+  ]);
+  return summarizeBlocklyProgress(
+    ids,
+    levels.map((row) => ({ levelId: row.level_id, sortOrder: Number(row.sort_order), title: row.title })),
+    records.map((row) => ({ studentId: row.student_id, levelId: row.level_id, completed: row.completed === true }))
+  );
+}
+
 // src/lib/bonusChallenge.ts
 var TYPES = ["param_edit", "code_fill", "typing", "reverse_draw", "add_color"];
 function isType(value) {
@@ -60148,7 +60287,11 @@ async function orgStudents(req) {
        from public.student s where s.org_id = $1`,
       [ctx.orgId]
     );
-    const facts = await orgLessonFacts(ctx.orgId, ctx.status, students.map((student) => student.id));
+    const studentIds = students.map((student) => student.id);
+    const [facts, blocklyProgress] = await Promise.all([
+      orgLessonFacts(ctx.orgId, ctx.status, studentIds),
+      readBlocklyProgressByStudent(studentIds)
+    ]);
     return ok4({
       authorizedLevels: facts.authorizedLevels,
       students: students.map((student) => {
@@ -60158,6 +60301,7 @@ async function orgStudents(req) {
           ...student,
           completed_count: authorizedCompletedCount,
           authorizedCompletedCount,
+          blocklyCompletedCount: blocklyProgress.get(student.id)?.completedCount ?? 0,
           enabledModules: facts.enabledModules,
           lastStudiedAt: facts.lastStudiedAt.get(student.id) ?? null,
           typing_wpm: typing?.wpm ?? null,
@@ -60742,6 +60886,18 @@ async function studentLearning(req) {
     if (!level) return fail4(404, "\u6CA1\u6709\u627E\u5230\u8FD9\u4E00\u5173");
     return ok4({ level });
   }
+  if (action === "map") {
+    const moduleId = readProgressModuleId(req.body);
+    if (!moduleId) return fail4(400, "\u6A21\u5757\u4E0D\u5B58\u5728");
+    if (moduleId === "blockly") {
+      const access3 = await loadStudentAccess(student);
+      if (access3.status === "disabled") return fail4(403, "\u673A\u6784\u5DF2\u505C\u7528\uFF0C\u8BF7\u8054\u7CFB\u8001\u5E08");
+      if (access3.status !== "trial" && access3.status !== "active") return fail4(403, "\u672C\u673A\u6784\u670D\u52A1\u5DF2\u5230\u671F\uFF0C\u8BF7\u8054\u7CFB\u8001\u5E08");
+      if (!access3.enabledModules.includes("blockly")) return fail4(403, "\u8BE5\u6A21\u5757\u672A\u5F00\u901A\uFF0C\u8BF7\u8054\u7CFB\u673A\u6784");
+      const map = await buildBlocklyMap(student.id, moduleId);
+      return ok4({ moduleId, ...map });
+    }
+  }
   const access2 = await loadStudentAccess(student);
   const marks = await readProgressMarks(student.id);
   if (action === "unit") {
@@ -60962,7 +61118,7 @@ async function parentPortal(req) {
        order by cl.sort_order`,
       [student.id, start.toISOString()]
     );
-    const [entitlementRows, published, authLessons] = await Promise.all([
+    const [entitlementRows, published, authLessons, blocklyProgress] = await Promise.all([
       q(
         "select module_id, max_level, valid_until, revoked_at from public.org_entitlement where org_id = $1",
         [student.org_id]
@@ -60978,7 +61134,8 @@ async function parentPortal(req) {
          join public.course_level cl on cl.level_id = lr.level_id
          where lr.student_id = $1 and lr.module_id = 'python'`,
         [student.id]
-      )
+      ),
+      readBlocklyProgressByStudent([student.id])
     ]);
     const enabledModules = enabledModuleIds(entitlementRows);
     const grant = activeGrantOf(entitlementRows, "python", enabledModules);
@@ -61014,6 +61171,7 @@ async function parentPortal(req) {
       completedCount: progress.length,
       authorizedLevels: authFacts.authorizedLevels,
       authorizedCompletedCount: authFacts.completed.get(student.id) ?? 0,
+      blocklyProgress: blocklyProgress.get(student.id) ?? { completedCount: 0, currentLevelTitle: null },
       lastStudiedAt,
       enabledModules,
       position: await loadCurriculumPosition(student.id),

@@ -9,6 +9,7 @@ import {
   listParentStudentModuleProgress,
 } from '@/api/moduleProgress'
 import type { ModuleProgressSummary, StudentModulesProgressView } from '@/types/moduleProgress'
+import { MODULE_IDS } from '@/modules/ids'
 import { WpmChart } from '@/components/WpmChart'
 import { BrandMark } from '@/components/BrandMark'
 import { FormError } from '@/components/FormError'
@@ -158,6 +159,25 @@ export function ParentHome() {
   const extraModules = modules.filter(
     (m) => m.availability !== 'not_entitled' && m !== cloudModule,
   )
+  const blocklyProgress = view?.blocklyProgress
+  const blocklyOpened = view?.enabledModules.includes(MODULE_IDS.blockly) === true
+  const blocklyCard = blocklyOpened && blocklyProgress ? (
+    <section className="card p-5">
+      <h2 className="text-lg font-semibold text-ink">图形化编程</h2>
+      <p className="mt-3 text-ink">
+        已通关 <span className="font-semibold">{blocklyProgress.completedCount}</span> 关
+      </p>
+      {blocklyProgress.completedCount === 0 ? (
+        <p className="mt-2 text-sm text-ink-soft">尚未开始</p>
+      ) : blocklyProgress.currentLevelTitle ? (
+        <p className="mt-2 text-sm text-ink-soft">
+          当前进度：第 {blocklyProgress.completedCount + 1} 关（{blocklyProgress.currentLevelTitle}）
+        </p>
+      ) : (
+        <p className="mt-2 text-sm text-ink-soft">当前进度：已全部通关</p>
+      )}
+    </section>
+  ) : null
 
   const lookup = async () => {
     const trimmed = code.trim()
@@ -367,6 +387,7 @@ export function ParentHome() {
                 </>
               )}
             </section>
+            {blocklyCard}
             <section className="card p-5">
               <h2 className="text-lg font-semibold text-ink">里程碑</h2>
               {view.curriculum.badges.length > 0 ? (
@@ -386,6 +407,7 @@ export function ParentHome() {
             </section>
               </>
             )}
+            {!courseOpened && blocklyCard}
             <section className="card p-5">
               {confirmUnbind ? (
                 <div>

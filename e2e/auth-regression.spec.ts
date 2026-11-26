@@ -15,6 +15,7 @@ import {
   watchAuthApi,
   STUDENT_ACCOUNT,
 } from './auth-fixtures'
+import { q } from '../server/db'
 
 let safetyRestore: (() => Promise<void>) | null = null
 
@@ -151,5 +152,54 @@ test.describe('A3 Trial + 已开通 Python 的 Level 1 免费放行', () => {
   } finally {
     await restore()
   }
+  })
+})
+
+test.describe('A4 Blockly 成果进入家长端与机构端', () => {
+  test('陈小满的图形化通关数非 0，Python 数字仍按原口径返回', async ({ page }) => {
+    test.skip(!hasDatabase, skipReason)
+    await loginParent(page)
+    const home = await api(page, '/api/parent-portal', {})
+    expect(home.status).toBe(200)
+    const child = (home.body.children as Record<string, unknown>[]).find(
+      (item) => (item.student as Record<string, unknown>)?.name === '陈小满',
+    )
+    expect(child).toBeDefined()
+    const studentId = String((child?.student as Record<string, unknown>).id)
+    const [blocklyRows, pythonRows] = await Promise.all([
+      q<{ n: number }>(
+        `select count(*)::int as n
+         from public.learning_record lr
+         join public.module_level ml on ml.module_id = 'blockly' and ml.level_id = lr.level_id
+         where lr.student_id = $1 and lr.module_id = 'blockly' and lr.completed = true and ml.published = true`,
+        [studentId],
+      ),
+      q<{ n: number }>(
+        `select count(*)::int as n
+         from public.learning_record lr
+         join public.course_level cl on cl.level_id = lr.level_id
+         where lr.student_id = $1 and lr.module_id = 'python' and lr.completed = true and cl.published = true`,
+        [studentId],
+      ),
+    ])
+    const blocklyCount = blocklyRows[0]?.n ?? 0
+    const pythonCount = pythonRows[0]?.n ?? 0
+    expect(blocklyCount).toBeGreaterThan(0)
+    expect((child?.blocklyProgress as { completedCount: number }).completedCount).toBe(blocklyCount)
+    expect(child?.completedCount).toBe(pythonCount)
+    const card = page.locator('section').filter({ has: page.getByRole('heading', { name: '图形化编程', exact: true }) })
+    await expect(card).toContainText(`已通关 ${blocklyCount} 关`)
+    await expect(card).toContainText('当前进度：')
+
+    await loginOrg(page)
+    const list = await api(page, '/api/org-students', {}, { 'x-action': 'list' })
+    expect(list.status).toBe(200)
+    const row = (list.body.students as Record<string, unknown>[]).find((student) => student.account === STUDENT_ACCOUNT)
+    expect(row?.blocklyCompletedCount).toBe(blocklyCount)
+    expect(row?.completed_count).toBe(pythonCount)
+    expect(row?.authorizedCompletedCount).toBe(pythonCount)
+    await page.getByRole('link', { name: '学生管理' }).click()
+    const tableRow = page.locator('tbody tr').filter({ hasText: '陈小满' })
+    await expect(tableRow.getByRole('cell', { name: String(blocklyCount), exact: true })).toBeVisible()
   })
 })

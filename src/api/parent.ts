@@ -1,4 +1,4 @@
-import type { ParentChildView, ParentHomeData, ParentSession, ParentStoppedChild, Student } from '@/types'
+import type { BlocklyProgress, ParentChildView, ParentHomeData, ParentSession, ParentStoppedChild, Student } from '@/types'
 import { presentParentProgress } from '@/lib/parentProgress'
 import { callFunction, clearAuth, establishSession } from '@/lib/backend'
 import { PROGRESS_MODULE_IDS, type ProgressModuleId } from '@/modules/ids'
@@ -75,12 +75,13 @@ export async function loadParentHome(): Promise<ParentHomeData> {
     children: Array<
       Omit<
         ParentChildView,
-        'curriculum' | 'student' | 'authorizedLevels' | 'authorizedCompletedCount' | 'lastStudiedAt' | 'enabledModules'
+        'curriculum' | 'student' | 'authorizedLevels' | 'authorizedCompletedCount' | 'blocklyProgress' | 'lastStudiedAt' | 'enabledModules'
       > & {
         student: Omit<Student, 'password' | 'account' | 'bindCode'>
         curriculum?: ParentChildView['curriculum']
         authorizedLevels?: number
         authorizedCompletedCount?: number
+        blocklyProgress?: BlocklyProgress | null
         lastStudiedAt?: string | null
         enabledModules?: string[]
       }
@@ -95,6 +96,7 @@ export async function loadParentHome(): Promise<ParentHomeData> {
       curriculum: child.curriculum ?? presentParentProgress(child.currentLevelOrder),
       authorizedLevels: child.authorizedLevels ?? 0,
       authorizedCompletedCount: child.authorizedCompletedCount ?? 0,
+      blocklyProgress: child.blocklyProgress ?? { completedCount: 0, currentLevelTitle: null },
       lastStudiedAt: child.lastStudiedAt ?? null,
       enabledModules: (child.enabledModules ?? []).filter((id): id is ProgressModuleId =>
         (PROGRESS_MODULE_IDS as readonly string[]).includes(id),
