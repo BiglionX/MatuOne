@@ -40,6 +40,7 @@
     "three": "0.170.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.6.0",
     "@playwright/test": "^1.65.0",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",

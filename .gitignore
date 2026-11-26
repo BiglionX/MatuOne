@@ -33,3 +33,6 @@ backups/
 # 本地 LDraw 源库（OMR 模型 + 官方零件 + 索引，体积很大）。
 # 只用于 scripts/build-magic-models.ts 取材，生成结果已入库，源库不入库。
 .ldraw-src
+
+# 本地 Postgres（PGlite）数据目录，迁移预演用的临时库，不入库。
+.local-pg/
