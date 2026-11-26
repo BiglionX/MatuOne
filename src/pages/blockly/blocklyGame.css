@@ -1,0 +1,254 @@
+/**
+ * Blockly 关卡的舞台动效：角色弹跳、收集物、轨迹、通关撒花、小精灵气泡、积木高亮。
+ *
+ * 动画类名都收在这里，组件里只挂类名；关掉动效的分支统一写在文件末尾。
+ */
+
+/* 角色走到新格子时弹一下 */
+.matu-actor-hop {
+  animation: matuActorHop 320ms ease-in-out;
+  transform-origin: 50% 100%;
+}
+
+@keyframes matuActorHop {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  30% {
+    transform: translateY(-24%) scale(0.94, 1.08);
+  }
+  62% {
+    transform: translateY(0) scale(1.06, 0.94);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+.matu-actor-body {
+  position: relative;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.matu-actor-sprite {
+  font-size: clamp(16px, 3vw, 30px);
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px rgb(6 95 70 / 0.35));
+}
+
+/* 朝向箭头跟着角色转，emoji 本身保持正立 */
+.matu-actor-arrow {
+  position: absolute;
+  bottom: 0;
+  font-size: clamp(9px, 1.5vw, 14px);
+  line-height: 1;
+  color: rgb(var(--brand-strong-rgb) / 0.9);
+}
+
+/* 收集物上下浮动 */
+.matu-collectible {
+  position: absolute;
+  right: 4px;
+  top: 2px;
+  width: clamp(12px, 2.1vw, 20px);
+  height: clamp(12px, 2.1vw, 20px);
+  pointer-events: none;
+  animation: matuCollectFloat 1.8s ease-in-out infinite;
+}
+
+/*
+ * 收集物一律用 CSS 画，不依赖 emoji 字形。
+ * 🪙 属于 Emoji 12.0，Windows 上字体版本偏旧会渲染成豆腐块。
+ */
+.matu-collectible-coin {
+  border-radius: 9999px;
+  background: radial-gradient(circle at 34% 28%, #fef3c7 0%, #fbbf24 44%, #b45309 100%);
+  box-shadow: inset 0 0 0 2px rgb(180 83 9 / 0.6);
+}
+
+.matu-collectible-star {
+  background: #facc15;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+  filter: drop-shadow(0 1px 1px rgb(180 83 9 / 0.45));
+}
+
+.matu-collectible-gem {
+  background: linear-gradient(135deg, #a5f3fc 0%, #22d3ee 45%, #0e7490 100%);
+  clip-path: polygon(50% 0%, 100% 38%, 50% 100%, 0% 38%);
+}
+
+/* ❤ 是 BMP 字符（U+2764），任何系统字体都有，可以放心用字符。 */
+.matu-collectible-heart::before {
+  content: '❤';
+  color: #f43f5e;
+  font-size: clamp(11px, 1.9vw, 18px);
+  line-height: 1;
+}
+
+@keyframes matuCollectFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-18%) rotate(6deg);
+  }
+}
+
+/* 吃掉的瞬间放大淡出 */
+.matu-collectible-pop {
+  animation: matuCollectPop 500ms ease-out forwards;
+}
+
+@keyframes matuCollectPop {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  35% {
+    transform: scale(1.7);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* 走过的格子 */
+.matu-trail-dot {
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgb(var(--brand-rgb) / 0.35);
+}
+
+/* 通关撒花 */
+.matu-confetti {
+  position: absolute;
+  top: 0;
+  border-radius: 2px;
+  animation-name: matuConfettiFall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes matuConfettiFall {
+  0% {
+    top: -6%;
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+  100% {
+    top: 104%;
+    opacity: 0;
+    transform: rotate(540deg);
+  }
+}
+
+.matu-win-flash {
+  animation: matuWinFlash 700ms ease-out forwards;
+}
+
+@keyframes matuWinFlash {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 小精灵气泡 */
+.matu-npc-bubble {
+  animation: matuNpcBubble 260ms ease-out;
+}
+
+@keyframes matuNpcBubble {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 积木高亮：小精灵点名要拖的那一块 */
+.matu-block-highlight {
+  animation: matuBlockPulse 900ms ease-in-out infinite;
+}
+
+@keyframes matuBlockPulse {
+  0%,
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgb(245 158 11 / 0.9));
+  }
+  50% {
+    opacity: 0.55;
+    filter: drop-shadow(0 0 12px rgb(245 158 11 / 1));
+  }
+}
+
+/* 工作区或运行按钮被点名时闪烁 */
+.matu-focus-ring {
+  animation: matuFocusRing 1s ease-in-out infinite;
+}
+
+@keyframes matuFocusRing {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(245 158 11 / 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(245 158 11 / 0.55);
+  }
+}
+
+/* 学生开了「减少动效」，就把所有循环动画关掉 */
+@media (prefers-reduced-motion: reduce) {
+  .matu-actor-hop,
+  .matu-npc-bubble,
+  .matu-block-highlight,
+  .matu-focus-ring {
+    animation: none;
+  }
+
+  .matu-collectible {
+    animation: none;
+  }
+
+  /* 吃掉的和撒花都不再动，直接消失 */
+  .matu-collectible-pop,
+  .matu-confetti {
+    display: none;
+  }
+
+  .matu-win-flash {
+    animation: none;
+    opacity: 0;
+  }
+}
