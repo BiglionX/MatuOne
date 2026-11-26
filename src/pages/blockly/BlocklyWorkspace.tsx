@@ -1,18 +1,18 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import type { Block, WorkspaceSvg } from 'blockly'
-import type { ModuleAvailableBlock, ModuleBlockInstance, ModuleScalar } from '@/modules/curriculum/moduleLevelBody'
-import type { BlockExecutionCommand } from '@/modules/curriculum/moduleLevelInterpreter'
-
-/** Blockly 的删除光标默认指向 .cur 二进制资源；本地只提供精灵图，改用系统光标避免请求不存在的文件。 */
-const BLOCKLY_CURSOR_CSS = `
-  .blockly-workspace .blocklyDraggingDelete,
-  .blockly-workspace .blocklyDraggingDelete .blocklyField {
-    cursor: grabbing !important;
-  }
-`
+import type { Block, Field, MenuOption, WorkspaceSvg } from 'blockly'
+import type {
+  ModuleAvailableBlock,
+  ModuleBlockArgDefinition,
+  ModuleBlockInstance,
+  ModuleBlockKind,
+  ModuleScalar,
+} from '@/modules/curriculum/moduleLevelBody'
+import type { BlockExecutionNode } from '@/modules/curriculum/moduleLevelInterpreter'
 
 export interface BlocklyWorkspaceHandle {
-  getExecutionSequence(): BlockExecutionCommand[]
+  /** 工作区当前的积木树（含嵌套），解释器按这棵树执行。 */
+  getExecutionTree(): BlockExecutionNode[]
+  /** 工作区积木总数（含嵌套子块），和 body.workspace.max_blocks 是同一个口径。 */
   getBlockCount(): number
   reset(): void
 }
@@ -26,18 +26,79 @@ interface BlocklyWorkspaceProps {
 
 type BlocklyRuntime = typeof import('blockly')
 
-function defineAvailableBlocks(blockly: BlocklyRuntime, availableBlocks: ModuleAvailableBlock[]) {
+/** 控制积木的嵌套体输入名，和解释器里的 children 一一对应。 */
+const BODY_INPUT = 'BODY'
+
+/** Blockly 的删除光标默认指向 .cur 二进制资源；本地只提供精灵图，改用系统光标避
+免请求不存在的文件。 */
+const BLOCKLY_CURSOR_CSS = `
+  .blockly-workspace .blocklyDraggingDelete,
+  .blockly-workspace .blocklyDraggingDelete .blocklyField {
+    cursor: grabbing !important;
+  }
+`
+
+const KIND_COLORS: Record<ModuleBlockKind, string> = {
+  action: '#34D399',
+  sensor: '#38BDF8',
+  control: '#FBBF24',
+}
+
+/**
+ * 按积木定义生成可编辑字段。
+ *
+ * Blockly 的 `Input.appendField` 传字符串只会得到一个静态标签，
+ * 所以可编辑参数必须传字段实例，再用第二个参数把字段名挂上去。
+ */
+function createArgField(blockly: BlocklyRuntime, arg: ModuleBlockArgDefinition): Field {
+  switch (arg.type) {
+    case 'number': {
+      const min = arg.min ?? 0
+      const max = arg.max ?? 100
+      const precision = arg.step ?? 1
+      const value = typeof arg.default === 'number' ? arg.default : min
+      return new blockly.FieldNumber(value, min, max, precision)
+    }
+    case 'boolean':
+      return new blockly.FieldCheckbox(arg.default === true)
+    case 'select': {
+      const options: MenuOption[] = (arg.options ?? []).map((option) => [option.label, String(option.value)])
+      if (!options.length) return new blockly.FieldTextInput('')
+      const field = new blockly.FieldDropdown(options)
+      const wanted = typeof arg.default === 'string' ? arg.default : undefined
+      if (wanted !== undefined && options.some((option) => option !== 'separator' && option[1] === wanted)) {
+        field.setValue(wanted)
+      }
+      return field
+    }
+    default:
+      return new blockly.FieldTextInput(typeof arg.default === 'string' ? arg.default : '')
+  }
+}
+
+/**
+ * 积木注册表：遍历本关 available_blocks 动态注册，不再写死 move_forward。
+ *
+ * kind 决定积木形状：动作/传感器积木是一条语句，制积木额外带一个嵌套体输入。
+ */
+export function defineAvailableBlocks(blockly: BlocklyRuntime, availableBlocks: ModuleAvailableBlock[]) {
   for (const definition of availableBlocks) {
     if (blockly.Blocks[definition.type]) continue
-    if (definition.type !== 'move_forward') {
-      throw new Error(`当前 Blockly 工作区尚未注册积木类型 ${definition.type}`)
-    }
     blockly.Blocks[definition.type] = {
       init(this: Block) {
-        this.setColour(definition.color ?? '#34D399')
-        this.appendDummyInput().appendField(definition.label)
+        this.setColour(definition.color ?? KIND_COLORS[definition.kind])
+        if (definition.args.length) {
+          const input = this.appendDummyInput()
+          for (const arg of definition.args) {
+            input.appendField(arg.label)
+            input.appendField(createArgField(blockly, arg), arg.name)
+          }
+        } else {
+          this.appendDummyInput().appendField(definition.label)
+        }
         this.setPreviousStatement(true)
         this.setNextStatement(true)
+        if (definition.kind === 'control') this.appendStatementInput(BODY_INPUT)
       },
     }
   }
@@ -46,24 +107,117 @@ function defineAvailableBlocks(blockly: BlocklyRuntime, availableBlocks: ModuleA
 function readArgs(block: Block, definition: ModuleAvailableBlock): Record<string, ModuleScalar> {
   const args: Record<string, ModuleScalar> = {}
   for (const arg of definition.args) {
-    const value = block.getFieldValue(arg.name)
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') args[arg.name] = value
+    const raw = block.getFieldValue(arg.name)
+    if (raw === 'TRUE') {
+      args[arg.name] = true
+      continue
+    }
+    if (raw === 'FALSE') {
+      args[arg.name] = false
+      continue
+    }
+    if (typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean') args[arg.name] = raw
   }
   return args
 }
 
-function loadInitialBlocks(workspace: WorkspaceSvg, initialBlocks: ModuleBlockInstance[], availableBlocks: ModuleAvailableBlock[]) {
-  let previous: Block | null = null
-  for (const initial of initialBlocks) {
-    const block = workspace.newBlock(initial.type)
-    const definition = availableBlocks.find((item) => item.type === initial.type)
-    if (definition) {
-      for (const [name, value] of Object.entries(initial.args)) block.setFieldValue(value, name)
-    }
-    const previousConnection = block.previousConnection
-    if (previous?.nextConnection && previousConnection) previous.nextConnection.connect(previousConnection)
-    previous = block
+/** 把一条 next 链连同控制积木的嵌套体读成执行树。 */
+function readChain(block: Block | null, definitions: ModuleAvailableBlock[]): BlockExecutionNode | null {
+  if (!block) return null
+  const definition = definitions.find((item) => item.type === block.type)
+  if (!definition) throw new Error(`工作区出现未注册积木 ${block.type}`)
+  const node: BlockExecutionNode = { type: block.type, args: readArgs(block, definition) }
+  const bodyInput = block.getInput(BODY_INPUT)
+  const child = readChain(bodyInput?.connection?.targetBlock() ?? null, definitions)
+  if (child) node.children = [child]
+  node.next = readChain(block.getNextBlock(), definitions)
+  return node
+}
+
+/** 把工作区当前状态读成执行树；顶层的 next 链和控制积木的嵌套体都在里面。 */
+export function readTree(workspace: WorkspaceSvg, definitions: ModuleAvailableBlock[]): BlockExecutionNode[] {
+  const roots: BlockExecutionNode[] = []
+  for (const top of workspace.getTopBlocks(true)) {
+    const node = readChain(top, definitions)
+    if (node) roots.push(node)
   }
+  return roots
+}
+
+/** 顺着 next 链找到链尾。 */
+function chainTail(block: Block): Block {
+  let tail = block
+  while (tail.getNextBlock()) tail = tail.getNextBlock()!
+  return tail
+}
+
+/**
+ * 按定义创建一块积木，并挂上嵌套体和 next 链。
+ *
+ * Blockly 13 的 `workspace.newBlock()` 只建模型不渲染，积木不会出现在画布上；
+ * 必须自己调 `initSvg()`（内部有 initialized 保护，重复调安全）再 `queueRender()`。
+ */
+function createBlock(
+  workspace: WorkspaceSvg,
+  instance: ModuleBlockInstance,
+  availableBlocks: ModuleAvailableBlock[],
+): Block {
+  const block = workspace.newBlock(instance.type)
+  block.initSvg()
+  block.queueRender()
+  const definition = availableBlocks.find((item) => item.type === instance.type)
+  if (definition) {
+    for (const [name, value] of Object.entries(instance.args)) block.setFieldValue(value, name)
+  }
+  const children = instance.children ?? []
+  if (children.length) {
+    const bodyInput = block.getInput(BODY_INPUT)
+    const childHead = buildChain(workspace, children, availableBlocks)
+    if (bodyInput?.connection && childHead?.previousConnection) {
+      bodyInput.connection.connect(childHead.previousConnection)
+    }
+  }
+  if (instance.next) {
+    const nextHead = buildChain(workspace, [instance.next], availableBlocks)
+    if (nextHead?.previousConnection && block.nextConnection) {
+      block.nextConnection.connect(nextHead.previousConnection)
+    }
+  }
+  return block
+}
+
+/**
+ * 连接一串同层积木，返回链头。
+ *
+ * 数组里的每一项自带一条 next 链（createBlock 内部建好），这些链按数组顺序首尾相接。
+ * 这样 `children` 数组既能表示「控制积木里的几块积木」，`initial_blocks` 也能表示
+ * 「工作区预置的一段程序」，两种写法都不会重复建块。
+ */
+function buildChain(
+  workspace: WorkspaceSvg,
+  instances: ModuleBlockInstance[],
+  availableBlocks: ModuleAvailableBlock[],
+): Block | null {
+  let head: Block | null = null
+  let tail: Block | null = null
+  for (const instance of instances) {
+    const block = createBlock(workspace, instance, availableBlocks)
+    if (tail?.nextConnection && block.previousConnection) {
+      tail.nextConnection.connect(block.previousConnection)
+    } else if (!head) {
+      head = block
+    }
+    tail = chainTail(block)
+  }
+  return head
+}
+
+/** 按 body.workspace.initial_blocks 把初始积木铺进工作区。 */
+export function loadInitialBlocks(workspace: WorkspaceSvg, initialBlocks: ModuleBlockInstance[], availableBlocks: ModuleAvailableBlock[]) {
+  const head = buildChain(workspace, initialBlocks, availableBlocks)
+  // 新建的积木都堆在原点，挪开一点，别一上来就盖在一起。
+  head?.moveBy(40, 40)
+  workspace.scrollCenter()
 }
 
 /** Blockly 只在组件挂载后动态导入；类型导入会在构建时擦除。 */
@@ -78,20 +232,10 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
   const [error, setError] = useState('')
 
   useImperativeHandle(ref, () => ({
-    getExecutionSequence() {
+    getExecutionTree() {
       const workspace = workspaceRef.current
       if (!workspace) throw new Error('积木工作区还在加载，请稍候')
-      const sequence: BlockExecutionCommand[] = []
-      for (const topBlock of workspace.getTopBlocks(true)) {
-        let block: Block | null = topBlock
-        while (block) {
-          const definition = definitionsRef.current.find((item) => item.type === block?.type)
-          if (!definition) throw new Error(`工作区出现未注册积木 ${block.type}`)
-          sequence.push({ type: block.type, args: readArgs(block, definition) })
-          block = block.getNextBlock()
-        }
-      }
-      return sequence
+      return readTree(workspace, definitionsRef.current)
     },
     getBlockCount() {
       return workspaceRef.current?.getAllBlocks(false).length ?? 0
@@ -127,7 +271,7 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
           toolbox: { kind: 'categoryToolbox', contents: categories },
           trashcan: true,
           sounds: false,
-          // 全站 COEP require-corp 会拦截 Blockly 默认的远程 media，精灵图必须走同源。
+          // 全站 COEP require-corp 会拦截 Blockly 默认的远程 media，精灵图必须同源。
           media: '/blockly/',
           maxBlocks,
           renderer: 'geras',

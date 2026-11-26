@@ -23,6 +23,7 @@ import { dbMessage, one, q } from './db'
 import { decideStudentLevel } from './enter'
 import { readProgressMarks, resolveStoredLevel } from './curriculum'
 import { findModuleLevel, lessonFromModuleLevel } from './moduleLevels'
+import { buildBlocklyMap } from './blocklyMap'
 import { readBonusChallenge } from '../src/lib/bonusChallenge'
 import { readDrillChunk } from '../src/lib/drillChunk'
 import { reviewChunkOf } from '../supabase/functions/_shared/drill_chunks'
@@ -1277,6 +1278,21 @@ async function studentLearning(req: ApiRequest): Promise<ApiResult> {
     const level = storedCopy ? lessonFromModuleLevel(storedCopy) : null
     if (!level) return fail(404, '没有找到这一关')
     return ok({ level })
+  }
+
+  if (action === 'map') {
+    const moduleId = readProgressModuleId(req.body)
+    if (!moduleId) return fail(400, '模块不存在')
+    if (moduleId === 'blockly') {
+      // Blockly 的地图结构是学期 → 单元 → 关卡三层，和 Python 的两阶段不同，
+      // 所以走独立的 buildBlocklyMap，不复用下面的 presentLearningHome。
+      const access = await loadStudentAccess(student)
+      if (access.status === 'disabled') return fail(403, '机构已停用，请联系老师')
+      if (access.status !== 'trial' && access.status !== 'active') return fail(403, '本机构服务已到期，请联系老师')
+      if (!access.enabledModules.includes('blockly')) return fail(403, '该模块未开通，请联系机构')
+      const map = await buildBlocklyMap(student.id, moduleId)
+      return ok({ moduleId, ...map })
+    }
   }
 
   const access = await loadStudentAccess(student)

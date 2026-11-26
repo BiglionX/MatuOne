@@ -1,8 +1,8 @@
 import type { ActorState } from '@/modules/curriculum/moduleLevelInterpreter'
-import type { GridHeading, ModuleLevelMap } from '@/modules/curriculum/moduleLevelBody'
+import type { GridHeading, ModuleGridScene } from '@/modules/curriculum/moduleLevelBody'
 
 export interface GridStageProps {
-  map: ModuleLevelMap
+  scene: ModuleGridScene
   actorState: ActorState
   animationDurationMs: number
 }
@@ -14,15 +14,15 @@ const HEADING_DEGREES: Record<GridHeading, number> = {
   N: 270,
 }
 
-/** 第 1 关的纯展示舞台；坐标换算和动画都在这里，不执行关卡逻辑。 */
-export function GridStage({ map, actorState, animationDurationMs }: GridStageProps) {
-  const obstacles = new Set(map.obstacles.map((item) => `${item.x},${item.y}`))
-  const cells = Array.from({ length: map.width * map.height }, (_, index) => {
-    const x = index % map.width
-    const y = Math.floor(index / map.width)
+/** 网格舞台；坐标换算和动画都在这里，不执行关卡逻辑。 */
+export function GridStage({ scene, actorState, animationDurationMs }: GridStageProps) {
+  const obstacles = new Set(scene.obstacles.map((item) => `${item.x},${item.y}`))
+  const cells = Array.from({ length: scene.width * scene.height }, (_, index) => {
+    const x = index % scene.width
+    const y = Math.floor(index / scene.width)
     const key = `${x},${y}`
-    const isGoal = x === map.goal.x && y === map.goal.y
-    const isStart = x === map.start.x && y === map.start.y
+    const isGoal = x === scene.goal.x && y === scene.goal.y
+    const isStart = x === scene.start.x && y === scene.start.y
     const isObstacle = obstacles.has(key)
     return (
       <div
@@ -41,14 +41,14 @@ export function GridStage({ map, actorState, animationDurationMs }: GridStagePro
     <div
       className="relative w-full overflow-hidden rounded-3xl border border-emerald-900/10 bg-emerald-50 p-3"
       role="img"
-      aria-label={`${map.width} 列 ${map.height} 行网格，角色位于第 ${actorState.x + 1} 列第 ${actorState.y + 1} 行`}
+      aria-label={`${scene.width} 列 ${scene.height} 行网格，角色位于第 ${actorState.x + 1} 列第 ${actorState.y + 1} 行`}
     >
       <div
         className="grid w-full overflow-hidden rounded-2xl"
         style={{
-          gridTemplateColumns: `repeat(${map.width}, minmax(0, 1fr))`,
-          gridTemplateRows: `repeat(${map.height}, minmax(0, 1fr))`,
-          aspectRatio: `${map.width} / ${map.height}`,
+          gridTemplateColumns: `repeat(${scene.width}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${scene.height}, minmax(0, 1fr))`,
+          aspectRatio: `${scene.width} / ${scene.height}`,
         }}
       >
         {cells}
@@ -57,8 +57,8 @@ export function GridStage({ map, actorState, animationDurationMs }: GridStagePro
         className="pointer-events-none absolute left-3 top-3 flex items-center justify-center p-1.5 transition-transform duration-300 ease-in-out motion-reduce:transition-none"
         data-testid="grid-actor"
         style={{
-          width: `calc((100% - 1.5rem) / ${map.width})`,
-          height: `calc((100% - 1.5rem) / ${map.height})`,
+          width: `calc((100% - 1.5rem) / ${scene.width})`,
+          height: `calc((100% - 1.5rem) / ${scene.height})`,
           transform: `translate(${actorState.x * 100}%, ${actorState.y * 100}%)`,
           transitionDuration: `${animationDurationMs}ms`,
         }}

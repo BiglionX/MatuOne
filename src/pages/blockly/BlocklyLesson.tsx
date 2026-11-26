@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { MODULE_IDS } from '../../../supabase/functions/_shared/moduleRegistry'
 import { completeLevel, loadModuleLevel } from '@/api/learning'
 import { enterLevel, type EnterLevelReason, type ModuleLevelLesson } from '@/api/studentLevel'
@@ -7,7 +7,7 @@ import { getCurrentStudent } from '@/api/studentAuth'
 import { BrandMark } from '@/components/BrandMark'
 import { Skeleton } from '@/components/Skeleton'
 import { ApiError } from '@/lib/apiError'
-import { parseModuleLevelBody, type ModuleLevelBody } from '@/modules/curriculum/moduleLevelBody'
+import { parseModuleLevelBody, gridSceneOf, type ModuleLevelBody } from '@/modules/curriculum/moduleLevelBody'
 import {
   createInitialActorState,
   interpretModuleLevel,
@@ -17,8 +17,14 @@ import {
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from './BlocklyWorkspace'
 import { GridStage } from './GridStage'
 
-const LEVEL_ID = 'blk-001'
-const MAP_HREF = '/student'
+const DEFAULT_LEVEL_ID = 'blk-001'
+const MAP_HREF = '/blockly'
+
+/** blk-001 这类关卡号；取最后一段数字当关卡序号。 */
+function levelNumber(levelId: string): number {
+  const matched = /(\d+)\s*$/.exec(levelId)
+  return matched ? Number(matched[1]) : 1
+}
 
 const ENTER_COPY: Record<EnterLevelReason, string> = {
   ok: '',
@@ -45,6 +51,11 @@ function resultMessage(result: ModuleExecutionResult): string {
 
 export function BlocklyLesson() {
   const student = getCurrentStudent()
+  const navigate = useNavigate()
+  // 关卡号来自路由：/blockly/lesson/:levelId。老的 ?level= 写法留着当兜底。
+  const { levelId: routeLevelId } = useParams<{ levelId: string }>()
+  const [searchParams] = useSearchParams()
+  const levelId = routeLevelId?.trim() || searchParams.get('level')?.trim() || DEFAULT_LEVEL_ID
   const workspaceRef = useRef<BlocklyWorkspaceHandle>(null)
   const runTokenRef = useRef(0)
   const [lesson, setLesson] = useState<ModuleLevelLesson | null>(null)
@@ -71,12 +82,12 @@ export function BlocklyLesson() {
     setMessage('')
     setErrorTaps(0)
 
-    void enterLevel(LEVEL_ID, MODULE_IDS.blockly)
+    void enterLevel(levelId, MODULE_IDS.blockly)
       .then(async (decision) => {
         if (!alive) return
         setGate(decision)
         if (!decision.allowed) return
-        const loaded = await loadModuleLevel(MODULE_IDS.blockly, LEVEL_ID)
+        const loaded = await loadModuleLevel(MODULE_IDS.blockly, levelId)
         if (!alive) return
         const parsed = parseModuleLevelBody(loaded.level.body)
         setLesson(loaded.level)
@@ -96,7 +107,7 @@ export function BlocklyLesson() {
       alive = false
       runTokenRef.current += 1
     }
-  }, [student?.id])
+  }, [student?.id, levelId])
 
   const handleWorkspaceReady = useCallback((ready: boolean) => {
     setWorkspaceReady(ready)
@@ -112,14 +123,14 @@ export function BlocklyLesson() {
     setActorState(createInitialActorState(body))
 
     try {
-      const sequence = workspaceRef.current?.getExecutionSequence() ?? []
-      if (!sequence.length) {
+      const tree = workspaceRef.current?.getExecutionTree() ?? []
+      if (!tree.length) {
         setErrorTaps((count) => count + 1)
         setMessage(body.hints.find((hint) => hint.trigger === 'initial')?.text ?? '先把积木拖到工作区，再点运行。')
         return
       }
 
-      const result = interpretModuleLevel(body, sequence)
+      const result = interpretModuleLevel(body, tree)
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       for (const frame of result.steps) {
         if (runTokenRef.current !== token) return
@@ -136,7 +147,7 @@ export function BlocklyLesson() {
       }
 
       setIsSaving(true)
-      await completeLevel(LEVEL_ID, body.completion.stars, errorTaps, MODULE_IDS.blockly)
+      await completeLevel(levelId, body.completion.stars, errorTaps, MODULE_IDS.blockly)
       if (runTokenRef.current !== token) return
       setCompleted(true)
     } catch (error: unknown) {
@@ -200,7 +211,7 @@ export function BlocklyLesson() {
           <Link to={MAP_HREF} className="btn-ghost px-2" aria-label="返回课程地图">←</Link>
           <BrandMark size={30} />
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold text-ink">第 1 关 · {lesson.title}</h1>
+            <h1 className="truncate text-lg font-semibold text-ink">第 {levelNumber(levelId)} 关 · {lesson.title}</h1>
             <p className="truncate text-sm text-ink-soft">{lesson.goal}</p>
           </div>
           <span className="ml-auto rounded-field bg-success-soft px-3 py-2 text-sm font-semibold text-success">Blockly</span>
@@ -217,7 +228,7 @@ export function BlocklyLesson() {
               </div>
               <span className="text-sm text-ink-soft">最多 {body.workspace.max_blocks} 块积木</span>
             </div>
-            <GridStage map={body.map} actorState={actorState} animationDurationMs={body.runtime.move_duration_ms} />
+            <GridStage scene={gridSceneOf(body)} actorState={actorState} animationDurationMs={body.runtime.move_duration_ms} />
             <p className="mt-4 text-sm text-ink-soft" aria-live="polite">
               {message || body.hints.find((hint) => hint.trigger === 'initial')?.text || '拖一块积木，再点运行。'}
             </p>
@@ -264,7 +275,9 @@ export function BlocklyLesson() {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <button type="button" className="btn-primary px-8" onClick={retry}>再试一次</button>
-              <Link to={MAP_HREF} className="btn-secondary">回到课程地图</Link>
+              <button type="button" className="btn-secondary" onClick={() => navigate(MAP_HREF)}>
+                返回地图
+              </button>
             </div>
           </div>
         </div>

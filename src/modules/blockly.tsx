@@ -3,9 +3,10 @@ import { Route } from 'react-router-dom'
 import { MODULE_IDS } from '../../supabase/functions/_shared/moduleRegistry'
 import type { TeachingModuleDef } from './types'
 
+const BlocklyMap = lazy(() => import('@/pages/blockly/BlocklyMap').then((m) => ({ default: m.BlocklyMap })))
 const BlocklyLesson = lazy(() => import('@/pages/blockly/BlocklyLesson').then((m) => ({ default: m.BlocklyLesson })))
 
-/** Blockly 图形化编程：机构开通后进入首关积木实验。 */
+/** Blockly 图形化编程：机构开通后进入课程地图，点关卡进入积木实验。 */
 export const blocklyModule: TeachingModuleDef = {
   module_id: MODULE_IDS.blockly,
   display_name: 'Blockly 积木编程',
@@ -25,6 +26,9 @@ export const blocklyModule: TeachingModuleDef = {
   cta: '进入课程',
   boot_label: 'blockly 积木编程',
   routes: (
-    <Route path="/blockly" element={<BlocklyLesson />} />
+    <>
+      <Route path="/blockly" element={<BlocklyMap />} />
+      <Route path="/blockly/lesson/:levelId" element={<BlocklyLesson />} />
+    </>
   ),
 }
