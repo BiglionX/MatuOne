@@ -4,6 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { parseModuleLevelBody, type ModuleLevelBody } from '../src/modules/curriculum/moduleLevelBody.ts'
 import { countBlockNodes, interpretModuleLevel, type BlockExecutionNode } from '../src/modules/curriculum/moduleLevelInterpreter.ts'
+import { STORY_IMAGES } from './blockly-story-recipes.mjs'
 
 /**
  * 第一学期 80 关的回归测试。
@@ -14,6 +15,9 @@ import { countBlockNodes, interpretModuleLevel, type BlockExecutionNode } from '
  */
 const MANIFEST_FILE = 'scripts/generated/blockly-80.manifest.json'
 const MIGRATION_FILE = 'supabase/migrations/20261126160000_blockly_level_1_80_generated.sql'
+/** 绘本样板迁移：前 5 关的正文样例。 */
+const SAMPLE_MIGRATION_FILE = 'supabase/migrations/20261126170000_blockly_intro_story_sample.sql'
+const SAMPLE_LEVEL_IDS = ['blk-001', 'blk-002', 'blk-003', 'blk-004', 'blk-005']
 
 interface ManifestLevel {
   levelId: string
@@ -194,5 +198,77 @@ test('后两个单元必须用循环或条件，不能一路手写前进', () =>
     walk(level.solution)
     const hasControl = types.has('repeat') || types.has('if_wall_ahead') || types.has('if_path_ahead') || types.has('if_else')
     assert.ok(hasControl, `${level.levelId} 的标准解里没有循环或条件`)
+  }
+})
+
+test('每一关都配了绘本，页数在 3 到 5 页之间', () => {
+  for (const level of manifest.levels) {
+    const body = bodyOf(level)
+    const pages = body.intro_story
+    assert.ok(pages, `${level.levelId} 没有绘本`)
+    assert.ok(pages.length >= 3 && pages.length <= 5, `${level.levelId} 的绘本是 ${pages.length} 页，应该是 3 到 5 页`)
+    for (const [index, page] of pages.entries()) {
+      assert.ok(page.content.trim(), `${level.levelId} 的绘本第 ${index + 1} 页没有正文`)
+      assert.ok(['text', 'image_text'].includes(page.type), `${level.levelId} 的绘本第 ${index + 1} 页类型不对`)
+      // 配图页必须指明插画，前端才有东西可画。
+      if (page.type === 'image_text') {
+        assert.ok(page.image, `${level.levelId} 的绘本第 ${index + 1} 页是配图页却没给插画`)
+      }
+    }
+  }
+})
+
+test('除了第一关，每一关都配了复习卡', () => {
+  for (const level of manifest.levels) {
+    const body = bodyOf(level)
+    if (level.levelId === 'blk-001') {
+      // 第一关没有上一关，复习卡问的是「上一关学了什么」，没得问。
+      assert.equal(body.review, undefined)
+      continue
+    }
+    const review = body.review
+    assert.ok(review, `${level.levelId} 没有复习卡`)
+    assert.ok(review.question.trim(), `${level.levelId} 的复习卡没有问句`)
+    assert.ok(review.answer.trim(), `${level.levelId} 的复习卡没有答案`)
+  }
+})
+
+test('样板迁移里的绘本和生成器产出的一致', () => {
+  const sql = readFileSync(path.join(process.cwd(), SAMPLE_MIGRATION_FILE), 'utf8')
+  for (const level of manifest.levels.filter((item) => SAMPLE_LEVEL_IDS.includes(item.levelId))) {
+    const body = bodyOf(level)
+    const block = sql.split(`and level_id = '${level.levelId}';`)[0].split('$story$').slice(-2)[0]
+    assert.ok(block, `样板迁移里应该有 ${level.levelId} 的绘本`)
+    const story = JSON.parse(block) as { intro_story?: unknown; review?: unknown }
+    assert.deepEqual(story.intro_story, body.intro_story, `${level.levelId} 的样板绘本和生成器产出不一致`)
+    assert.deepEqual(story.review, body.review, `${level.levelId} 的样板复习卡和生成器产出不一致`)
+  }
+})
+
+/**
+ * 绘本里的插画标识必须在前端登记过。
+ *
+ * 登记了才有占位图；没登记前端会退回书本图案，绘本就白画了。
+ * 教研新增标识时，这条测试会挡住漏改前端的情况。
+ */
+test('绘本用到的插画标识，前端占位表里都登记了', () => {
+  const source = readFileSync(path.join(process.cwd(), 'src/pages/blockly/StoryPlayer.tsx'), 'utf8')
+  const table = source.match(/const IMAGE_EMOJI: Record<string, string> = \{([\s\S]*?)\n\}/)
+  assert.ok(table, 'StoryPlayer 里应该还有 IMAGE_EMOJI 占位表')
+  const registered = new Set([...table[1].matchAll(/^\s{2}([a-z_]+):/gm)].map((match) => match[1]))
+  assert.ok(registered.size > 0, 'IMAGE_EMOJI 占位表是空的')
+
+  // 教研登记的标识都要在前端有对应的占位图。
+  for (const image of Object.keys(STORY_IMAGES)) {
+    assert.ok(registered.has(image), `前端没登记插画 ${image}，绘本里画出来会变成书本图案`)
+  }
+
+  // 正文里真正用到的标识也要登记过。
+  for (const level of manifest.levels) {
+    const body = bodyOf(level)
+    for (const page of body.intro_story ?? []) {
+      if (!page.image) continue
+      assert.ok(registered.has(page.image), `${level.levelId} 用了前端没登记的插画 ${page.image}`)
+    }
   }
 })

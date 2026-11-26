@@ -228,12 +228,53 @@
   }
 }
 
+/* 绘本背景：暖色底 + 点点纹理，先把「课本感」做出来 */
+.matu-story-backdrop {
+  background-color: #fff8f0;
+  background-image: radial-gradient(rgb(43 179 163 / 0.16) 2px, transparent 2px);
+  background-size: 26px 26px;
+}
+
+/* 绘本卡片翻页：淡入 */
+.matu-story-page {
+  animation: matuStoryPage 320ms ease-out;
+}
+
+@keyframes matuStoryPage {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 对话气泡：左下角一个小尾巴，指向说话的人 */
+.matu-story-bubble {
+  position: relative;
+}
+
+.matu-story-bubble::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  bottom: -9px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid rgb(var(--brand-soft-rgb));
+}
+
 /* 学生开了「减少动效」，就把所有循环动画关掉 */
 @media (prefers-reduced-motion: reduce) {
   .matu-actor-hop,
   .matu-npc-bubble,
   .matu-block-highlight,
-  .matu-focus-ring {
+  .matu-focus-ring,
+  .matu-story-page {
     animation: none;
   }
 

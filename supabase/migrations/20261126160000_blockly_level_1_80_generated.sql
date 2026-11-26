@@ -693,7 +693,26 @@ values
   "completion": {
     "stars": 3,
     "success_text": "走到终点啦！"
-  }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎来到代码闯关！我是小精灵，从今天起我陪你一起让机器人走路。"
+    },
+    {
+      "type": "image_text",
+      "image": "robot_wave",
+      "speaker": "机器人",
+      "content": "你好呀！这一关的路很短，只要 1 格，我一步就能走到小旗子那里。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "看，这是「前进」积木。把它拖到工作区，再点绿色的「运行」按钮，我就出发啦！"
+    }
+  ]
 }
   $body$::jsonb,
    true, now(), now(),
@@ -838,6 +857,30 @@ values
   "completion": {
     "stars": 3,
     "success_text": "走到终点啦！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "上一关你让机器人走了一步，真棒！今天我们再走远一点点。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "「前进」积木就是这样：拖一块，我走一格。"
+    },
+    {
+      "type": "image_text",
+      "image": "run_button",
+      "speaker": "机器人",
+      "content": "今天要走到 2 格，所以要 2 块「前进」连在一起，再点「运行」。"
+    }
+  ],
+  "review": {
+    "question": "上一关我们拖的是哪一块积木呀？",
+    "answer": "「前进」积木！",
+    "hint": "就是那个绿色的方块，拖一次我就走一格。"
   }
 }
   $body$::jsonb,
@@ -1000,6 +1043,30 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "今天这条路有 3 格，比昨天长一点点。"
+    },
+    {
+      "type": "image_text",
+      "image": "path",
+      "speaker": "机器人",
+      "content": "我从起点数了数：1、2、3，一共 3 格才到我爱的小旗子。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "数出几格就拖几块「前进」，一块都不能少。"
+    }
+  ],
+  "review": {
+    "question": "「前进」积木走一格，那走 3 格要几块？",
+    "answer": "3 块「前进」积木。",
+    "hint": "一格一块，数一数路上有几格。"
   }
 }
   $body$::jsonb,
@@ -1157,6 +1224,30 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "这一关是练习关，我们把「前进」再练熟一点。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "今天是 4 格，我一口气就能走到底。"
+    },
+    {
+      "type": "image_text",
+      "image": "run_button",
+      "speaker": "小精灵",
+      "content": "拖 4 块「前进」连成一条，再点「运行」。"
+    }
+  ],
+  "review": {
+    "question": "上一关走 3 格用了几块「前进」？",
+    "answer": "3 块。",
+    "hint": "一格一块。"
   }
 }
   $body$::jsonb,
@@ -1330,6 +1421,36 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "五格长廊！这是我们走过的最长的路啦。"
+    },
+    {
+      "type": "image_text",
+      "image": "star",
+      "speaker": "机器人",
+      "content": "我最喜欢长路了，路上还藏着小星星，走过去就能捡到。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "别着急，一块一块拖，5 块「前进」排好队。"
+    },
+    {
+      "type": "image_text",
+      "image": "goal",
+      "speaker": "机器人",
+      "content": "排好队点「运行」，我一口气跑到小旗子那里！"
+    }
+  ],
+  "review": {
+    "question": "积木要怎么排，机器人才能一直往前走？",
+    "answer": "一块接一块，连成一条。",
+    "hint": "下一块要贴在上一块的下面。"
   }
 }
   $body$::jsonb,
@@ -1500,6 +1621,30 @@ values
   "completion": {
     "stars": 3,
     "success_text": "走到终点啦！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "六格啦！数字变大了一点，办法还是老办法。"
+    },
+    {
+      "type": "image_text",
+      "image": "path",
+      "speaker": "机器人",
+      "content": "六格路看着长，其实就是 6 块「前进」。"
+    },
+    {
+      "type": "image_text",
+      "image": "run_button",
+      "speaker": "小精灵",
+      "content": "排好队再点「运行」，稳稳当当。"
+    }
+  ],
+  "review": {
+    "question": "走 5 格要几块「前进」？",
+    "answer": "5 块。",
+    "hint": "一格一块。"
   }
 }
   $body$::jsonb,
@@ -1685,6 +1830,30 @@ values
   "completion": {
     "stars": 3,
     "success_text": "走到终点啦！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "七格通道！窄窄的通道，走起来像在探险。"
+    },
+    {
+      "type": "image_text",
+      "image": "robot_run",
+      "speaker": "机器人",
+      "content": "通道两边的墙我不用担心，我只会一直往前。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "7 块「前进」，一块都不能少哦。"
+    }
+  ],
+  "review": {
+    "question": "积木和格子是什么关系？",
+    "answer": "一格配一块「前进」。",
+    "hint": "数一数格子就知道要几块。"
   }
 }
   $body$::jsonb,
@@ -1887,6 +2056,30 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "八格长道！这一关开始会画出我走过的路线。"
+    },
+    {
+      "type": "image_text",
+      "image": "path",
+      "speaker": "机器人",
+      "content": "我会一边走一边留下脚印，你看看是不是一条直线。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "8 块「前进」排成一条直线，走出来的脚印才不会歪。"
+    }
+  ],
+  "review": {
+    "question": "走过的路线是怎么画出来的？",
+    "answer": "机器人每走一格就留下一个脚印点。",
+    "hint": "跑完以后看看舞台上的小点。"
   }
 }
   $body$::jsonb,
@@ -2084,6 +2277,30 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "九格冲刺！数起来有点长了，我们一起数。"
+    },
+    {
+      "type": "image_text",
+      "image": "robot_run",
+      "speaker": "机器人",
+      "content": "1、2、3……一直数到 9，我就站在旗子旁边啦。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "数错了也没关系，跑一次看看脚印就知道差几格。"
+    }
+  ],
+  "review": {
+    "question": "上一关的路有几格？",
+    "answer": "8 格。",
+    "hint": "数字每次加 1。"
   }
 }
   $body$::jsonb,
@@ -2297,6 +2514,30 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "十格挑战！两位数的路啦，别数乱了。"
+    },
+    {
+      "type": "image_text",
+      "image": "star",
+      "speaker": "机器人",
+      "content": "十格路中间藏着星星，一直走就能捡到。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "分成两小段数：先 5 块，再 5 块，就不乱了。"
+    }
+  ],
+  "review": {
+    "question": "十格可以怎么数才不乱？",
+    "answer": "分成两小段数，比如 5 加 5。",
+    "hint": "先数到 5，再接着数 5。"
   }
 }
   $body$::jsonb,
@@ -2507,6 +2748,30 @@ values
   "completion": {
     "stars": 3,
     "success_text": "走到终点啦！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "十一格直行！继续练习数格子。"
+    },
+    {
+      "type": "image_text",
+      "image": "path",
+      "speaker": "机器人",
+      "content": "11 格，中间没有弯，只要一直往前。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "拖 11 块「前进」，连成一条长队。"
+    }
+  ],
+  "review": {
+    "question": "一格配几块「前进」？",
+    "answer": "一格一块。",
+    "hint": "格子数就是积木数。"
   }
 }
   $body$::jsonb,
@@ -2732,6 +2997,30 @@ values
   "completion": {
     "stars": 3,
     "success_text": "走到终点啦！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "十二格大道！这一关的大道特别宽，特别长。"
+    },
+    {
+      "type": "image_text",
+      "image": "map",
+      "speaker": "机器人",
+      "content": "我跑过去，脚印会把整条大道都点亮。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "12 块「前进」，排好队再运行。"
+    }
+  ],
+  "review": {
+    "question": "脚印画出来是什么形状？",
+    "answer": "一条直直的线。",
+    "hint": "因为我们只用了「前进」。"
   }
 }
   $body$::jsonb,
@@ -2974,6 +3263,30 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "十三格远征！像小蚂蚁搬家一样遥远。"
+    },
+    {
+      "type": "image_text",
+      "image": "robot_run",
+      "speaker": "机器人",
+      "content": "我会一步一步稳稳走到底。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "这次试试边拖边数，看能不能一次排对 13 块。"
+    }
+  ],
+  "review": {
+    "question": "上一关的大道有几格？",
+    "answer": "12 格。",
+    "hint": "13 比 12 多 1。"
   }
 }
   $body$::jsonb,
@@ -3211,6 +3524,30 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "十四格长跑！准备好大长腿了吗？"
+    },
+    {
+      "type": "image_text",
+      "image": "goal",
+      "speaker": "机器人",
+      "content": "跑过 14 格，小旗子就在终点等我。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "14 块「前进」排成一条直线，点「运行」！"
+    }
+  ],
+  "review": {
+    "question": "「前进」积木放在哪里最合适？",
+    "answer": "放在工作区里，一块接一块连起来。",
+    "hint": "连成一条，机器人才能一直走。"
   }
 }
   $body$::jsonb,
@@ -3464,6 +3801,30 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "十五格耐力赛！这是我们第一单元的最后一关。"
+    },
+    {
+      "type": "image_text",
+      "image": "star",
+      "speaker": "机器人",
+      "content": "这一关的星星藏得最深，走到底就能全部捡到。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "15 块「前进」，排好队，点「运行」，我们一起冲过去！"
+    }
+  ],
+  "review": {
+    "question": "这一单元我们学会了什么呀？",
+    "answer": "用「前进」积木让机器人一条直线走到终点。",
+    "hint": "一格一块，连成一条。"
   }
 }
   $body$::jsonb,
@@ -3714,6 +4075,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "走到终点啦！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：把 16 块「前进」积木连起来，让机器人一条直线走到终点。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "小精灵",
+      "content": "今天请「前进积木」来帮忙：一块「前进」积木，机器人就走一格。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。要走到终点，就按格数拖同样多块「前进」，一块接一块连好。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「前进积木」，还记得怎么用吗？",
+    "answer": "一块「前进」积木，机器人就走一格。",
+    "hint": "这条路一共 15 格，把「前进」拖到工作区，连上 15 块。"
   }
 }
   $body$::jsonb,
@@ -3878,6 +4268,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "拐弯成功！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 L 形路线：2 步 + 2 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「前进积木」，还记得怎么用吗？",
+    "answer": "一块「前进」积木，机器人就走一格。",
+    "hint": "这条路一共 16 格，把「前进」拖到工作区，连上 16 块。"
   }
 }
   $body$::jsonb,
@@ -4057,6 +4476,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "拐弯成功！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 L 形路线：3 步 + 2 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -4247,6 +4695,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 L 形路线：3 步 + 3 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -4438,6 +4915,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 L 形路线：4 步 + 3 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -4641,6 +5147,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 Z 形路线：3 步 + 2 步 + 3 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -4849,6 +5384,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "拐弯成功！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 Z 形路线：4 步 + 2 步 + 4 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -5072,6 +5636,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "拐弯成功！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 Z 形路线：4 步 + 3 步 + 4 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -5314,6 +5907,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 Z 形路线：5 步 + 3 步 + 5 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -5517,6 +6139,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 U 形路线：3 步 + 3 步 + 3 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -5744,6 +6395,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 U 形路线：4 步 + 3 步 + 4 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -5968,6 +6648,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "拐弯成功！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 U 形路线：4 步 + 4 步 + 4 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -6215,6 +6924,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "拐弯成功！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 U 形路线：5 步 + 4 步 + 5 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -6437,6 +7175,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 S 形路线：4 步 + 2 步 + 3 步 + 2 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -6684,6 +7451,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 S 形路线：5 步 + 3 步 + 4 步 + 3 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -6947,6 +7743,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 S 形路线：5 步 + 3 步 + 5 步 + 3 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -7223,6 +8048,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "拐弯成功！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 S 形路线：6 步 + 4 步 + 5 步 + 4 步。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_turn",
+      "speaker": "小精灵",
+      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_move",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -7426,6 +8280,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "循环真省力！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：用「重复执行」一次走完 8 格。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
+    "answer": "「左转」和「右转」会让机器人换一个方向。",
+    "hint": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。"
   }
 }
   $body$::jsonb,
@@ -7658,6 +8541,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "循环真省力！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：用「重复执行」一次走完 10 格。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "这条直道有 8 格，把「前进」放进「重复执行」里，次数改成 8。"
   }
 }
   $body$::jsonb,
@@ -7909,6 +8821,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：用「重复执行」一次走完 12 格。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "这条直道有 10 格，把「前进」放进「重复执行」里，次数改成 10。"
   }
 }
   $body$::jsonb,
@@ -8163,6 +9104,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：用「重复执行」一次走完 14 格。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "这条直道有 12 格，把「前进」放进「重复执行」里，次数改成 12。"
   }
 }
   $body$::jsonb,
@@ -8360,6 +9330,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：用两层循环绕出边长 2 的正方形。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "这条直道有 14 格，把「前进」放进「重复执行」里，次数改成 14。"
   }
 }
   $body$::jsonb,
@@ -8581,6 +9580,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "循环真省力！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：用两层循环绕出边长 3 的正方形。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "正方形有四条一样长的边：外层重复 3 次，每次先走 2 格再右转。"
   }
 }
   $body$::jsonb,
@@ -8847,6 +9875,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "循环真省力！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：用两层循环绕出边长 4 的正方形。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "正方形有四条一样长的边：外层重复 3 次，每次先走 3 格再右转。"
   }
 }
   $body$::jsonb,
@@ -9141,6 +10198,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：用两层循环绕出边长 5 的正方形。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "正方形有四条一样长的边：外层重复 3 次，每次先走 4 格再右转。"
   }
 }
   $body$::jsonb,
@@ -9354,6 +10440,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：用循环绕出 4×2 的长方形。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "正方形有四条一样长的边：外层重复 3 次，每次先走 5 格再右转。"
   }
 }
   $body$::jsonb,
@@ -9594,6 +10709,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：用循环绕出 5×2 的长方形。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。"
   }
 }
   $body$::jsonb,
@@ -9831,6 +10975,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "循环真省力！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：用循环绕出 4×3 的长方形。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。"
   }
 }
   $body$::jsonb,
@@ -10106,6 +11279,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "循环真省力！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：用循环绕出 6×3 的长方形。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。"
   }
 }
   $body$::jsonb,
@@ -10332,6 +11534,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：用三段循环走出 U 型大路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。"
   }
 }
   $body$::jsonb,
@@ -10560,6 +11791,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：用三段循环走出 U 型大路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。"
   }
 }
   $body$::jsonb,
@@ -10804,6 +12064,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：用三段循环走出 U 型大路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。"
   }
 }
   $body$::jsonb,
@@ -11046,6 +12335,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "循环真省力！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：用三段循环走出 U 型大路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "小精灵",
+      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。"
   }
 }
   $body$::jsonb,
@@ -11279,6 +12597,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "电脑自己做选择！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：沿着走廊走 11 格，拐 2 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
+    "answer": "放进「重复执行」里的积木，会连着做好几次。",
+    "hint": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。"
   }
 }
   $body$::jsonb,
@@ -11541,6 +12888,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "电脑自己做选择！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：沿着走廊走 13 格，拐 2 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。"
   }
 }
   $body$::jsonb,
@@ -11814,6 +13190,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：沿着走廊走 14 格，拐 2 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。"
   }
 }
   $body$::jsonb,
@@ -12090,6 +13495,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：沿着走廊走 16 格，拐 2 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。"
   }
 }
   $body$::jsonb,
@@ -12382,6 +13816,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：沿着走廊走 18 格，拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。"
   }
 }
   $body$::jsonb,
@@ -12671,6 +14134,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "电脑自己做选择！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：沿着走廊走 19 格，拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "这条走廊拐了三个弯，机器人要连着转三次才能到头。"
   }
 }
   $body$::jsonb,
@@ -12969,6 +14461,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "电脑自己做选择！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：沿着走廊走 18 格，拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "这条走廊拐了三个弯，机器人要连着转三次才能到头。"
   }
 }
   $body$::jsonb,
@@ -13278,6 +14799,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：沿着走廊走 19 格，拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "这条走廊拐了三个弯，机器人要连着转三次才能到头。"
   }
 }
   $body$::jsonb,
@@ -13514,6 +15064,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：沿着走廊走 11 格，拐 2 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "这条走廊拐了三个弯，机器人要连着转三次才能到头。"
   }
 }
   $body$::jsonb,
@@ -13774,6 +15353,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：沿着走廊走 13 格，拐 2 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。"
   }
 }
   $body$::jsonb,
@@ -14031,6 +15639,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "电脑自己做选择！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：沿着走廊走 14 格，拐 2 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。"
   }
 }
   $body$::jsonb,
@@ -14317,6 +15954,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "电脑自己做选择！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：沿着走廊走 16 格，拐 2 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。"
   }
 }
   $body$::jsonb,
@@ -14631,6 +16297,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：沿着走廊走 18 格，拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果…否则…」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。"
   }
 }
   $body$::jsonb,
@@ -14940,6 +16635,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：沿着走廊走 19 格，拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果…否则…」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。"
   }
 }
   $body$::jsonb,
@@ -15253,6 +16977,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：沿着走廊走 18 格，拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果…否则…」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。"
   }
 }
   $body$::jsonb,
@@ -15563,6 +17316,35 @@ values
   "completion": {
     "stars": 3,
     "success_text": "电脑自己做选择！"
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：沿着走廊走 19 格，拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "小精灵",
+      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果…否则…」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。"
   }
 }
   $body$::jsonb,
@@ -15799,6 +17581,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走出 3 段的大路线。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
+    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
+    "hint": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。"
   }
 }
   $body$::jsonb,
@@ -16064,6 +17875,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走出 3 段的大路线。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
   }
 }
   $body$::jsonb,
@@ -16337,6 +18177,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走出 3 段的大路线。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
   }
 }
   $body$::jsonb,
@@ -16613,6 +18482,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走出 3 段的大路线。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
   }
 }
   $body$::jsonb,
@@ -16902,6 +18800,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走出 4 段的大路线。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
   }
 }
   $body$::jsonb,
@@ -17206,6 +19133,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走出 4 段的大路线。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
   }
 }
   $body$::jsonb,
@@ -17539,6 +19495,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走出 4 段的大路线。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
   }
 }
   $body$::jsonb,
@@ -17888,6 +19873,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走出 4 段的大路线。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_repeat",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
   }
 }
   $body$::jsonb,
@@ -18159,6 +20173,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：先直走 5 格，再自动拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
   }
 }
   $body$::jsonb,
@@ -18447,6 +20490,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：先直走 6 格，再自动拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
   }
 }
   $body$::jsonb,
@@ -18738,6 +20810,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：先直走 6 格，再自动拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
   }
 }
   $body$::jsonb,
@@ -19045,6 +21146,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：先直走 7 格，再自动拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
   }
 }
   $body$::jsonb,
@@ -19356,6 +21486,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：先直走 7 格，再自动拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
   }
 }
   $body$::jsonb,
@@ -19675,6 +21834,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：先直走 8 格，再自动拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
   }
 }
   $body$::jsonb,
@@ -20015,6 +22203,35 @@ values
       ],
       "required": false
     }
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：先直走 8 格，再自动拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
   }
 }
   $body$::jsonb,
@@ -20354,6 +22571,35 @@ values
   },
   "visuals": {
     "show_trail": true
+  },
+  "intro_story": [
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：先直走 8 格，再自动拐 3 个弯。"
+    },
+    {
+      "type": "image_text",
+      "image": "idea",
+      "speaker": "小精灵",
+      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+    },
+    {
+      "type": "image_text",
+      "image": "block_if",
+      "speaker": "机器人",
+      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+    },
+    {
+      "type": "text",
+      "speaker": "小精灵",
+      "content": "把积木拖到工作区，连好，再点「运行」，我就能走完啦！"
+    }
+  ],
+  "review": {
+    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
+    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
+    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
   }
 }
   $body$::jsonb,

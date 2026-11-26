@@ -98,6 +98,47 @@ export interface ModuleLevelActivities {
   typing?: ModuleTypingActivity
 }
 
+/**
+ * 绘本页的类型。
+ *
+ * text：纯文字气泡。
+ * image_text：文字配一张插画，插画由 image 指定。
+ */
+export type ModuleStoryPageType = 'text' | 'image_text'
+
+/**
+ * 绘本（漫画）的一页。
+ *
+ * 无师化场景下老师不讲课，学生进关前先靠这几页图理解概念，
+ * 所以正文必须能完整描述「这一关要做什么、用哪块积木」。
+ */
+export interface ModuleStoryPage {
+  type: ModuleStoryPageType
+  /** 说话人；不写时由前端用默认的小精灵。 */
+  speaker?: string
+  /**
+   * 插画占位符。
+   *
+   * 现在是一段短标识（例如 robot_wave），前端画成 Emoji 占位图；
+   * 教研老师换成真实插画路径（例如 /stories/blk-002/p1.webp）后前端直接渲染图片，
+   * 数据结构不用动。
+   */
+  image?: string
+  content: string
+}
+
+/**
+ * 课前复习卡：把上一关的核心知识点拎出来问一句。
+ *
+ * 和绘本一样是可选字段，旧关卡没有它就直接进工作区。
+ */
+export interface ModuleLevelReview {
+  question: string
+  answer: string
+  /** 给学生的额外提示，可以不写。 */
+  hint?: string
+}
+
 /** 网格场景。字段和早期的 body.map 完全一致，只是换了位置。 */
 export interface ModuleGridScene {
   type: 'grid'
@@ -202,6 +243,16 @@ export interface ModuleLevelBody {
   visuals?: ModuleLevelVisuals
   /** 附加活动；旧关卡没有这一项时只有积木挑战。 */
   activities?: ModuleLevelActivities
+  /**
+   * 进关前先看的绘本（漫画）；旧关卡没有这一项时直接进工作区。
+   *
+   * 无师化场景的关键：老师不教概念，学生靠这几页图先知道该拖哪块积木。
+   */
+  intro_story?: ModuleStoryPage[]
+  /**
+   * 进关前的课前复习卡，内容是上一关的核心知识点；旧关卡没有这一项时直接进工作区。
+   */
+  review?: ModuleLevelReview
   completion: {
     stars: 0 | 1 | 2 | 3
     success_text: string
@@ -631,6 +682,41 @@ function parseCompletion(value: unknown): ModuleLevelBody['completion'] {
 }
 
 /**
+ * 绘本页列表。缺省时返回 undefined，表示这一关没有绘本，进关直接进工作区。
+ */
+function parseStoryPages(value: unknown): ModuleStoryPage[] | undefined {
+  if (value === undefined || value === null) return undefined
+  const rows = array(value, 'intro_story')
+  if (!rows.length) fail('intro_story', '不能为空')
+  return rows.map((item, index) => {
+    const path = `intro_story[${index}]`
+    const row = record(item, path)
+    const type = string(row.type, `${path}.type`)
+    if (type !== 'text' && type !== 'image_text') fail(`${path}.type`, '必须是 text 或 image_text')
+    const page: ModuleStoryPage = { type, content: string(row.content, `${path}.content`) }
+    if (row.speaker !== undefined && row.speaker !== null) page.speaker = string(row.speaker, `${path}.speaker`)
+    if (row.image !== undefined && row.image !== null) page.image = string(row.image, `${path}.image`)
+    // 配图页必须指明插画，否则前端只能画一个空白占位。
+    if (type === 'image_text' && !page.image) fail(`${path}.image`, 'image_text 必须指定插画')
+    return page
+  })
+}
+
+/**
+ * 课前复习卡。缺省时返回 undefined，表示这一关没有复习环节。
+ */
+function parseReview(value: unknown): ModuleLevelReview | undefined {
+  if (value === undefined || value === null) return undefined
+  const row = record(value, 'review')
+  const review: ModuleLevelReview = {
+    question: string(row.question, 'review.question'),
+    answer: string(row.answer, 'review.answer'),
+  }
+  if (row.hint !== undefined && row.hint !== null) review.hint = string(row.hint, 'review.hint')
+  return review
+}
+
+/**
  * 新模块关卡正文只有一个解析入口；不按 blockly / easy-robot 分叉。
  *
  * schema_version 1 是旧格式，场景数据在 body.map；
@@ -670,7 +756,21 @@ export function parseModuleLevelBody(raw: unknown): ModuleLevelBody {
   if (visuals) body.visuals = visuals
   const activities = parseActivities(row.activities)
   if (activities) body.activities = activities
+  // 绘本和复习卡都是可选的：旧关卡没配就直接进工作区，不影响原有流程。
+  const introStory = parseStoryPages(row.intro_story)
+  if (introStory) body.intro_story = introStory
+  const review = parseReview(row.review)
+  if (review) body.review = review
   return body
+}
+
+/**
+ * 这一关进关前要不要先看绘本或复习卡。
+ *
+ * 没有这两个字段的旧关卡直接进工作区。
+ */
+export function hasIntroMaterial(body: ModuleLevelBody): boolean {
+  return Boolean(body.intro_story?.length || body.review)
 }
 
 /** 网格关卡取场景；舞台关卡没有网格场景时直接报错。 */

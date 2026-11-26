@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { parseModuleLevelBody, gridSceneOf } from '../src/modules/curriculum/moduleLevelBody.ts'
+import {
+  parseModuleLevelBody,
+  gridSceneOf,
+  hasIntroMaterial,
+} from '../src/modules/curriculum/moduleLevelBody.ts'
 
 function validBody() {
   return {
@@ -205,4 +209,90 @@ test('v2 正文里的嵌套初始积木按 available_blocks 校验', () => {
     },
   }
   assert.throws(() => parseModuleLevelBody(bad), /积木类型 turn_right 不在 available_blocks 中/)
+})
+
+// ---------------------------------------------------------------------------
+// 绘本情境导入与课前复习
+// ---------------------------------------------------------------------------
+
+test('没配绘本和复习卡的旧关卡照常解析', () => {
+  const parsed = parseModuleLevelBody(validBody())
+  assert.equal(parsed.intro_story, undefined)
+  assert.equal(parsed.review, undefined)
+  assert.equal(hasIntroMaterial(parsed), false)
+})
+
+test('绘本和复习卡都能从正文读出来', () => {
+  const raw = {
+    ...validV2Body(),
+    intro_story: [
+      { type: 'text', speaker: '小精灵', content: '欢迎来到第一关！' },
+      { type: 'image_text', image: 'robot_wave', content: '点这个绿色按钮，机器人就会动起来哦！' },
+    ],
+    review: { question: '还记得上节课我们学了什么积木吗？', answer: '前进积木！', hint: '就是那个绿色的箭头哦。' },
+  }
+  const parsed = parseModuleLevelBody(raw)
+  assert.equal(parsed.intro_story?.length, 2)
+  assert.equal(parsed.intro_story?.[0]?.type, 'text')
+  assert.equal(parsed.intro_story?.[0]?.speaker, '小精灵')
+  assert.equal(parsed.intro_story?.[1]?.type, 'image_text')
+  assert.equal(parsed.intro_story?.[1]?.image, 'robot_wave')
+  // 说话人和提示都是可选的。
+  assert.equal(parsed.intro_story?.[1]?.speaker, undefined)
+  assert.equal(parsed.review?.question, '还记得上节课我们学了什么积木吗？')
+  assert.equal(parsed.review?.answer, '前进积木！')
+  assert.equal(parsed.review?.hint, '就是那个绿色的箭头哦。')
+  assert.equal(hasIntroMaterial(parsed), true)
+})
+
+test('只配了复习卡也算有进关引导', () => {
+  const parsed = parseModuleLevelBody({
+    ...validV2Body(),
+    review: { question: '上一关学了什么？', answer: '前进积木。' },
+  })
+  assert.equal(parsed.intro_story, undefined)
+  assert.equal(parsed.review?.hint, undefined)
+  assert.equal(hasIntroMaterial(parsed), true)
+})
+
+test('绘本页类型非法时拒绝解析', () => {
+  const raw = {
+    ...validV2Body(),
+    intro_story: [{ type: 'comic', content: '画得好看一点' }],
+  }
+  assert.throws(() => parseModuleLevelBody(raw), /intro_story\[0\].type 必须是 text 或 image_text/)
+})
+
+test('绘本页缺正文时拒绝解析', () => {
+  const raw = {
+    ...validV2Body(),
+    intro_story: [{ type: 'text', speaker: '小精灵' }],
+  }
+  assert.throws(() => parseModuleLevelBody(raw), /intro_story\[0\].content 必须是非空字符串/)
+})
+
+test('配图页没给插画时拒绝解析', () => {
+  const raw = {
+    ...validV2Body(),
+    intro_story: [{ type: 'image_text', content: '看这个机器人' }],
+  }
+  assert.throws(() => parseModuleLevelBody(raw), /intro_story\[0\].image image_text 必须指定插画/)
+})
+
+test('空绘本数组拒绝解析', () => {
+  const raw = { ...validV2Body(), intro_story: [] }
+  assert.throws(() => parseModuleLevelBody(raw), /intro_story 不能为空/)
+})
+
+test('复习卡缺答案时拒绝解析', () => {
+  const raw = {
+    ...validV2Body(),
+    review: { question: '上一关学了什么？' },
+  }
+  assert.throws(() => parseModuleLevelBody(raw), /review.answer 必须是非空字符串/)
+})
+
+test('复习卡必须是对象', () => {
+  const raw = { ...validV2Body(), review: '上一关学了什么？' }
+  assert.throws(() => parseModuleLevelBody(raw), /review 必须是对象/)
 })

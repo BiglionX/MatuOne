@@ -2,7 +2,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { parseModuleLevelBody, type ModuleLevelBody } from '../src/modules/curriculum/moduleLevelBody.ts'
+import {
+  parseModuleLevelBody,
+  hasIntroMaterial,
+  type ModuleLevelBody,
+} from '../src/modules/curriculum/moduleLevelBody.ts'
 import { countBlockNodes, interpretModuleLevel, type BlockExecutionNode } from '../src/modules/curriculum/moduleLevelInterpreter.ts'
 
 /** Level 0 的 15 关正文分两个迁移文件写，这里一起读进来。 */
@@ -306,4 +310,15 @@ test('陷阱通道里走错岔路就过不去', () => {
   assert.equal(wrong.failure, 'max_steps')
   assert.equal(wrong.final.x, 4)
   assert.equal(wrong.final.y, 1)
+})
+
+test('没配绘本的老正文照常解析，进关时直接进工作区', () => {
+  // 这一批迁移写在「绘本情境导入」之前，正文里没有 intro_story 和 review。
+  // 解析器不能报错，页面要能判断出「这一关没有绘本」，直接进工作区。
+  for (const levelId of Object.keys(SOLUTIONS)) {
+    const body = bodyOf(levelId)
+    assert.equal(body.intro_story, undefined, `${levelId} 不该有绘本`)
+    assert.equal(body.review, undefined, `${levelId} 不该有复习卡`)
+    assert.equal(hasIntroMaterial(body), false, `${levelId} 应该直接进工作区`)
+  }
 })

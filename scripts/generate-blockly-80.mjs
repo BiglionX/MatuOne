@@ -39,10 +39,15 @@ import {
   turnL,
   turnR,
 } from './blockly-level-recipes.mjs'
+import { buildStoryFor } from './blockly-story-recipes.mjs'
 
 const ROOT = process.cwd()
 const SQL_PATH = path.join(ROOT, 'supabase/migrations/20261126160000_blockly_level_1_80_generated.sql')
 const MANIFEST_PATH = path.join(ROOT, 'scripts/generated/blockly-80.manifest.json')
+/** 绘本样板的独立迁移：给教研老师看「一条关卡正文长什么样」。 */
+const SAMPLE_SQL_PATH = path.join(ROOT, 'supabase/migrations/20261126170000_blockly_intro_story_sample.sql')
+/** 样板迁移覆盖的关卡：前 5 关。 */
+const SAMPLE_LEVEL_IDS = ['blk-001', 'blk-002', 'blk-003', 'blk-004', 'blk-005']
 
 /** 后面三个学期的占位关卡挪到预留号段，避免和第一学期的 80 关撞号。 */
 const RESERVED_RANGES = [
@@ -888,7 +893,15 @@ function unit5Levels() {
 
 function buildAllLevels() {
   const levels = [...unit1Levels(), ...unit2Levels(), ...unit3Levels(), ...unit4Levels(), ...unit5Levels()]
-  return levels.map((level) => {
+  // 先给每一关配绘本和复习卡。复习卡要引用上一关的概念，所以按关卡顺序来，
+  // 而且必须在 sealLevel 之前装进正文——sealLevel 会用生产解析器校验正文，
+  // 绘本写错了这里就会炸，不会带着坏数据落库。
+  const withStory = levels.map((level, index) => {
+    const previous = index > 0 ? levels[index - 1] : null
+    const story = buildStoryFor(level, previous)
+    return { ...level, body: { ...level.body, ...story } }
+  })
+  return withStory.map((level) => {
     const sealed = sealLevel(level)
     const parsed = parseModuleLevelBody(sealed.body)
     return {
@@ -1094,6 +1107,66 @@ where lr.module_id = 'blockly'
 }
 
 // ---------------------------------------------------------------------------
+// 绘本样板迁移
+// ---------------------------------------------------------------------------
+
+/**
+ * 单独给前 5 关出一份「只加绘本」的迁移。
+ *
+ * 用 body || jsonb 只往正文里补 intro_story 和 review 两个键，
+ * 不碰场景、积木、提示这些已经调好的内容，重跑也不会把别的地方改坏。
+ * 教研老师照着这一份就能看懂绘本正文长什么样。
+ */
+function buildSampleSql(levels) {
+  const picked = levels.filter((level) => SAMPLE_LEVEL_IDS.includes(level.levelId))
+  if (picked.length !== SAMPLE_LEVEL_IDS.length) {
+    throw new Error(`样板迁移要 ${SAMPLE_LEVEL_IDS.length} 关，实际找到 ${picked.length} 关`)
+  }
+
+  const parts = []
+  parts.push(`-- Blockly 绘本情境导入样板：blk-001 … blk-005
+--
+-- 这个文件由 scripts/generate-blockly-80.mjs 生成，不要手工改：
+--   npx tsx scripts/generate-blockly-80.mjs
+--
+-- 正文（body）里多两个可选字段：
+--   intro_story —— 绘本体数组，3 到 5 页，每页一句说明。
+--                  type 取 text（纯文字）或 image_text（文字配图），
+--                  image 是插画标识；现在是占位符，教研老师换成真实图片路径即可。
+--   review      —— 课前复习卡，内容是上一关的核心知识点。
+--
+-- 两个字段都是可选的：没配的关卡进关时直接进工作区，老流程一点不变。
+--
+-- 这里用 body || jsonb 只补这两个键，场景、积木、提示一概不动；
+-- 固定值写入，重跑即可。`)
+  for (const level of picked) {
+    const story = {}
+    if (level.body.intro_story) story.intro_story = level.body.intro_story
+    if (level.body.review) story.review = level.body.review
+    parts.push(`-- ${level.levelId} ${level.title}
+-- ${level.goal}
+update public.module_level
+set
+  body = body || $story$${JSON.stringify(story, null, 2)}$story$::jsonb,
+  updated_at = now()
+where module_id = 'blockly'
+  and level_id = ${sqlString(level.levelId)};`)
+  }
+  parts.push(`-- 验收 SQL（迁移后逐条跑）
+--
+-- A. 前 5 关都写上了绘本
+-- select level_id, jsonb_array_length(body->'intro_story') as pages, body->'review'->>'question' as question
+-- from public.module_level
+-- where module_id = 'blockly' and level_id in ('blk-001','blk-002','blk-003','blk-004','blk-005')
+-- order by level_id;
+--
+-- B. 没有绘本的老关卡不受影响（intro_story 为空）
+-- select count(*) from public.module_level
+-- where module_id = 'blockly' and body->'intro_story' is null;`)
+  return parts.join('\n\n')
+}
+
+// ---------------------------------------------------------------------------
 // 入口
 // ---------------------------------------------------------------------------
 
@@ -1110,9 +1183,11 @@ for (const unit of UNIT_META) {
 mkdirSync(path.dirname(MANIFEST_PATH), { recursive: true })
 writeFileSync(MANIFEST_PATH, `${JSON.stringify({ termId: TERM_ID, levels }, null, 2)}\n`, 'utf8')
 writeFileSync(SQL_PATH, `${buildSql(levels)}\n`, 'utf8')
+writeFileSync(SAMPLE_SQL_PATH, `${buildSampleSql(levels)}\n`, 'utf8')
 
 console.log(`已生成 80 关：`)
 console.log(`  迁移 SQL  ${path.relative(ROOT, SQL_PATH)}`)
+console.log(`  绘本样板  ${path.relative(ROOT, SAMPLE_SQL_PATH)}`)
 console.log(`  标准解清单 ${path.relative(ROOT, MANIFEST_PATH)}`)
 for (const unit of UNIT_META) {
   const unitLevels = levels.filter((level) => level.unitId === unit.unitId)

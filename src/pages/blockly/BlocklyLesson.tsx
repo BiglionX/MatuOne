@@ -8,7 +8,7 @@ import { BrandMark } from '@/components/BrandMark'
 import { Skeleton } from '@/components/Skeleton'
 import { ApiError } from '@/lib/apiError'
 import { isGameSoundEnabled, playGameSound, toggleGameSound } from '@/lib/gameSounds'
-import { parseModuleLevelBody, gridSceneOf, type ModuleHintFocus, type ModuleLevelBody } from '@/modules/curriculum/moduleLevelBody'
+import { parseModuleLevelBody, gridSceneOf, hasIntroMaterial, type ModuleHintFocus, type ModuleLevelBody } from '@/modules/curriculum/moduleLevelBody'
 import {
   createInitialActorState,
   interpretModuleLevel,
@@ -18,6 +18,7 @@ import {
 import { BlocklyNpc } from './BlocklyNpc'
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from './BlocklyWorkspace'
 import { GridStage } from './GridStage'
+import { StoryPlayer } from './StoryPlayer'
 
 const DEFAULT_LEVEL_ID = 'blk-001'
 const MAP_HREF = '/blockly'
@@ -78,6 +79,9 @@ export function BlocklyLesson() {
   const [runFailed, setRunFailed] = useState(false)
   // 小精灵点名要盯的东西：工作区、运行按钮或者某一块积木。
   const [focus, setFocus] = useState<ModuleHintFocus | null>(null)
+  // 绘本看完了没有。关卡配了 intro_story / review 时，先全屏播绘本再进工作区；
+  // 「重新开始」不碰这个状态，所以重试不会重新弹绘本。
+  const [storyDone, setStoryDone] = useState(false)
 
   useEffect(() => {
     if (!student) return
@@ -92,6 +96,8 @@ export function BlocklyLesson() {
     setErrorTaps(0)
     setRunFailed(false)
     setFocus(null)
+    // 换关卡才算重新看绘本；同一关内重试不重置。
+    setStoryDone(false)
     setActivityToken((value) => value + 1)
 
     void enterLevel(levelId, MODULE_IDS.blockly)
@@ -242,6 +248,20 @@ export function BlocklyLesson() {
           <Skeleton className="h-80 rounded-3xl" />
         </div>
       </div>
+    )
+  }
+
+  // 无师化：关卡配了绘本或复习卡时，先全屏把绘本播完，再进工作区。
+  // 没配的旧关卡（body 里没有这两个字段）直接往下走，流程完全不变。
+  if (!storyDone && hasIntroMaterial(body)) {
+    return (
+      <StoryPlayer
+        introStory={body.intro_story}
+        review={body.review}
+        title={lesson.title}
+        levelNumber={levelNumber(levelId)}
+        onFinish={() => setStoryDone(true)}
+      />
     )
   }
 

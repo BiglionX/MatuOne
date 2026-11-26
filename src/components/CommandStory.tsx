@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Level } from '@/types'
 import { buildStoryPages, type StoryScene } from '@/lib/storyOutline'
+import { speak, stopSpeaking } from '@/lib/speech'
 
 /** 极简扁平插图，全部用线条画，颜色跟着 token 走 */
 function Art({ kind }: { kind: StoryScene }) {
@@ -121,18 +122,6 @@ function Art({ kind }: { kind: StoryScene }) {
   )
 }
 
-function speak(text: string) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
-  window.speechSynthesis.cancel()
-  const utter = new SpeechSynthesisUtterance(text)
-  utter.lang = 'zh-CN'
-  utter.rate = 0.92
-  utter.pitch = 1.05
-  const voice = window.speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith('zh'))
-  if (voice) utter.voice = voice
-  window.speechSynthesis.speak(utter)
-}
-
 interface Props {
   level: Level
   onClose: () => void
@@ -152,7 +141,7 @@ export function CommandStory({ level, onClose, finishLabel = '看懂了，开始
     aliveRef.current = true
     return () => {
       aliveRef.current = false
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+      stopSpeaking()
     }
   }, [])
 
@@ -165,7 +154,7 @@ export function CommandStory({ level, onClose, finishLabel = '看懂了，开始
     }, 260)
     return () => {
       window.clearTimeout(timer)
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+      stopSpeaking()
     }
   }, [index, autoRead, pages])
 
@@ -270,7 +259,7 @@ export function CommandStory({ level, onClose, finishLabel = '看懂了，开始
                 checked={autoRead}
                 onChange={(e) => {
                   setAutoRead(e.target.checked)
-                  if (!e.target.checked && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+                  if (!e.target.checked) stopSpeaking()
                 }}
               />
               翻页时自动朗读
