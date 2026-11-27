@@ -20,6 +20,14 @@ const [summary] = await neonSql(conn, `select jsonb_build_object(
   'stage_target_rows', (select count(*) from public.module_level where module_id = 'blockly' and published and not is_placeholder and scene_type = 'stage'),
   'orphan_levels', (select count(*) from public.module_level l where l.module_id = 'blockly' and not exists (
     select 1 from public.module_unit u where u.module_id = l.module_id and u.unit_id = l.unit_id and u.term_id = l.term_id)),
+  'archived_formal_levels', (select count(*) from public.module_level where module_id = 'blockly'
+    and published = false and is_placeholder = false
+    and (sort_order between 811 and 850 or sort_order between 961 and 1000)),
+  'archived_formal_visible', (select count(*) from public.module_level where module_id = 'blockly'
+    and published = true and is_placeholder = false
+    and (sort_order between 811 and 850 or sort_order between 961 and 1000)),
+  'progress_orphans', (select count(*) from public.learning_record lr where lr.module_id = 'blockly' and not exists (
+    select 1 from public.module_level ml where ml.module_id = 'blockly' and ml.level_id = lr.level_id)),
   'scene_mismatch', (select count(*) from public.module_level where module_id = 'blockly' and scene_type <> body->>'scene_type'),
   'validated_unit_fk', (select convalidated from pg_constraint where conname = 'module_level_unit_fk')
 ) as result`)
@@ -30,20 +38,25 @@ where t.module_id = 'blockly' group by t.title, t.term_id, t.sort_order order by
 
 const targets = await neonSql(conn, `select level_id, title, scene_type, sort_order, body->'success_check'->>'variable_id' as variable_id,
 body->'success_check'->>'value' as target_value
-from public.module_level where module_id = 'blockly' and level_id in ('blk-161', 'blk-201') order by sort_order`)
+from public.module_level where module_id = 'blockly' and level_id in ('blk-161', 'blk-241') order by sort_order`)
 
 console.log('SUMMARY', JSON.stringify(summary.result, null, 2))
 console.log('TERMS', JSON.stringify(terms, null, 2))
 console.log('TARGETS', JSON.stringify(targets, null, 2))
 
 const failures = []
-if (summary.result.visible_levels !== 240) failures.push(`正式关卡应为 240，实际 ${summary.result.visible_levels}`)
-const expectedTermCounts = [80, 80, 40, 40]
+if (summary.result.visible_levels !== 320) failures.push(`正式关卡应为 320，实际 ${summary.result.visible_levels}`)
+const expectedTermCounts = [80, 80, 80, 80]
 if (terms.length !== 4 || terms.some((term, index) => Number(term.visible_levels) !== expectedTermCounts[index])) {
-  failures.push('四个学期正式关卡数应为 80 / 80 / 40 / 40')
+  failures.push('四个学期正式关卡数应为 80 / 80 / 80 / 80')
 }
-if (targets.length !== 2 || targets.some((target) => target.scene_type !== 'stage')) failures.push('blk-161 / blk-201 必须都是 stage')
+if (targets.length !== 2 || targets.some((target) => target.scene_type !== 'stage')) failures.push('blk-161 / blk-241 必须都是 stage')
 if (summary.result.orphan_levels !== 0) failures.push(`存在 ${summary.result.orphan_levels} 个孤儿关卡`)
+if (![0, 80].includes(Number(summary.result.archived_formal_levels))) {
+  failures.push(`旧正式关卡归档数应为 0 或 80，实际 ${summary.result.archived_formal_levels}`)
+}
+if (summary.result.archived_formal_visible !== 0) failures.push(`存在 ${summary.result.archived_formal_visible} 个仍公开的旧正式关卡`)
+if (summary.result.progress_orphans !== 0) failures.push(`存在 ${summary.result.progress_orphans} 条指向不存在关卡的 Blockly 学习记录`)
 if (summary.result.scene_mismatch !== 0) failures.push(`存在 ${summary.result.scene_mismatch} 个场景类型不一致`)
 if (summary.result.validated_unit_fk !== true) failures.push('module_level_unit_fk 未恢复或未校验')
 if (failures.length) {

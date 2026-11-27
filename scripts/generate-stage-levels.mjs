@@ -1,5 +1,5 @@
 /**
- * Blockly 二年级 80 关自由舞台关卡生成器（Level 2 = blk-161…200，Level 3 = blk-201…240）。
+ * Blockly 二年级 160 关自由舞台关卡生成器（Level 2 = blk-161…240，Level 3 = blk-241…320）。
  *
  * 用法：npx tsx scripts/generate-stage-levels.mjs
  *
@@ -71,52 +71,78 @@ const UNIT_META = [
     unitId: STAGE_UNITS.L2U1,
     termId: STAGE_TERMS.L2,
     sortOrder: 1,
-    levelCap: 20,
-    title: '舞台上的移动与计分',
-    summary: '认识自由舞台：角色沿一个方向走，用「移动」「如果碰到」和变量把分数记起来。',
-    knowledgeTags: ['stage', 'move', 'variable', 'score'],
+    levelCap: 40,
+    title: '基础移动与变量',
+    summary: '从低速少目标开始，逐步加速、加入干扰与扣分，最后完成接取小游戏。',
+    knowledgeTags: ['stage', 'move', 'variable', 'score', 'variant'],
   },
   {
     unitId: STAGE_UNITS.L2U2,
     termId: STAGE_TERMS.L2,
     sortOrder: 2,
-    levelCap: 20,
-    title: '躲避与计分',
-    summary: '路上有会掉下来的障碍，碰到要扣分；一边躲开一边把目标接住。',
-    knowledgeTags: ['stage', 'collision', 'score', 'lives'],
+    levelCap: 40,
+    title: '随机节奏与计分',
+    summary: '用固定伪随机节奏排布地鼠与障碍，在躲避、接取和扣分中完成综合挑战。',
+    knowledgeTags: ['stage', 'collision', 'score', 'lives', 'variant'],
   },
   {
     unitId: STAGE_UNITS.L3U1,
     termId: STAGE_TERMS.L3,
     sortOrder: 1,
-    levelCap: 20,
-    title: '克隆与事件',
-    summary: '用「克隆」造出子弹和敌人，多个角色同时在舞台上跑起来。',
-    knowledgeTags: ['stage', 'clone', 'projectile'],
+    levelCap: 40,
+    title: '克隆与子弹变体',
+    summary: '从单发克隆到双重火力、三向散弹和定位星星驱动的折线追踪弹。',
+    knowledgeTags: ['stage', 'clone', 'projectile', 'spread', 'tracking'],
   },
   {
     unitId: STAGE_UNITS.L3U2,
     termId: STAGE_TERMS.L3,
     sortOrder: 2,
-    levelCap: 20,
-    title: '多角色与复杂逻辑',
-    summary: '两个角色一起上场，条件里再套条件，判断写得又细又准。',
-    knowledgeTags: ['stage', 'concurrency', 'condition', 'nested'],
+    levelCap: 40,
+    title: '塔防与怪物编队',
+    summary: '用单怪、重甲怪和多怪重叠编队练习嵌套判断，并让两座塔协同防守。',
+    knowledgeTags: ['stage', 'clone', 'tower', 'monster', 'nested'],
   },
 ]
 
-/** 旧学期占位关卡的换号表：占位行不删，只改编号。 */
+/**
+ * 旧关卡换号表：正式行和占位行都不删，统一归档到 legacy 号段。
+ *
+ * - 旧 Level 2 正式关 blk-161…200 → blk-811…850
+ * - 旧 Level 3 正式关 blk-201…240 → blk-961…1000
+ * - 旧 Level 2 占位关 blk-167…175 若仍在旧编号 → blk-817…825
+ * - 旧 Level 3 占位关 blk-241…255 → blk-941…955
+ *
+ * blk-167…175 在旧版正式关卡和旧占位关卡中指向不同单元，因此各有一条映射；
+ * 两类行主键相同、不会同时存在，归档后也共用同一个 legacy 编号。
+ * 旧版迁移已经生成的 blk-901…909 / blk-941…955 保留不动；新迁移只处理仍停在旧编号上的行。
+ */
 const RENUMBER = [
-  // Level 2 的旧 u3/u4/u5 占位关（blk-167…175）挪到 901 号段。
+  ...Array.from({ length: 80 }, (_, index) => {
+    const oldOrder = 161 + index
+    const termId = oldOrder <= 200 ? STAGE_TERMS.L2 : STAGE_TERMS.L3
+    const termPrefix = oldOrder <= 200 ? 'blk-g2-fall' : 'blk-g2-spring'
+    const unitIndex = oldOrder <= 180 || (oldOrder >= 201 && oldOrder <= 220) ? 1 : 2
+    const newOrder = oldOrder <= 200 ? oldOrder + 650 : oldOrder + 760
+    return {
+      oldId: `blk-${String(oldOrder).padStart(3, '0')}`,
+      newId: `blk-${String(newOrder).padStart(3, '0')}`,
+      oldOrder,
+      newOrder,
+      termId,
+      unitId: `${termPrefix}-u${unitIndex}-legacy`,
+      isPlaceholder: false,
+    }
+  }),
   ...Array.from({ length: 9 }, (_, index) => ({
     oldId: `blk-${String(167 + index).padStart(3, '0')}`,
-    newId: `blk-${String(901 + index).padStart(3, '0')}`,
+    newId: `blk-${String(817 + index).padStart(3, '0')}`,
     oldOrder: 167 + index,
-    newOrder: 901 + index,
+    newOrder: 817 + index,
     termId: STAGE_TERMS.L2,
-    unitId: ['blk-g2-fall-u3-legacy', 'blk-g2-fall-u4-legacy', 'blk-g2-fall-u5-legacy'][Math.floor(index / 3)],
+    unitId: `blk-g2-fall-u${Math.floor(index / 3) + 3}-legacy`,
+    isPlaceholder: true,
   })),
-  // Level 3 的旧占位关（blk-241…255）全部挪到 941 号段。
   ...Array.from({ length: 15 }, (_, index) => ({
     oldId: `blk-${String(241 + index).padStart(3, '0')}`,
     newId: `blk-${String(941 + index).padStart(3, '0')}`,
@@ -124,6 +150,7 @@ const RENUMBER = [
     newOrder: 941 + index,
     termId: STAGE_TERMS.L3,
     unitId: `blk-g2-spring-u${Math.floor(index / 3) + 1}-legacy`,
+    isPlaceholder: true,
   })),
 ]
 
@@ -388,15 +415,49 @@ function sealLevel(level) {
 }
 
 // ---------------------------------------------------------------------------
-// Level 2 · 单元 1：舞台上的移动与计分（blk-161 … blk-180）
+// 参数矩阵：每个单元 4 个梯度 × 10 关，编号和绘本顺延生成
 // ---------------------------------------------------------------------------
 
-const L2U1_TITLES = [
-  '第一个苹果', '三个苹果', '苹果落得更快', '四个苹果', '苹果雨',
-  '第一只地鼠', '三只地鼠', '地鼠排排站', '五只地鼠', '地鼠大扫荡',
-  '星星和宝石', '双倍星星', '宝石加倍', '星光大道', '满地宝石',
-  '接苹果：拆解', '接苹果：多一关', '接苹果：加速', '接苹果：终点', '接苹果：完整作品',
-]
+const VARIANT_NAMES = ['初试', '再来', '加速', '瞄准', '连击', '密集', '灵巧', '挑战', '冲刺']
+
+function milestoneFor(start) {
+  if (start === 161) return 'term3_project'
+  if (start === 201) return 'term3_master'
+  if (start === 241) return 'term4_project'
+  return 'term4_master'
+}
+
+/** 把 4 组规格展开成 40 关；同一规格永远生成同一关卡。 */
+function buildLevelMatrix({ start, unitId, phases, build }) {
+  const levels = []
+  phases.forEach((phase, gradientIndex) => {
+    if (phase.specs.length !== 10) throw new Error(`${phase.title} 必须配置 10 个变体`)
+    phase.specs.forEach((spec, index) => {
+      const sortOrder = start + levels.length
+      const levelId = `blk-${String(sortOrder).padStart(3, '0')}`
+      const finalLevel = gradientIndex === phases.length - 1 && index === 9
+      levels.push(build({
+        ...spec,
+        levelId,
+        sortOrder,
+        unitId,
+        gradient: gradientIndex + 1,
+        variant: index + 1,
+        title: `${phase.title}·${finalLevel ? '完整作品' : VARIANT_NAMES[index]}`,
+        levelType: finalLevel ? 'project' : index === 3 || index === 8 ? 'practice' : index === 4 ? 'typing' : 'new',
+        tags: [...phase.tags, `gradient-${gradientIndex + 1}`, `variant-${index + 1}`],
+        badge: finalLevel ? milestoneFor(start) : null,
+        minutes: 15 + gradientIndex * 2 + (index >= 7 ? 2 : 0),
+        facts: { ...(spec.facts ?? {}), gradient: gradientIndex + 1, variant: index + 1 },
+      }))
+    })
+  })
+  return levels
+}
+
+// ---------------------------------------------------------------------------
+// Level 2 · 单元 1：基础移动与变量（blk-161 … blk-200）
+// ---------------------------------------------------------------------------
 
 /**
  * 接东西的一关：角色一路扫过去，碰到目标就加分。
@@ -476,152 +537,109 @@ function collectLevel({
 }
 
 function l2u1Levels() {
-  const levels = []
-  const unitId = STAGE_UNITS.L2U1
-
-  // 161-165：会往下掉的苹果。
-  const g1 = [
-    { count: 2, speed: 8, fall: 5 },
-    { count: 3, speed: 8, fall: 5 },
-    { count: 3, speed: 10, fall: 7 },
-    { count: 4, speed: 10, fall: 6 },
-    { count: 4, speed: 12, fall: 8 },
-  ]
-  g1.forEach((spec, index) => {
-    const levelId = `blk-${String(161 + index).padStart(3, '0')}`
-    const targets = planItems({
-      items: series('apple', spec.count, { asset: 'apple', fallSpeed: spec.fall }),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    levels.push(collectLevel({
-      levelId,
-      sortOrder: 161 + index,
-      unitId,
-      title: L2U1_TITLES[index],
-      levelType: index === 3 ? 'practice' : 'new',
+  const phases = [
+    {
+      title: '苹果小径',
       tags: ['stage', 'move', 'variable', 'collision'],
-      speed: spec.speed,
-      targets,
-      goalText: `接住 ${spec.count} 个往下掉的苹果，把 score 加到 ${spec.count}`,
-      successText: '苹果接住啦！',
-    }))
-  })
-
-  // 166-170：脚下的地鼠，不动，等着被敲。
-  const g2 = [
-    { count: 2, speed: 8 },
-    { count: 3, speed: 10 },
-    { count: 4, speed: 10 },
-    { count: 5, speed: 12 },
-    { count: 5, speed: 14 },
-  ]
-  g2.forEach((spec, index) => {
-    const levelId = `blk-${String(166 + index).padStart(3, '0')}`
-    const targets = planItems({
-      items: series('mole', spec.count, { asset: 'mole' }),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    levels.push(collectLevel({
-      levelId,
-      sortOrder: 166 + index,
-      unitId,
-      title: L2U1_TITLES[5 + index],
-      levelType: index === 3 ? 'practice' : 'new',
-      tags: ['stage', 'move', 'variable', 'collision'],
-      speed: spec.speed,
-      targets,
-      targetName: '地鼠',
-      goalText: `用小猫走过 ${spec.count} 只地鼠，把 score 加到 ${spec.count}`,
-      successText: '地鼠全敲到了！',
-    }))
-  })
-
-  // 171-175：星星 1 分、宝石 2 分，条件里套一层「重复执行」。
-  const g3 = [
-    { stars: 2, gems: 1, speed: 8 },
-    { stars: 3, gems: 1, speed: 10 },
-    { stars: 2, gems: 2, speed: 10 },
-    { stars: 3, gems: 2, speed: 12 },
-    { stars: 4, gems: 2, speed: 12 },
-  ]
-  g3.forEach((spec, index) => {
-    const levelId = `blk-${String(171 + index).padStart(3, '0')}`
-    const targets = planItems({
-      items: interleave(
-        series('star', spec.stars, { asset: 'star', points: 1 }),
-        series('gem', spec.gems, { asset: 'gem', points: 2 }),
-      ),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    levels.push(collectLevel({
-      levelId,
-      sortOrder: 171 + index,
-      unitId,
-      title: L2U1_TITLES[10 + index],
-      levelType: index === 3 ? 'practice' : 'new',
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        count: 2 + Math.floor(index / 4),
+        speed: 6 + Math.floor(index / 2),
+        fall: 4 + Math.floor(index / 3),
+      })),
+    },
+    {
+      title: '星星步道',
       tags: ['stage', 'variable', 'condition', 'nested'],
-      speed: spec.speed,
-      targets,
-      targetName: '星星和宝石',
-      facts: { bonusTargets: spec.gems },
-      goalText: `接住 ${spec.stars} 颗星星（1 分）和 ${spec.gems} 颗宝石（2 分），把 score 加到 ${spec.stars + spec.gems * 2}`,
-      successText: '星星宝石全收齐！',
-    }))
-  })
-
-  // 176-180：项目关，苹果 + 地鼠一起上，最后还要踩到终点旗。
-  const g4 = [
-    { apples: 3, moles: 2, speed: 8 },
-    { apples: 3, moles: 3, speed: 10 },
-    { apples: 4, moles: 2, speed: 10 },
-    { apples: 4, moles: 3, speed: 12 },
-    { apples: 5, moles: 3, speed: 12 },
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        count: 4 + Math.floor(index / 2),
+        speed: 10 + Math.floor(index / 2),
+        fall: 5 + Math.floor(index / 3),
+      })),
+    },
+    {
+      title: '炸弹间隙',
+      tags: ['stage', 'collision', 'score', 'lives'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        hazards: 1 + Math.floor(index / 3),
+        avoid: Math.floor(index / 4),
+        targets: 5 + Math.floor(index / 2),
+        speed: 12 + Math.floor(index / 2),
+        fall: 5 + Math.floor(index / 3),
+      })),
+    },
+    {
+      title: '果园闯关',
+      tags: ['project', 'stage', 'collision', 'score', 'lives'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        hazards: 2 + Math.floor(index / 3),
+        avoid: 1 + Math.floor(index / 4),
+        targets: 6 + Math.floor(index / 2),
+        speed: 14 + Math.floor(index / 2),
+        fall: 6 + Math.floor(index / 3),
+      })),
+    },
   ]
-  g4.forEach((spec, index) => {
-    const levelId = `blk-${String(176 + index).padStart(3, '0')}`
-    const targets = planItems({
-      items: interleave(
-        series('apple', spec.apples, { asset: 'apple', fallSpeed: 5 }),
-        series('mole', spec.moles, { asset: 'mole' }),
-      ),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    const goalX = goalAtFinishLine()
-    levels.push(collectLevel({
-      levelId,
-      sortOrder: 176 + index,
-      unitId,
-      title: L2U1_TITLES[15 + index],
-      levelType: index === 4 ? 'project' : index === 3 ? 'practice' : 'new',
-      tags: ['project', 'stage', 'move', 'variable', 'collision'],
-      badge: index === 4 ? 'term3_project' : null,
-      minutes: index >= 3 ? 20 : 15,
-      speed: spec.speed,
-      targets,
-      goalX,
-      targetName: '苹果和地鼠',
-      goalText: `接住 ${spec.apples} 个苹果、敲到 ${spec.moles} 只地鼠，把 score 加到 ${spec.apples + spec.moles}，再踩到右边的小旗子`,
-      successText: '项目完成，小精灵给你发徽章！',
-    }))
-  })
 
-  return levels
+  return buildLevelMatrix({
+    start: 161,
+    unitId: STAGE_UNITS.L2U1,
+    phases,
+    build(spec) {
+      if (spec.gradient <= 2) {
+        const targets = planItems({
+          items: Array.from({ length: spec.count }, (_, index) => ({
+            id: spec.gradient === 1 ? `apple-${index + 1}` : `prize-${index + 1}`,
+            asset: spec.gradient === 1 ? 'apple' : ['apple', 'star', 'gem'][index % 3],
+            fallSpeed: spec.fall,
+            points: spec.gradient === 2 && index % 3 === 2 ? 2 : 1,
+          })),
+          x0: PLAYER_X,
+          speed: spec.speed,
+        })
+        const score = targets.reduce((sum, target) => sum + target.points, 0)
+        const bonus = targets.filter((target) => target.points > 1).length
+        return collectLevel({
+          ...spec,
+          speed: spec.speed,
+          targets,
+          targetName: spec.gradient === 1 ? '苹果' : '苹果、星星和宝石',
+          backdrop: spec.gradient === 1 ? 'sky' : 'grass',
+          facts: { ...spec.facts, bonusTargets: bonus, targetCount: targets.length, scoreTotal: score },
+          goalText: spec.gradient === 1
+            ? `接住 ${spec.count} 个往下掉的苹果，把 score 加到 ${score}`
+            : `接住 ${spec.count} 个奖品，其中 ${bonus} 颗宝石加 2 分，把 score 加到 ${score}`,
+          successText: spec.gradient === 1 ? '苹果接住啦！' : '星星宝石全收齐！',
+        })
+      }
+
+      const hazards = series('bomb', spec.hazards, { asset: 'bomb', fallSpeed: spec.fall, kind: 'hazard' })
+      for (const hazard of hazards.slice(-spec.avoid)) hazard.mode = 'avoid'
+      const targets = series('prize', spec.targets, { asset: 'apple', kind: 'coin' })
+      targets.forEach((target, index) => { target.asset = index % 2 ? 'mole' : 'apple' })
+      const items = planItems({
+        items: interleave(hazards, targets),
+        x0: PLAYER_X,
+        speed: spec.speed,
+      })
+      const hits = spec.hazards - spec.avoid
+      return dodgeLevel({
+        ...spec,
+        speed: spec.speed,
+        items,
+        lives: 3,
+        goalX: spec.gradient === 4 ? goalAtFinishLine() : null,
+        backdrop: spec.gradient === 4 ? 'city' : 'sky',
+        facts: { ...spec.facts, targetName: '苹果和地鼠', avoidHazards: spec.avoid },
+        goalText: `接住 ${spec.targets} 个苹果或地鼠，撞到 ${hits} 次炸弹，lives 剩 ${3 - hits}${spec.gradient === 4 ? '，再踩到终点旗' : ''}`,
+        successText: spec.gradient === 4 ? '果园综合挑战完成！' : '干扰与扣分处理成功！',
+      })
+    },
+  })
 }
 
 // ---------------------------------------------------------------------------
-// Level 2 · 单元 2：躲避与计分（blk-181 … blk-200）
+// Level 2 · 单元 2：随机节奏与计分（blk-201 … blk-240）
 // ---------------------------------------------------------------------------
-
-const L2U2_TITLES = [
-  '第一颗炸弹', '躲过炸弹', '掉下来的石头', '三颗炸弹', '炸弹排排站',
-  '跑得更快', '提前出发', '擦肩而过', '闪电跑', '完美闪避',
-  '一边躲一边接', '金币和炸弹', '限时冲刺', '又躲又接', '双重挑战',
-  '跑酷：拆解', '跑酷：多一段', '跑酷：多两段', '跑酷：终点', '跑酷：完整作品',
-]
 
 /**
  * 躲避与计分的一关：障碍会掉下来，碰到扣一条命，目标照接不误。
@@ -713,179 +731,246 @@ function dodgeLevel({
 }
 
 function l2u2Levels() {
-  const levels = []
-  const unitId = STAGE_UNITS.L2U2
-
-  // 181-185：躲不掉的炸弹，教会「碰到要扣分」。
-  const g1 = [
-    { count: 2, speed: 8, fall: 5 },
-    { count: 2, speed: 10, fall: 6 },
-    { count: 3, speed: 10, fall: 6 },
-    { count: 3, speed: 12, fall: 7 },
-    { count: 4, speed: 12, fall: 7 },
-  ]
-  g1.forEach((spec, index) => {
-    const levelId = `blk-${String(181 + index).padStart(3, '0')}`
-    const items = planItems({
-      items: series('bomb', spec.count, { asset: 'bomb', fallSpeed: spec.fall, kind: 'hazard' }),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    levels.push(dodgeLevel({
-      levelId,
-      sortOrder: 181 + index,
-      unitId,
-      title: L2U2_TITLES[index],
-      levelType: index === 3 ? 'practice' : 'new',
-      tags: ['stage', 'collision', 'lives'],
-      speed: spec.speed,
-      items,
-      goalText: `撞到 ${spec.count} 次炸弹，lives 从 3 扣到 ${3 - spec.count}，别把命全撞光`,
-      successText: '扣分规则学会啦！',
-    }))
-  })
-
-  // 186-190：有一个障碍躲得开，走快一点就能从它底下钻过去。
-  const g2 = [
-    { count: 3, avoid: 1, speed: 10, fall: 5 },
-    { count: 3, avoid: 1, speed: 12, fall: 5 },
-    { count: 4, avoid: 2, speed: 12, fall: 6 },
-    { count: 4, avoid: 2, speed: 14, fall: 6 },
-    { count: 5, avoid: 2, speed: 14, fall: 7 },
-  ]
-  g2.forEach((spec, index) => {
-    const levelId = `blk-${String(186 + index).padStart(3, '0')}`
-    const bombs = series('bomb', spec.count, { asset: 'bomb', fallSpeed: spec.fall, kind: 'hazard' })
-    for (const bomb of bombs.slice(-spec.avoid)) bomb.mode = 'avoid'
-    const items = planItems({ items: bombs, x0: PLAYER_X, speed: spec.speed })
-    levels.push(dodgeLevel({
-      levelId,
-      sortOrder: 186 + index,
-      unitId,
-      title: L2U2_TITLES[5 + index],
-      levelType: index === 3 ? 'practice' : 'new',
+  const phases = [
+    {
+      title: '地鼠排雷',
+      tags: ['stage', 'collision', 'lives', 'score'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        count: 2 + Math.floor(index / 4),
+        speed: 6 + Math.floor(index / 2),
+        fall: 4 + Math.floor(index / 3),
+        lives: 5,
+      })),
+    },
+    {
+      title: '闪避加速',
       tags: ['stage', 'collision', 'lives', 'speed'],
-      speed: spec.speed,
-      items,
-      goalText: `路上有 ${spec.count} 个炸弹，只要撞到 ${spec.count - spec.avoid} 次，lives 就要还剩 ${3 - (spec.count - spec.avoid)} 条`,
-      successText: '躲得真准！',
-    }))
-  })
-
-  // 191-195：一边躲炸弹一边接金币。
-  const g3 = [
-    { bombs: 2, avoid: 1, coins: 2, speed: 10, fall: 5 },
-    { bombs: 2, avoid: 1, coins: 3, speed: 12, fall: 5 },
-    { bombs: 3, avoid: 1, coins: 3, speed: 12, fall: 6 },
-    { bombs: 3, avoid: 2, coins: 3, speed: 14, fall: 6 },
-    { bombs: 4, avoid: 2, coins: 4, speed: 14, fall: 7 },
-  ]
-  g3.forEach((spec, index) => {
-    const levelId = `blk-${String(191 + index).padStart(3, '0')}`
-    const bombs = series('bomb', spec.bombs, { asset: 'bomb', fallSpeed: spec.fall, kind: 'hazard' })
-    for (const bomb of bombs.slice(-spec.avoid)) bomb.mode = 'avoid'
-    const items = planItems({
-      items: interleave(bombs, series('coin', spec.coins, { asset: 'coin', kind: 'coin' })),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    const goalX = goalAtFinishLine()
-    levels.push(dodgeLevel({
-      levelId,
-      sortOrder: 191 + index,
-      unitId,
-      title: L2U2_TITLES[10 + index],
-      levelType: index === 3 ? 'practice' : 'new',
+      specs: Array.from({ length: 10 }, (_, index) => {
+        const count = 4 + Math.floor(index / 3)
+        return { count, avoid: count - 2, speed: 10 + Math.floor(index / 2), fall: 5 + Math.floor(index / 3), lives: 3 }
+      }),
+    },
+    {
+      title: '接取混编',
       tags: ['stage', 'collision', 'score', 'lives'],
-      speed: spec.speed,
-      items,
-      goalX,
-      goalText: `接住 ${spec.coins} 枚金币（score 加到 ${spec.coins}），撞到 ${spec.bombs - spec.avoid} 次炸弹（lives 剩 ${3 - (spec.bombs - spec.avoid)}），再踩到终点旗`,
-      successText: '又躲又接，成功！',
-    }))
-  })
-
-  // 196-200：项目关，路更长、东西更多。
-  const g4 = [
-    { bombs: 3, avoid: 1, coins: 3, speed: 10, fall: 5 },
-    { bombs: 3, avoid: 2, coins: 3, speed: 12, fall: 6 },
-    { bombs: 4, avoid: 2, coins: 4, speed: 12, fall: 6 },
-    { bombs: 4, avoid: 2, coins: 4, speed: 14, fall: 7 },
-    { bombs: 5, avoid: 3, coins: 5, speed: 14, fall: 7 },
-  ]
-  g4.forEach((spec, index) => {
-    const levelId = `blk-${String(196 + index).padStart(3, '0')}`
-    const bombs = series('bomb', spec.bombs, { asset: 'bomb', fallSpeed: spec.fall, kind: 'hazard' })
-    for (const bomb of bombs.slice(-spec.avoid)) bomb.mode = 'avoid'
-    const items = planItems({
-      items: interleave(bombs, series('coin', spec.coins, { asset: 'coin', kind: 'coin' })),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    const goalX = goalAtFinishLine()
-    levels.push(dodgeLevel({
-      levelId,
-      sortOrder: 196 + index,
-      unitId,
-      title: L2U2_TITLES[15 + index],
-      levelType: index === 4 ? 'project' : index === 3 ? 'practice' : 'new',
+      specs: Array.from({ length: 10 }, (_, index) => {
+        const bombs = 4 + Math.floor(index / 3)
+        return { bombs, avoid: bombs - 2, targets: 4 + Math.floor(index / 2), speed: 12 + Math.floor(index / 2), fall: 6 + Math.floor(index / 3), lives: 3 }
+      }),
+    },
+    {
+      title: '跑酷收官',
       tags: ['project', 'stage', 'collision', 'score', 'lives'],
-      badge: index === 4 ? 'term3_master' : null,
-      minutes: index >= 3 ? 20 : 15,
-      speed: spec.speed,
-      items,
-      goalX,
-      goalText: `接住 ${spec.coins} 枚金币，撞到 ${spec.bombs - spec.avoid} 次炸弹，最后踩到终点旗`,
-      successText: '跑酷项目完成！',
-    }))
-  })
+      specs: Array.from({ length: 10 }, (_, index) => {
+        const bombs = 5 + Math.floor(index / 3)
+        return { bombs, avoid: bombs - 2, targets: 6 + Math.floor(index / 2), speed: 14 + Math.floor(index / 2), fall: 6 + Math.floor(index / 3), lives: 3 }
+      }),
+    },
+  ]
 
-  return levels
+  return buildLevelMatrix({
+    start: 201,
+    unitId: STAGE_UNITS.L2U2,
+    phases,
+    build(spec) {
+      const hazards = series('bomb', spec.count ?? spec.bombs, { asset: 'bomb', fallSpeed: spec.fall, kind: 'hazard' })
+      for (const hazard of hazards.slice(-(spec.avoid ?? 0))) hazard.mode = 'avoid'
+      const targets = spec.targets
+        ? series('target', spec.targets, { asset: 'coin', kind: 'coin' })
+        : []
+      targets.forEach((target, index) => { target.asset = ['coin', 'mole', 'apple'][index % 3] })
+      const items = planItems({
+        items: targets.length ? interleave(hazards, targets) : hazards,
+        x0: PLAYER_X,
+        speed: spec.speed,
+      })
+      const hits = hazards.length - (spec.avoid ?? 0)
+      const withTargets = targets.length > 0
+      return dodgeLevel({
+        ...spec,
+        speed: spec.speed,
+        items,
+        lives: spec.lives,
+        goalX: spec.gradient === 4 || (spec.gradient === 3 && spec.variant >= 8) ? goalAtFinishLine() : null,
+        backdrop: spec.gradient >= 3 ? 'city' : 'sky',
+        facts: { ...spec.facts, targetName: withTargets ? '金币、地鼠和苹果' : '障碍', avoidHazards: spec.avoid ?? 0 },
+        goalText: withTargets
+          ? `接住 ${targets.length} 个目标，撞到 ${hits} 次炸弹，lives 剩 ${spec.lives - hits}${spec.gradient === 4 || spec.variant >= 8 ? '，再踩到终点旗' : ''}`
+          : `撞到 ${hits} 次炸弹，lives 从 ${spec.lives} 扣到 ${spec.lives - hits}`,
+        successText: spec.gradient === 4 ? '跑酷综合项目完成！' : '躲避与计分成功！',
+      })
+    },
+  })
 }
 
 // ---------------------------------------------------------------------------
-// Level 3 · 单元 1：克隆与事件（blk-201 … blk-220）
+// Level 3 · 单元 1：克隆与子弹变体（blk-241 … blk-280）
 // ---------------------------------------------------------------------------
 
-const L3U1_TITLES = [
-  '第一发子弹', '打中一个', '再打一个', '三发子弹', '子弹小队',
-  '连续发射', '不停歇', '弹幕', '火力全开', '扫清航道',
-  '两路夹击', '两种子弹', '双管', '交叉火力', '双重齐射',
-  '飞机大战：拆解', '飞机大战：敌人', '飞机大战：多敌', '飞机大战：终点', '飞机大战：完整作品',
+/** 直线弹的敌人 x 对齐飞船的一次发射位置。 */
+function planEnemies({ count, x0, speed, ys, prefix = 'enemy' }) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `${prefix}-${index + 1}`,
+    x: x0 + speed * (3 + index * 2),
+    y: ys[index % ys.length],
+  }))
+}
+
+const SPREAD_LANES = [
+  { direction: 315, offset: 1 },
+  { direction: 0, offset: 2 },
+  { direction: 45, offset: 3 },
 ]
 
+/** 左、中、右三路子弹各取一条真实弹道上的敌人。 */
+function planSpreadEnemies({ count, x0, shipSpeed, bulletSpeed }) {
+  return Array.from({ length: count }, (_, index) => {
+    const cycle = Math.floor(index / 3)
+    const lane = SPREAD_LANES[index % 3]
+    const spawnTick = cycle * 3 + lane.offset - 1
+    // 首轮左散弹从 x = 40 出发，travel = 8 会落到舞台外；6 格仍留足碰撞距离。
+    const travel = 6 + cycle * 2
+    const radians = lane.direction * Math.PI / 180
+    return {
+      id: `spread-enemy-${index + 1}`,
+      x: Math.round(x0 + shipSpeed * spawnTick + Math.sin(radians) * bulletSpeed * travel),
+      y: Math.round(PLAYER_Y - Math.cos(radians) * bulletSpeed * travel),
+    }
+  })
+}
+
 /**
- * 克隆关：角色一边飞一边造子弹，子弹自己往上飞，打中敌人就加分。
+ * 定位星星 + 二级克隆组成折线追踪弹。
+ * 父弹竖直向上，碰星星后从当前位置克隆一颗朝对应敌人转向的子弹。
+ */
+function planTrackingEnemies({ count, x0, shipSpeed, seekerSpeed = 8 }) {
+  const enemies = []
+  const guides = []
+  for (let index = 0; index < count; index += 1) {
+    const guideX = x0 + shipSpeed * (3 + index)
+    const direction = index % 2 ? 30 : 330
+    const radians = direction * Math.PI / 180
+    const travel = 10 + Math.floor(index / 3) * 2
+    const enemyId = `track-enemy-${index + 1}`
+    enemies.push({
+      id: enemyId,
+      x: Math.round(guideX + Math.sin(radians) * seekerSpeed * travel),
+      y: Math.round(264 - Math.cos(radians) * seekerSpeed * travel),
+    })
+    guides.push({
+      id: `guide-${index + 1}`,
+      x: guideX,
+      y: 250,
+      enemyId,
+      templateId: direction === 30 ? 'seeker-right' : 'seeker-left',
+      speed: seekerSpeed,
+    })
+  }
+  return { enemies, guides }
+}
+/** 重叠怪物只在最外层计分，内层怪物负责嵌套判断。 */
+function enemyScoreTotal(enemies) {
+  const innerIds = new Set(enemies.map((enemy) => enemy.pair).filter(Boolean))
+  return enemies.reduce((sum, enemy) => sum + (innerIds.has(enemy.id) ? 0 : (enemy.points ?? 1)), 0)
+}
+
+function makeEnemyCheck(enemy, byId, points = enemy.points ?? 1) {
+  const action = points > 1 ? rep(points, [changeVar('score', 1)]) : changeVar('score', 1)
+  if (!enemy.pair) return ifTouch(enemy.id, [action])
+  const inner = byId.get(enemy.pair)
+  if (!inner) throw new Error(`${enemy.id} 引用了不存在的配对怪物 ${enemy.pair}`)
+  return ifTouch(enemy.id, [makeEnemyCheck(inner, byId, points)])
+}
+
+/**
+ * 克隆关：飞船、散弹、折线追踪弹和塔防都复用这一套生产积木。
  *
- * 敌人的 x 一定落在角色步长的整倍数上——子弹就是角色每个 Tick 所在的位置，
- * 这样才保证有一发子弹正好从敌人身上穿过去。
+ * tracking 模板先笔直向上飞，碰到定位星星后从当前位置克隆一颗
+ * 预先朝向该敌人的转向弹；不需要新增方向传感或随机积木。
  */
 function cloneLevel({
   levelId, sortOrder, unitId, title, levelType, tags, badge, minutes,
   x0 = PLAYER_X, shipSpeed, bulletSpeed, enemies, templates, goalX = null, backdrop = 'night',
+  hazards = [], guides = [], helper = null, helperTemplateId = null, firing = 'parallel', lives = 3,
   facts, goalText, successText,
 }) {
+  const enemyById = new Map(enemies.map((enemy) => [enemy.id, enemy]))
+  const innerIds = new Set(enemies.map((enemy) => enemy.pair).filter(Boolean))
+  const outerEnemies = enemies.filter((enemy) => !innerIds.has(enemy.id))
+  const scoreTotal = enemyScoreTotal(enemies)
+  const makeEnemyChecks = () => outerEnemies.map((enemy) => makeEnemyCheck(enemy, enemyById))
+  const firedTemplates = templates.filter((template) => template.fired !== false)
+  const hits = hazards.filter((hazard) => hazard.mode !== 'avoid').length
+
   const sceneSprites = [
     playerSprite(x0, 'ship'),
     ...enemies.map((enemy) => sprite({
-      id: enemy.id, asset: 'enemy', x: enemy.x, y: enemy.y, direction: 0, size: 100, collectible: true,
+      id: enemy.id, asset: enemy.asset ?? 'enemy', x: enemy.x, y: enemy.y,
+      direction: 0, size: enemy.size ?? 100, collectible: true,
+    })),
+    ...hazards.map((hazard) => sprite({
+      id: hazard.id, asset: hazard.asset, x: hazard.x, y: hazard.y,
+      direction: hazard.fallSpeed ? 180 : 90, size: hazard.size ?? 100, collectible: true,
+    })),
+    ...guides.map((guide) => sprite({
+      id: guide.id, asset: guide.asset ?? 'star', x: guide.x, y: guide.y,
+      direction: 0, size: guide.size ?? 60, collectible: true,
     })),
   ]
+  if (helper) {
+    sceneSprites.push(sprite({
+      id: helper.id, asset: helper.asset, x: helper.x, y: helper.y, direction: 90, size: helper.size ?? 100,
+    }))
+  }
   if (goalX !== null) sceneSprites.push(goalSprite(goalX))
 
-  const enemyChecks = enemies.map((enemy) => ifTouch(enemy.id, [changeVar('score', 1)]))
-  const solutions = [
-    chain([setVar('score', 0), forever([move(shipSpeed)])]),
-    ...templates.map((template) => chain([
-      forever([cloneBlock(template.id, [forever([move(bulletSpeed), ...enemyChecks])])]),
-    ])),
-  ]
+  const projectileBody = (template) => {
+    if (template.behavior === 'tracker') {
+      return forever([
+        move(template.speed ?? bulletSpeed),
+        ...guides.map((guide) => ifTouch(guide.id, [
+          cloneBlock(guide.templateId, [
+            forever([move(guide.speed), ifTouch(guide.enemyId, [changeVar('score', 1)])]),
+          ]),
+        ])),
+      ])
+    }
+    return forever([move(template.speed ?? bulletSpeed), ...makeEnemyChecks()])
+  }
+
+  const solutions = [chain([
+    ...(hazards.length ? [setVar('lives', lives)] : []),
+    setVar('score', 0),
+    forever([move(shipSpeed), ...hazards.map((hazard) => ifTouch(hazard.id, [changeVar('lives', -1)]))]),
+  ])]
+  if (firing === 'spread') {
+    solutions.push(forever(firedTemplates.map((template) => cloneBlock(template.id, [projectileBody(template)]))))
+  } else {
+    for (const template of firedTemplates) {
+      solutions.push(forever([cloneBlock(template.id, [projectileBody(template)])]))
+    }
+  }
 
   const conditions = [
-    { type: 'variable_value', variable_id: 'score', op: '==', value: enemies.length },
+    { type: 'variable_value', variable_id: 'score', op: '==', value: scoreTotal },
     ...enemies.map((enemy) => ({ type: 'sprite_hidden', sprite_id: enemy.id })),
   ]
+  if (hazards.length) {
+    conditions.push({ type: 'variable_value', variable_id: 'lives', op: '==', value: lives - hits })
+  }
   if (goalX !== null) conditions.push({ type: 'sprite_at', sprite_id: 'player', x: goalX, y: PLAYER_Y })
+
+  const initialScripts = hazards.filter((hazard) => hazard.fallSpeed).map(fallingScript)
+  if (helper && helperTemplateId) {
+    initialScripts.push(initialScript({
+      id: `${helper.id}-fire`,
+      targetSpriteId: helper.id,
+      block: forever([
+        ...(helper.speed ? [move(helper.speed)] : []),
+        cloneBlock(helperTemplateId, [forever([move(helper.bulletSpeed ?? bulletSpeed), ...makeEnemyChecks()])]),
+      ]),
+    }))
+  }
 
   const scene = stageScene({
     backdrop,
@@ -894,11 +979,12 @@ function cloneLevel({
       id: template.id,
       asset: template.asset,
       spawn: { x: 'self', y: 'self' },
-      direction: 0,
+      direction: template.direction ?? 0,
       lifetimeSteps: template.lifetime,
       size: template.size ?? 50,
     })),
-    variables: [variable('score', 0)],
+    variables: hazards.length ? [variable('lives', lives), variable('score', 0)] : [variable('score', 0)],
+    initialScripts,
   })
 
   return {
@@ -914,484 +1000,281 @@ function cloneLevel({
     facts: {
       kind: 'clone',
       enemyCount: enemies.length,
-      cloneCount: templates.length,
+      enemyScore: scoreTotal,
+      cloneCount: firedTemplates.length,
+      cloneTemplateCount: templates.length,
+      shotPattern: firing,
       speed: shipSpeed,
+      hazardCount: hazards.length,
+      hazardHits: hits,
+      lives: hazards.length ? lives : 0,
+      helper: Boolean(helper),
       ...facts,
     },
     solution: solutions,
     body: buildBody({
       scene,
       blocks: stageBlocks({
-        variables: ['score'],
-        spriteOptions: touchOptions(enemies),
+        variables: hazards.length ? ['lives', 'score'] : ['score'],
+        spriteOptions: touchOptions([...enemies, ...hazards, ...guides]),
         cloneOptions: templates.map((template) => ({ value: template.id, label: template.label ?? template.id })),
+        withRepeat: enemies.some((enemy) => (enemy.points ?? 1) > 1),
       }),
-      maxBlocks: countBlocks(solutions) + 3,
-      maxSteps: 300,
+      maxBlocks: countBlocks(solutions) + 4,
+      maxSteps: 360,
       successCheck: { type: 'all', conditions },
       successText: successText ?? '打中啦！',
     }),
   }
 }
 
-/** 敌人放在角色步长的整倍数上，保证有子弹能穿过去。 */
-function planEnemies({ count, x0, speed, ys, prefix = 'enemy' }) {
-  const out = []
-  for (let index = 0; index < count; index += 1) {
-    // 步数不能太大：敌人得留在舞台里（x 最大 448）。
-    const step = 4 + index * 4
-    out.push({
-      id: `${prefix}-${index + 1}`,
-      x: x0 + speed * step,
-      y: ys[index % ys.length],
-    })
-  }
-  return out
-}
-
 function l3u1Levels() {
-  const levels = []
-  const unitId = STAGE_UNITS.L3U1
-
-  // 201-205：先学会「克隆」这一块积木。
-  const g1 = [
-    { enemies: 1, speed: 10, ys: [200] },
-    { enemies: 1, speed: 10, ys: [180] },
-    { enemies: 2, speed: 12, ys: [200, 140] },
-    { enemies: 2, speed: 12, ys: [220, 160] },
-    { enemies: 3, speed: 12, ys: [200, 150, 250] },
-  ]
-  g1.forEach((spec, index) => {
-    const levelId = `blk-${String(201 + index).padStart(3, '0')}`
-    const enemies = planEnemies({ count: spec.enemies, x0: PLAYER_X, speed: spec.speed, ys: spec.ys })
-    levels.push(cloneLevel({
-      levelId,
-      sortOrder: 201 + index,
-      unitId,
-      title: L3U1_TITLES[index],
-      levelType: index === 3 ? 'practice' : 'new',
+  const phases = [
+    {
+      title: '单发航道',
       tags: ['stage', 'clone', 'collision'],
-      shipSpeed: spec.speed,
-      bulletSpeed: 8,
-      enemies,
-      templates: [{ id: 'bullet', asset: 'bullet', label: '子弹', lifetime: 45, size: 50 }],
-      goalText: `用克隆造出子弹，打中 ${spec.enemies} 个敌人，把 score 加到 ${spec.enemies}`,
-      successText: '子弹打中啦！',
-    }))
-  })
-
-  // 206-210：敌人变多，克隆要放在循环里一直造。
-  const g2 = [
-    { enemies: 2, speed: 10, ys: [200, 140] },
-    { enemies: 3, speed: 12, ys: [200, 140, 250] },
-    { enemies: 3, speed: 12, ys: [180, 230, 120] },
-    { enemies: 4, speed: 14, ys: [200, 140, 250, 170] },
-    { enemies: 4, speed: 14, ys: [220, 160, 110, 260] },
-  ]
-  g2.forEach((spec, index) => {
-    const levelId = `blk-${String(206 + index).padStart(3, '0')}`
-    const enemies = planEnemies({ count: spec.enemies, x0: PLAYER_X, speed: spec.speed, ys: spec.ys })
-    levels.push(cloneLevel({
-      levelId,
-      sortOrder: 206 + index,
-      unitId,
-      title: L3U1_TITLES[5 + index],
-      levelType: index === 3 ? 'practice' : 'new',
-      tags: ['stage', 'clone', 'loop', 'collision'],
-      shipSpeed: spec.speed,
-      bulletSpeed: 8,
-      enemies,
-      templates: [{ id: 'bullet', asset: 'bullet', label: '子弹', lifetime: 45, size: 50 }],
-      goalText: `连着发射，把 ${spec.enemies} 个敌人全部打中，score 加到 ${spec.enemies}`,
-      successText: '弹幕扫平啦！',
-    }))
-  })
-
-  // 211-215：两种克隆模板，两条火力线。
-  const g3 = [
-    { enemies: 2, speed: 10, ys: [200, 140] },
-    { enemies: 3, speed: 12, ys: [200, 140, 250] },
-    { enemies: 3, speed: 12, ys: [180, 230, 120] },
-    { enemies: 4, speed: 14, ys: [200, 140, 250, 170] },
-    { enemies: 4, speed: 14, ys: [220, 160, 110, 260] },
-  ]
-  g3.forEach((spec, index) => {
-    const levelId = `blk-${String(211 + index).padStart(3, '0')}`
-    const enemies = planEnemies({ count: spec.enemies, x0: PLAYER_X, speed: spec.speed, ys: spec.ys })
-    levels.push(cloneLevel({
-      levelId,
-      sortOrder: 211 + index,
-      unitId,
-      title: L3U1_TITLES[10 + index],
-      levelType: index === 3 ? 'practice' : 'new',
-      tags: ['stage', 'clone', 'collision', 'concurrency'],
-      shipSpeed: spec.speed,
-      bulletSpeed: 8,
-      enemies,
-      templates: [
-        { id: 'bullet', asset: 'bullet', label: '子弹', lifetime: 45, size: 50 },
-        { id: 'shell', asset: 'bomb', label: '炮弹', lifetime: 60, size: 60 },
-      ],
-      goalText: `用两种克隆火力，把 ${spec.enemies} 个敌人全部打中，score 加到 ${spec.enemies}`,
-      successText: '交叉火力成功！',
-    }))
-  })
-
-  // 216-220：飞机大战项目，敌人更多，还要飞到终点。
-  const g4 = [
-    { enemies: 3, speed: 10, ys: [200, 140, 250] },
-    { enemies: 3, speed: 12, ys: [180, 230, 120] },
-    { enemies: 4, speed: 12, ys: [200, 140, 250, 170] },
-    { enemies: 4, speed: 14, ys: [220, 160, 110, 260] },
-    { enemies: 5, speed: 14, ys: [200, 150, 240, 120, 260] },
-  ]
-  g4.forEach((spec, index) => {
-    const levelId = `blk-${String(216 + index).padStart(3, '0')}`
-    const enemies = planEnemies({ count: spec.enemies, x0: PLAYER_X, speed: spec.speed, ys: spec.ys })
-    const goalX = goalAtFinishLine()
-    levels.push(cloneLevel({
-      levelId,
-      sortOrder: 216 + index,
-      unitId,
-      title: L3U1_TITLES[15 + index],
-      levelType: index === 4 ? 'project' : index === 3 ? 'practice' : 'new',
-      tags: ['project', 'stage', 'clone', 'collision', 'score'],
-      badge: index === 4 ? 'term4_project' : null,
-      minutes: 25,
-      shipSpeed: spec.speed,
-      bulletSpeed: 8,
-      enemies,
-      templates: [{ id: 'bullet', asset: 'bullet', label: '子弹', lifetime: 45, size: 50 }],
-      goalX,
-      goalText: `用克隆打掉 ${spec.enemies} 个敌人（score 加到 ${spec.enemies}），再把飞船开到右边的小旗子`,
-      successText: '飞机大战完成！',
-    }))
-  })
-
-  return levels
-}
-
-// ---------------------------------------------------------------------------
-// Level 3 · 单元 2：多角色与复杂逻辑（blk-221 … blk-240）
-// ---------------------------------------------------------------------------
-
-const L3U2_TITLES = [
-  '宝石加倍', '两颗宝石', '星星和宝石', '宝石大道', '满地宝石',
-  '一碰两响', '上下夹击', '同时碰到', '两响合一', '双重回响',
-  '两个角色', '小帮手上场', '一起得分', '分工合作', '合作拿分',
-  '吃豆人：拆解', '吃豆人：金币', '吃豆人：幽灵', '吃豆人：终点', '吃豆人：完整作品',
-]
-
-/**
- * 复杂逻辑的一关：条件里再套条件。
- *
- * items 里每件东西都标了 kind：
- *   target：角色自己要接的，接到了加分。
- *   hazard：掉下来的危险，碰到了扣一条命。
- *   helper：小帮手自己要接的，帮手接到了也加分。
- *
- * nested = 'bonus'：碰到目标后用「重复执行」加 2 分。
- * nested = 'both' ：上下两个目标同一时刻碰到才算数（两个目标的 x 相同，
- *                   所以角色一定在同一帧同时碰到它们）。
- */
-function nestedLevel({
-  levelId, sortOrder, unitId, title, levelType, tags, badge, minutes,
-  x0 = PLAYER_X, speed, items, goalX = null, backdrop = 'grass',
-  facts, goalText, successText, helper = null,
-}) {
-  const targets = items.filter((item) => item.kind === 'target')
-  const hazards = items.filter((item) => item.kind === 'hazard')
-  const helperTargets = items.filter((item) => item.kind === 'helper')
-
-  // 「一碰两响」：pair 指向配对的另一个目标。两个都碰到才 1 分，
-  // 所以配对里靠下的那个不单独计分。
-  const innerIds = new Set(targets.map((target) => target.pair).filter(Boolean))
-  const ownPoints = targets.reduce(
-    (sum, target) => sum + (innerIds.has(target.id) ? 0 : (target.points ?? 1)),
-    0,
-  )
-  const helperPoints = helperTargets.reduce((sum, target) => sum + (target.points ?? 1), 0)
-  const totalScore = ownPoints + helperPoints
-
-  const sceneSprites = [
-    playerSprite(x0),
-    ...items.map((item) => sprite({
-      id: item.id,
-      asset: item.asset,
-      x: item.x,
-      y: item.y,
-      direction: item.fallSpeed ? 180 : 90,
-      size: 100,
-      collectible: true,
-    })),
-  ]
-  if (helper) {
-    sceneSprites.push(sprite({ id: helper.id, asset: helper.asset, x: helper.x, y: helper.y, direction: 90, size: 100 }))
-  }
-  if (goalX !== null) sceneSprites.push(goalSprite(goalX))
-
-  // 每个目标的分支体：加分 1 分、或者用「重复执行」加 2 分。
-  // 配对的目标：先碰上面的，再看有没有同时碰到下面的。
-  const checks = targets
-    .filter((target) => !innerIds.has(target.id))
-    .map((target) => {
-      const inner = target.pair ? targets.find((item) => item.id === target.pair) : null
-      if (inner) return ifTouch(target.id, [ifTouch(inner.id, [changeVar('score', 1)])])
-      return ifTouch(target.id, [
-        target.points && target.points > 1
-          ? rep(target.points, [changeVar('score', 1)])
-          : changeVar('score', 1),
-      ])
-    })
-
-  const solution = chain([
-    setVar('score', 0),
-    forever([
-      move(speed),
-      ...checks,
-      ...hazards.map((hazard) => ifTouch(hazard.id, [changeVar('lives', -1)])),
-    ]),
-  ])
-
-  const initialScripts = items.filter((item) => item.fallSpeed).map(fallingScript)
-  if (helper) {
-    initialScripts.push(initialScript({
-      id: `${helper.id}-work`,
-      targetSpriteId: helper.id,
-      block: forever([
-        move(helper.speed),
-        ...helperTargets.map((target) => ifTouch(target.id, [rep(target.points ?? 1, [changeVar('score', 1)])])),
-      ]),
-    }))
-  }
-
-  const conditions = [
-    { type: 'variable_value', variable_id: 'score', op: '==', value: totalScore },
-    ...targets.map((target) => ({ type: 'sprite_hidden', sprite_id: target.id })),
-    ...helperTargets.map((target) => ({ type: 'sprite_hidden', sprite_id: target.id })),
-  ]
-  if (hazards.length) {
-    conditions.push({
-      type: 'variable_value',
-      variable_id: 'lives',
-      op: '==',
-      value: 3 - hazards.filter((hazard) => hazard.mode !== 'avoid').length,
-    })
-  }
-  if (goalX !== null) conditions.push({ type: 'sprite_at', sprite_id: 'player', x: goalX, y: PLAYER_Y })
-
-  const scene = stageScene({
-    backdrop,
-    sprites: sceneSprites,
-    variables: [variable('score', 0), ...(hazards.length ? [variable('lives', 3)] : [])],
-    initialScripts,
-  })
-
-  return {
-    levelId,
-    sortOrder,
-    unitId,
-    title,
-    levelType,
-    knowledgeTags: tags,
-    milestoneBadge: badge ?? null,
-    estimatedMinutes: minutes ?? 20,
-    goalText,
-    facts: {
-      kind: 'nested',
-      targetCount: targets.length,
-      scoreTotal: totalScore,
-      speed,
-      lives: hazards.length ? 3 : 0,
-      ...facts,
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        pattern: 'straight', count: 1 + Math.floor(index / 2), speed: 8 + Math.floor(index / 2), bullet: 6 + Math.floor(index / 3),
+      })),
     },
-    solution: [solution],
-    body: buildBody({
-      scene,
-      blocks: stageBlocks({
-        variables: hazards.length ? ['lives', 'score'] : ['score'],
-        spriteOptions: touchOptions(items),
-        withRepeat: true,
-      }),
-      maxBlocks: countBlocks([solution]) + 3,
-      maxSteps: 300,
-      successCheck: { type: 'all', conditions },
-      successText: successText ?? '闯关成功！',
-    }),
-  }
+    {
+      title: '双重火力',
+      tags: ['stage', 'clone', 'loop', 'collision'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        pattern: 'twin', count: 3 + Math.floor(index / 2), speed: 10 + Math.floor(index / 2), bullet: 8 + Math.floor(index / 3),
+      })),
+    },
+    {
+      title: '三向散弹',
+      tags: ['stage', 'clone', 'spread', 'concurrency'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        pattern: 'spread', count: 4 + Math.floor(index / 2), speed: 10 + Math.floor(index / 2), bullet: 8,
+      })),
+    },
+    {
+      title: '追踪决战',
+      tags: ['project', 'stage', 'clone', 'tracking', 'spread'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        pattern: index < 5 ? 'tracking' : 'mixed',
+        speed: 10 + index,
+        bullet: 8,
+        trackingCount: index < 5 ? 4 + index : 3,
+        spreadCount: index < 5 ? 0 : 3 + index - 5,
+      })),
+    },
+  ]
+
+  return buildLevelMatrix({
+    start: 241,
+    unitId: STAGE_UNITS.L3U1,
+    phases,
+    build(spec) {
+      let enemies = []
+      let guides = []
+      let templates = []
+      let firing = 'parallel'
+      if (spec.pattern === 'straight' || spec.pattern === 'twin') {
+        enemies = planEnemies({
+          count: spec.count, x0: PLAYER_X, speed: spec.speed, ys: [200, 140, 250, 170, 110],
+        })
+        templates = [{ id: 'bullet', asset: 'bullet', label: '子弹', lifetime: 45, size: 50, speed: spec.bullet }]
+        if (spec.pattern === 'twin') {
+          templates.push({ id: 'shell', asset: 'bomb', label: '炮弹', lifetime: 60, size: 60, speed: spec.bullet + 2 })
+        }
+      } else if (spec.pattern === 'spread') {
+        enemies = planSpreadEnemies({ count: spec.count, x0: PLAYER_X, shipSpeed: spec.speed, bulletSpeed: spec.bullet })
+        templates = [
+          { id: 'spread-left', asset: 'bullet', label: '左散弹', direction: 315, lifetime: 55, size: 50, speed: spec.bullet },
+          { id: 'spread-center', asset: 'bullet', label: '中散弹', direction: 0, lifetime: 55, size: 50, speed: spec.bullet },
+          { id: 'spread-right', asset: 'bullet', label: '右散弹', direction: 45, lifetime: 55, size: 50, speed: spec.bullet },
+        ]
+        firing = 'spread'
+      } else {
+        const tracked = planTrackingEnemies({
+          count: spec.trackingCount, x0: PLAYER_X, shipSpeed: spec.speed, seekerSpeed: spec.bullet,
+        })
+        enemies = tracked.enemies
+        guides = tracked.guides
+        templates = [
+          { id: 'tracker', asset: 'bullet', label: '追踪父弹', direction: 0, lifetime: 55, size: 50, speed: 6, behavior: 'tracker' },
+          { id: 'seeker-left', asset: 'bullet', label: '左转向弹', direction: 330, lifetime: 45, size: 50, speed: spec.bullet, fired: false },
+          { id: 'seeker-right', asset: 'bullet', label: '右转向弹', direction: 30, lifetime: 45, size: 50, speed: spec.bullet, fired: false },
+        ]
+        if (spec.pattern === 'mixed') {
+          enemies = [
+            ...planSpreadEnemies({ count: spec.spreadCount, x0: PLAYER_X, shipSpeed: spec.speed, bulletSpeed: spec.bullet }),
+            ...enemies,
+          ]
+          templates = [
+            { id: 'spread-left', asset: 'bullet', label: '左散弹', direction: 315, lifetime: 55, size: 50, speed: spec.bullet },
+            { id: 'spread-center', asset: 'bullet', label: '中散弹', direction: 0, lifetime: 55, size: 50, speed: spec.bullet },
+            { id: 'spread-right', asset: 'bullet', label: '右散弹', direction: 45, lifetime: 55, size: 50, speed: spec.bullet },
+            ...templates,
+          ]
+          firing = 'spread'
+        }
+      }
+
+      const goalX = spec.gradient === 4 ? goalAtFinishLine() : null
+      const goalText = spec.pattern === 'spread'
+        ? `在同一轮发射中克隆左、中、右三路散弹，打中 ${enemies.length} 个敌人`
+        : spec.pattern === 'tracking'
+          ? `释放追踪父弹，碰到定位星星后克隆转向弹，打中 ${enemies.length} 个敌人`
+          : spec.pattern === 'mixed'
+            ? `组合三向散弹和折线追踪弹，打中 ${enemies.length} 个敌人，再飞到终点旗`
+            : `用${spec.pattern === 'twin' ? '两种' : ''}克隆火力打中 ${enemies.length} 个敌人，把 score 加到 ${enemies.length}`
+      return cloneLevel({
+        ...spec,
+        shipSpeed: spec.speed,
+        bulletSpeed: spec.bullet,
+        enemies,
+        templates,
+        guides,
+        firing,
+        goalX,
+        facts: {
+          ...spec.facts,
+          pattern: spec.pattern,
+          spreadDirections: spec.pattern === 'spread' || spec.pattern === 'mixed' ? [315, 0, 45] : [],
+          trackingGuides: guides.length,
+        },
+        goalText: `${goalText}${goalX !== null && spec.pattern !== 'mixed' ? '，再飞到终点旗' : ''}`,
+        successText: spec.pattern === 'tracking' || spec.pattern === 'mixed' ? '追踪与散弹项目完成！' : '子弹全部命中！',
+      })
+    },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Level 3 · 单元 2：塔防与怪物编队（blk-281 … blk-320）
+// ---------------------------------------------------------------------------
+
+const TOWER_YS = [170, 230, 120, 260, 90, 200, 140, 250, 110]
+
+function towerGroupSize(mode, index) {
+  if (mode === 'single') return 1
+  if (mode === 'pair') return index % 2 ? 2 : 1
+  if (mode === 'mixed') return [1, 2, 3][index % 3]
+  return [2, 3][index % 2]
 }
 
 /**
- * 小帮手那一行的道具。
- *
- * x 必须落在帮手步长的整倍数上：帮手每步走固定的距离，
- * 只有站在它一定会踩到的位置上，才能保证接到。
+ * 塔防编队：每组怪物共用一条真实弹道，组内重叠并通过 pair 链嵌套判断。
+ * 外层重甲怪负责整组计分，内层怪物被同一颗子弹连续收集。
  */
-function planHelperItems({ count, x0 = PLAYER_X, speed, prefix, asset, points, y }) {
-  return Array.from({ length: count }, (_, index) => ({
-    id: `${prefix}-${index + 1}`,
-    asset,
-    points,
-    kind: 'helper',
-    x: x0 + speed * (4 + index * 4),
-    y,
-  }))
+function planTowerMonsters({ groups, speed, mode, ys = TOWER_YS }) {
+  const enemies = []
+  for (let groupIndex = 0; groupIndex < groups; groupIndex += 1) {
+    const size = towerGroupSize(mode, groupIndex)
+    const x = PLAYER_X + speed * (3 + groupIndex * 2)
+    const y = ys[groupIndex % ys.length]
+    for (let layer = 0; layer < size; layer += 1) {
+      const id = layer === 0
+        ? `tower-${groupIndex + 1}-outer`
+        : `tower-${groupIndex + 1}-inner-${layer}`
+      enemies.push({
+        id,
+        asset: layer === 0 && size > 1 ? 'rock' : 'enemy',
+        x,
+        y,
+        pair: layer < size - 1 ? `tower-${groupIndex + 1}-inner-${layer + 1}` : null,
+        points: layer === 0 && size > 1 && mode === 'pair' && groupIndex % 2 ? 2 : 1,
+      })
+    }
+  }
+  return enemies
 }
 
 function l3u2Levels() {
-  const levels = []
-  const unitId = STAGE_UNITS.L3U2
-
-  // 221-225：宝石加倍，条件里套一层「重复执行」。
-  const g1 = [
-    { stars: 2, gems: 1, speed: 8 },
-    { stars: 3, gems: 1, speed: 10 },
-    { stars: 2, gems: 2, speed: 10 },
-    { stars: 3, gems: 2, speed: 12 },
-    { stars: 4, gems: 3, speed: 12 },
+  const phases = [
+    {
+      title: '单怪阵列',
+      tags: ['stage', 'clone', 'tower', 'collision'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        mode: 'single', groups: 1 + Math.floor(index / 2), speed: 8 + Math.floor(index / 2), bullet: 6 + Math.floor(index / 3),
+      })),
+    },
+    {
+      title: '重甲编队',
+      tags: ['stage', 'clone', 'tower', 'nested'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        mode: 'pair', groups: 3 + Math.floor(index / 2), speed: 10 + Math.floor(index / 2), bullet: 7 + Math.floor(index / 3),
+      })),
+    },
+    {
+      title: '协同防守',
+      tags: ['stage', 'clone', 'tower', 'helper', 'lives'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        mode: 'mixed', groups: 4 + Math.floor(index / 2), speed: 12 + Math.floor(index / 2), bullet: 8,
+        hazards: 1 + Math.floor(index / 3), avoid: Math.floor(index / 4), helper: true, lives: 5,
+      })),
+    },
+    {
+      title: '塔防决战',
+      tags: ['project', 'stage', 'clone', 'tower', 'helper', 'lives'],
+      specs: Array.from({ length: 10 }, (_, index) => ({
+        mode: 'swarm', groups: 5 + Math.floor(index / 2), speed: 14 + Math.floor(index / 2), bullet: 9,
+        hazards: 2 + Math.floor(index / 3), avoid: 1 + Math.floor(index / 4), helper: true, lives: 5,
+      })),
+    },
   ]
-  g1.forEach((spec, index) => {
-    const levelId = `blk-${String(221 + index).padStart(3, '0')}`
-    const items = planItems({
-      items: interleave(
-        series('star', spec.stars, { asset: 'star', points: 1, kind: 'target' }),
-        series('gem', spec.gems, { asset: 'gem', points: 2, kind: 'target' }),
-      ),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    levels.push(nestedLevel({
-      levelId,
-      sortOrder: 221 + index,
-      unitId,
-      title: L3U2_TITLES[index],
-      levelType: index === 3 ? 'practice' : 'new',
-      tags: ['stage', 'condition', 'nested', 'variable'],
-      speed: spec.speed,
-      items,
-      facts: { bonusTargets: spec.gems, nestedRule: '碰到宝石的时候，条件里面再放一块「重复执行」，让它加 2 分' },
-      goalText: `接住 ${spec.stars} 颗星星（1 分）和 ${spec.gems} 颗宝石（2 分），把 score 加到 ${spec.stars + spec.gems * 2}`,
-      successText: '宝石加倍成功！',
-    }))
-  })
 
-  // 226-230：一碰两响，条件里再套一个条件。
-  const g2 = [
-    { pairs: 1, speed: 10 },
-    { pairs: 2, speed: 10 },
-    { pairs: 2, speed: 12 },
-    { pairs: 3, speed: 12 },
-    { pairs: 3, speed: 14 },
-  ]
-  g2.forEach((spec, index) => {
-    const levelId = `blk-${String(226 + index).padStart(3, '0')}`
-    // 上下两个目标同一个 x，角色一定同一帧同时碰到它们。
-    const items = []
-    for (let pairIndex = 0; pairIndex < spec.pairs; pairIndex += 1) {
-      const x = Math.round(PLAYER_X + 80 + pairIndex * 110)
-      const upperId = `pair-${pairIndex + 1}-up`
-      const lowerId = `pair-${pairIndex + 1}-down`
-      items.push({ id: upperId, asset: 'star', x, y: 272, points: 1, kind: 'target', pair: lowerId })
-      items.push({ id: lowerId, asset: 'coin', x, y: 310, points: 1, kind: 'target', pair: null })
-    }
-    levels.push(nestedLevel({
-      levelId,
-      sortOrder: 226 + index,
-      unitId,
-      title: L3U2_TITLES[5 + index],
-      levelType: index === 3 ? 'practice' : 'new',
-      tags: ['stage', 'condition', 'nested'],
-      speed: spec.speed,
-      items,
-      facts: { nestedRule: '先检查上面的目标有没有碰到，碰到了再看下面的目标是不是也碰到了，两个都碰到才加分' },
-      goalText: `一上一下 ${spec.pairs} 对目标，要同时碰到才算数，把 score 加到 ${spec.pairs}`,
-      successText: '一碰两响成功！',
-    }))
-  })
+  return buildLevelMatrix({
+    start: 281,
+    unitId: STAGE_UNITS.L3U2,
+    phases,
+    build(spec) {
+      const enemies = planTowerMonsters(spec)
+      const templates = [{ id: 'bullet', asset: 'bullet', label: '防守子弹', lifetime: 55, size: 50, speed: spec.bullet }]
+      let helper = null
+      let helperTemplateId = null
+      if (spec.helper) {
+        helper = { id: 'bee-tower', asset: 'bee', x: PLAYER_X + spec.speed * 3, y: PLAYER_Y, speed: 0, bulletSpeed: spec.bullet + 2 }
+        helperTemplateId = 'helper-shell'
+        templates.push({ id: helperTemplateId, asset: 'bomb', label: '蜜蜂塔炮弹', lifetime: 60, size: 60, speed: spec.bullet + 2 })
+      }
 
-  // 231-235：小帮手和角色一起得分。
-  const g3 = [
-    { coins: 2, gems: 1, speed: 8 },
-    { coins: 3, gems: 1, speed: 10 },
-    { coins: 3, gems: 2, speed: 10 },
-    { coins: 4, gems: 2, speed: 12 },
-    { coins: 4, gems: 3, speed: 12 },
-  ]
-  g3.forEach((spec, index) => {
-    const levelId = `blk-${String(231 + index).padStart(3, '0')}`
-    const coins = planItems({
-      items: series('coin', spec.coins, { asset: 'coin', points: 1, kind: 'target' }),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    const gems = planHelperItems({
-      count: spec.gems,
-      x0: PLAYER_X,
-      speed: 10,
-      prefix: 'gem',
-      asset: 'gem',
-      points: 2,
-      y: 240,
-    })
-    levels.push(nestedLevel({
-      levelId,
-      sortOrder: 231 + index,
-      unitId,
-      title: L3U2_TITLES[10 + index],
-      levelType: index === 3 ? 'practice' : 'new',
-      tags: ['stage', 'concurrency', 'condition', 'nested'],
-      speed: spec.speed,
-      items: [...coins, ...gems],
-      helper: { id: 'helper', asset: 'bee', x: PLAYER_X, y: 240, speed: 10 },
-      facts: {
-        bonusTargets: spec.gems,
-        nestedRule: '小帮手在上面的那一行跑，碰到宝石就加 2 分；你管下面那一行的硬币',
-      },
-      goalText: `你接住 ${spec.coins} 枚硬币（1 分），小帮手接住 ${spec.gems} 颗宝石（2 分），两人一起把 score 加到 ${spec.coins + spec.gems * 2}`,
-      successText: '合作成功！',
-    }))
-  })
+      const hazards = series('tower-hazard', spec.hazards ?? 0, { asset: 'bomb', fallSpeed: 6, kind: 'hazard' })
+      hazards.forEach((hazard, index) => { hazard.asset = index % 2 ? 'ghost' : 'bomb' })
+      for (const hazard of hazards.slice(-(spec.avoid ?? 0))) hazard.mode = 'avoid'
+      const plannedHazards = planItems({ items: hazards, x0: PLAYER_X, speed: spec.speed })
+      const hits = hazards.length - (spec.avoid ?? 0)
+      const score = enemyScoreTotal(enemies)
+      const monsterMix = { single: 0, pair: 0, triple: 0, armored: 0 }
+      for (let group = 0; group < spec.groups; group += 1) {
+        const size = towerGroupSize(spec.mode, group)
+        if (size === 1) monsterMix.single += 1
+        else if (size === 2) monsterMix.pair += 1
+        else monsterMix.triple += 1
+        if (size > 1) monsterMix.armored += 1
+      }
+      const mixText = `${monsterMix.single} 组单怪、${monsterMix.pair} 组双怪、${monsterMix.triple} 组三怪`
+      const goalX = spec.gradient === 4 ? goalAtFinishLine() : null
 
-  // 236-240：吃豆人项目，金币 + 幽灵 + 终点。
-  const g4 = [
-    { coins: 3, ghosts: 2, avoid: 1, speed: 10 },
-    { coins: 3, ghosts: 2, avoid: 1, speed: 12 },
-    { coins: 4, ghosts: 3, avoid: 2, speed: 12 },
-    { coins: 4, ghosts: 3, avoid: 2, speed: 14 },
-    { coins: 5, ghosts: 4, avoid: 2, speed: 14 },
-  ]
-  g4.forEach((spec, index) => {
-    const levelId = `blk-${String(236 + index).padStart(3, '0')}`
-    const ghosts = series('ghost', spec.ghosts, { asset: 'ghost', fallSpeed: 5, kind: 'hazard' })
-    for (const ghost of ghosts.slice(-spec.avoid)) ghost.mode = 'avoid'
-    const items = planItems({
-      items: interleave(
-        series('coin', spec.coins, { asset: 'coin', points: 1, kind: 'target' }),
-        ghosts,
-      ),
-      x0: PLAYER_X,
-      speed: spec.speed,
-    })
-    const goalX = goalAtFinishLine()
-    levels.push(nestedLevel({
-      levelId,
-      sortOrder: 236 + index,
-      unitId,
-      title: L3U2_TITLES[15 + index],
-      levelType: index === 4 ? 'project' : index === 3 ? 'practice' : 'new',
-      tags: ['project', 'stage', 'collision', 'lives', 'condition'],
-      badge: index === 4 ? 'term4_master' : null,
-      minutes: 25,
-      speed: spec.speed,
-      items,
-      goalX,
-      facts: { nestedRule: '碰到幽灵要扣一条命，幽灵掉下来的时间要算好' },
-      goalText: `接住 ${spec.coins} 枚金币，撞到 ${spec.ghosts - spec.avoid} 次幽灵（lives 剩 ${3 - (spec.ghosts - spec.avoid)}），最后踩到终点旗`,
-      successText: '吃豆人完成！',
-    }))
+      return cloneLevel({
+        ...spec,
+        shipSpeed: spec.speed,
+        bulletSpeed: spec.bullet,
+        enemies,
+        templates,
+        hazards: plannedHazards,
+        helper,
+        helperTemplateId,
+        lives: spec.lives ?? 3,
+        goalX,
+        backdrop: spec.gradient >= 3 ? 'city' : 'night',
+        facts: {
+          ...spec.facts,
+          kind: 'tower',
+          pattern: 'tower',
+          monsterGroups: spec.groups,
+          monsterMix,
+        },
+        goalText: `守住塔防：${mixText}，把 score 加到 ${score}${spec.helper ? '，蜜蜂塔与你同时开火' : ''}${hazards.length ? `，撞到 ${hits} 个障碍` : ''}${goalX !== null ? '，再飞到终点旗' : ''}`,
+        successText: spec.gradient === 4 ? '塔防综合项目完成！' : '怪物编队清理成功！',
+      })
+    },
   })
-
-  return levels
 }
 
 // ---------------------------------------------------------------------------
@@ -1411,10 +1294,10 @@ const FIRST_REVIEW = {
   hint: '这一关也要用 score 这个小盒子记住接住了几个目标。',
 }
 
-/** 关卡类型按「12 新课 / 5 练习 / 2 打字 / 1 项目」的节奏排。 */
-function levelTypeOf(unitIndex, indexInUnit) {
+/** 每个单元 40 关：每 5 关安排一次练习/打字，最后一关是项目。 */
+function levelTypeOf(_unitIndex, indexInUnit) {
+  if (indexInUnit === 39) return 'project'
   const phase = indexInUnit % 5
-  if (unitIndex === 1 && indexInUnit === 19) return 'project'
   if (phase === 3) return 'practice'
   if (phase === 4) return 'typing'
   return 'new'
@@ -1469,8 +1352,7 @@ function levelSql(level) {
 -- ${level.goal}
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
--- blk-161…166 是早就存在的占位关，纯 update 会因为条件不匹配而静默跳过，
--- on conflict 让「已存在就改正文、不存在就新建」两种情况都对。
+-- 旧编号已在步骤 3 归档；on conflict 用于重跑时更新新正文，不存在时则新建。
 insert into public.module_level
   (module_id, level_id, sort_order, title, goal, body, published, created_at, updated_at,
    term_id, unit_id, scene_type, level_type, knowledge_tags, milestone_badge, estimated_minutes, is_placeholder)
@@ -1510,20 +1392,24 @@ function unitTermOf(unitId) {
 
 function buildSql(levels) {
   const parts = []
-  parts.push(`-- Blockly 二年级 80 关自由舞台（blk-161 … blk-240），一次迁移落库。
+  const remapValues = RENUMBER.map((row) =>
+    `    (${sqlString(row.oldId)}, ${sqlString(row.newId)}, ${row.oldOrder}, ${row.newOrder}, ${sqlString(row.termId)}, ${sqlString(row.unitId)}, ${row.isPlaceholder ? 'true' : 'false'})`,
+  ).join(',\n')
+  parts.push(`-- Blockly 二年级 160 关自由舞台（blk-161 … blk-320），一次迁移落库。
 --
 -- 这个文件由 scripts/generate-stage-levels.mjs 生成，不要手工改：
 --   npx tsx scripts/generate-stage-levels.mjs
 -- 生成器用生产解析器和生产解释器把每关的标准解跑通一遍才写进来。
 --
 -- 迁移分五步：
---   1. 两个学期的容量和简介改成 40 课。
---   2. 单元：Level 2 复用 u1/u2、u3…u5 改成 -legacy；
---      Level 3 的 u1…u5 全部改成 -legacy，新的 u1/u2 重新占 1、2 号。
---   3. 旧的占位关卡换号（Level 2 的 blk-167…175 → blk-901…909，
---      Level 3 的 blk-241…255 → blk-941…955），占位行不删。
---   4. learning_record 里的旧编号同步改名，进度不丢。
---   5. 写入 80 关正文。
+--   1. 两个学期的容量和简介改成 16 周、80 课。
+--   2. 单元：Level 2 的 u1…u5 和 Level 3 的 u1…u5 全部改成 -legacy，
+--      新的 u1/u2 重新占 1、2 号。
+--   3. 旧正式关卡归档：Level 2 blk-161…200 → blk-811…850，
+--      Level 3 blk-201…240 → blk-961…1000；旧占位 blk-167…175 → blk-817…825，
+--      旧 Level 3 占位 blk-241…255 → blk-941…955。
+--   4. learning_record 同步迁到 legacy 编号；目标冲突时合并旧进度并重置新编号记录。
+--   5. 写入 160 关正文。
 --
 -- Neon 跨语句没有事务，每条语句都写成幂等的固定值，重跑即可。
 -- 迁移前请确认已经备份；本文件不执行任何 delete。
@@ -1532,8 +1418,8 @@ function buildSql(levels) {
   parts.push(`-- 1. 学期容量
 update public.module_term
 set
-  weeks = 20,
-  level_cap = 40,
+  weeks = 16,
+  level_cap = 80,
   summary = case term_id
     when 'blk-g2-fall' then '自由舞台第一学期：舞台移动、变量计分、躲避危险。完成 2 个小游戏。'
     else '自由舞台第二学期：克隆、多角色协作、复杂条件。完成 1 个大游戏。'
@@ -1544,58 +1430,90 @@ where module_id = 'blockly'
 
   parts.push(`-- 2. 单元
 --
--- 旧的 u3…u5（Level 2）和 u1…u5（Level 3）不能删（表上有 forbid_business_delete 触发器），
+-- 旧的 Level 2 u1…u5 和 Level 3 u1…u5 都不能删（表上有 forbid_business_delete 触发器），
 -- 只能改成 -legacy 编号。父子表改号都会触发即时外键检查，因此放进单个 DO 原子块：
 -- 先临时移除外键，父子表都改完后立即重加并校验；块内失败会整体回滚。
--- 父表仅在 legacy 行尚不存在时改号，子表只迁旧占位行，避免重跑误伤新舞台单元。
+-- legacy 父单元不存在时改号并迁移全部子记录；已存在时保留新父单元，
+-- 只把仍挂旧父单元、且归档目标尚不存在的旧行迁到 legacy，重跑不会误伤新关卡。
 do $$
+declare
+  v_unit record;
+  v_legacy_id text;
+  v_legacy_order integer;
 begin
   alter table public.module_level drop constraint if exists module_level_unit_fk;
 
+  for v_unit in
+    select module_id, unit_id, term_id, sort_order
+    from public.module_unit
+    where module_id = 'blockly'
+      and unit_id in (
+        'blk-g2-fall-u1', 'blk-g2-fall-u2', 'blk-g2-fall-u3', 'blk-g2-fall-u4', 'blk-g2-fall-u5',
+        'blk-g2-spring-u1', 'blk-g2-spring-u2', 'blk-g2-spring-u3', 'blk-g2-spring-u4', 'blk-g2-spring-u5'
+      )
+    order by term_id, sort_order
+  loop
+    v_legacy_id := v_unit.unit_id || '-legacy';
+    v_legacy_order := 90 + right(v_unit.unit_id, 1)::integer;
+
+    if not exists (
+      select 1 from public.module_unit legacy
+      where legacy.module_id = v_unit.module_id
+        and legacy.unit_id = v_legacy_id
+    ) then
+      update public.module_unit
+      set unit_id = v_legacy_id,
+          sort_order = v_legacy_order,
+          updated_at = now()
+      where module_id = v_unit.module_id
+        and unit_id = v_unit.unit_id;
+
+      update public.module_level
+      set unit_id = v_legacy_id,
+          updated_at = now()
+      where module_id = v_unit.module_id
+        and unit_id = v_unit.unit_id;
+    else
+      update public.module_level as child
+      set unit_id = v_legacy_id,
+          updated_at = now()
+      where child.module_id = v_unit.module_id
+        and child.unit_id = v_unit.unit_id
+        and child.term_id = v_unit.term_id
+        and child.level_id between 'blk-161' and 'blk-255'
+        and not exists (
+          select 1 from public.module_level archived
+          where archived.module_id = child.module_id
+            and archived.level_id = case
+              when child.level_id between 'blk-161' and 'blk-200'
+                then 'blk-' || lpad((substring(child.level_id from 5)::integer + 650)::text, 3, '0')
+              when child.level_id between 'blk-201' and 'blk-240'
+                then 'blk-' || lpad((substring(child.level_id from 5)::integer + 760)::text, 3, '0')
+              else 'blk-' || lpad((substring(child.level_id from 5)::integer + 700)::text, 3, '0')
+            end
+        );
+    end if;
+  end loop;
+
   update public.module_unit
-  set unit_id = case unit_id
-        when 'blk-g2-fall-u3' then 'blk-g2-fall-u3-legacy'
-        when 'blk-g2-fall-u4' then 'blk-g2-fall-u4-legacy'
-        when 'blk-g2-fall-u5' then 'blk-g2-fall-u5-legacy'
+  set sort_order = case unit_id
+        when 'blk-g2-fall-u1-legacy' then 91
+        when 'blk-g2-fall-u2-legacy' then 92
+        when 'blk-g2-fall-u3-legacy' then 93
+        when 'blk-g2-fall-u4-legacy' then 94
+        when 'blk-g2-fall-u5-legacy' then 95
+        when 'blk-g2-spring-u1-legacy' then 91
+        when 'blk-g2-spring-u2-legacy' then 92
+        when 'blk-g2-spring-u3-legacy' then 93
+        when 'blk-g2-spring-u4-legacy' then 94
+        when 'blk-g2-spring-u5-legacy' then 95
       end,
     updated_at = now()
   where module_id = 'blockly'
-    and unit_id in ('blk-g2-fall-u3', 'blk-g2-fall-u4', 'blk-g2-fall-u5')
-    and not exists (
-      select 1 from public.module_unit legacy
-      where legacy.module_id = public.module_unit.module_id
-        and legacy.unit_id = public.module_unit.unit_id || '-legacy'
+    and unit_id in (
+      'blk-g2-fall-u1-legacy', 'blk-g2-fall-u2-legacy', 'blk-g2-fall-u3-legacy', 'blk-g2-fall-u4-legacy', 'blk-g2-fall-u5-legacy',
+      'blk-g2-spring-u1-legacy', 'blk-g2-spring-u2-legacy', 'blk-g2-spring-u3-legacy', 'blk-g2-spring-u4-legacy', 'blk-g2-spring-u5-legacy'
     );
-
-  update public.module_level
-  set unit_id = case unit_id
-        when 'blk-g2-fall-u3' then 'blk-g2-fall-u3-legacy'
-        when 'blk-g2-fall-u4' then 'blk-g2-fall-u4-legacy'
-        when 'blk-g2-fall-u5' then 'blk-g2-fall-u5-legacy'
-      end,
-    updated_at = now()
-  where module_id = 'blockly'
-    and unit_id in ('blk-g2-fall-u3', 'blk-g2-fall-u4', 'blk-g2-fall-u5')
-    and is_placeholder = true;
-
-  update public.module_unit
-  set unit_id = 'blk-g2-spring-u' || (right(unit_id, 1)::int) || '-legacy',
-    sort_order = 90 + right(unit_id, 1)::int,
-    updated_at = now()
-  where module_id = 'blockly'
-    and unit_id in ('blk-g2-spring-u1', 'blk-g2-spring-u2', 'blk-g2-spring-u3', 'blk-g2-spring-u4', 'blk-g2-spring-u5')
-    and not exists (
-      select 1 from public.module_unit legacy
-      where legacy.module_id = public.module_unit.module_id
-        and legacy.unit_id = public.module_unit.unit_id || '-legacy'
-    );
-
-  update public.module_level
-  set unit_id = 'blk-g2-spring-u' || (right(unit_id, 1)::int) || '-legacy',
-    updated_at = now()
-  where module_id = 'blockly'
-    and unit_id in ('blk-g2-spring-u1', 'blk-g2-spring-u2', 'blk-g2-spring-u3', 'blk-g2-spring-u4', 'blk-g2-spring-u5')
-    and is_placeholder = true;
 
   alter table public.module_level add constraint module_level_unit_fk
     foreign key (module_id, unit_id) references public.module_unit (module_id, unit_id);
@@ -1619,66 +1537,157 @@ on conflict (module_id, unit_id) do update set
   sort_order = excluded.sort_order,
   updated_at = now();`)
 
-  parts.push(`-- 3. 旧的占位关卡换号（先挪到临时号段，再换正式号段）
+  parts.push(`-- 3. 旧正式关卡与占位关卡归档（先挪到临时号段，再换 legacy 号段）
 --
--- sort_order 上有唯一约束 (module_id, sort_order)，直接换号会撞车。
--- 先把两组行挪到 10000+ 的临时号段，再一条一条换到预留号段。
--- 每条 update 都带 term_id 和 is_placeholder 守卫：重跑时新舞台关卡即使复用旧编号，也不会被误挪。
-update public.module_level
-set sort_order = sort_order + 10000
-where module_id = 'blockly'
-  and is_placeholder = true
-  and (
-    (term_id = 'blk-g2-fall' and level_id between 'blk-167' and 'blk-175')
-    or (term_id = 'blk-g2-spring' and level_id between 'blk-241' and 'blk-255')
-  );`)
+-- sort_order 上有唯一约束 (module_id, sort_order)，整个换号过程放进单个 DO 原子块。
+-- 只迁移仍挂在 legacy 单元、且目标编号尚不存在的旧行；重跑时新舞台关卡挂在新单元，不会误挪。
+-- 归档行保留正文和 is_placeholder，但 published 改为 false，课程地图不再展示旧内容。
+do $$
+declare
+  r record;
+begin
+  for r in
+    select * from (values
+${remapValues}
+    ) as remap(old_id, new_id, old_order, new_order, term_id, unit_id, is_placeholder)
+  loop
+    if exists (
+      select 1 from public.module_level source
+      where source.module_id = 'blockly'
+        and source.level_id = r.old_id
+        and source.term_id = r.term_id
+        and source.unit_id = r.unit_id
+        and source.is_placeholder = r.is_placeholder
+    ) then
+      if exists (
+        select 1 from public.module_level target
+        where target.module_id = 'blockly'
+          and target.level_id = r.new_id
+      ) then
+        raise exception '旧关卡归档目标已存在：% → %', r.old_id, r.new_id;
+      end if;
 
-  parts.push(
-    RENUMBER.map(
-      (row) => `-- ${row.oldId} → ${row.newId}
-update public.module_level
-set
-  level_id = ${sqlString(row.newId)},
-  sort_order = ${row.newOrder},
-  updated_at = now()
-where module_id = 'blockly'
-  and level_id = ${sqlString(row.oldId)}
-  and term_id = ${sqlString(row.termId)}
-  and is_placeholder = true;`,
-    ).join('\n\n'),
-  )
+      if exists (
+        select 1 from public.module_level occupied
+        where occupied.module_id = 'blockly'
+          and occupied.sort_order in (r.new_order, r.new_order + 10000)
+      ) then
+        raise exception '旧关卡归档序号被占用：% → %', r.old_id, r.new_id;
+      end if;
 
-  parts.push(`-- 4. 学习记录跟着改编号，进度不丢
+      update public.module_level
+      set sort_order = r.new_order + 10000,
+          updated_at = now()
+      where module_id = 'blockly'
+        and level_id = r.old_id
+        and term_id = r.term_id
+        and unit_id = r.unit_id;
+
+      update public.module_level
+      set level_id = r.new_id,
+          sort_order = r.new_order,
+          unit_id = r.unit_id,
+          published = false,
+          updated_at = now()
+      where module_id = 'blockly'
+        and level_id = r.old_id
+        and sort_order = r.new_order + 10000
+        and term_id = r.term_id
+        and unit_id = r.unit_id;
+    end if;
+  end loop;
+end $$;`)
+
+  parts.push(`-- 4. 学习记录同步迁到 legacy 编号，旧进度不丢且不污染新关卡
 --
--- learning_record 的主键是 (student_id, level_id)，目标编号已经存在时跳过。
--- 只在旧编号已不存在、目标 legacy 行存在时迁移，避免重跑把新舞台关卡的进度改走。
-with remap(old_id, new_id) as (
-  values
-${RENUMBER.map((row) => `    (${sqlString(row.oldId)}, ${sqlString(row.newId)})`).join(',\n')}
-)
-update public.learning_record lr
-set level_id = r.new_id
-from remap r
-where lr.module_id = 'blockly'
-  and lr.level_id = r.old_id
-  and not exists (
-    select 1 from public.module_level source
-    where source.module_id = 'blockly'
-      and source.level_id = r.old_id
-  )
-  and exists (
-    select 1 from public.module_level target
-    where target.module_id = 'blockly'
-      and target.level_id = r.new_id
-      and target.is_placeholder = true
-  )
-  and not exists (
-    select 1 from public.learning_record t
-    where t.student_id = lr.student_id
-      and t.level_id = r.new_id
-  );`)
+-- learning_record 的主键是 (student_id, level_id)，不能直接删除冲突行。
+-- 目标记录不存在时直接换号；目标已存在时把旧记录合并进 legacy 记录，再把旧编号重置为未完成，
+-- 这样随后写入的新关卡不会继承旧完成状态。整个处理在单个 DO 块内，失败可整体回滚。
+do $$
+declare
+  src record;
+begin
+  for src in
+    select distinct on (lr.student_id, lr.level_id) lr.*, r.new_id
+    from public.learning_record lr
+    join (values
+${remapValues}
+    ) as r(old_id, new_id, old_order, new_order, term_id, unit_id, is_placeholder) on r.old_id = lr.level_id
+    where lr.module_id = 'blockly'
+      and not exists (
+        select 1 from public.module_level source
+        where source.module_id = 'blockly'
+          and source.level_id = r.old_id
+      )
+      and exists (
+        select 1 from public.module_level target
+        where target.module_id = 'blockly'
+          and target.level_id = r.new_id
+          and target.term_id = r.term_id
+          and target.unit_id = r.unit_id
+          and target.is_placeholder = r.is_placeholder
+          and target.published = false
+      )
+    order by lr.student_id, lr.level_id
+  loop
+    if exists (
+      select 1 from public.learning_record collision
+      where collision.student_id = src.student_id
+        and collision.level_id = src.new_id
+    ) then
+      if not exists (
+        select 1 from public.learning_record target
+        where target.student_id = src.student_id
+          and target.level_id = src.new_id
+          and target.module_id = 'blockly'
+      ) then
+        raise exception '学习记录归档目标被其他模块占用：学生 %，% → %', src.student_id, src.level_id, src.new_id;
+      end if;
 
-  parts.push(`-- 5. 二年级 80 关正文
+      update public.learning_record target
+      set completed = target.completed or source.completed,
+          stars = greatest(target.stars, source.stars),
+          change_done = target.change_done or source.change_done,
+          error_taps = target.error_taps + source.error_taps,
+          runs = target.runs + source.runs,
+          bonus_completed = target.bonus_completed or source.bonus_completed,
+          bonus_reward = coalesce(target.bonus_reward, source.bonus_reward),
+          drill_reps = target.drill_reps + source.drill_reps,
+          drill_chunk = coalesce(target.drill_chunk, source.drill_chunk),
+          updated_at = greatest(target.updated_at, source.updated_at)
+      from public.learning_record source
+      where target.student_id = src.student_id
+        and target.level_id = src.new_id
+        and target.module_id = 'blockly'
+        and source.student_id = src.student_id
+        and source.level_id = src.level_id
+        and source.module_id = 'blockly';
+
+      update public.learning_record
+      set completed = false,
+          stars = 0,
+          change_done = false,
+          error_taps = 0,
+          runs = 0,
+          bonus_completed = false,
+          bonus_reward = null,
+          drill_reps = 0,
+          drill_chunk = null,
+          updated_at = now()
+      where student_id = src.student_id
+        and level_id = src.level_id
+        and module_id = 'blockly';
+    else
+      update public.learning_record
+      set level_id = src.new_id
+      where student_id = src.student_id
+        and level_id = src.level_id
+        and module_id = 'blockly';
+    end if;
+  end loop;
+end $$;`)
+
+  parts.push(`-- 5. 二年级 160 关正文
 --
 -- workspace.max_blocks 的语义是「工作区积木总数（含嵌套子块）」。
 -- 舞台关卡卡得比较紧：写不出「无限循环 + 如果碰到」的关卡过不了。
@@ -1687,32 +1696,41 @@ where lr.module_id = 'blockly'
 
   parts.push(`-- 验收 SQL（迁移后逐条跑）
 --
--- A. 二年级两个学期各 40 关，都是真实正文
+-- A. 二年级两个学期各 80 关公开正文，旧归档行不混进课程地图
 -- select term_id, count(*) from public.module_level
--- where module_id = 'blockly' and term_id in ('blk-g2-fall', 'blk-g2-spring') and is_placeholder = false
+-- where module_id = 'blockly' and published = true and is_placeholder = false
+--   and term_id in ('blk-g2-fall', 'blk-g2-spring')
 -- group by term_id;
 --
--- B. 编号连续，场景类型都是 stage
+-- B. 新编号连续，场景类型都是 stage
 -- select term_id, min(sort_order), max(sort_order), count(*)
 -- from public.module_level where module_id = 'blockly'
+--   and published = true and is_placeholder = false
 --   and term_id in ('blk-g2-fall', 'blk-g2-spring')
 -- group by term_id order by min(sort_order);
 --
--- C. 没有关卡游离在单元之外
+-- C. 旧正式关卡保留正文但已取消公开（存在旧正式数据时，两个号段合计 80 行）
 -- select count(*) from public.module_level
--- where module_id = 'blockly' and term_id in ('blk-g2-fall', 'blk-g2-spring')
---   and unit_id not like 'blk-g2-%';
+-- where module_id = 'blockly' and published = false and is_placeholder = false
+--   and (sort_order between 811 and 850 or sort_order between 961 and 1000);
 --
--- D. 正文里的 scene_type 与列一致
+-- D. 没有关卡游离在单元之外
+-- select count(*) from public.module_level l
+-- where l.module_id = 'blockly' and not exists (
+--   select 1 from public.module_unit u
+--   where u.module_id = l.module_id and u.unit_id = l.unit_id and u.term_id = l.term_id);
+--
+-- E. 正文里的 scene_type 与列一致
 -- select level_id from public.module_level ml
 -- where ml.module_id = 'blockly' and ml.scene_type <> ml.body->>'scene_type';
 --
--- E. 每关都有复习卡
+-- F. 每关都有复习卡
 -- select count(*) from public.module_level
--- where module_id = 'blockly' and term_id in ('blk-g2-fall', 'blk-g2-spring')
+-- where module_id = 'blockly' and published = true and is_placeholder = false
+--   and term_id in ('blk-g2-fall', 'blk-g2-spring')
 --   and body->'review' is null;
 --
--- F. 学习记录没有指向不存在关卡的行
+-- G. 学习记录没有指向不存在关卡的行
 -- select lr.level_id, count(*) from public.learning_record lr
 -- where lr.module_id = 'blockly'
 --   and not exists (select 1 from public.module_level ml
@@ -1726,16 +1744,16 @@ where lr.module_id = 'blockly'
 // ---------------------------------------------------------------------------
 
 const levels = buildAllLevels()
-if (levels.length !== 80) throw new Error(`应该生成 80 关，实际生成了 ${levels.length} 关`)
+if (levels.length !== 160) throw new Error(`应该生成 160 关，实际生成了 ${levels.length} 关`)
 
 const unitCounts = new Map()
 for (const level of levels) unitCounts.set(level.unitId, (unitCounts.get(level.unitId) ?? 0) + 1)
 for (const unit of UNIT_META) {
   const count = unitCounts.get(unit.unitId) ?? 0
-  if (count !== 20) throw new Error(`单元 ${unit.unitId} 应该是 20 关，实际 ${count} 关`)
+  if (count !== 40) throw new Error(`单元 ${unit.unitId} 应该是 40 关，实际 ${count} 关`)
 }
 
-// 编号必须连号：blk-161…240。
+// 编号必须连号：blk-161…320。
 const sorted = [...levels].sort((left, right) => left.sortOrder - right.sortOrder)
 sorted.forEach((level, index) => {
   const expected = 161 + index
@@ -1768,7 +1786,7 @@ writeFileSync(PENDING_PATH, `${JSON.stringify({
   pending: STAGE_PENDING_BLOCKS,
 }, null, 2)}\n`, 'utf8')
 
-console.log('已生成 80 关自由舞台关卡：')
+console.log('已生成 160 关自由舞台关卡（Level 2 / Level 3 各 80 关）：')
 console.log(`  迁移 SQL  ${path.relative(ROOT, SQL_PATH)}`)
 console.log(`  标准解清单 ${path.relative(ROOT, MANIFEST_PATH)}`)
 console.log(`  待办积木  ${path.relative(ROOT, PENDING_PATH)}`)

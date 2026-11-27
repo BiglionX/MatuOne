@@ -679,6 +679,7 @@ export function analyzeStageLevel(level) {
   if (kind === 'collect') return analyzeStageCollect(level, facts)
   if (kind === 'dodge') return analyzeStageDodge(level, facts)
   if (kind === 'clone') return analyzeStageClone(level, facts)
+  if (kind === 'tower') return analyzeStageTower(level, facts)
   return analyzeStageNested(level, facts)
 }
 
@@ -721,24 +722,102 @@ function analyzeStageDodge(level, facts) {
   }
 }
 
-/** 克隆：造出新角色，让新角色自己行动。 */
+/** 克隆：按直线、双发、散弹、追踪和混合模式讲解同一套生产积木。 */
 function analyzeStageClone(level, facts) {
   const enemies = Number(facts.enemyCount ?? 0)
+  const score = Number(facts.enemyScore ?? enemies)
   const clones = Number(facts.cloneCount ?? 1)
   const speed = Number(facts.speed ?? 0)
+  const pattern = facts.pattern ?? 'straight'
+
+  if (pattern === 'spread' || pattern === 'mixed') {
+    const mixed = pattern === 'mixed'
+    return {
+      shape: mixed ? 'stageMixed' : 'stageSpread',
+      focusBlock: 'clone',
+      concept: {
+        name: mixed ? '组合火力' : '三向散弹',
+        detail: mixed
+          ? '把三路散弹和折线追踪拼在同一套程序里，交替处理不同位置的目标。'
+          : '同一轮复制出三颗子弹，分别沿左、中、右三条路线飞行。',
+        image: 'block_clone',
+      },
+      how: mixed
+        ? `放一块「无限循环」，依次「克隆」左、中、右三路散弹和追踪父弹；散弹负责正面航线，父弹「如果碰到」定位星星后，再「克隆」一颗转向弹。每颗子弹都用「移动」前进，命中后「变量增加」1 分。`
+        : `放一块「无限循环」，里面依次放三块「克隆」，分别生成左、中、右三路子弹。每颗子弹里先「移动」，再用「如果碰到」检查敌人，命中后「变量增加」1 分。`,
+      plain: `上一关${mixed ? '组合了三向散弹和折线追踪' : '同时放出了左、中、右三路子弹'}，打掉 ${enemies} 个敌人，score 记成 ${score} 分。`,
+      check: `score 要正好等于 ${score}：三路弹药的方向和「如果碰到」的目标要配对，每中一次只加 1 分。`,
+      goal: `用${mixed ? '组合火力' : '三向散弹'}消灭 ${enemies} 个敌人`,
+      numbers: [enemies, clones, speed, ...(facts.spreadDirections ?? [])],
+    }
+  }
+
+  if (pattern === 'tracking') {
+    return {
+      shape: 'stageTracking',
+      focusBlock: 'clone',
+      concept: { name: '折线追踪', detail: '先沿直线找到定位点，再换成朝目标飞去的第二段路线。', image: 'block_clone' },
+      how: `「克隆」一颗追踪父弹，让它先「移动」向上飞；父弹「如果碰到」定位星星后，从当前位置再「克隆」一颗转向弹，转向弹「移动」到敌人身上并「变量增加」1 分。`,
+      plain: `上一关用两段路线打掉 ${enemies} 个敌人，score 记成 ${score} 分。`,
+      check: `score 要正好等于 ${score}：父弹要先碰到定位星星，转向弹的方向要和对应敌人一致。`,
+      goal: `用折线追踪消灭 ${enemies} 个敌人`,
+      numbers: [enemies, Number(facts.trackingGuides ?? 0), speed],
+    }
+  }
+
+  if (pattern === 'twin') {
+    return {
+      shape: 'stageTwin',
+      focusBlock: 'clone',
+      concept: { name: '双重火力', detail: '两种弹药同时出发，一路清理航线上的目标。', image: 'block_clone' },
+      how: `用两块「无限循环」分别「克隆」普通弹和炮弹，两个循环会同时运行。每颗子弹里先「移动」，再「如果碰到」敌人，「变量增加」1 分。`,
+      plain: `上一关用了两种弹药，打掉 ${enemies} 个敌人，score 记成 ${score} 分。`,
+      check: `score 要正好等于 ${score}：两条发射程序都要保留，子弹碰到敌人后再加分。`,
+      goal: `用双重火力消灭 ${enemies} 个敌人`,
+      numbers: [enemies, clones, speed],
+    }
+  }
+
   return {
     shape: 'stageClone',
     focusBlock: 'clone',
-    // 概念名和讲解里不写「克隆」三个字：
-    // 复习卡会拿上一关的概念来做答，而下一单元的积木盘上没有这块积木，
-    // 孩子在本关里找不到「克隆」会以为是自己学错了。
-    // 真正要用的积木由第四页点名，那里这一关的积木盘一定有。
+    // 概念名和 detail 不写积木名，复习卡跨到下一单元时才不会让孩子找错积木。
     concept: { name: '造出新角色', detail: '复制出一个一模一样的角色，让它自己跑你写在里面的积木。', image: 'block_clone' },
     how: `放一块「无限循环」让角色每步走 ${speed}，再放一块「克隆」：克隆出来的角色里面也放「无限循环」，先「移动」往上飞，再放一个「如果碰到」，碰到敌人就「变量增加」1 分。`,
-    plain: `上一关复制出了 ${enemies} 个新角色，打掉了 ${enemies} 个敌人，score 记成了 ${enemies} 分。`,
-    check: `score 要正好等于 ${enemies}：克隆体要一直往上飞，「如果碰到」要选对敌人，每中一次只加 1 分。`,
+    plain: `上一关复制出了 ${clones} 种新角色，打掉了 ${enemies} 个敌人，score 记成了 ${score} 分。`,
+    check: `score 要正好等于 ${score}：克隆体要一直往上飞，「如果碰到」要选对敌人，每中一次只加 1 分。`,
     goal: `用克隆发射，消灭 ${enemies} 个敌人`,
     numbers: [enemies, clones, speed],
+  }
+}
+
+/** 塔防：重叠怪物形成嵌套判断，辅助塔与玩家同时开火。 */
+function analyzeStageTower(level, facts) {
+  const enemies = Number(facts.enemyCount ?? 0)
+  const score = Number(facts.enemyScore ?? enemies)
+  const groups = Number(facts.monsterGroups ?? 0)
+  const speed = Number(facts.speed ?? 0)
+  const mix = facts.monsterMix ?? {}
+  const single = Number(mix.single ?? 0)
+  const pair = Number(mix.pair ?? 0)
+  const triple = Number(mix.triple ?? 0)
+  const hazards = Number(facts.hazardCount ?? 0)
+  const hits = Number(facts.hazardHits ?? 0)
+  const lives = Number(facts.lives ?? 0)
+  const helper = Boolean(facts.helper)
+  return {
+    shape: 'stageTower',
+    focusBlock: 'if_touching',
+    concept: {
+      name: '塔防编队',
+      detail: '单怪、双怪和三怪叠在一起，外层判断通过后再检查内层，辅助塔同时开火。',
+      image: 'block_if',
+    },
+    how: `先用「设置变量」把 score 清成 0，再放「无限循环」让飞船「移动」${speed} 步并「克隆」防守子弹。每颗子弹里给最外层怪物放「如果碰到」，里面继续检查重叠怪物，命中后按分值「变量增加」${hazards ? `；同时把 lives 设成 ${lives}，碰到障碍就「变量增加」-1` : ''}。${helper ? '蜜蜂塔会自动发射炮弹，和你一起清理编队。' : ''}`,
+    plain: `上一关有 ${single} 组单怪、${pair} 组双怪、${triple} 组三怪，辅助塔${helper ? '参与了防守' : '没有上场'}，最后得到 ${score} 分。`,
+    check: `score 要正好等于 ${score}：先检查每组最外层怪物，再检查重叠的内层怪物${hazards ? `；lives 要剩 ${lives - hits} 条` : ''}。`,
+    goal: `清理 ${groups} 组塔防怪物，把 score 加到 ${score}`,
+    numbers: [groups, single, pair, triple, score, speed],
   }
 }
 

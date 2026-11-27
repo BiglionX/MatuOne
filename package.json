@@ -25,7 +25,7 @@
     "audit:origins": "tsx scripts/check-part-origins.ts",
     "audit:ldraw": "tsx scripts/check-ldraw.ts",
     "shot:magic": "node scripts/shot-magic.mjs",
-    "test": "tsx --test scripts/typing-stats.test.ts scripts/gate-rules.test.ts scripts/module-level-body.test.ts scripts/module-level-interpreter.test.ts scripts/module-stage-interpreter.test.ts scripts/blockly-stage-sample.test.ts scripts/blockly-level-bodies.test.ts scripts/blockly-80-levels.test.ts scripts/blockly-level-1-80-levels.test.ts scripts/blockly-stage-80-levels.test.ts scripts/blockly-map.test.ts",
+    "test": "tsx --test scripts/typing-stats.test.ts scripts/gate-rules.test.ts scripts/module-level-body.test.ts scripts/module-level-interpreter.test.ts scripts/module-stage-interpreter.test.ts scripts/blockly-stage-sample.test.ts scripts/blockly-level-bodies.test.ts scripts/blockly-80-levels.test.ts scripts/blockly-level-1-80-levels.test.ts scripts/blockly-stage-80-levels.test.ts scripts/blockly-stage-80-migration.test.ts scripts/blockly-map.test.ts",
     "test:gates": "tsx --test scripts/gate-rules.test.ts",
     "e2e": "playwright test",
     "e2e:auth": "playwright test e2e/auth-regression.spec.ts"

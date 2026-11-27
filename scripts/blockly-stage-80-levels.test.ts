@@ -9,7 +9,7 @@ import { analyzeStageLevel } from './blockly-story-recipes.mjs'
 import { STAGE_BLOCK_DEFS, STAGE_PENDING_BLOCKS, STAGE_TERMS, STAGE_UNITS } from './blockly-stage-recipes.mjs'
 
 /**
- * 二年级 80 关自由舞台（blk-161 … blk-240）的回归测试。
+ * 二年级 160 关自由舞台（Level 2 = blk-161 … blk-240，Level 3 = blk-241 … blk-320）的回归测试。
  *
  * 正文和标准解都来自生成器留下的 manifest：scripts/generate-stage-levels.mjs
  * 每写一关之前都用生产解析器和生产解释器跑过一遍，这里再用生产代码复跑一次，
@@ -21,10 +21,10 @@ const PENDING_FILE = 'scripts/generated/blockly-stage-80.pending.json'
 
 /** 四个单元和它们的学期、编号区间。 */
 const UNIT_PLAN = [
-  { unitId: STAGE_UNITS.L2U1, termId: STAGE_TERMS.L2, from: 161, to: 180 },
-  { unitId: STAGE_UNITS.L2U2, termId: STAGE_TERMS.L2, from: 181, to: 200 },
-  { unitId: STAGE_UNITS.L3U1, termId: STAGE_TERMS.L3, from: 201, to: 220 },
-  { unitId: STAGE_UNITS.L3U2, termId: STAGE_TERMS.L3, from: 221, to: 240 },
+  { unitId: STAGE_UNITS.L2U1, termId: STAGE_TERMS.L2, from: 161, to: 200 },
+  { unitId: STAGE_UNITS.L2U2, termId: STAGE_TERMS.L2, from: 201, to: 240 },
+  { unitId: STAGE_UNITS.L3U1, termId: STAGE_TERMS.L3, from: 241, to: 280 },
+  { unitId: STAGE_UNITS.L3U2, termId: STAGE_TERMS.L3, from: 281, to: 320 },
 ]
 
 interface ManifestLevel {
@@ -165,26 +165,28 @@ function checkVariables(level: ManifestLevel): string[] {
   return out
 }
 
-test('manifest 里是 80 关，编号 blk-161 … blk-240 连号', () => {
-  assert.equal(manifest.levels.length, 80)
+test('manifest 里是 160 关，编号 blk-161 … blk-320 连号', () => {
+  assert.equal(manifest.levels.length, 160)
   assert.deepEqual(
     manifest.levels.map((level) => level.levelId),
-    Array.from({ length: 80 }, (_, index) => `blk-${161 + index}`),
+    Array.from({ length: 160 }, (_, index) => `blk-${161 + index}`),
   )
   assert.deepEqual(
     manifest.levels.map((level) => level.sortOrder),
-    Array.from({ length: 80 }, (_, index) => 161 + index),
+    Array.from({ length: 160 }, (_, index) => 161 + index),
   )
+  assert.equal(manifest.levels.filter((level) => level.sortOrder <= 240).length, 80)
+  assert.equal(manifest.levels.filter((level) => level.sortOrder >= 241).length, 80)
 })
 
-test('四个单元各 20 关，编号区间和学期都对得上', () => {
+test('四个单元各 40 关，编号区间和学期都对得上', () => {
   assert.equal(new Set(manifest.levels.map((level) => level.unitId)).size, 4)
   for (const plan of UNIT_PLAN) {
     const levels = manifest.levels.filter((level) => level.unitId === plan.unitId)
-    assert.equal(levels.length, 20, `单元 ${plan.unitId} 应该是 20 关`)
+    assert.equal(levels.length, 40, `单元 ${plan.unitId} 应该是 40 关`)
     assert.deepEqual(
       levels.map((level) => level.sortOrder),
-      Array.from({ length: 20 }, (_, index) => plan.from + index),
+      Array.from({ length: 40 }, (_, index) => plan.from + index),
       `单元 ${plan.unitId} 的编号应该是 ${plan.from} … ${plan.to}`,
     )
     for (const level of levels) {
@@ -196,8 +198,8 @@ test('四个单元各 20 关，编号区间和学期都对得上', () => {
   }
 })
 
-test('迁移文件里写全了 80 关正文，且和 manifest 一致', () => {
-  assert.equal(migrationBodies.size, 80)
+test('迁移文件里写全了 160 关正文，且和 manifest 一致', () => {
+  assert.equal(migrationBodies.size, 160)
   for (const level of manifest.levels) {
     const migrated = migrationBodies.get(level.levelId)
     assert.ok(migrated, `迁移文件里应该有 ${level.levelId} 的正文`)
@@ -211,31 +213,53 @@ test('迁移文件把单元、学期和场景类型写对了', () => {
   }
   assert.match(migrationSql, /'stage', 'new'/)
   assert.match(migrationSql, /insert into public\.module_unit/)
-  assert.match(migrationSql, /level_cap = 40/)
+  assert.match(migrationSql, /weeks = 16/)
+  assert.match(migrationSql, /level_cap = 80/)
+  const unitInsert = migrationSql.slice(migrationSql.indexOf('insert into public.module_unit'), migrationSql.indexOf('on conflict (module_id, unit_id)'))
+  assert.equal((unitInsert.match(/, 40, [12]\)/g) ?? []).length, 4, '四个单元的 level_cap 都应该是 40')
 })
 
-test('单元改号在单个原子块内完成，并立即恢复外键', () => {
-  const section = migrationSql.slice(migrationSql.indexOf('-- 2. 单元'), migrationSql.indexOf('-- 3. 旧的占位关卡'))
+test('单元改号覆盖所有旧正式子记录，并在单个原子块内恢复外键', () => {
+  const section = migrationSql.slice(migrationSql.indexOf('-- 2. 单元'), migrationSql.indexOf('-- 3. 旧正式关卡'))
   const dropIndex = section.indexOf('drop constraint if exists module_level_unit_fk')
   const parentIndex = section.indexOf('update public.module_unit')
   const childIndex = section.indexOf('update public.module_level')
   const addIndex = section.indexOf('add constraint module_level_unit_fk')
   assert.match(section, /do \$\$/)
   assert.ok(dropIndex >= 0 && parentIndex > dropIndex && childIndex > parentIndex && addIndex > childIndex)
-  assert.match(section, /legacy\.unit_id = public\.module_unit\.unit_id \|\| '-legacy'/)
-  assert.equal((section.match(/and is_placeholder = true;/g) ?? []).length, 2)
+  assert.match(section, /v_legacy_id := v_unit\.unit_id \|\| '-legacy'/)
+  assert.match(section, /and unit_id = v_unit\.unit_id/)
+  assert.match(section, /update public\.module_level as child/)
+  assert.match(section, /child\.level_id between 'blk-161' and 'blk-255'/)
+  assert.match(section, /and not exists \([\s\S]*archived\.level_id = case/)
+  assert.match(section, /'blk-g2-fall-u1'/)
+  assert.match(section, /'blk-g2-spring-u5'/)
+  assert.doesNotMatch(section, /and is_placeholder = true/)
 })
 
-test('旧占位换号和学习记录迁移不会误伤复用旧编号的新舞台关卡', () => {
-  const renumber = migrationSql.slice(migrationSql.indexOf('-- 3. 旧的占位关卡'), migrationSql.indexOf('-- 4. 学习记录'))
+test('旧正式关卡归档和学习记录迁移不会误伤复用旧编号的新舞台关卡', () => {
+  const renumber = migrationSql.slice(migrationSql.indexOf('-- 3. 旧正式关卡'), migrationSql.indexOf('-- 4. 学习记录'))
   const progress = migrationSql.slice(migrationSql.indexOf('-- 4. 学习记录'), migrationSql.indexOf('-- 5. 二年级'))
-  assert.match(renumber, /and is_placeholder = true\n  and \(/)
-  assert.equal((renumber.match(/and is_placeholder = true;/g) ?? []).length, 24)
-  assert.match(progress, /source\.level_id = r\.old_id/)
-  assert.match(progress, /target\.is_placeholder = true/)
+  assert.equal((renumber.match(/\('blk-\d+', 'blk-\d+', \d+, \d+,/g) ?? []).length, 104)
+  assert.match(renumber, /\('blk-161', 'blk-811', 161, 811/)
+  assert.match(renumber, /\('blk-200', 'blk-850', 200, 850/)
+  assert.match(renumber, /\('blk-201', 'blk-961', 201, 961/)
+  assert.match(renumber, /\('blk-240', 'blk-1000', 240, 1000/)
+  assert.match(renumber, /\('blk-167', 'blk-817', 167, 817, 'blk-g2-fall', 'blk-g2-fall-u3-legacy', true\)/)
+  assert.match(renumber, /\('blk-175', 'blk-825', 175, 825, 'blk-g2-fall', 'blk-g2-fall-u5-legacy', true\)/)
+  assert.match(renumber, /\('blk-241', 'blk-941', 241, 941/)
+  assert.match(renumber, /published = false/)
+  assert.doesNotMatch(renumber, /and is_placeholder = true/)
+  assert.match(progress, /not exists \([\s\S]*source\.level_id = r\.old_id/)
+  assert.match(progress, /select distinct on \(lr\.student_id, lr\.level_id\)/)
+  assert.match(progress, /target\.is_placeholder = r\.is_placeholder/)
+  assert.match(progress, /target\.published = false/)
+  assert.match(progress, /update public\.learning_record target/)
+  assert.match(progress, /set completed = false/)
+  assert.doesNotMatch(progress, /and target\.is_placeholder = true/)
 })
 
-test('80 关正文都是 schema_version 2 的舞台场景', () => {
+test('160 关正文都是 schema_version 2 的舞台场景', () => {
   for (const level of manifest.levels) {
     const body = bodyOf(level)
     assert.equal(body.schema_version, 2, `${level.levelId} 应该是 v2 正文`)
@@ -287,7 +311,7 @@ test('标准解用到的积木都在本关的可用积木里', () => {
 
 test('没有用到「待办积木」清单里的积木', () => {
   // 待办清单里的积木解释器还没实现，生成器一旦用上，
-  // 这 80 关在学生的浏览器里就会跑到一半卡住。
+  // 这 160 关在学生的浏览器里就会跑到一半卡住。
   const pending = Object.keys(STAGE_PENDING_BLOCKS)
   assert.ok(pending.length > 0, '待办积木清单不该是空的')
   for (const level of manifest.levels) {
@@ -332,32 +356,117 @@ test('单元二要扣分：场景里有扣命的变量，成功判定读它', ()
   }
 })
 
-test('单元三用到克隆积木，场景里也登记了克隆模板', () => {
-  for (const level of manifest.levels.filter((item) => item.unitId === STAGE_UNITS.L3U1)) {
+test('单元三覆盖单发、双发、三向散弹、追踪与混合火力', () => {
+  const levels = manifest.levels.filter((item) => item.unitId === STAGE_UNITS.L3U1)
+  assert.equal(levels.length, 40)
+  for (const level of levels) {
     const body = bodyOf(level)
+    const scene = stageSceneOf(level)
     assert.ok(body.scene.clones.length > 0, `${level.levelId} 没有克隆模板`)
+    assert.equal(body.scene.clones.length, Number(level.facts.cloneTemplateCount), `${level.levelId} 的克隆模板数对不上`)
     assert.ok(solutionTypes(level).has('clone'), `${level.levelId} 的标准解没有用到「克隆」`)
-    // 「如果碰到」的下拉里要能选到敌人，学生才知道打谁。
     const touching = body.available_blocks.find((block) => block.type === 'if_touching')
     assert.ok(touching, `${level.levelId} 的积木盘里没有「如果碰到」`)
   }
+
+  assert.deepEqual(
+    levels.filter((level) => level.facts.gradient === 1).map((level) => level.facts.pattern),
+    Array.from({ length: 10 }, () => 'straight'),
+  )
+  assert.deepEqual(
+    levels.filter((level) => level.facts.gradient === 2).map((level) => level.facts.pattern),
+    Array.from({ length: 10 }, () => 'twin'),
+  )
+  const spread = levels.filter((level) => level.facts.pattern === 'spread')
+  assert.equal(spread.length, 10)
+  for (const level of spread) {
+    assert.deepEqual(level.facts.spreadDirections, [315, 0, 45])
+    const directions = stageSceneOf(level).clones
+      .filter((clone) => clone.id.startsWith('spread-'))
+      .map((clone) => clone.direction)
+    assert.deepEqual(directions, [315, 0, 45], `${level.levelId} 的三路散弹方向不对`)
+  }
+
+  const tracking = levels.filter((level) => level.facts.gradient === 4)
+  assert.equal(tracking.length, 10)
+  for (const level of tracking) {
+    assert.ok(['tracking', 'mixed'].includes(String(level.facts.pattern)))
+    assert.ok(Number(level.facts.trackingGuides) >= 3, `${level.levelId} 没有定位星星`)
+    const scene = stageSceneOf(level)
+    const templateIds = scene.clones.map((clone) => clone.id)
+    assert.ok(templateIds.includes('tracker'), `${level.levelId} 没有追踪父弹`)
+    assert.ok(templateIds.includes('seeker-left') && templateIds.includes('seeker-right'), `${level.levelId} 没有左右转向弹`)
+    assert.equal(
+      scene.sprites.filter((sprite) => sprite.id.startsWith('guide-')).length,
+      Number(level.facts.trackingGuides),
+      `${level.levelId} 的定位星星数量对不上`,
+    )
+    assert.ok(scene.sprites.some((sprite) => sprite.id === 'goal'), `${level.levelId} 项目关没有终点旗`)
+  }
 })
 
-test('单元四的条件是套起来的，而且有多角色一起上场', () => {
+test('单元四覆盖单怪、重甲、混合编队、辅助塔与塔防决战', () => {
   const levels = manifest.levels.filter((item) => item.unitId === STAGE_UNITS.L3U2)
-  assert.equal(levels.length, 20)
+  assert.equal(levels.length, 40)
   for (const level of levels) {
-    // 这个单元的核心是「条件积木的分支体里还要再放积木」。
+    assert.equal(level.facts.kind, 'tower', `${level.levelId} 应该标记为塔防关`)
     assert.ok(maxBranchDepth(level) >= 2, `${level.levelId} 的条件分支体是空的`)
     const scene = stageSceneOf(level)
-    assert.ok(scene.sprites.length >= 3, `${level.levelId} 舞台上的角色太少了`)
+    assert.ok(scene.sprites.length >= 2, `${level.levelId} 舞台上至少要有一位玩家和一只怪物`)
+    assert.equal(
+      scene.sprites.filter((sprite) => /^tower-\d+-/.test(sprite.id)).length,
+      Number(level.facts.enemyCount),
+      `${level.levelId} 的怪物精灵数和 facts 对不上`,
+    )
+    const mix = level.facts.monsterMix as Record<string, number>
+    assert.equal(mix.single + mix.pair + mix.triple, Number(level.facts.monsterGroups), `${level.levelId} 的怪物组数对不上`)
+    assert.equal(mix.armored, mix.pair + mix.triple, `${level.levelId} 的重甲组数对不上`)
+    assert.ok(Number(level.facts.enemyCount) >= Number(level.facts.monsterGroups), `${level.levelId} 的怪物总数不对`)
   }
-  // 「一碰两响」那几关要把「如果碰到」套在「如果碰到」里面。
+
+  const single = levels.filter((level) => level.facts.gradient === 1)
+  assert.equal(single.length, 10)
+  assert.ok(single.every((level) => {
+    const mix = level.facts.monsterMix as Record<string, number>
+    return mix.single === Number(level.facts.monsterGroups) && mix.pair === 0 && mix.triple === 0
+  }), '梯度 1 应该只有单怪阵列')
+
   const nested = levels.filter((level) => maxTouchingDepth(level) >= 2)
-  assert.ok(nested.length >= 5, '至少要有 5 关把「如果碰到」套在「如果碰到」里面')
-  // 多角色关卡：舞台上还有课程脚本在驱动第二个角色。
-  const multi = levels.filter((level) => (stageSceneOf(level).initial_scripts?.length ?? 0) > 0)
-  assert.ok(multi.length >= 5, '至少要有 5 关是多角色一起上场')
+  assert.equal(nested.length, 30, '梯度 2 到 4 都应有重叠怪物嵌套判断')
+
+  const assisted = levels.filter((level) => Number(level.facts.gradient) >= 3)
+  assert.equal(assisted.length, 20)
+  for (const level of assisted) {
+    const scene = stageSceneOf(level)
+    assert.equal(level.facts.helper, true, `${level.levelId} 应该有辅助塔`)
+    assert.ok(scene.initial_scripts?.some((script) => script.target_sprite_id === 'bee-tower'), `${level.levelId} 没有蜜蜂塔开火脚本`)
+    assert.ok(checkVariables(level).includes('lives'), `${level.levelId} 的成功判定没有读 lives`)
+    assert.ok(Number(level.facts.hazardCount) > 0, `${level.levelId} 没有塔防障碍`)
+  }
+
+  const finale = levels.filter((level) => level.facts.gradient === 4)
+  assert.equal(finale.length, 10)
+  assert.ok(finale.every((level) => stageSceneOf(level).sprites.some((sprite) => sprite.id === 'goal')), '塔防决战都应包含终点旗')
+})
+
+test('四个单元都按 4 梯度 × 10 变体展开，梯度内速度平滑上升', () => {
+  for (const plan of UNIT_PLAN) {
+    const levels = manifest.levels.filter((level) => level.unitId === plan.unitId)
+    assert.deepEqual(
+      levels.map((level) => level.facts.gradient),
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+    )
+    assert.deepEqual(
+      levels.map((level) => level.facts.variant),
+      Array.from({ length: 4 }, () => Array.from({ length: 10 }, (_, index) => index + 1)).flat(),
+    )
+    for (let gradient = 1; gradient <= 4; gradient += 1) {
+      const phase = levels.filter((level) => level.facts.gradient === gradient)
+      const speeds = phase.map((level) => Number(level.facts.speed))
+      assert.ok(speeds.every((speed, index) => index === 0 || speed >= speeds[index - 1]), `${plan.unitId} 梯度 ${gradient} 的速度应平滑上升`)
+    }
+    assert.equal(levels[39].levelType, 'project', `${plan.unitId} 最后一关应是项目关`)
+  }
 })
 
 /** 标准解里所有「变量增加」的数值。 */
