@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { listOrgEnabledModules, resolveLauncherOrg } from '@/api/orgModules'
 import { SITE } from '@/config/site'
 import { isLauncherAudioEnabled, playLauncherSound, toggleLauncherAudio } from '@/lib/launcherAudio'
 import { listLauncherRegistryModules } from '@/modules/registry'
@@ -9,10 +8,10 @@ import { BrandGlyph } from './BrandGlyph'
 
 /**
  * MatuOne 启动器：项目总入口。
- * 打开就是一个「桌面窗口」，中间是三块板块入口（宽屏横排三列，窄屏竖排），方向键可以在模块之间移动。
+ * 打开就是一个「桌面窗口」，中间是注册表里的全部板块入口，方向键可以在模块之间移动。
  *
  * 菜单本身不会一上来就摆好：MatuOneLayout 先播开屏动画，结束后菜单各元素才依次浮现。
- * 模块列表来自注册表；有 org session 时按开通记录过滤，游客展示全部 active / coming_soon。
+ * 首页是通用入口，不按机构开通状态过滤；实际课程准入由各模块自己的服务端门禁负责。
  */
 
 type LauncherModule = TeachingModuleDef
@@ -63,24 +62,6 @@ function ModuleIcon({ name }: { name: ModuleIconName }) {
 
 function isLockedModule(module: LauncherModule): boolean {
   return module.status === 'coming_soon' || module.entry_path == null
-}
-
-/**
- * 游客：注册表中 active / coming_soon 全部展示。
- * 有 org：coming_soon 仍显示锁定卡；active 且 entitlement_required 的需有开通行。
- */
-export function filterLauncherModules(
-  registry: TeachingModuleDef[],
-  enabledIds: ReadonlySet<string> | null,
-): TeachingModuleDef[] {
-  return registry.filter((mod) => {
-    if (mod.status === 'coming_soon') return true
-    if (mod.status !== 'active') return false
-    if (!mod.entitlement_required) return true
-    // 游客：enabledIds 为 null，不按开通过滤
-    if (enabledIds == null) return true
-    return enabledIds.has(mod.module_id)
-  })
 }
 
 function ModuleCard({ module, onSoon }: { module: LauncherModule; onSoon: (message: string) => void }) {
@@ -135,7 +116,7 @@ function ModuleCard({ module, onSoon }: { module: LauncherModule; onSoon: (messa
   function handleActivate(event: React.MouseEvent) {
     if (locked) {
       playLauncherSound('locked')
-      onSoon(`「${module.display_name}」还在开发中，先玩另外两个板块吧。`)
+      onSoon(`「${module.display_name}」还在开发中，先玩其他板块吧。`)
       return
     }
     event.preventDefault()
@@ -174,9 +155,7 @@ function ModuleCard({ module, onSoon }: { module: LauncherModule; onSoon: (messa
 }
 
 export function MatuOneHome() {
-  const [modules, setModules] = useState<LauncherModule[]>(() =>
-    filterLauncherModules(listLauncherRegistryModules(), null),
-  )
+  const modules = listLauncherRegistryModules()
   const [notice, setNotice] = useState<string | null>(null)
   const [clock, setClock] = useState(() => new Date())
   const gridRef = useRef<HTMLDivElement>(null)
@@ -194,30 +173,6 @@ export function MatuOneHome() {
     [],
   )
 
-  useEffect(() => {
-    const registry = listLauncherRegistryModules()
-    const role = resolveLauncherOrg()
-    if (!role) {
-      setModules(filterLauncherModules(registry, null))
-      return
-    }
-    let cancelled = false
-    void listOrgEnabledModules()
-      .then((grants) => {
-        if (cancelled) return
-        const enabled = new Set(grants.map((g) => g.moduleId))
-        setModules(filterLauncherModules(registry, enabled))
-      })
-      .catch(() => {
-        // 开通查询失败时降级为游客视图，避免首屏卡片被藏光
-        if (cancelled) return
-        setModules(filterLauncherModules(registry, null))
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   function showNotice(message: string) {
     setNotice(message)
     if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current)
@@ -227,7 +182,7 @@ export function MatuOneHome() {
     }, 4200)
   }
 
-  /** 方向键在三个模块之间移动焦点，Enter 直接进入 */
+  /** 方向键在模块之间移动焦点，Enter 直接进入 */
   function onGridKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End']
     if (!keys.includes(event.key)) return

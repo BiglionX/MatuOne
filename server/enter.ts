@@ -14,7 +14,7 @@ import {
   type ModuleEntitlementRow,
   type ProgressModuleId,
 } from '../supabase/functions/_shared/moduleEntitlements'
-import { findModuleLevel } from './moduleLevels'
+import { findModuleLevel, findPreviousModuleLevelProgress } from './moduleLevels'
 
 export interface EnterDecision {
   httpStatus: number
@@ -35,9 +35,10 @@ function isOrgStatus(value: unknown): value is OrgStatus {
   return value === 'trial' || value === 'active' || value === 'expired' || value === 'disabled'
 }
 
-/** 新模块没有 Python 的 L数字 序号和课程阶段，只校验机构状态、模块开通与已发布关卡。 */
+/** 新模块没有 Python 的课程阶段，但要校验真实正文、模块开通和按 sort_order 的线性解锁。 */
 async function decideModuleStudentLevel(
   orgId: string,
+  studentId: string,
   status: OrgStatus,
   moduleId: ProgressModuleId,
   levelId: string,
@@ -55,6 +56,10 @@ async function decideModuleStudentLevel(
   if (!level) return { httpStatus: 200, levelId, result: { allowed: false, reason: 'not_found' } }
   if (!enabledModuleIds(moduleEntitlements).includes(moduleId)) {
     return { httpStatus: 200, levelId, result: { allowed: false, reason: 'module_not_entitled' } }
+  }
+  const previous = await findPreviousModuleLevelProgress(moduleId, Number(level.sort_order), studentId)
+  if (previous && !previous.completed) {
+    return { httpStatus: 200, levelId, result: { allowed: false, reason: 'sequence_locked' } }
   }
   return { httpStatus: 200, levelId, result: { allowed: true, reason: 'ok' } }
 }
@@ -86,7 +91,7 @@ export async function decideStudentLevel(
     return { httpStatus: 500, levelId: canonical, result: { allowed: false, reason: 'not_found' } }
   }
   if (moduleId !== 'python') {
-    return decideModuleStudentLevel(student.org_id, statusRow.status, moduleId, canonical)
+    return decideModuleStudentLevel(student.org_id, student.id, statusRow.status, moduleId, canonical)
   }
 
   const orderMatch = /^L(\d+)$/i.exec(canonical)

@@ -67,6 +67,7 @@ export type EnterLevelReason =
   | 'module_not_entitled'
   | 'not_entitled'
   | 'course_locked'
+  | 'sequence_locked'
   | 'not_found'
 
 import type { ModuleId, ProgressModuleId } from './moduleRegistry.ts'

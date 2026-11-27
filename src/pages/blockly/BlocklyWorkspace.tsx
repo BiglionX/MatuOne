@@ -1,11 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import type { Block, Field, Flyout, MenuOption, WorkspaceSvg } from 'blockly'
+import type { Block, Field, FieldDropdown, Flyout, MenuOption, Workspace, WorkspaceSvg } from 'blockly'
 import type {
   ModuleAvailableBlock,
   ModuleBlockArgDefinition,
   ModuleBlockInstance,
   ModuleBlockKind,
   ModuleScalar,
+  ModuleStageVariable,
 } from '@/modules/curriculum/moduleLevelBody'
 import type { BlockExecutionNode } from '@/modules/curriculum/moduleLevelInterpreter'
 
@@ -14,6 +15,8 @@ export interface BlocklyWorkspaceHandle {
   getExecutionTree(): BlockExecutionNode[]
   /** 工作区积木总数（含嵌套子块），和 body.workspace.max_blocks 是同一个口径。 */
   getBlockCount(): number
+  /** Stage 工作区当前变量定义；新建变量只保存在本次工作区。 */
+  getVariables(): ModuleStageVariable[]
   reset(): void
 }
 
@@ -21,9 +24,12 @@ interface BlocklyWorkspaceProps {
   availableBlocks: ModuleAvailableBlock[]
   initialBlocks: ModuleBlockInstance[]
   maxBlocks: number
+  /** Stage 关卡传入场景变量；Grid 不传，因此不会显示创建变量 UI。 */
+  initialVariables?: readonly ModuleStageVariable[]
+  onVariablesChange?: (variables: ModuleStageVariable[]) => void
   onReadyChange?: (ready: boolean) => void
-  /** 学生增删或移动积木时回调，参数是当前积木总数。 */
-  onBlocksChange?: (blockCount: number) => void
+  /** 积木数量变化时回调；studentChanged 为 false 表示只同步初始/重置后的数量。 */
+  onBlocksChange?: (blockCount: number, studentChanged?: boolean) => void
   /** 要闪一下的积木类型；小精灵点名要拖哪一块时用。 */
   highlightBlockType?: string | null
   /** 工作区整体要闪烁时为 true。 */
@@ -36,6 +42,9 @@ type BlocklyRuntime = typeof import('blockly')
 const BODY_INPUT = 'BODY'
 /** then_else 形状控制积木的「不成立时」分支输入名，对应 children[1]。 */
 const ELSE_INPUT = 'ELSE'
+
+/** 变量下拉菜单打开时按工作区读取，避免全局积木定义缓存住旧关卡选项。 */
+const workspaceVariableDefinitions = new WeakMap<Workspace, readonly ModuleStageVariable[]>()
 
 /** Blockly 的删除光标默认指向 .cur 二进制资源；本地只提供精灵图，改用系统光标避
 免请求不存在的文件。 */
@@ -69,6 +78,17 @@ function createArgField(blockly: BlocklyRuntime, arg: ModuleBlockArgDefinition):
     }
     case 'boolean':
       return new blockly.FieldCheckbox(arg.default === true)
+    case 'variable': {
+      const fallback: MenuOption[] = typeof arg.default === 'string' ? [[arg.default, arg.default]] : []
+      const field = new blockly.FieldDropdown(function (this: FieldDropdown) {
+        const workspace = this.getSourceBlock()?.workspace
+        const variables = workspace ? workspaceVariableDefinitions.get(workspace) : undefined
+        const options: MenuOption[] = (variables ?? []).map((variable) => [variable.name, variable.id])
+        return options.length ? options : fallback.length ? fallback : [['请选择变量', '']]
+      }, (value) => value || null)
+      if (typeof arg.default === 'string') field.setValue(arg.default)
+      return field
+    }
     case 'select': {
       const options: MenuOption[] = (arg.options ?? []).map((option) => [option.label, String(option.value)])
       if (!options.length) return new blockly.FieldTextInput('')
@@ -97,10 +117,10 @@ export function defineAvailableBlocks(blockly: BlocklyRuntime, availableBlocks: 
     blockly.Blocks[definition.type] = {
       init(this: Block) {
         this.setColour(definition.color ?? KIND_COLORS[definition.kind])
-        // 有参数的积木用参数说明自己；then_else 的积木要同时显示块名和参数。
-        if (shape === 'then_else' || !definition.args.length) {
-          this.appendDummyInput().appendField(definition.label)
-        }
+        // 积木名一定要露出来。
+        // 之前「有参数的积木就只显示参数」，结果工具箱里摆着「步数10」「精灵 苹果」，
+        // 孩子根本认不出哪一块是「移动」、哪一块是「如果碰到」——积木名才是他认得的那个词。
+        this.appendDummyInput().appendField(definition.label)
         if (definition.args.length) {
           const input = this.appendDummyInput()
           for (const arg of definition.args) {
@@ -193,6 +213,11 @@ function createBlock(
   const definition = availableBlocks.find((item) => item.type === instance.type)
   if (definition) {
     for (const [name, value] of Object.entries(instance.args)) block.setFieldValue(value, name)
+    for (const arg of definition.args) {
+      if (arg.type !== 'variable' || block.getFieldValue(arg.name)) continue
+      const firstVariable = workspaceVariableDefinitions.get(workspace)?.[0]
+      if (firstVariable) block.setFieldValue(firstVariable.id, arg.name)
+    }
   }
   const children = instance.children ?? []
   if (children.length) {
@@ -306,7 +331,7 @@ function applyBlockHighlight(workspace: WorkspaceSvg, type: string | null) {
 
 /** Blockly 只在组件挂载后动态导入；类型导入会在构建时擦除。 */
 export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorkspaceProps>(function BlocklyWorkspace(
-  { availableBlocks, initialBlocks, maxBlocks, onReadyChange, onBlocksChange, highlightBlockType, focusWorkspace },
+  { availableBlocks, initialBlocks, maxBlocks, initialVariables, onVariablesChange, onReadyChange, onBlocksChange, highlightBlockType, focusWorkspace },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -316,6 +341,39 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
   const suppressRef = useRef(false)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
+  const [variables, setVariables] = useState<ModuleStageVariable[]>(() => [...(initialVariables ?? [])])
+  const variablesRef = useRef(variables)
+  const [variableName, setVariableName] = useState('')
+  const [variableError, setVariableError] = useState('')
+
+  useEffect(() => {
+    const next = [...(initialVariables ?? [])]
+    variablesRef.current = next
+    setVariables(next)
+    setVariableName('')
+    setVariableError('')
+    const workspace = workspaceRef.current
+    if (workspace) workspaceVariableDefinitions.set(workspace, next)
+  }, [initialVariables])
+
+  const createVariable = () => {
+    const name = variableName.trim()
+    if (!name) return
+    if (variablesRef.current.some((variable) => variable.name === name)) {
+      setVariableError('已经有同名变量了，换一个名字吧。')
+      return
+    }
+    const suffix = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${variablesRef.current.length + 1}`
+    const variable: ModuleStageVariable = { id: `var-${suffix}`, name, initial: 0, scope: 'global' }
+    const next = [...variablesRef.current, variable]
+    variablesRef.current = next
+    setVariables(next)
+    setVariableName('')
+    setVariableError('')
+    const workspace = workspaceRef.current
+    if (workspace) workspaceVariableDefinitions.set(workspace, next)
+    onVariablesChange?.(next)
+  }
 
   useImperativeHandle(ref, () => ({
     getExecutionTree() {
@@ -326,6 +384,9 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
     getBlockCount() {
       return workspaceRef.current?.getAllBlocks(false).length ?? 0
     },
+    getVariables() {
+      return variablesRef.current.map((variable) => ({ ...variable }))
+    },
     reset() {
       const workspace = workspaceRef.current
       if (!workspace) return
@@ -333,8 +394,9 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
       workspace.clear()
       loadInitialBlocks(workspace, initialBlocks, definitionsRef.current)
       suppressRef.current = false
+      onBlocksChange?.(workspace.getAllBlocks(false).length, false)
     },
-  }), [initialBlocks])
+  }), [initialBlocks, onBlocksChange])
 
   // 学生动了积木就通知外面一声，小精灵靠它判断「有人操作」还是「干等着」。
   useEffect(() => {
@@ -344,7 +406,7 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
       if (event.isUiEvent || suppressRef.current) return
       // Blockly 13 的事件类型值就是 create / delete / move 这三个短名。
       if (event.type !== 'create' && event.type !== 'delete' && event.type !== 'move') return
-      onBlocksChange(workspace.getAllBlocks(false).length)
+      onBlocksChange(workspace.getAllBlocks(false).length, true)
     }
     workspace.addChangeListener(handleChange)
     return () => workspace.removeChangeListener(handleChange)
@@ -388,6 +450,7 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
           move: { scrollbars: true, drag: true, wheel: true },
         })
         workspaceRef.current = workspace
+        workspaceVariableDefinitions.set(workspace, variablesRef.current)
         // Blockly 13 的焦点管理在拖拽开始时会把焦点移到拖拽层，toolbox 随之失焦，
         // Blockly 就把 flyout 自动收起来。结果是孩子拖走一块积木后工具箱空了，
         // 必须再点一次分类才能接着拖——托辅班的孩子多半直接放弃。
@@ -399,6 +462,7 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
         suppressRef.current = true
         loadInitialBlocks(workspace, initialBlocks, availableBlocks)
         suppressRef.current = false
+        onBlocksChange?.(workspace.getAllBlocks(false).length, false)
         setReady(true)
         onReadyChange?.(true)
       })
@@ -413,7 +477,7 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
       workspace?.dispose()
       if (workspaceRef.current === workspace) workspaceRef.current = null
     }
-  }, [availableBlocks, initialBlocks, maxBlocks, onReadyChange])
+  }, [availableBlocks, initialBlocks, maxBlocks, onBlocksChange, onReadyChange])
 
   return (
     <div
@@ -422,6 +486,42 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
       }`}
     >
       <style>{BLOCKLY_CURSOR_CSS}</style>
+      {initialVariables !== undefined ? (
+        <div className="space-y-2 border-b border-emerald-100 bg-emerald-50/70 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-emerald-800">全局变量</span>
+            {variables.map((variable) => (
+              <span key={variable.id} className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-sm">
+                {variable.name} = {String(variable.initial)}
+              </span>
+            ))}
+            <form
+              className="ml-auto flex items-center gap-2"
+              onSubmit={(event) => {
+                event.preventDefault()
+                createVariable()
+              }}
+            >
+              <input
+                aria-label="新变量名"
+                className="w-28 rounded-field border border-emerald-200 bg-white px-2.5 py-1.5 text-sm text-ink outline-none focus:border-emerald-500"
+                value={variableName}
+                onChange={(event) => setVariableName(event.target.value)}
+                placeholder="输入变量名"
+                maxLength={12}
+              />
+              <button
+                type="submit"
+                className="btn-secondary px-3 py-1.5 text-sm"
+                disabled={!ready || !variableName.trim()}
+              >
+                创建变量
+              </button>
+            </form>
+          </div>
+          {variableError ? <p className="text-xs text-red-700" role="alert">{variableError}</p> : null}
+        </div>
+      ) : null}
       <div ref={hostRef} className="h-[360px] w-full" />
       {!ready && !error ? (
         <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-sm text-slate-500" role="status">

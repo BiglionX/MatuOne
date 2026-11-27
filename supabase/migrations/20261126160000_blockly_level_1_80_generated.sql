@@ -522,6 +522,11 @@ where module_id = 'blockly'
 --
 -- learning_record 的主键是 (student_id, level_id)，目标编号已经存在时跳过，
 -- 避免主键冲突把整条 update 打断。
+--
+-- 再加一道守卫：旧编号在 module_level 里已经查不到，才说明它是「被换号换走的
+-- 后面几个学期的关卡」。第一次跑迁移时旧编号已经被步骤 3 换掉，这条守卫放行；
+-- 以后再重跑这个文件时，第一学期已经占了 blk-016…blk-060，这些编号在
+-- module_level 里查得到，守卫会挡住，不会把学生刚做完的一上关卡记录改错号。
 with remap(old_id, new_id) as (
   values
     ('blk-016', 'blk-081'),
@@ -579,6 +584,11 @@ where lr.module_id = 'blockly'
     select 1 from public.learning_record t
     where t.student_id = lr.student_id
       and t.level_id = r.new_id
+  )
+  and not exists (
+    select 1 from public.module_level ml
+    where ml.module_id = 'blockly'
+      and ml.level_id = r.old_id
   );
 
 -- 5. 第一学期 80 关正文
@@ -676,7 +686,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 1 格，把「前进」拖到工作区，连上 1 块。",
+      "text": "这条路一共 1 格，把 1 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -684,9 +694,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 1 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -840,7 +851,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 2 格，把「前进」拖到工作区，连上 2 块。",
+      "text": "这条路一共 2 格，把 2 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -848,9 +859,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 2 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -1023,7 +1035,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 3 格，把「前进」拖到工作区，连上 3 块。",
+      "text": "这条路一共 3 格，把 3 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -1031,9 +1043,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 3 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -1204,7 +1217,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 4 格，把「前进」拖到工作区，连上 4 块。",
+      "text": "这条路一共 4 格，把 4 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -1212,9 +1225,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 4 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -1393,7 +1407,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 5 格，把「前进」拖到工作区，连上 5 块。",
+      "text": "这条路一共 5 格，把 5 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -1401,9 +1415,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 5 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -1430,9 +1445,9 @@ values
     },
     {
       "type": "image_text",
-      "image": "star",
+      "image": "robot_run",
       "speaker": "机器人",
-      "content": "我最喜欢长路了，路上还藏着小星星，走过去就能捡到。"
+      "content": "我最喜欢长路了，一口气跑完 5 格也不费劲。"
     },
     {
       "type": "image_text",
@@ -1604,7 +1619,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 6 格，把「前进」拖到工作区，连上 6 块。",
+      "text": "这条路一共 6 格，把 6 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -1612,9 +1627,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 6 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -1813,7 +1829,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 7 格，把「前进」拖到工作区，连上 7 块。",
+      "text": "这条路一共 7 格，把 7 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -1821,9 +1837,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 7 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -2036,7 +2053,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 8 格，把「前进」拖到工作区，连上 8 块。",
+      "text": "这条路一共 8 格，把 8 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -2044,9 +2061,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 8 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -2257,7 +2275,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 9 格，把「前进」拖到工作区，连上 9 块。",
+      "text": "这条路一共 9 格，把 9 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -2265,9 +2283,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 9 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -2486,7 +2505,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 10 格，把「前进」拖到工作区，连上 10 块。",
+      "text": "这条路一共 10 格，把 10 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -2494,9 +2513,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 10 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -2523,9 +2543,9 @@ values
     },
     {
       "type": "image_text",
-      "image": "star",
+      "image": "robot_run",
       "speaker": "机器人",
-      "content": "十格路中间藏着星星，一直走就能捡到。"
+      "content": "十格路有点长，我会一步一步慢慢走到底。"
     },
     {
       "type": "image_text",
@@ -2731,7 +2751,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 11 格，把「前进」拖到工作区，连上 11 块。",
+      "text": "这条路一共 11 格，把 11 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -2739,9 +2759,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 11 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -2980,7 +3001,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 12 格，把「前进」拖到工作区，连上 12 块。",
+      "text": "这条路一共 12 格，把 12 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -2988,9 +3009,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 12 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -3006,9 +3028,9 @@ values
     },
     {
       "type": "image_text",
-      "image": "map",
+      "image": "path",
       "speaker": "机器人",
-      "content": "我跑过去，脚印会把整条大道都点亮。"
+      "content": "我要一步一步走过这条宽宽的大道。"
     },
     {
       "type": "image_text",
@@ -3018,9 +3040,9 @@ values
     }
   ],
   "review": {
-    "question": "脚印画出来是什么形状？",
-    "answer": "一条直直的线。",
-    "hint": "因为我们只用了「前进」。"
+    "question": "这条大道要放几块「前进」？",
+    "answer": "12 块，一格一块。",
+    "hint": "数一数大道上有几格。"
   }
 }
   $body$::jsonb,
@@ -3243,7 +3265,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 13 格，把「前进」拖到工作区，连上 13 块。",
+      "text": "这条路一共 13 格，把 13 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -3251,9 +3273,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 13 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -3504,7 +3527,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 14 格，把「前进」拖到工作区，连上 14 块。",
+      "text": "这条路一共 14 格，把 14 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -3512,9 +3535,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 14 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -3773,7 +3797,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 15 格，把「前进」拖到工作区，连上 15 块。",
+      "text": "这条路一共 15 格，把 15 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -3781,9 +3805,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 15 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -3810,9 +3835,9 @@ values
     },
     {
       "type": "image_text",
-      "image": "star",
+      "image": "robot_run",
       "speaker": "机器人",
-      "content": "这一关的星星藏得最深，走到底就能全部捡到。"
+      "content": "这一关是本单元最长的一条路，15 格呢！"
     },
     {
       "type": "image_text",
@@ -4058,7 +4083,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路一共 16 格，把「前进」拖到工作区，连上 16 块。",
+      "text": "这条路一共 16 格，把 16 块「前进」积木拖到工作区，一块接一块连好。",
       "focus": {
         "target": "block",
         "blockType": "move_forward"
@@ -4066,9 +4091,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "机器人还没到终点，数一数还差几格，再补几块「前进」。",
+      "text": "机器人还没到终点，这条路一共 16 格，再数一遍还差几格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "move_forward"
       }
     }
   ],
@@ -4086,13 +4112,13 @@ values
       "type": "image_text",
       "image": "block_move",
       "speaker": "小精灵",
-      "content": "今天请「前进积木」来帮忙：一块「前进」积木，机器人就走一格。"
+      "content": "今天请「数格子」来帮忙：一格一步，数清楚格数就能一次走对。"
     },
     {
       "type": "image_text",
       "image": "block_move",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。要走到终点，就按格数拖同样多块「前进」，一块接一块连好。"
+      "content": "这一关真正要用的就是「前进」。这条路一共 16 格，把 16 块「前进」积木拖到工作区，一块接一块连好。"
     },
     {
       "type": "text",
@@ -4101,9 +4127,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「前进积木」，还记得怎么用吗？",
-    "answer": "一块「前进」积木，机器人就走一格。",
-    "hint": "这条路一共 15 格，把「前进」拖到工作区，连上 15 块。"
+    "question": "上一关我们学了「数格子」，还记得怎么用吗？",
+    "answer": "一格一步，数清楚格数就能一次走对。",
+    "hint": "上一关是一条直路，走 15 格就到终点。"
   }
 }
   $body$::jsonb,
@@ -4128,7 +4154,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-017 第一个拐角
--- 走一条 L 形路线：2 步 + 2 步
+-- 走一条 L形路线：2 步 + 2 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -4140,7 +4166,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-017', 17,
    '第一个拐角',
-   '走一条 L 形路线：2 步 + 2 步',
+   '走一条 L形路线：2 步 + 2 步',
    $body$
 {
   "schema_version": 2,
@@ -4251,17 +4277,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 2 格，放一块「右转」，最后走 2 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_right"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_right"
       }
     }
   ],
@@ -4273,19 +4300,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 L 形路线：2 步 + 2 步。"
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 L形路线：2 步 + 2 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「右转」。先走 2 格，放一块「右转」，最后走 2 格。"
     },
     {
       "type": "text",
@@ -4294,9 +4321,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「前进积木」，还记得怎么用吗？",
-    "answer": "一块「前进」积木，机器人就走一格。",
-    "hint": "这条路一共 16 格，把「前进」拖到工作区，连上 16 块。"
+    "question": "上一关我们学了「数格子」，还记得怎么用吗？",
+    "answer": "一格一步，数清楚格数就能一次走对。",
+    "hint": "上一关是一条直路，走 16 格就到终点。"
   }
 }
   $body$::jsonb,
@@ -4321,7 +4348,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-018 直角路口
--- 走一条 L 形路线：3 步 + 2 步
+-- 走一条 L形路线：2 步 + 3 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -4333,7 +4360,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-018', 18,
    '直角路口',
-   '走一条 L 形路线：3 步 + 2 步',
+   '走一条 L形路线：2 步 + 3 步',
    $body$
 {
   "schema_version": 2,
@@ -4459,17 +4486,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 2 格，放一块「右转」，最后走 3 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_right"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_right"
       }
     }
   ],
@@ -4481,19 +4509,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 L 形路线：3 步 + 2 步。"
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 L形路线：2 步 + 3 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「右转」。先走 2 格，放一块「右转」，最后走 3 格。"
     },
     {
       "type": "text",
@@ -4502,9 +4530,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 1 个弯，每段分别走 2、2 格。"
   }
 }
   $body$::jsonb,
@@ -4529,7 +4557,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-019 长一点的 L
--- 走一条 L 形路线：3 步 + 3 步
+-- 走一条 L形路线：3 步 + 3 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -4541,7 +4569,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-019', 19,
    '长一点的 L',
-   '走一条 L 形路线：3 步 + 3 步',
+   '走一条 L形路线：3 步 + 3 步',
    $body$
 {
   "schema_version": 2,
@@ -4675,17 +4703,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 3 格，放一块「左转」，最后走 3 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_left"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_left"
       }
     }
   ],
@@ -4700,19 +4729,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 L 形路线：3 步 + 3 步。"
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 L形路线：3 步 + 3 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「左转」。先走 3 格，放一块「左转」，最后走 3 格。"
     },
     {
       "type": "text",
@@ -4721,9 +4750,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 1 个弯，每段分别走 2、3 格。"
   }
 }
   $body$::jsonb,
@@ -4748,7 +4777,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-020 大 L 弯
--- 走一条 L 形路线：4 步 + 3 步
+-- 走一条 L形路线：3 步 + 4 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -4760,7 +4789,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-020', 20,
    '大 L 弯',
-   '走一条 L 形路线：4 步 + 3 步',
+   '走一条 L形路线：3 步 + 4 步',
    $body$
 {
   "schema_version": 2,
@@ -4895,17 +4924,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 3 格，放一块「左转」，最后走 4 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_left"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_left"
       }
     }
   ],
@@ -4920,19 +4950,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 L 形路线：4 步 + 3 步。"
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 L形路线：3 步 + 4 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「左转」。先走 3 格，放一块「左转」，最后走 4 格。"
     },
     {
       "type": "text",
@@ -4941,9 +4971,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 1 个弯，每段分别走 3、3 格。"
   }
 }
   $body$::jsonb,
@@ -4968,7 +4998,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-021 之字形起步
--- 走一条 Z 形路线：3 步 + 2 步 + 3 步
+-- 走一条 Z形路线：3 步 + 2 步 + 3 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -4980,7 +5010,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-021', 21,
    '之字形起步',
-   '走一条 Z 形路线：3 步 + 2 步 + 3 步',
+   '走一条 Z形路线：3 步 + 2 步 + 3 步',
    $body$
 {
   "schema_version": 2,
@@ -5119,17 +5149,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 3 格，放一块「右转」，再走 2 格，放一块「左转」，最后走 3 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_right"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_right"
       }
     }
   ],
@@ -5152,19 +5183,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 Z 形路线：3 步 + 2 步 + 3 步。"
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 Z形路线：3 步 + 2 步 + 3 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「右转」。先走 3 格，放一块「右转」，再走 2 格，放一块「左转」，最后走 3 格。"
     },
     {
       "type": "text",
@@ -5173,9 +5204,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 1 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 1 个弯，每段分别走 3、4 格。"
   }
 }
   $body$::jsonb,
@@ -5200,7 +5231,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-022 小 Z 字
--- 走一条 Z 形路线：4 步 + 2 步 + 4 步
+-- 走一条 Z形路线：4 步 + 2 步 + 4 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -5212,7 +5243,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-022', 22,
    '小 Z 字',
-   '走一条 Z 形路线：4 步 + 2 步 + 4 步',
+   '走一条 Z形路线：4 步 + 2 步 + 4 步',
    $body$
 {
   "schema_version": 2,
@@ -5367,17 +5398,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 4 格，放一块「左转」，再走 2 格，放一块「右转」，最后走 4 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_left"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_left"
       }
     }
   ],
@@ -5389,19 +5421,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 Z 形路线：4 步 + 2 步 + 4 步。"
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 Z形路线：4 步 + 2 步 + 4 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「左转」。先走 4 格，放一块「左转」，再走 2 格，放一块「右转」，最后走 4 格。"
     },
     {
       "type": "text",
@@ -5410,9 +5442,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 2 个弯，每段分别走 3、2、3 格。"
   }
 }
   $body$::jsonb,
@@ -5437,7 +5469,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-023 标准之字
--- 走一条 Z 形路线：4 步 + 3 步 + 4 步
+-- 走一条 Z形路线：4 步 + 3 步 + 4 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -5449,7 +5481,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-023', 23,
    '标准之字',
-   '走一条 Z 形路线：4 步 + 3 步 + 4 步',
+   '走一条 Z形路线：4 步 + 3 步 + 4 步',
    $body$
 {
   "schema_version": 2,
@@ -5619,17 +5651,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 4 格，放一块「左转」，再走 3 格，放一块「右转」，最后走 4 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_left"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_left"
       }
     }
   ],
@@ -5641,19 +5674,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 Z 形路线：4 步 + 3 步 + 4 步。"
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 Z形路线：4 步 + 3 步 + 4 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「左转」。先走 4 格，放一块「左转」，再走 3 格，放一块「右转」，最后走 4 格。"
     },
     {
       "type": "text",
@@ -5662,9 +5695,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 2 个弯，每段分别走 4、2、4 格。"
   }
 }
   $body$::jsonb,
@@ -5689,7 +5722,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-024 长之字
--- 走一条 Z 形路线：5 步 + 3 步 + 5 步
+-- 走一条 Z形路线：5 步 + 3 步 + 5 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -5701,7 +5734,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-024', 24,
    '长之字',
-   '走一条 Z 形路线：5 步 + 3 步 + 5 步',
+   '走一条 Z形路线：5 步 + 3 步 + 5 步',
    $body$
 {
   "schema_version": 2,
@@ -5887,17 +5920,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 5 格，放一块「右转」，再走 3 格，放一块「左转」，最后走 5 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_right"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_right"
       }
     }
   ],
@@ -5912,19 +5946,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 Z 形路线：5 步 + 3 步 + 5 步。"
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 Z形路线：5 步 + 3 步 + 5 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「右转」。先走 5 格，放一块「右转」，再走 3 格，放一块「左转」，最后走 5 格。"
     },
     {
       "type": "text",
@@ -5933,9 +5967,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 2 个弯，每段分别走 4、3、4 格。"
   }
 }
   $body$::jsonb,
@@ -5960,7 +5994,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-025 U 型大道
--- 走一条 U 形路线：3 步 + 3 步 + 3 步
+-- 走一条 U形路线：3 步 + 3 步 + 3 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -5972,7 +6006,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-025', 25,
    'U 型大道',
-   '走一条 U 形路线：3 步 + 3 步 + 3 步',
+   '走一条 U形路线：3 步 + 3 步 + 3 步',
    $body$
 {
   "schema_version": 2,
@@ -6119,17 +6153,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 3 格，放一块「右转」，再走 3 格，放一块「右转」，最后走 3 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_right"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_right"
       }
     }
   ],
@@ -6144,19 +6179,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 U 形路线：3 步 + 3 步 + 3 步。"
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 U形路线：3 步 + 3 步 + 3 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「右转」。先走 3 格，放一块「右转」，再走 3 格，放一块「右转」，最后走 3 格。"
     },
     {
       "type": "text",
@@ -6165,9 +6200,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 2 个弯，每段分别走 5、3、5 格。"
   }
 }
   $body$::jsonb,
@@ -6192,7 +6227,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-026 U 型转弯
--- 走一条 U 形路线：4 步 + 3 步 + 4 步
+-- 走一条 U形路线：4 步 + 3 步 + 4 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -6204,7 +6239,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-026', 26,
    'U 型转弯',
-   '走一条 U 形路线：4 步 + 3 步 + 4 步',
+   '走一条 U形路线：4 步 + 3 步 + 4 步',
    $body$
 {
   "schema_version": 2,
@@ -6367,17 +6402,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 4 格，放一块「右转」，再走 3 格，放一块「右转」，最后走 4 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_right"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_right"
       }
     }
   ],
@@ -6400,19 +6436,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 U 形路线：4 步 + 3 步 + 4 步。"
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 U形路线：4 步 + 3 步 + 4 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「右转」。先走 4 格，放一块「右转」，再走 3 格，放一块「右转」，最后走 4 格。"
     },
     {
       "type": "text",
@@ -6421,9 +6457,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 2 个弯，每段分别走 3、3、3 格。"
   }
 }
   $body$::jsonb,
@@ -6448,7 +6484,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-027 宽 U 型
--- 走一条 U 形路线：4 步 + 4 步 + 4 步
+-- 走一条 U形路线：4 步 + 4 步 + 4 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -6460,7 +6496,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-027', 27,
    '宽 U 型',
-   '走一条 U 形路线：4 步 + 4 步 + 4 步',
+   '走一条 U形路线：4 步 + 4 步 + 4 步',
    $body$
 {
   "schema_version": 2,
@@ -6631,17 +6667,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 4 格，放一块「左转」，再走 4 格，放一块「左转」，最后走 4 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_left"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_left"
       }
     }
   ],
@@ -6653,19 +6690,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 U 形路线：4 步 + 4 步 + 4 步。"
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 U形路线：4 步 + 4 步 + 4 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「左转」。先走 4 格，放一块「左转」，再走 4 格，放一块「左转」，最后走 4 格。"
     },
     {
       "type": "text",
@@ -6674,9 +6711,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 2 个弯，每段分别走 4、3、4 格。"
   }
 }
   $body$::jsonb,
@@ -6701,7 +6738,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-028 大 U 型
--- 走一条 U 形路线：5 步 + 4 步 + 5 步
+-- 走一条 U形路线：5 步 + 4 步 + 5 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -6713,7 +6750,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-028', 28,
    '大 U 型',
-   '走一条 U 形路线：5 步 + 4 步 + 5 步',
+   '走一条 U形路线：5 步 + 4 步 + 5 步',
    $body$
 {
   "schema_version": 2,
@@ -6907,17 +6944,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 5 格，放一块「左转」，再走 4 格，放一块「左转」，最后走 5 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_left"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_left"
       }
     }
   ],
@@ -6929,19 +6967,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 U 形路线：5 步 + 4 步 + 5 步。"
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 U形路线：5 步 + 4 步 + 5 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「左转」。先走 5 格，放一块「左转」，再走 4 格，放一块「左转」，最后走 5 格。"
     },
     {
       "type": "text",
@@ -6950,9 +6988,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 2 个弯，每段分别走 4、4、4 格。"
   }
 }
   $body$::jsonb,
@@ -6977,7 +7015,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-029 四段小路
--- 走一条 S 形路线：4 步 + 2 步 + 3 步 + 2 步
+-- 走一条 S形路线：4 步 + 2 步 + 3 步 + 2 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -6989,7 +7027,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-029', 29,
    '四段小路',
-   '走一条 S 形路线：4 步 + 2 步 + 3 步 + 2 步',
+   '走一条 S形路线：4 步 + 2 步 + 3 步 + 2 步',
    $body$
 {
   "schema_version": 2,
@@ -7155,17 +7193,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 4 格，放一块「右转」，再走 2 格，放一块「左转」，再走 3 格，放一块「右转」，最后走 2 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_right"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_right"
       }
     }
   ],
@@ -7180,19 +7219,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 S 形路线：4 步 + 2 步 + 3 步 + 2 步。"
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走一条 S形路线：4 步 + 2 步 + 3 步 + 2 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「右转」。先走 4 格，放一块「右转」，再走 2 格，放一块「左转」，再走 3 格，放一块「右转」，最后走 2 格。"
     },
     {
       "type": "text",
@@ -7201,9 +7240,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 2 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 2 个弯，每段分别走 5、4、5 格。"
   }
 }
   $body$::jsonb,
@@ -7228,7 +7267,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-030 四段长路
--- 走一条 S 形路线：5 步 + 3 步 + 4 步 + 3 步
+-- 走一条 S形路线：3 步 + 4 步 + 3 步 + 5 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -7240,7 +7279,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-030', 30,
    '四段长路',
-   '走一条 S 形路线：5 步 + 3 步 + 4 步 + 3 步',
+   '走一条 S形路线：3 步 + 4 步 + 3 步 + 5 步',
    $body$
 {
   "schema_version": 2,
@@ -7431,17 +7470,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 3 格，放一块「右转」，再走 4 格，放一块「左转」，再走 3 格，放一块「右转」，最后走 5 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_right"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_right"
       }
     }
   ],
@@ -7456,19 +7496,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 S 形路线：5 步 + 3 步 + 4 步 + 3 步。"
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走一条 S形路线：3 步 + 4 步 + 3 步 + 5 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「右转」。先走 3 格，放一块「右转」，再走 4 格，放一块「左转」，再走 3 格，放一块「右转」，最后走 5 格。"
     },
     {
       "type": "text",
@@ -7477,9 +7517,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 3 个弯，每段分别走 4、2、3、2 格。"
   }
 }
   $body$::jsonb,
@@ -7504,7 +7544,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-031 复杂折线
--- 走一条 S 形路线：5 步 + 3 步 + 5 步 + 3 步
+-- 走一条 S形路线：5 步 + 3 步 + 5 步 + 3 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -7516,7 +7556,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-031', 31,
    '复杂折线',
-   '走一条 S 形路线：5 步 + 3 步 + 5 步 + 3 步',
+   '走一条 S形路线：5 步 + 3 步 + 5 步 + 3 步',
    $body$
 {
   "schema_version": 2,
@@ -7715,17 +7755,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 5 格，放一块「左转」，再走 3 格，放一块「右转」，再走 5 格，放一块「左转」，最后走 3 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_left"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_left"
       }
     }
   ],
@@ -7748,19 +7789,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 S 形路线：5 步 + 3 步 + 5 步 + 3 步。"
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走一条 S形路线：5 步 + 3 步 + 5 步 + 3 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「左转」。先走 5 格，放一块「左转」，再走 3 格，放一块「右转」，再走 5 格，放一块「左转」，最后走 3 格。"
     },
     {
       "type": "text",
@@ -7769,9 +7810,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 3 个弯，每段分别走 3、4、3、5 格。"
   }
 }
   $body$::jsonb,
@@ -7796,7 +7837,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-032 终极折线
--- 走一条 S 形路线：6 步 + 4 步 + 5 步 + 4 步
+-- 走一条 S形路线：4 步 + 5 步 + 4 步 + 6 步
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -7808,7 +7849,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-032', 32,
    '终极折线',
-   '走一条 S 形路线：6 步 + 4 步 + 5 步 + 4 步',
+   '走一条 S形路线：4 步 + 5 步 + 4 步 + 6 步',
    $body$
 {
   "schema_version": 2,
@@ -8031,17 +8072,18 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。",
+      "text": "先走 4 格，放一块「左转」，再走 5 格，放一块「右转」，再走 4 格，放一块「左转」，最后走 6 格。",
       "focus": {
         "target": "block",
-        "blockType": "move_forward"
+        "blockType": "turn_left"
       }
     },
     {
       "trigger": "not_completed",
-      "text": "机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？",
+      "text": "机器人走偏了？每一段要走几格、转弯积木放在对的位置了吗？",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "turn_left"
       }
     }
   ],
@@ -8053,19 +8095,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 S 形路线：6 步 + 4 步 + 5 步 + 4 步。"
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走一条 S形路线：4 步 + 5 步 + 4 步 + 6 步。"
     },
     {
       "type": "image_text",
       "image": "block_turn",
       "speaker": "小精灵",
-      "content": "今天请「转弯积木」来帮忙：「左转」和「右转」会让机器人换一个方向。"
+      "content": "今天请「转弯」来帮忙：转弯会让机器人换一个方向，几段路就要几段走法。"
     },
     {
       "type": "image_text",
-      "image": "block_move",
+      "image": "block_turn",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「前进」。先走几格，再放一块转弯积木，接着走，就能走出弯弯的路。"
+      "content": "这一关真正要用的就是「左转」。先走 4 格，放一块「左转」，再走 5 格，放一块「右转」，再走 4 格，放一块「左转」，最后走 6 格。"
     },
     {
       "type": "text",
@@ -8074,9 +8116,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 3 个弯，每段分别走 5、3、5、3 格。"
   }
 }
   $body$::jsonb,
@@ -8263,7 +8305,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条直道有 8 格，把「前进」放进「重复执行」里，次数改成 8。",
+      "text": "把「前进」放进「重复执行」里，把次数改成 8。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -8273,7 +8315,8 @@ values
       "trigger": "not_completed",
       "text": "次数还不对，这条路一共 8 格，再数一遍。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -8291,13 +8334,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「循环」来帮忙：把同一件事交给循环，重复做好多次。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」里，把次数改成 8。"
     },
     {
       "type": "text",
@@ -8306,9 +8349,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「转弯积木」，还记得怎么用吗？",
-    "answer": "「左转」和「右转」会让机器人换一个方向。",
-    "hint": "这条路要拐 3 个弯，先走一段「前进」，再放一块转弯积木。"
+    "question": "上一关我们学了「转弯」，还记得怎么用吗？",
+    "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
+    "hint": "上一关的路要拐 3 个弯，每段分别走 4、5、4、6 格。"
   }
 }
   $body$::jsonb,
@@ -8524,7 +8567,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条直道有 10 格，把「前进」放进「重复执行」里，次数改成 10。",
+      "text": "把「前进」放进「重复执行」里，把次数改成 10。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -8534,7 +8577,8 @@ values
       "trigger": "not_completed",
       "text": "次数还不对，这条路一共 10 格，再数一遍。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -8552,13 +8596,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「循环」来帮忙：把同一件事交给循环，重复做好多次。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」里，把次数改成 10。"
     },
     {
       "type": "text",
@@ -8567,9 +8611,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "这条直道有 8 格，把「前进」放进「重复执行」里，次数改成 8。"
+    "question": "上一关我们学了「循环」，还记得怎么用吗？",
+    "answer": "把同一件事交给循环，重复做好多次。",
+    "hint": "上一关用循环一次走完 8 格。"
   }
 }
   $body$::jsonb,
@@ -8801,7 +8845,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条直道有 12 格，把「前进」放进「重复执行」里，次数改成 12。",
+      "text": "把「前进」放进「重复执行」里，把次数改成 12。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -8811,7 +8855,8 @@ values
       "trigger": "not_completed",
       "text": "次数还不对，这条路一共 12 格，再数一遍。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -8832,13 +8877,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「循环」来帮忙：把同一件事交给循环，重复做好多次。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」里，把次数改成 12。"
     },
     {
       "type": "text",
@@ -8847,9 +8892,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "这条直道有 10 格，把「前进」放进「重复执行」里，次数改成 10。"
+    "question": "上一关我们学了「循环」，还记得怎么用吗？",
+    "answer": "把同一件事交给循环，重复做好多次。",
+    "hint": "上一关用循环一次走完 10 格。"
   }
 }
   $body$::jsonb,
@@ -9084,7 +9129,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条直道有 14 格，把「前进」放进「重复执行」里，次数改成 14。",
+      "text": "把「前进」放进「重复执行」里，把次数改成 14。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -9094,7 +9139,8 @@ values
       "trigger": "not_completed",
       "text": "次数还不对，这条路一共 14 格，再数一遍。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -9115,13 +9161,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「循环」来帮忙：把同一件事交给循环，重复做好多次。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」里，把次数改成 14。"
     },
     {
       "type": "text",
@@ -9130,9 +9176,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "这条直道有 12 格，把「前进」放进「重复执行」里，次数改成 12。"
+    "question": "上一关我们学了「循环」，还记得怎么用吗？",
+    "answer": "把同一件事交给循环，重复做好多次。",
+    "hint": "上一关用循环一次走完 12 格。"
   }
 }
   $body$::jsonb,
@@ -9302,7 +9348,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "正方形有四条一样长的边：外层重复 3 次，每次先走 2 格再右转。",
+      "text": "外层「重复执行」做 3 次，每次先走 2 格再放一块「右转」；最后一条边用「重复执行」走 2 格，再走 1 步到终点。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -9310,9 +9356,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "把「重复执行」放进另一个「重复执行」里面，就是两层循环了。",
+      "text": "把「重复执行」放进另一个「重复执行」里面，就是两层循环了：外层做 3 次，每次走 2 格再转弯。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -9341,13 +9388,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「两层循环」来帮忙：循环套循环，就能绕出四条一样长的边。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。外层「重复执行」做 3 次，每次先走 2 格再放一块「右转」；最后一条边用「重复执行」走 2 格，再走 1 步到终点。"
     },
     {
       "type": "text",
@@ -9356,9 +9403,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "这条直道有 14 格，把「前进」放进「重复执行」里，次数改成 14。"
+    "question": "上一关我们学了「循环」，还记得怎么用吗？",
+    "answer": "把同一件事交给循环，重复做好多次。",
+    "hint": "上一关用循环一次走完 14 格。"
   }
 }
   $body$::jsonb,
@@ -9563,7 +9610,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "正方形有四条一样长的边：外层重复 3 次，每次先走 3 格再右转。",
+      "text": "外层「重复执行」做 3 次，每次先走 3 格再放一块「左转」；最后一条边用「重复执行」走 3 格，再走 1 步到终点。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -9571,9 +9618,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "把「重复执行」放进另一个「重复执行」里面，就是两层循环了。",
+      "text": "把「重复执行」放进另一个「重复执行」里面，就是两层循环了：外层做 3 次，每次走 3 格再转弯。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -9591,13 +9639,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「两层循环」来帮忙：循环套循环，就能绕出四条一样长的边。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。外层「重复执行」做 3 次，每次先走 3 格再放一块「左转」；最后一条边用「重复执行」走 3 格，再走 1 步到终点。"
     },
     {
       "type": "text",
@@ -9606,9 +9654,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "正方形有四条一样长的边：外层重复 3 次，每次先走 2 格再右转。"
+    "question": "上一关我们学了「两层循环」，还记得怎么用吗？",
+    "answer": "循环套循环，就能绕出四条一样长的边。",
+    "hint": "上一关用两层循环绕出四条一样长的边，每条 2 格。"
   }
 }
   $body$::jsonb,
@@ -9858,7 +9906,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "正方形有四条一样长的边：外层重复 3 次，每次先走 4 格再右转。",
+      "text": "外层「重复执行」做 3 次，每次先走 4 格再放一块「左转」；最后一条边用「重复执行」走 4 格，再走 1 步到终点。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -9866,9 +9914,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "把「重复执行」放进另一个「重复执行」里面，就是两层循环了。",
+      "text": "把「重复执行」放进另一个「重复执行」里面，就是两层循环了：外层做 3 次，每次走 4 格再转弯。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -9886,13 +9935,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「两层循环」来帮忙：循环套循环，就能绕出四条一样长的边。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。外层「重复执行」做 3 次，每次先走 4 格再放一块「左转」；最后一条边用「重复执行」走 4 格，再走 1 步到终点。"
     },
     {
       "type": "text",
@@ -9901,9 +9950,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "正方形有四条一样长的边：外层重复 3 次，每次先走 3 格再右转。"
+    "question": "上一关我们学了「两层循环」，还记得怎么用吗？",
+    "answer": "循环套循环，就能绕出四条一样长的边。",
+    "hint": "上一关用两层循环绕出四条一样长的边，每条 3 格。"
   }
 }
   $body$::jsonb,
@@ -10178,7 +10227,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "正方形有四条一样长的边：外层重复 3 次，每次先走 5 格再右转。",
+      "text": "外层「重复执行」做 3 次，每次先走 5 格再放一块「右转」；最后一条边用「重复执行」走 5 格，再走 1 步到终点。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -10186,9 +10235,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "把「重复执行」放进另一个「重复执行」里面，就是两层循环了。",
+      "text": "把「重复执行」放进另一个「重复执行」里面，就是两层循环了：外层做 3 次，每次走 5 格再转弯。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -10209,13 +10259,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「两层循环」来帮忙：循环套循环，就能绕出四条一样长的边。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。外层「重复执行」做 3 次，每次先走 5 格再放一块「右转」；最后一条边用「重复执行」走 5 格，再走 1 步到终点。"
     },
     {
       "type": "text",
@@ -10224,9 +10274,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "正方形有四条一样长的边：外层重复 3 次，每次先走 4 格再右转。"
+    "question": "上一关我们学了「两层循环」，还记得怎么用吗？",
+    "answer": "循环套循环，就能绕出四条一样长的边。",
+    "hint": "上一关用两层循环绕出四条一样长的边，每条 4 格。"
   }
 }
   $body$::jsonb,
@@ -10420,7 +10470,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。",
+      "text": "宽边走 4 格、窄边走 2 格：「重复执行」里依次放「走 4 格 → 「右转」 → 走 2 格 → 「右转」 → 走 4 格 → 「右转」」，最后一条窄边用「重复执行」走 2 格，再走 1 步到终点。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -10428,9 +10478,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "先走宽的一边再走窄的一边，三条边走完还差最后一条。",
+      "text": "外层「重复执行」做 1 次：先走宽的一边（4 格）再走窄的一边（2 格），三条边走完还差最后一条。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -10451,13 +10502,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「长方形循环」来帮忙：长边和短边不一样长，要用不同的次数。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。宽边走 4 格、窄边走 2 格：「重复执行」里依次放「走 4 格 → 「右转」 → 走 2 格 → 「右转」 → 走 4 格 → 「右转」」，最后一条窄边用「重复执行」走 2 格，再走 1 步到终点。"
     },
     {
       "type": "text",
@@ -10466,9 +10517,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "正方形有四条一样长的边：外层重复 3 次，每次先走 5 格再右转。"
+    "question": "上一关我们学了「两层循环」，还记得怎么用吗？",
+    "answer": "循环套循环，就能绕出四条一样长的边。",
+    "hint": "上一关用两层循环绕出四条一样长的边，每条 5 格。"
   }
 }
   $body$::jsonb,
@@ -10681,7 +10732,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。",
+      "text": "宽边走 5 格、窄边走 2 格：「重复执行」里依次放「走 5 格 → 「左转」 → 走 2 格 → 「左转」 → 走 5 格 → 「左转」」，最后一条窄边用「重复执行」走 2 格，再走 1 步到终点。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -10689,9 +10740,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "先走宽的一边再走窄的一边，三条边走完还差最后一条。",
+      "text": "外层「重复执行」做 1 次：先走宽的一边（5 格）再走窄的一边（2 格），三条边走完还差最后一条。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -10720,13 +10772,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「长方形循环」来帮忙：长边和短边不一样长，要用不同的次数。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。宽边走 5 格、窄边走 2 格：「重复执行」里依次放「走 5 格 → 「左转」 → 走 2 格 → 「左转」 → 走 5 格 → 「左转」」，最后一条窄边用「重复执行」走 2 格，再走 1 步到终点。"
     },
     {
       "type": "text",
@@ -10735,9 +10787,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。"
+    "question": "上一关我们学了「长方形循环」，还记得怎么用吗？",
+    "answer": "长边和短边不一样长，要用不同的次数。",
+    "hint": "上一关用循环绕出 4×2 的长方形。"
   }
 }
   $body$::jsonb,
@@ -10958,7 +11010,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。",
+      "text": "宽边走 4 格、窄边走 3 格：「重复执行」里依次放「走 4 格 → 「左转」 → 走 3 格 → 「左转」 → 走 4 格 → 「左转」」，最后一条窄边用「重复执行」走 3 格，再走 1 步到终点。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -10966,9 +11018,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "先走宽的一边再走窄的一边，三条边走完还差最后一条。",
+      "text": "外层「重复执行」做 1 次：先走宽的一边（4 格）再走窄的一边（3 格），三条边走完还差最后一条。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -10986,13 +11039,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「长方形循环」来帮忙：长边和短边不一样长，要用不同的次数。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。宽边走 4 格、窄边走 3 格：「重复执行」里依次放「走 4 格 → 「左转」 → 走 3 格 → 「左转」 → 走 4 格 → 「左转」」，最后一条窄边用「重复执行」走 3 格，再走 1 步到终点。"
     },
     {
       "type": "text",
@@ -11001,9 +11054,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。"
+    "question": "上一关我们学了「长方形循环」，还记得怎么用吗？",
+    "answer": "长边和短边不一样长，要用不同的次数。",
+    "hint": "上一关用循环绕出 5×2 的长方形。"
   }
 }
   $body$::jsonb,
@@ -11262,7 +11315,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。",
+      "text": "宽边走 6 格、窄边走 3 格：「重复执行」里依次放「走 6 格 → 「右转」 → 走 3 格 → 「右转」 → 走 6 格 → 「右转」」，最后一条窄边用「重复执行」走 3 格，再走 1 步到终点。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -11270,9 +11323,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "先走宽的一边再走窄的一边，三条边走完还差最后一条。",
+      "text": "外层「重复执行」做 1 次：先走宽的一边（6 格）再走窄的一边（3 格），三条边走完还差最后一条。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -11290,13 +11344,13 @@ values
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「长方形循环」来帮忙：长边和短边不一样长，要用不同的次数。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。宽边走 6 格、窄边走 3 格：「重复执行」里依次放「走 6 格 → 「右转」 → 走 3 格 → 「右转」 → 走 6 格 → 「右转」」，最后一条窄边用「重复执行」走 3 格，再走 1 步到终点。"
     },
     {
       "type": "text",
@@ -11305,9 +11359,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。"
+    "question": "上一关我们学了「长方形循环」，还记得怎么用吗？",
+    "answer": "长边和短边不一样长，要用不同的次数。",
+    "hint": "上一关用循环绕出 4×3 的长方形。"
   }
 }
   $body$::jsonb,
@@ -11332,7 +11386,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-045 循环 U 型
--- 用三段循环走出 U 型大路
+-- 用 3 段「重复执行」走出U形大路：分别走 4、3、2 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -11344,7 +11398,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-045', 45,
    '循环 U 型',
-   '用三段循环走出 U 型大路',
+   '用 3 段「重复执行」走出U形大路：分别走 4、3、2 格',
    $body$
 {
   "schema_version": 2,
@@ -11514,7 +11568,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。",
+      "text": "这条路分成 3 段：「重复执行」走 4 格，放一块「右转」，「重复执行」走 3 格，放一块「右转」，「重复执行」走 2 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -11522,9 +11576,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "每一段的次数不一样，数一数每段要走几格。",
+      "text": "每一段的次数不一样，这几段分别要走 4、3、2 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -11539,19 +11594,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：用三段循环走出 U 型大路。"
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：用 3 段「重复执行」走出U形大路：分别走 4、3、2 格。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 3 段：「重复执行」走 4 格，放一块「右转」，「重复执行」走 3 格，放一块「右转」，「重复执行」走 2 格。"
     },
     {
       "type": "text",
@@ -11560,9 +11615,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。"
+    "question": "上一关我们学了「长方形循环」，还记得怎么用吗？",
+    "answer": "长边和短边不一样长，要用不同的次数。",
+    "hint": "上一关用循环绕出 6×3 的长方形。"
   }
 }
   $body$::jsonb,
@@ -11587,7 +11642,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-046 循环大 U 型
--- 用三段循环走出 U 型大路
+-- 用 3 段「重复执行」走出U形大路：分别走 2、3、5 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -11599,7 +11654,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-046', 46,
    '循环大 U 型',
-   '用三段循环走出 U 型大路',
+   '用 3 段「重复执行」走出U形大路：分别走 2、3、5 格',
    $body$
 {
   "schema_version": 2,
@@ -11771,7 +11826,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。",
+      "text": "这条路分成 3 段：「重复执行」走 2 格，放一块「左转」，「重复执行」走 3 格，放一块「左转」，「重复执行」走 5 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -11779,9 +11834,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "每一段的次数不一样，数一数每段要走几格。",
+      "text": "每一段的次数不一样，这几段分别要走 2、3、5 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -11796,19 +11852,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：用三段循环走出 U 型大路。"
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：用 3 段「重复执行」走出U形大路：分别走 2、3、5 格。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 3 段：「重复执行」走 2 格，放一块「左转」，「重复执行」走 3 格，放一块「左转」，「重复执行」走 5 格。"
     },
     {
       "type": "text",
@@ -11817,9 +11873,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 3 段，分别走 4、3、2 格。"
   }
 }
   $body$::jsonb,
@@ -11844,7 +11900,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-047 三段循环
--- 用三段循环走出 U 型大路
+-- 用 3 段「重复执行」走出U形大路：分别走 5、4、2 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -11856,7 +11912,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-047', 47,
    '三段循环',
-   '用三段循环走出 U 型大路',
+   '用 3 段「重复执行」走出U形大路：分别走 5、4、2 格',
    $body$
 {
   "schema_version": 2,
@@ -12036,7 +12092,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。",
+      "text": "这条路分成 3 段：「重复执行」走 5 格，放一块「左转」，「重复执行」走 4 格，放一块「左转」，「重复执行」走 2 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -12044,9 +12100,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "每一段的次数不一样，数一数每段要走几格。",
+      "text": "每一段的次数不一样，这几段分别要走 5、4、2 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -12069,19 +12126,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：用三段循环走出 U 型大路。"
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：用 3 段「重复执行」走出U形大路：分别走 5、4、2 格。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 3 段：「重复执行」走 5 格，放一块「左转」，「重复执行」走 4 格，放一块「左转」，「重复执行」走 2 格。"
     },
     {
       "type": "text",
@@ -12090,9 +12147,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 3 段，分别走 2、3、5 格。"
   }
 }
   $body$::jsonb,
@@ -12117,7 +12174,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-048 循环组合技
--- 用三段循环走出 U 型大路
+-- 用 3 段「重复执行」走出U形大路：分别走 3、4、6 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -12129,7 +12186,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-048', 48,
    '循环组合技',
-   '用三段循环走出 U 型大路',
+   '用 3 段「重复执行」走出U形大路：分别走 3、4、6 格',
    $body$
 {
   "schema_version": 2,
@@ -12318,7 +12375,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。",
+      "text": "这条路分成 3 段：「重复执行」走 3 格，放一块「右转」，「重复执行」走 4 格，放一块「右转」，「重复执行」走 6 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -12326,9 +12383,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "每一段的次数不一样，数一数每段要走几格。",
+      "text": "每一段的次数不一样，这几段分别要走 3、4、6 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -12340,19 +12398,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：用三段循环走出 U 型大路。"
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：用 3 段「重复执行」走出U形大路：分别走 3、4、6 格。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「重复执行」来帮忙：放进「重复执行」里的积木，会连着做好几次。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。把「前进」放进「重复执行」，把次数改成要走的格数。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 3 段：「重复执行」走 3 格，放一块「右转」，「重复执行」走 4 格，放一块「右转」，「重复执行」走 6 格。"
     },
     {
       "type": "text",
@@ -12361,9 +12419,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 3 段，分别走 5、4、2 格。"
   }
 }
   $body$::jsonb,
@@ -12580,7 +12638,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。",
+      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 11（这条路一共 11 格）。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -12588,9 +12646,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "重复次数要够多，机器人才能一直转到走廊尽头。",
+      "text": "次数要数对：11 格路，一共 11 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -12608,13 +12667,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 11（这条路一共 11 格）。"
     },
     {
       "type": "text",
@@ -12623,9 +12682,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「重复执行」，还记得怎么用吗？",
-    "answer": "放进「重复执行」里的积木，会连着做好几次。",
-    "hint": "每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 3 段，分别走 3、4、6 格。"
   }
 }
   $body$::jsonb,
@@ -12871,7 +12930,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。",
+      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 13（这条路一共 13 格）。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -12879,9 +12938,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "重复次数要够多，机器人才能一直转到走廊尽头。",
+      "text": "次数要数对：13 格路，一共 13 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -12899,13 +12959,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 13（这条路一共 13 格）。"
     },
     {
       "type": "text",
@@ -12914,9 +12974,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 11 次。"
   }
 }
   $body$::jsonb,
@@ -13170,7 +13230,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。",
+      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 14（这条路一共 14 格）。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -13178,9 +13238,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "重复次数要够多，机器人才能一直转到走廊尽头。",
+      "text": "次数要数对：14 格路，一共 14 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -13201,13 +13262,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 14（这条路一共 14 格）。"
     },
     {
       "type": "text",
@@ -13216,9 +13277,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 13 次。"
   }
 }
   $body$::jsonb,
@@ -13475,7 +13536,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。",
+      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 16（这条路一共 16 格）。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -13483,9 +13544,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "重复次数要够多，机器人才能一直转到走廊尽头。",
+      "text": "次数要数对：16 格路，一共 16 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -13506,13 +13568,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 16（这条路一共 16 格）。"
     },
     {
       "type": "text",
@@ -13521,9 +13583,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 14 次。"
   }
 }
   $body$::jsonb,
@@ -13788,7 +13850,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条走廊拐了三个弯，机器人要连着转三次才能到头。",
+      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 18（这条路一共 18 格）。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -13796,9 +13858,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "拐角越多，重复次数要数得越准，差一点就到不了终点。",
+      "text": "次数要数对：18 格路，一共 18 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -13827,13 +13890,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 18（这条路一共 18 格）。"
     },
     {
       "type": "text",
@@ -13842,9 +13905,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 16 次。"
   }
 }
   $body$::jsonb,
@@ -14117,7 +14180,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条走廊拐了三个弯，机器人要连着转三次才能到头。",
+      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 19（这条路一共 19 格）。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -14125,9 +14188,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "拐角越多，重复次数要数得越准，差一点就到不了终点。",
+      "text": "次数要数对：19 格路，一共 19 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -14145,13 +14209,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 19（这条路一共 19 格）。"
     },
     {
       "type": "text",
@@ -14160,9 +14224,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "这条走廊拐了三个弯，机器人要连着转三次才能到头。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 18 次。"
   }
 }
   $body$::jsonb,
@@ -14444,7 +14508,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条走廊拐了三个弯，机器人要连着转三次才能到头。",
+      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 18（这条路一共 18 格）。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -14452,9 +14516,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "拐角越多，重复次数要数得越准，差一点就到不了终点。",
+      "text": "次数要数对：18 格路，一共 18 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -14472,13 +14537,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 18（这条路一共 18 格）。"
     },
     {
       "type": "text",
@@ -14487,9 +14552,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "这条走廊拐了三个弯，机器人要连着转三次才能到头。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 19 次。"
   }
 }
   $body$::jsonb,
@@ -14779,7 +14844,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这条走廊拐了三个弯，机器人要连着转三次才能到头。",
+      "text": "把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 19（这条路一共 19 格）。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -14787,9 +14852,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "拐角越多，重复次数要数得越准，差一点就到不了终点。",
+      "text": "次数要数对：19 格路，一共 19 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -14810,13 +14876,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有墙」。把「如果前面有墙」放进「重复执行」里，撞到墙就放一块「右转」，然后往前迈一步。次数改成 19（这条路一共 19 格）。"
     },
     {
       "type": "text",
@@ -14825,9 +14891,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "这条走廊拐了三个弯，机器人要连着转三次才能到头。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 18 次。"
   }
 }
   $body$::jsonb,
@@ -15044,7 +15110,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。",
+      "text": "把「如果前面有路」放进「重复执行」里：有路就往前迈一步，没路就放一块「右转」。次数改成 13（11 格路要加上 2 个拐角）。",
       "focus": {
         "target": "block",
         "blockType": "if_path_ahead"
@@ -15052,9 +15118,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "拐角处要多花一次循环，次数别忘了加上拐角的个数。",
+      "text": "次数要数对：11 格路要加上 2 个拐角，一共 13 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_path_ahead"
       }
     }
   ],
@@ -15075,13 +15142,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有路」放进「重复执行」里：有路就往前迈一步，没路就放一块「右转」。次数改成 13（11 格路要加上 2 个拐角）。"
     },
     {
       "type": "text",
@@ -15090,9 +15157,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "这条走廊拐了三个弯，机器人要连着转三次才能到头。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 19 次。"
   }
 }
   $body$::jsonb,
@@ -15325,7 +15392,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。",
+      "text": "把「如果前面有路」放进「重复执行」里：有路就往前迈一步，没路就放一块「右转」。次数改成 15（13 格路要加上 2 个拐角）。",
       "focus": {
         "target": "block",
         "blockType": "if_path_ahead"
@@ -15333,9 +15400,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "拐角处要多花一次循环，次数别忘了加上拐角的个数。",
+      "text": "次数要数对：13 格路要加上 2 个拐角，一共 15 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_path_ahead"
       }
     }
   ],
@@ -15364,13 +15432,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有路」放进「重复执行」里：有路就往前迈一步，没路就放一块「右转」。次数改成 15（13 格路要加上 2 个拐角）。"
     },
     {
       "type": "text",
@@ -15379,9 +15447,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 13 次。"
   }
 }
   $body$::jsonb,
@@ -15622,7 +15690,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。",
+      "text": "把「如果前面有路」放进「重复执行」里：有路就往前迈一步，没路就放一块「右转」。次数改成 16（14 格路要加上 2 个拐角）。",
       "focus": {
         "target": "block",
         "blockType": "if_path_ahead"
@@ -15630,9 +15698,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "拐角处要多花一次循环，次数别忘了加上拐角的个数。",
+      "text": "次数要数对：14 格路要加上 2 个拐角，一共 16 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_path_ahead"
       }
     }
   ],
@@ -15650,13 +15719,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有路」放进「重复执行」里：有路就往前迈一步，没路就放一块「右转」。次数改成 16（14 格路要加上 2 个拐角）。"
     },
     {
       "type": "text",
@@ -15665,9 +15734,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 15 次。"
   }
 }
   $body$::jsonb,
@@ -15937,7 +16006,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。",
+      "text": "把「如果前面有路」放进「重复执行」里：有路就往前迈一步，没路就放一块「右转」。次数改成 18（16 格路要加上 2 个拐角）。",
       "focus": {
         "target": "block",
         "blockType": "if_path_ahead"
@@ -15945,9 +16014,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "拐角处要多花一次循环，次数别忘了加上拐角的个数。",
+      "text": "次数要数对：16 格路要加上 2 个拐角，一共 18 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_path_ahead"
       }
     }
   ],
@@ -15965,13 +16035,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果前面有路」。把「如果前面有路」放进「重复执行」里：有路就往前迈一步，没路就放一块「右转」。次数改成 18（16 格路要加上 2 个拐角）。"
     },
     {
       "type": "text",
@@ -15980,9 +16050,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 16 次。"
   }
 }
   $body$::jsonb,
@@ -16277,7 +16347,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。",
+      "text": "把「如果…否则…」放进「重复执行」里，条件选「前面有墙」：前面有墙就放一块「右转」，没墙就往前迈一步。次数改成 21（18 格路要加上 3 个拐角）。",
       "focus": {
         "target": "block",
         "blockType": "if_else"
@@ -16285,9 +16355,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "条件的选项要选对，机器人才能分辨什么时候该转弯。",
+      "text": "次数要数对：18 格路要加上 3 个拐角，一共 21 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_else"
       }
     }
   ],
@@ -16308,13 +16379,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果…否则…」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果…否则…」。把「如果…否则…」放进「重复执行」里，条件选「前面有墙」：前面有墙就放一块「右转」，没墙就往前迈一步。次数改成 21（18 格路要加上 3 个拐角）。"
     },
     {
       "type": "text",
@@ -16323,9 +16394,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 18 次。"
   }
 }
   $body$::jsonb,
@@ -16615,7 +16686,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。",
+      "text": "把「如果…否则…」放进「重复执行」里，条件选「前面有墙」：前面有墙就放一块「右转」，没墙就往前迈一步。次数改成 22（19 格路要加上 3 个拐角）。",
       "focus": {
         "target": "block",
         "blockType": "if_else"
@@ -16623,9 +16694,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "条件的选项要选对，机器人才能分辨什么时候该转弯。",
+      "text": "次数要数对：19 格路要加上 3 个拐角，一共 22 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_else"
       }
     }
   ],
@@ -16646,13 +16718,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果…否则…」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果…否则…」。把「如果…否则…」放进「重复执行」里，条件选「前面有墙」：前面有墙就放一块「右转」，没墙就往前迈一步。次数改成 22（19 格路要加上 3 个拐角）。"
     },
     {
       "type": "text",
@@ -16661,9 +16733,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 21 次。"
   }
 }
   $body$::jsonb,
@@ -16949,7 +17021,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。",
+      "text": "把「如果…否则…」放进「重复执行」里，条件选「前面有墙」：前面有墙就放一块「右转」，没墙就往前迈一步。次数改成 21（18 格路要加上 3 个拐角）。",
       "focus": {
         "target": "block",
         "blockType": "if_else"
@@ -16957,9 +17029,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "条件的选项要选对，机器人才能分辨什么时候该转弯。",
+      "text": "次数要数对：18 格路要加上 3 个拐角，一共 21 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_else"
       }
     }
   ],
@@ -16988,13 +17061,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果…否则…」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果…否则…」。把「如果…否则…」放进「重复执行」里，条件选「前面有墙」：前面有墙就放一块「右转」，没墙就往前迈一步。次数改成 21（18 格路要加上 3 个拐角）。"
     },
     {
       "type": "text",
@@ -17003,9 +17076,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 22 次。"
   }
 }
   $body$::jsonb,
@@ -17299,7 +17372,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。",
+      "text": "把「如果…否则…」放进「重复执行」里，条件选「前面有墙」：前面有墙就放一块「右转」，没墙就往前迈一步。次数改成 22（19 格路要加上 3 个拐角）。",
       "focus": {
         "target": "block",
         "blockType": "if_else"
@@ -17307,9 +17380,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "条件的选项要选对，机器人才能分辨什么时候该转弯。",
+      "text": "次数要数对：19 格路要加上 3 个拐角，一共 22 次。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_else"
       }
     }
   ],
@@ -17327,13 +17401,13 @@ values
       "type": "image_text",
       "image": "block_if",
       "speaker": "小精灵",
-      "content": "今天请「如果积木」来帮忙：「如果…」会让电脑先看看情况，再决定做不做。"
+      "content": "今天请「条件判断」来帮忙：让电脑先看情况再决定，机器人就能自己转弯。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果…否则…」。把「如果前面有墙」放进「重复执行」，撞到墙它就会自己转弯。"
+      "content": "这一关真正要用的就是「如果…否则…」。把「如果…否则…」放进「重复执行」里，条件选「前面有墙」：前面有墙就放一块「右转」，没墙就往前迈一步。次数改成 22（19 格路要加上 3 个拐角）。"
     },
     {
       "type": "text",
@@ -17342,9 +17416,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 21 次。"
   }
 }
   $body$::jsonb,
@@ -17369,7 +17443,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-065 三段大路
--- 走出 3 段的大路线
+-- 用 3 段「重复执行」走出Z形大路：分别走 4、3、4 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -17381,7 +17455,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-065', 65,
    '三段大路',
-   '走出 3 段的大路线',
+   '用 3 段「重复执行」走出Z形大路：分别走 4、3、4 格',
    $body$
 {
   "schema_version": 2,
@@ -17561,7 +17635,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。",
+      "text": "这条路分成 3 段：「重复执行」走 4 格，放一块「右转」，「重复执行」走 3 格，放一块「左转」，「重复执行」走 4 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -17569,9 +17643,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "一段一段拼起来：先走完一段，再转弯，再走下一段。",
+      "text": "每一段的次数不一样，这几段分别要走 4、3、4 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -17586,19 +17661,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走出 3 段的大路线。"
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：用 3 段「重复执行」走出Z形大路：分别走 4、3、4 格。"
     },
     {
       "type": "image_text",
-      "image": "idea",
+      "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 3 段：「重复执行」走 4 格，放一块「右转」，「重复执行」走 3 格，放一块「左转」，「重复执行」走 4 格。"
     },
     {
       "type": "text",
@@ -17607,9 +17682,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「如果积木」，还记得怎么用吗？",
-    "answer": "「如果…」会让电脑先看看情况，再决定做不做。",
-    "hint": "用「如果…否则…」：有墙就右转，没墙就往前迈一步。"
+    "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
+    "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
+    "hint": "上一关用条件判断让机器人自己转弯，循环要做 22 次。"
   }
 }
   $body$::jsonb,
@@ -17634,7 +17709,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-066 三段长路
--- 走出 3 段的大路线
+-- 用 3 段「重复执行」走出Z形大路：分别走 5、3、5 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -17646,7 +17721,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-066', 66,
    '三段长路',
-   '走出 3 段的大路线',
+   '用 3 段「重复执行」走出Z形大路：分别走 5、3、5 格',
    $body$
 {
   "schema_version": 2,
@@ -17855,7 +17930,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。",
+      "text": "这条路分成 3 段：「重复执行」走 5 格，放一块「左转」，「重复执行」走 3 格，放一块「右转」，「重复执行」走 5 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -17863,9 +17938,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "一段一段拼起来：先走完一段，再转弯，再走下一段。",
+      "text": "每一段的次数不一样，这几段分别要走 5、3、5 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -17880,19 +17956,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走出 3 段的大路线。"
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：用 3 段「重复执行」走出Z形大路：分别走 5、3、5 格。"
     },
     {
       "type": "image_text",
-      "image": "idea",
+      "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 3 段：「重复执行」走 5 格，放一块「左转」，「重复执行」走 3 格，放一块「右转」，「重复执行」走 5 格。"
     },
     {
       "type": "text",
@@ -17901,9 +17977,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 3 段，分别走 4、3、4 格。"
   }
 }
   $body$::jsonb,
@@ -17928,7 +18004,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-067 三段回环
--- 走出 3 段的大路线
+-- 用 3 段「重复执行」走出Z形大路：分别走 5、4、5 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -17940,7 +18016,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-067', 67,
    '三段回环',
-   '走出 3 段的大路线',
+   '用 3 段「重复执行」走出Z形大路：分别走 5、4、5 格',
    $body$
 {
   "schema_version": 2,
@@ -18157,7 +18233,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。",
+      "text": "这条路分成 3 段：「重复执行」走 5 格，放一块「左转」，「重复执行」走 4 格，放一块「右转」，「重复执行」走 5 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -18165,9 +18241,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "一段一段拼起来：先走完一段，再转弯，再走下一段。",
+      "text": "每一段的次数不一样，这几段分别要走 5、4、5 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -18182,19 +18259,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走出 3 段的大路线。"
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：用 3 段「重复执行」走出Z形大路：分别走 5、4、5 格。"
     },
     {
       "type": "image_text",
-      "image": "idea",
+      "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 3 段：「重复执行」走 5 格，放一块「左转」，「重复执行」走 4 格，放一块「右转」，「重复执行」走 5 格。"
     },
     {
       "type": "text",
@@ -18203,9 +18280,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 3 段，分别走 5、3、5 格。"
   }
 }
   $body$::jsonb,
@@ -18230,7 +18307,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-068 三段远行
--- 走出 3 段的大路线
+-- 用 3 段「重复执行」走出Z形大路：分别走 6、4、6 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -18242,7 +18319,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-068', 68,
    '三段远行',
-   '走出 3 段的大路线',
+   '用 3 段「重复执行」走出Z形大路：分别走 6、4、6 格',
    $body$
 {
   "schema_version": 2,
@@ -18462,7 +18539,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。",
+      "text": "这条路分成 3 段：「重复执行」走 6 格，放一块「右转」，「重复执行」走 4 格，放一块「左转」，「重复执行」走 6 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -18470,9 +18547,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "一段一段拼起来：先走完一段，再转弯，再走下一段。",
+      "text": "每一段的次数不一样，这几段分别要走 6、4、6 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -18487,19 +18565,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走出 3 段的大路线。"
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：用 3 段「重复执行」走出Z形大路：分别走 6、4、6 格。"
     },
     {
       "type": "image_text",
-      "image": "idea",
+      "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 3 段：「重复执行」走 6 格，放一块「右转」，「重复执行」走 4 格，放一块「左转」，「重复执行」走 6 格。"
     },
     {
       "type": "text",
@@ -18508,9 +18586,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 3 段，分别走 5、4、5 格。"
   }
 }
   $body$::jsonb,
@@ -18535,7 +18613,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-069 四段大路
--- 走出 4 段的大路线
+-- 用 4 段「重复执行」走出S形大路：分别走 5、4、5、3 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -18547,7 +18625,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-069', 69,
    '四段大路',
-   '走出 4 段的大路线',
+   '用 4 段「重复执行」走出S形大路：分别走 5、4、5、3 格',
    $body$
 {
   "schema_version": 2,
@@ -18771,7 +18849,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。",
+      "text": "这条路分成 4 段：「重复执行」走 5 格，放一块「右转」，「重复执行」走 4 格，放一块「左转」，「重复执行」走 5 格，放一块「右转」，「重复执行」走 3 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -18779,9 +18857,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "一段一段拼起来：先走完一段，再转弯，再走下一段。",
+      "text": "每一段的次数不一样，这几段分别要走 5、4、5、3 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -18805,19 +18884,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：走出 4 段的大路线。"
+      "content": "又见面啦，今天的关卡有点不一样。这一关的目标是：用 4 段「重复执行」走出S形大路：分别走 5、4、5、3 格。"
     },
     {
       "type": "image_text",
-      "image": "idea",
+      "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 4 段：「重复执行」走 5 格，放一块「右转」，「重复执行」走 4 格，放一块「左转」，「重复执行」走 5 格，放一块「右转」，「重复执行」走 3 格。"
     },
     {
       "type": "text",
@@ -18826,9 +18905,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 3 段，分别走 6、4、6 格。"
   }
 }
   $body$::jsonb,
@@ -18853,7 +18932,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-070 四段长路
--- 走出 4 段的大路线
+-- 用 4 段「重复执行」走出S形大路：分别走 4、6、4、6 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -18865,7 +18944,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-070', 70,
    '四段长路',
-   '走出 4 段的大路线',
+   '用 4 段「重复执行」走出S形大路：分别走 4、6、4、6 格',
    $body$
 {
   "schema_version": 2,
@@ -19113,7 +19192,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。",
+      "text": "这条路分成 4 段：「重复执行」走 4 格，放一块「右转」，「重复执行」走 6 格，放一块「左转」，「重复执行」走 4 格，放一块「右转」，「重复执行」走 6 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -19121,9 +19200,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "一段一段拼起来：先走完一段，再转弯，再走下一段。",
+      "text": "每一段的次数不一样，这几段分别要走 4、6、4、6 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -19138,19 +19218,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：走出 4 段的大路线。"
+      "content": "准备好了吗？这一关我们换个工具。这一关的目标是：用 4 段「重复执行」走出S形大路：分别走 4、6、4、6 格。"
     },
     {
       "type": "image_text",
-      "image": "idea",
+      "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 4 段：「重复执行」走 4 格，放一块「右转」，「重复执行」走 6 格，放一块「左转」，「重复执行」走 4 格，放一块「右转」，「重复执行」走 6 格。"
     },
     {
       "type": "text",
@@ -19159,9 +19239,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 4 段，分别走 5、4、5、3 格。"
   }
 }
   $body$::jsonb,
@@ -19186,7 +19266,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-071 四段回环
--- 走出 4 段的大路线
+-- 用 4 段「重复执行」走出S形大路：分别走 6、5、7、4 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -19198,7 +19278,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-071', 71,
    '四段回环',
-   '走出 4 段的大路线',
+   '用 4 段「重复执行」走出S形大路：分别走 6、5、7、4 格',
    $body$
 {
   "schema_version": 2,
@@ -19475,7 +19555,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。",
+      "text": "这条路分成 4 段：「重复执行」走 6 格，放一块「左转」，「重复执行」走 5 格，放一块「右转」，「重复执行」走 7 格，放一块「左转」，「重复执行」走 4 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -19483,9 +19563,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "一段一段拼起来：先走完一段，再转弯，再走下一段。",
+      "text": "每一段的次数不一样，这几段分别要走 6、5、7、4 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -19500,19 +19581,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：走出 4 段的大路线。"
+      "content": "小机器人已经等不及啦，我们开始吧。这一关的目标是：用 4 段「重复执行」走出S形大路：分别走 6、5、7、4 格。"
     },
     {
       "type": "image_text",
-      "image": "idea",
+      "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 4 段：「重复执行」走 6 格，放一块「左转」，「重复执行」走 5 格，放一块「右转」，「重复执行」走 7 格，放一块「左转」，「重复执行」走 4 格。"
     },
     {
       "type": "text",
@@ -19521,9 +19602,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 4 段，分别走 4、6、4、6 格。"
   }
 }
   $body$::jsonb,
@@ -19548,7 +19629,7 @@ on conflict (module_id, level_id) do update set
   updated_at = now();
 
 -- blk-072 四段远行
--- 走出 4 段的大路线
+-- 用 4 段「重复执行」走出S形大路：分别走 5、7、5、7 格
 --
 -- 这里必须用 insert … on conflict，不能用纯 update。
 -- 线上原本只有 blk-001…blk-015 是真实关卡，blk-016…blk-060 是占位（上面已挪到预留号段），
@@ -19560,7 +19641,7 @@ insert into public.module_level
 values
   ('blockly', 'blk-072', 72,
    '四段远行',
-   '走出 4 段的大路线',
+   '用 4 段「重复执行」走出S形大路：分别走 5、7、5、7 格',
    $body$
 {
   "schema_version": 2,
@@ -19853,7 +19934,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。",
+      "text": "这条路分成 4 段：「重复执行」走 5 格，放一块「左转」，「重复执行」走 7 格，放一块「右转」，「重复执行」走 5 格，放一块「左转」，「重复执行」走 7 格。",
       "focus": {
         "target": "block",
         "blockType": "repeat"
@@ -19861,9 +19942,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "一段一段拼起来：先走完一段，再转弯，再走下一段。",
+      "text": "每一段的次数不一样，这几段分别要走 5、7、5、7 格。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "repeat"
       }
     }
   ],
@@ -19878,19 +19960,19 @@ values
     {
       "type": "text",
       "speaker": "小精灵",
-      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：走出 4 段的大路线。"
+      "content": "欢迎回来！我们再试一个新本领。这一关的目标是：用 4 段「重复执行」走出S形大路：分别走 5、7、5、7 格。"
     },
     {
       "type": "image_text",
-      "image": "idea",
+      "image": "block_repeat",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「分段循环」来帮忙：把长路分成几段，每段交给循环走。"
     },
     {
       "type": "image_text",
       "image": "block_repeat",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「重复执行」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「重复执行」。这条路分成 4 段：「重复执行」走 5 格，放一块「左转」，「重复执行」走 7 格，放一块「右转」，「重复执行」走 5 格，放一块「左转」，「重复执行」走 7 格。"
     },
     {
       "type": "text",
@@ -19899,9 +19981,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 4 段，分别走 6、5、7、4 格。"
   }
 }
   $body$::jsonb,
@@ -20153,7 +20235,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。",
+      "text": "前面 5 格自己走：把「前进」放进「重复执行」，次数改成 5；剩下 9 格交给「如果前面有墙」自动转弯，那一段的次数也改成 9。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -20161,9 +20243,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "前半段自己走，后半段靠条件转弯，两段的次数都要数对。",
+      "text": "前半段自己走（5 次），后半段靠条件转弯（9 次），两段的次数都要数对。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -20184,13 +20267,13 @@ values
       "type": "image_text",
       "image": "idea",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「组合运用」来帮忙：自己先走一段，剩下的交给条件判断。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「如果前面有墙」。前面 5 格自己走：把「前进」放进「重复执行」，次数改成 5；剩下 9 格交给「如果前面有墙」自动转弯，那一段的次数也改成 9。"
     },
     {
       "type": "text",
@@ -20199,9 +20282,9 @@ values
     }
   ],
   "review": {
-    "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。"
+    "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
+    "answer": "把长路分成几段，每段交给循环走。",
+    "hint": "上一关把路分成 4 段，分别走 5、7、5、7 格。"
   }
 }
   $body$::jsonb,
@@ -20461,7 +20544,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。",
+      "text": "前面 6 格自己走：把「前进」放进「重复执行」，次数改成 6；剩下 9 格交给「如果前面有墙」自动转弯，那一段的次数也改成 9。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -20469,9 +20552,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "前半段自己走，后半段靠条件转弯，两段的次数都要数对。",
+      "text": "前半段自己走（6 次），后半段靠条件转弯（9 次），两段的次数都要数对。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -20501,13 +20585,13 @@ values
       "type": "image_text",
       "image": "idea",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「组合运用」来帮忙：自己先走一段，剩下的交给条件判断。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「如果前面有墙」。前面 6 格自己走：把「前进」放进「重复执行」，次数改成 6；剩下 9 格交给「如果前面有墙」自动转弯，那一段的次数也改成 9。"
     },
     {
       "type": "text",
@@ -20517,8 +20601,8 @@ values
   ],
   "review": {
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
+    "answer": "自己先走一段，剩下的交给条件判断。",
+    "hint": "上一关先自己走 5 格，剩下的路交给条件自动转弯。"
   }
 }
   $body$::jsonb,
@@ -20790,7 +20874,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。",
+      "text": "前面 6 格自己走：把「前进」放进「重复执行」，次数改成 6；剩下 10 格交给「如果前面有墙」自动转弯，那一段的次数也改成 10。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -20798,9 +20882,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "前半段自己走，后半段靠条件转弯，两段的次数都要数对。",
+      "text": "前半段自己走（6 次），后半段靠条件转弯（10 次），两段的次数都要数对。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -20821,13 +20906,13 @@ values
       "type": "image_text",
       "image": "idea",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「组合运用」来帮忙：自己先走一段，剩下的交给条件判断。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「如果前面有墙」。前面 6 格自己走：把「前进」放进「重复执行」，次数改成 6；剩下 10 格交给「如果前面有墙」自动转弯，那一段的次数也改成 10。"
     },
     {
       "type": "text",
@@ -20837,8 +20922,8 @@ values
   ],
   "review": {
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
+    "answer": "自己先走一段，剩下的交给条件判断。",
+    "hint": "上一关先自己走 6 格，剩下的路交给条件自动转弯。"
   }
 }
   $body$::jsonb,
@@ -21126,7 +21211,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。",
+      "text": "前面 7 格自己走：把「前进」放进「重复执行」，次数改成 7；剩下 11 格交给「如果前面有墙」自动转弯，那一段的次数也改成 11。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -21134,9 +21219,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "前半段自己走，后半段靠条件转弯，两段的次数都要数对。",
+      "text": "前半段自己走（7 次），后半段靠条件转弯（11 次），两段的次数都要数对。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -21157,13 +21243,13 @@ values
       "type": "image_text",
       "image": "idea",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「组合运用」来帮忙：自己先走一段，剩下的交给条件判断。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「如果前面有墙」。前面 7 格自己走：把「前进」放进「重复执行」，次数改成 7；剩下 11 格交给「如果前面有墙」自动转弯，那一段的次数也改成 11。"
     },
     {
       "type": "text",
@@ -21173,8 +21259,8 @@ values
   ],
   "review": {
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
+    "answer": "自己先走一段，剩下的交给条件判断。",
+    "hint": "上一关先自己走 6 格，剩下的路交给条件自动转弯。"
   }
 }
   $body$::jsonb,
@@ -21466,7 +21552,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。",
+      "text": "前面 7 格自己走：把「前进」放进「重复执行」，次数改成 7；剩下 12 格交给「如果前面有墙」自动转弯，那一段的次数也改成 12。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -21474,9 +21560,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "前半段自己走，后半段靠条件转弯，两段的次数都要数对。",
+      "text": "前半段自己走（7 次），后半段靠条件转弯（12 次），两段的次数都要数对。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -21497,13 +21584,13 @@ values
       "type": "image_text",
       "image": "idea",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「组合运用」来帮忙：自己先走一段，剩下的交给条件判断。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「如果前面有墙」。前面 7 格自己走：把「前进」放进「重复执行」，次数改成 7；剩下 12 格交给「如果前面有墙」自动转弯，那一段的次数也改成 12。"
     },
     {
       "type": "text",
@@ -21513,8 +21600,8 @@ values
   ],
   "review": {
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
+    "answer": "自己先走一段，剩下的交给条件判断。",
+    "hint": "上一关先自己走 7 格，剩下的路交给条件自动转弯。"
   }
 }
   $body$::jsonb,
@@ -21814,7 +21901,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。",
+      "text": "前面 8 格自己走：把「前进」放进「重复执行」，次数改成 8；剩下 12 格交给「如果前面有墙」自动转弯，那一段的次数也改成 12。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -21822,9 +21909,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "前半段自己走，后半段靠条件转弯，两段的次数都要数对。",
+      "text": "前半段自己走（8 次），后半段靠条件转弯（12 次），两段的次数都要数对。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -21845,13 +21933,13 @@ values
       "type": "image_text",
       "image": "idea",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「组合运用」来帮忙：自己先走一段，剩下的交给条件判断。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「如果前面有墙」。前面 8 格自己走：把「前进」放进「重复执行」，次数改成 8；剩下 12 格交给「如果前面有墙」自动转弯，那一段的次数也改成 12。"
     },
     {
       "type": "text",
@@ -21861,8 +21949,8 @@ values
   ],
   "review": {
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
+    "answer": "自己先走一段，剩下的交给条件判断。",
+    "hint": "上一关先自己走 7 格，剩下的路交给条件自动转弯。"
   }
 }
   $body$::jsonb,
@@ -22174,7 +22262,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。",
+      "text": "前面 8 格自己走：把「前进」放进「重复执行」，次数改成 8；剩下 13 格交给「如果前面有墙」自动转弯，那一段的次数也改成 13。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -22182,9 +22270,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "前半段自己走，后半段靠条件转弯，两段的次数都要数对。",
+      "text": "前半段自己走（8 次），后半段靠条件转弯（13 次），两段的次数都要数对。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -22214,13 +22303,13 @@ values
       "type": "image_text",
       "image": "idea",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「组合运用」来帮忙：自己先走一段，剩下的交给条件判断。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「如果前面有墙」。前面 8 格自己走：把「前进」放进「重复执行」，次数改成 8；剩下 13 格交给「如果前面有墙」自动转弯，那一段的次数也改成 13。"
     },
     {
       "type": "text",
@@ -22230,8 +22319,8 @@ values
   ],
   "review": {
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
+    "answer": "自己先走一段，剩下的交给条件判断。",
+    "hint": "上一关先自己走 8 格，剩下的路交给条件自动转弯。"
   }
 }
   $body$::jsonb,
@@ -22551,7 +22640,7 @@ values
   "hints": [
     {
       "trigger": "initial",
-      "text": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。",
+      "text": "前面 8 格自己走：把「前进」放进「重复执行」，次数改成 8；剩下 14 格交给「如果前面有墙」自动转弯，那一段的次数也改成 14。",
       "focus": {
         "target": "block",
         "blockType": "if_wall_ahead"
@@ -22559,9 +22648,10 @@ values
     },
     {
       "trigger": "not_completed",
-      "text": "前半段自己走，后半段靠条件转弯，两段的次数都要数对。",
+      "text": "前半段自己走（8 次），后半段靠条件转弯（14 次），两段的次数都要数对。",
       "focus": {
-        "target": "run"
+        "target": "block",
+        "blockType": "if_wall_ahead"
       }
     }
   ],
@@ -22582,13 +22672,13 @@ values
       "type": "image_text",
       "image": "idea",
       "speaker": "小精灵",
-      "content": "今天请「组合运用」来帮忙：顺序、循环、条件一起用，能走很复杂的路。"
+      "content": "今天请「组合运用」来帮忙：自己先走一段，剩下的交给条件判断。"
     },
     {
       "type": "image_text",
       "image": "block_if",
       "speaker": "机器人",
-      "content": "这一关真正要用的就是「如果前面有墙」。先把路分成几段，每段用「重复执行」，转弯交给「如果」。"
+      "content": "这一关真正要用的就是「如果前面有墙」。前面 8 格自己走：把「前进」放进「重复执行」，次数改成 8；剩下 14 格交给「如果前面有墙」自动转弯，那一段的次数也改成 14。"
     },
     {
       "type": "text",
@@ -22598,8 +22688,8 @@ values
   ],
   "review": {
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
-    "answer": "顺序、循环、条件一起用，能走很复杂的路。",
-    "hint": "先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。"
+    "answer": "自己先走一段，剩下的交给条件判断。",
+    "hint": "上一关先自己走 8 格，剩下的路交给条件自动转弯。"
   }
 }
   $body$::jsonb,

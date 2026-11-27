@@ -1,20 +1,25 @@
 import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
-import { loginStudent } from './auth-fixtures'
 
 /**
  * Blockly 关卡页的游戏化交互。
  *
- * 分两拨：
- * - 「线上现状」直接打数据库里的关卡，验证小精灵的兜底引导在旧正文（没写 focus）下也管用；
- * - 「迁移后」把 manifest 里的新正文塞进接口响应，验证新数据带 focus、带收集物时的表现。
+ * 全部用 manifest 正文和浏览器桩，不直连数据库：
+ * - stripFocus 模拟旧正文（没写 focus），验证小精灵的兜底引导；
+ * - 默认保留新正文的 focus，验证高亮、收集物、绘本和实时计数等表现。
  */
+
+interface ManifestSolution {
+  type: string
+  args: Record<string, unknown>
+  children?: ManifestSolution[]
+}
 
 interface ManifestLevel {
   levelId: string
   title: string
   goal: string
-  solution: { type: string; args: Record<string, unknown> }[]
+  solution: ManifestSolution[]
   body: {
     workspace: { initial_blocks: unknown[] }
     [key: string]: unknown
@@ -26,10 +31,45 @@ const manifest = JSON.parse(
 ) as { levels: ManifestLevel[] }
 const levelById = new Map(manifest.levels.map((level) => [level.levelId, level]))
 
+/** 标准解转成初始积木时保留嵌套结构，避免把控制块的子块悄悄丢掉。 */
+function toInitialBlock(step: ManifestSolution, id: string): unknown {
+  return {
+    id,
+    type: step.type,
+    args: step.args,
+    ...(step.children ? { children: step.children.map((child, index) => toInitialBlock(child, `${id}-${index + 1}`)) } : {}),
+  }
+}
+
+/**
+ * Blockly 交互测试只验证前端，不直连数据库，也不写线上通关记录。
+ * 会话和准入用浏览器桩；正文仍由下面的 stubLevel 注入。
+ */
+async function prepareBlocklyStudent(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    localStorage.setItem('cdg.auth.student', 'e2e-blockly-student')
+    localStorage.setItem('cdg.session.student', JSON.stringify({
+      id: '22222222-2222-4222-8222-222222222222',
+      orgId: '11111111-1111-4111-8111-111111111111',
+      groupId: '33333333-3333-4333-8333-333333333333',
+      name: '测试学生',
+      account: 'blockly-e2e',
+      status: 'active',
+      currentLevelOrder: 1,
+      lastActiveAt: new Date().toISOString(),
+      bindCode: '',
+      password: '',
+    }))
+  })
+  await page.route('**/api/student-enter-level', (route) => route.fulfill({
+    json: { allowed: true, reason: 'ok' },
+  }))
+}
+
 /**
  * 把关卡正文换成 manifest 里的版本。
  *
- * 走真实请求再改写响应，接口形状保持和线上一致，不用自己拼 JSON。
+ * 直接按 manifest 构造接口响应，接口形状保持和线上一致，不依赖数据库或迁移状态。
  *
  * 绘本字段（intro_story / review）由选项单独控制，默认一律不带。
  * 原因：manifest 里的 80 关正文已经带了绘本，如果默认带上，
@@ -62,27 +102,27 @@ async function stubLevel(
         ...level.body,
         workspace: {
           ...level.body.workspace,
-          initial_blocks: level.solution.map((step, index) => ({
-            id: `sol-${index + 1}`,
-            type: step.type,
-            args: step.args,
-          })),
+          initial_blocks: level.solution.map((step, index) => toInitialBlock(step, `sol-${index + 1}`)),
         },
       }
     : level.body
   // stripFocus 模拟「正文没写 focus」的旧关卡，用来单独验证兜底推断；
   // 否则这组断言会随迁移执行与否来回变，迁移一跑就红。
+  // initialHintText 覆盖第一条提示的文案，和 stripFocus 相互独立：
+  // 有些用例要的是「提示里提到了金币」这种正文，而 focus 还得留着。
   const hints = (withSolution.hints ?? []) as { trigger: string; text: string; focus?: unknown }[]
+  const withText = options.initialHintText
+    ? hints.map((hint, index) => (index === 0 ? { ...hint, text: options.initialHintText } : hint))
+    : hints
   const body = options.stripFocus
     ? {
         ...withSolution,
-        hints: hints.map((hint, index) => {
+        hints: withText.map((hint) => {
           const { focus: _focus, ...rest } = hint
-          if (index === 0 && options.initialHintText) return { ...rest, text: options.initialHintText }
           return rest
         }),
       }
-    : withSolution
+    : { ...withSolution, hints: withText }
   // 绘本单独控制：默认抹掉（模拟「这一关没有绘本的老关卡」），
   // 显式给了才注入。不受迁移有没有执行影响，两条路径都能测。
   const { intro_story: _introStory, review: _review, ...withoutStory } = body as Record<string, unknown>
@@ -100,17 +140,17 @@ async function stubLevel(
     } catch {
       payload = {}
     }
+    if (payload.action === 'complete' && payload.moduleId === 'blockly') {
+      await route.fulfill({ json: { ok: true } })
+      return
+    }
     if (payload.action !== 'level' || payload.moduleId !== 'blockly') {
       await route.continue()
       return
     }
-    const response = await route.fetch()
-    const json = (await response.json()) as { level: Record<string, unknown> }
     await route.fulfill({
-      response,
       json: {
-        ...json,
-        level: { ...json.level, body: storyBody, title: level.title, goal: level.goal },
+        level: { body: storyBody, title: level.title, goal: level.goal, sort_order: level.sortOrder },
       },
     })
   })
@@ -119,13 +159,13 @@ async function stubLevel(
 /** 打开一关并等积木工作区就绪。 */
 async function openLesson(page: Page, levelId: string): Promise<void> {
   await page.goto(`/blockly/lesson/${levelId}`)
-  await page.waitForSelector('svg.blocklySvg', { state: 'attached', timeout: 60_000 })
+  await page.waitForSelector('svg.blocklySvg', { state: 'attached', timeout: 120_000 })
 }
 
 /** 打开一关，等到绘本或者工作区出现（两者有一个就行）。 */
 async function openLessonOrStory(page: Page, levelId: string): Promise<void> {
   await page.goto(`/blockly/lesson/${levelId}`)
-  await page.waitForSelector('.matu-story-backdrop, svg.blocklySvg', { state: 'attached', timeout: 60_000 })
+  await page.waitForSelector('.matu-story-backdrop, svg.blocklySvg', { state: 'attached', timeout: 120_000 })
 }
 
 /** 验收用的三页绘本。 */
@@ -210,7 +250,7 @@ async function workspaceBlocks(page: Page): Promise<{ x: number; y: number; w: n
 
 test.describe('小精灵引导（正文没写 focus 时的兜底推断）', () => {
   test('提示里点了积木名，就把那一块高亮起来', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     await stubLevel(page, 'blk-001', {
       stripFocus: true,
       initialHintText: '把 5 块“前进”连起来，机器人就会一路走到绿色终点。',
@@ -226,7 +266,7 @@ test.describe('小精灵引导（正文没写 focus 时的兜底推断）', () =
   })
 
   test('提示里没点积木名，就闪工作区', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     await stubLevel(page, 'blk-002', {
       stripFocus: true,
       initialHintText: '先走三步到拐角，转个弯，再走三步。',
@@ -240,7 +280,7 @@ test.describe('小精灵引导（正文没写 focus 时的兜底推断）', () =
   })
 
   test('运行没通关，小精灵换成失败提示', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     await stubLevel(page, 'blk-001', {
       stripFocus: true,
       initialHintText: '把 5 块“前进”连起来，机器人就会一路走到绿色终点。',
@@ -255,7 +295,7 @@ test.describe('小精灵引导（正文没写 focus 时的兜底推断）', () =
   })
 
   test('音效开关默认关着，学生能自己打开', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     // 走 stub：不带绘本，直接进工作区，结果不受库里是否已迁移绘本数据的影响。
     await stubLevel(page, 'blk-001')
     await openLesson(page, 'blk-001')
@@ -268,20 +308,35 @@ test.describe('小精灵引导（正文没写 focus 时的兜底推断）', () =
 })
 
 test.describe('迁移后的新正文', () => {
-  test('写了 focus 的提示会点名运行按钮', async ({ page }) => {
-    await loginStudent(page)
+  test('失败提示的 focus 会指向本关可用积木', async ({ page }) => {
+    await prepareBlocklyStudent(page)
     await stubLevel(page, 'blk-002')
     await openLesson(page, 'blk-002')
 
     await page.getByRole('button', { name: '运行', exact: true }).click()
 
     await expect(page.locator('.matu-npc-bubble')).toContainText('还没到终点')
-    await expect(page.locator('button.matu-focus-ring')).toHaveCount(1)
+    await expect(page.locator('.blocklyFlyout .matu-block-highlight')).toHaveCount(1)
   })
 
-  test('收集物画得出来，路过时会被吃掉', async ({ page }) => {
-    await loginStudent(page)
+  test('这一关只教走到终点，就一个金币都不画', async ({ page }) => {
+    await prepareBlocklyStudent(page)
     await stubLevel(page, 'blk-002')
+    await openLesson(page, 'blk-002')
+
+    // blk-002 的提示里没提收集，金币就只是干扰，直接不画。
+    await expect(page.locator('.matu-collectible')).toHaveCount(0)
+    // 地图上的障碍物换成柔和的浅紫，不再是沉重的深灰。
+    const obstacleColor = await page.evaluate(() => {
+      const cells = Array.from(document.querySelectorAll('[aria-label="障碍物"]'))
+      return cells[0] ? getComputedStyle(cells[0]).backgroundColor : ''
+    })
+    expect(obstacleColor).not.toBe('rgb(226, 232, 240)')
+  })
+
+  test('提示里讲了吃金币，金币就画出来，路过时会被吃掉', async ({ page }) => {
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-002', { initialHintText: '把「前进」拖到工作区，吃到金币可以加分哦。' })
     await openLesson(page, 'blk-002')
 
     await expect(page.locator('.matu-collectible')).toHaveCount(1)
@@ -293,11 +348,13 @@ test.describe('迁移后的新正文', () => {
       }),
     )
     expect(sizes.every((size) => !size.startsWith('0'))).toBe(true)
+    // 提示里也得把「加分」讲清楚，别让画面和话对不上。
+    await expect(page.locator('main')).toContainText('吃到金币可以加分哦')
   })
 
   test('金币和星星各有各的形状', async ({ page }) => {
-    await loginStudent(page)
-    await stubLevel(page, 'blk-003')
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-003', { initialHintText: '把「前进」拖到工作区，吃到金币可以加分哦。' })
     await openLesson(page, 'blk-003')
 
     await expect(page.locator('.matu-collectible-coin')).toHaveCount(1)
@@ -320,12 +377,15 @@ test.describe('迁移后的新正文', () => {
       } as unknown as typeof AudioContext
     })
 
-    await loginStudent(page)
-    await stubLevel(page, 'blk-002', { withSolution: true })
+    await prepareBlocklyStudent(page)
+    // 提示里提到金币，这一关才画金币，才好验证「路过被吃掉」。
+    await stubLevel(page, 'blk-002', { withSolution: true, initialHintText: '把「前进」拖到工作区，吃到金币可以加分哦。' })
     await openLesson(page, 'blk-002')
 
-    // 工作区里已经有两块「前进」
+    // 工作区里已经有两块「前进」，计数要同步预置积木的真实数量。
     await expect(page.locator('svg.blocklySvg g.blocklyDraggable')).toHaveCount(2)
+    await expect(page.getByLabel('工作区积木数量')).toHaveText('已用 2 / 最多 2')
+    await expect(page.getByText('已达上限，删除一块后再加新的')).toBeVisible()
     await expect(page.locator('.matu-collectible')).toHaveCount(1)
 
     await page.getByRole('button', { name: '打开关卡音效' }).click()
@@ -355,7 +415,7 @@ test.describe('迁移后的新正文', () => {
  */
 test.describe('绘本情境导入与课前复习', () => {
   test('配了绘本的关卡先出绘本，看完才进工作区', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     await stubLevel(page, 'blk-002', { storyPages: THREE_PAGE_STORY })
     await openLessonOrStory(page, 'blk-002')
 
@@ -381,7 +441,7 @@ test.describe('绘本情境导入与课前复习', () => {
   })
 
   test('没配绘本的关卡直接进工作区，不报错', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     // 正文里没有 intro_story / review，就是「没配绘本的老关卡」。
     await stubLevel(page, 'blk-001')
     await openLesson(page, 'blk-001')
@@ -393,7 +453,7 @@ test.describe('绘本情境导入与课前复习', () => {
   })
 
   test('复习卡排在绘本第一页之前，答案默认收着', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     await stubLevel(page, 'blk-002', { storyPages: THREE_PAGE_STORY, review: REVIEW_CARD })
     await openLessonOrStory(page, 'blk-002')
 
@@ -413,7 +473,7 @@ test.describe('绘本情境导入与课前复习', () => {
   })
 
   test('看完绘本后点「重新开始」不会再弹绘本', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     await stubLevel(page, 'blk-002', { storyPages: THREE_PAGE_STORY })
     await openLessonOrStory(page, 'blk-002')
 
@@ -430,7 +490,7 @@ test.describe('绘本情境导入与课前复习', () => {
   })
 
   test('生成器产出的绘本能正常播（走真实下发数据）', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     // 直接用 manifest 里生成器写入的绘本和复习卡。
     await stubLevel(page, 'blk-002', { keepManifestStory: true })
     await openLessonOrStory(page, 'blk-002')
@@ -457,6 +517,92 @@ test.describe('绘本情境导入与课前复习', () => {
 })
 
 /**
+ * 低龄化界面。
+ *
+ * 一年级学生看的是「少而清楚」：同一句话不重复说、小精灵别一直挡着积木、
+ * 工作区要比地图宽（挤窄了就拖不动积木了）。
+ */
+test.describe('低龄化界面', () => {
+  test('小精灵提示读完会自己收起来', async ({ page }) => {
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-002')
+    await openLesson(page, 'blk-002')
+
+    const bubble = page.locator('.matu-npc-bubble')
+    await expect(bubble).toBeVisible()
+    // 五秒后自动收起，别一直挡着工作区。
+    await expect(bubble).toHaveCount(0, { timeout: 10_000 })
+  })
+
+  test('点气泡的任意位置就能关掉它', async ({ page }) => {
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-002')
+    await openLesson(page, 'blk-002')
+
+    const bubble = page.locator('.matu-npc-bubble')
+    await expect(bubble).toBeVisible()
+    await bubble.click()
+    await expect(bubble).toHaveCount(0)
+
+    // 再点一次小精灵，它会重新讲一遍。
+    await page.getByRole('button', { name: '小精灵，再讲一遍这一关怎么做' }).click()
+    await expect(bubble).toBeVisible()
+  })
+
+  test('工作区比地图宽，工具箱不会被挤扁', async ({ page }) => {
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-002')
+    await openLesson(page, 'blk-002')
+
+    const widths = await page.evaluate(() => {
+      const stage = document.querySelector('[aria-labelledby="stage-title"]')
+      const workspace = document.querySelector('[aria-labelledby="workspace-title"]')
+      return {
+        stage: stage ? stage.getBoundingClientRect().width : 0,
+        workspace: workspace ? workspace.getBoundingClientRect().width : 0,
+      }
+    })
+    expect(widths.workspace).toBeGreaterThan(widths.stage)
+  })
+
+  test('「已用 / 最多」只显示在工作区上方', async ({ page }) => {
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-002')
+    await openLesson(page, 'blk-002')
+
+    const counter = page.getByLabel('工作区积木数量')
+    await expect(counter).toHaveText('已用 0 / 最多 2')
+    await expect(page.locator('[aria-labelledby="workspace-title"]').getByLabel('工作区积木数量')).toHaveCount(1)
+    // 地图区不再重复上限说明。
+    await expect(page.locator('[aria-labelledby="stage-title"]').getByLabel('工作区积木数量')).toHaveCount(0)
+  })
+
+  test('嵌套子块也计入实时积木数', async ({ page }) => {
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-033', { withSolution: true })
+    await openLesson(page, 'blk-033')
+
+    // 一个 repeat + 它里面的 move_forward = 2 块，不是只数顶层。
+    await expect(page.getByLabel('工作区积木数量')).toHaveText('已用 2 / 最多 2')
+    await expect(page.locator('svg.blocklySvg g.blocklyDraggable')).toHaveCount(2)
+    await page.getByRole('button', { name: '运行', exact: true }).click()
+    await expect(page.locator('#completion-title')).toBeVisible({ timeout: 30_000 })
+  })
+
+  test('移动端视口不横向溢出，计数和运行按钮仍可见', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-002')
+    await openLesson(page, 'blk-002')
+
+    await expect(page.getByLabel('工作区积木数量')).toBeVisible()
+    await expect(page.getByRole('button', { name: '运行', exact: true })).toBeVisible()
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+    expect(overflow).toBeLessThanOrEqual(1)
+  })
+})
+
+/**
  * 真实拖积木。
  *
  * 前面那些用例都用 initial_blocks 预置标准解，绕过了「从工具箱拖」这一步。
@@ -465,7 +611,7 @@ test.describe('绘本情境导入与课前复习', () => {
  */
 test.describe('真实拖积木', () => {
   test('拖走一块后工具箱不收起，可以直接接着拖', async ({ page }) => {
-    await loginStudent(page)
+    await prepareBlocklyStudent(page)
     // blk-002 只有一个分类、一块积木（前进），正好用来验证拖拽 + 吸附。
     await stubLevel(page, 'blk-002')
     await openLesson(page, 'blk-002')
@@ -485,6 +631,7 @@ test.describe('真实拖积木', () => {
     await dragBlockFromFlyout(page, canvas.x + canvas.width * 0.3, canvas.y + canvas.height * 0.25)
     let placed = await workspaceBlocks(page)
     expect(placed).toHaveLength(1)
+    await expect(page.getByLabel('工作区积木数量')).toHaveText('已用 1 / 最多 2')
 
     // 关键回归点：拖走一块之后工具箱不能被收起。
     // Blockly 13 会在拖拽开始时把焦点移到拖拽层，toolbox 随之失焦并自动关闭 flyout，
@@ -498,9 +645,34 @@ test.describe('真实拖积木', () => {
     await dragBlockFromFlyout(page, first.x + first.w / 2, first.y + first.h + 16)
     placed = await workspaceBlocks(page)
     expect(placed).toHaveLength(2)
+    await expect(page.getByLabel('工作区积木数量')).toHaveText('已用 2 / 最多 2')
+    await expect(page.getByText('已达上限，删除一块后再加新的')).toBeVisible()
+
+    // 第三块真的拖进去也必须被上限拦住，不能只改文案。
+    await dragBlockFromFlyout(page, canvas.x + canvas.width * 0.65, canvas.y + canvas.height * 0.25)
+    expect(await workspaceBlocks(page)).toHaveLength(2)
+    await expect(page.getByLabel('工作区积木数量')).toHaveText('已用 2 / 最多 2')
+
+    // 点中下面那块再按 Delete，验证删除后计数和上限提示同步回落。
+    const child = placed[1]
+    await page.mouse.click(child.x + child.w / 2, child.y + child.h / 2)
+    await page.keyboard.press('Delete')
+    await expect(page.getByLabel('工作区积木数量')).toHaveText('已用 1 / 最多 2')
+    await expect(page.getByText('已达上限，删除一块后再加新的')).toHaveCount(0)
+
+    // 补回第二块，继续验证吸附和通关。
+    placed = await workspaceBlocks(page)
+    expect(placed).toHaveLength(1)
+    await dragBlockFromFlyout(page, placed[0].x + placed[0].w / 2, placed[0].y + placed[0].h + 16)
+    await expect(page.getByLabel('工作区积木数量')).toHaveText('已用 2 / 最多 2')
 
     await page.getByRole('button', { name: '运行', exact: true }).click()
     await expect(page.locator('#completion-title')).toBeVisible({ timeout: 30_000 })
     await expect(page.locator('.matu-win-flash')).toHaveCount(1)
+
+    // 重新开始会清掉学生拖入的积木，计数同步回到初始值。
+    await page.getByRole('button', { name: '再试一次' }).click()
+    await expect(page.getByLabel('工作区积木数量')).toHaveText('已用 0 / 最多 2')
+    await expect(page.getByText('已达上限，删除一块后再加新的')).toHaveCount(0)
   })
 })

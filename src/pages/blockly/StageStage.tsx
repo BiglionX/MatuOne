@@ -1,0 +1,83 @@
+import type { ModuleStageScene } from '@/modules/curriculum/moduleLevelBody'
+import { STAGE_BASE_SPRITE_SIZE, type StageSnapshot } from '@/modules/curriculum/moduleStageInterpreter'
+import './blocklyGame.css'
+
+export interface StageStageProps {
+  scene: ModuleStageScene
+  snapshot: StageSnapshot
+}
+
+const BACKDROPS: Record<string, string> = {
+  sky: 'linear-gradient(180deg, #bfdbfe 0%, #e0f2fe 58%, #dcfce7 100%)',
+  city: 'linear-gradient(180deg, #c7d2fe 0%, #e0e7ff 55%, #fde68a 100%)',
+  night: 'linear-gradient(180deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)',
+  grass: 'linear-gradient(180deg, #bae6fd 0%, #e0f2fe 45%, #86efac 46%, #22c55e 100%)',
+}
+
+const SPRITE_GLYPHS: Record<string, string> = {
+  player: '🐱',
+  hero: '🦸',
+  apple: '🍎',
+  ball: '⚽',
+  star: '★',
+  bomb: '◆',
+}
+
+function glyphOf(asset: string): string {
+  return SPRITE_GLYPHS[asset] ?? (asset.length <= 2 ? asset : '■')
+}
+
+function displayValue(value: string | number | boolean): string {
+  if (typeof value === 'string') return value
+  if (typeof value === 'boolean') return value ? '真' : '假'
+  return String(value)
+}
+
+/** 自由舞台纯展示组件；坐标和碰撞语义由 Stage 解释器决定。 */
+export function StageStage({ scene, snapshot }: StageStageProps) {
+  const { width, height } = scene.stage_size
+  const backdrop = BACKDROPS[scene.backdrop] ?? BACKDROPS.sky
+
+  return (
+    <div
+      className="matu-stage relative isolate overflow-hidden rounded-3xl border border-emerald-900/10 shadow-card"
+      style={{ aspectRatio: `${width} / ${height}`, background: backdrop }}
+      data-stage-status={snapshot.status}
+      aria-label="自由舞台"
+    >
+      <div className="matu-stage-variables" aria-label="舞台变量">
+        {snapshot.program.variables.map((variable) => (
+          <div key={variable.id} className="flex items-center justify-between gap-4">
+            <span className="font-semibold">{variable.name}</span>
+            <span className="font-mono tabular-nums">{displayValue(snapshot.variables[variable.id])}</span>
+          </div>
+        ))}
+      </div>
+
+      {snapshot.sprites.map((sprite) => {
+        if (!sprite.visible) return null
+        const logicalSize = STAGE_BASE_SPRITE_SIZE * (sprite.size / 100)
+        return (
+          <div
+            key={sprite.id}
+            className="matu-stage-sprite"
+            style={{
+              left: `${(sprite.x / width) * 100}%`,
+              top: `${(sprite.y / height) * 100}%`,
+              width: `${(logicalSize / width) * 100}%`,
+              height: `${(logicalSize / height) * 100}%`,
+            }}
+            title={sprite.id}
+            aria-label={`${sprite.id} 精灵`}
+          >
+            <span aria-hidden="true">{glyphOf(sprite.asset)}</span>
+          </div>
+        )
+      })}
+
+      <span className="matu-stage-status">
+        {snapshot.status === 'running' ? '运行中' : snapshot.status === 'completed' ? '已完成' : snapshot.status === 'error' ? '运行出错' : '已停止'}
+      </span>
+    </div>
+  )
+}

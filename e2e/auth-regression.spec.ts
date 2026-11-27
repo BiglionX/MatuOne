@@ -44,10 +44,50 @@ test.afterEach(async ({ page }, info) => {
   }
 })
 
-test.describe('A1 Python 未开通三端一致', () => {
+test.describe('A0 首页是通用入口', () => {
+  test('学生会话也只展示注册模块，不请求机构开通记录', async ({ page }) => {
+    let orgModuleRequests = 0
+    await page.addInitScript(() => {
+      localStorage.setItem('cdg.auth.student', 'e2e-home-student')
+      localStorage.setItem('cdg.session.student', JSON.stringify({
+        id: '22222222-2222-4222-8222-222222222222',
+        orgId: '11111111-1111-4111-8111-111111111111',
+        groupId: '33333333-3333-4333-8333-333333333333',
+        name: '测试学生',
+        account: 'home-e2e',
+        status: 'active',
+        currentLevelOrder: 1,
+        lastActiveAt: new Date().toISOString(),
+        bindCode: '',
+        password: '',
+      }))
+    })
+    await page.route('**/api/org-modules', async (route) => {
+      orgModuleRequests += 1
+      await route.fulfill({
+        json: {
+          modules: [
+            { moduleId: 'python', maxLevel: null, validUntil: null },
+            { moduleId: 'blockly', maxLevel: null, validUntil: null },
+          ],
+        },
+      })
+    })
+
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: '选一个板块，开始今天的探索' })).toBeVisible()
+    await expect(page.locator('[data-module-control]')).toHaveCount(5)
+    await expect(page.getByRole('heading', { name: 'MatuPix 创意搭建', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Python 课外课', exact: true })).toBeVisible()
+    await page.waitForTimeout(500)
+    expect(orgModuleRequests).toBe(0)
+  })
+})
+
+test.describe('A1 Python 未开通时业务入口拦截且首页通用展示', () => {
   test.describe.configure({ mode: 'serial' })
 
-  test('A1 Python 未开通三端一致', async ({ page }) => {
+  test('A1 Python 未开通时业务入口拦截且首页通用展示', async ({ page }) => {
   test.skip(!hasDatabase, skipReason)
   const original = await snapshotEntitlement('python')
   let restored = false
@@ -87,8 +127,9 @@ test.describe('A1 Python 未开通三端一致', () => {
     await loginStudent(page)
     await page.goto('/')
     await expect(page.getByRole('heading', { name: '选一个板块，开始今天的探索' })).toBeVisible()
-    await page.waitForTimeout(800)
-    await expect(page.getByRole('heading', { name: 'Python 课外课', exact: true })).toHaveCount(0)
+    await expect(page.locator('[data-module-control]')).toHaveCount(5)
+    await expect(page.getByRole('heading', { name: 'MatuPix 创意搭建', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Python 课外课', exact: true })).toBeVisible()
     expect(await enterLevelReason(page, 'L0001')).toBe('module_not_entitled')
   } finally {
     await restore()

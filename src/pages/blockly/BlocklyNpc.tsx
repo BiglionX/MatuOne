@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ModuleAvailableBlock, ModuleHintFocus, ModuleLevelBody } from '@/modules/curriculum/moduleLevelBody'
 import './blocklyGame.css'
 
@@ -27,6 +27,15 @@ interface NpcBubble {
 
 /** 关卡没写专门的闲置提示时，小精灵自己说这句。 */
 const IDLE_TEXT = '还在发呆呀～ 把积木从左边拖到右边的工作区，再点「运行」试试！'
+
+/**
+ * 提示气泡自己收起来的时间。
+ *
+ * 气泡要是不自动消失，就会一直挂在右下角挡着工作区，
+ * 而提示本身念一遍也就几秒，五秒足够读完。
+ * 运行失败的提示不自动收（见下面的 effect），那种必须让孩子停下来看。
+ */
+const AUTO_HIDE_MS = 5_000
 
 /**
  * 提示里没写 focus 时的兜底。
@@ -106,14 +115,26 @@ export function BlocklyNpc({
   }, [hints, runFailed])
 
   // 高亮跟着气泡走：气泡一换，页面就换要闪的东西。
+  // 气泡被自动收起时不清高亮——学生可能还没看完提示，
+  // 闪的那块积木得继续闪着，等他自己动手。
   useEffect(() => {
-    onFocusChange?.(bubble?.focus ?? null)
+    if (!bubble) return
+    onFocusChange?.(bubble.focus ?? null)
   }, [bubble, onFocusChange])
 
-  const close = () => {
+  const close = useCallback(() => {
     setBubble(null)
     onFocusChange?.(null)
-  }
+  }, [onFocusChange])
+
+  // 提示读完就自己收起来，别一直挡着工作区。
+  useEffect(() => {
+    if (!bubble) return
+    // 运行失败的那条要停下来看，不能自动消失。
+    if (bubble.kind === 'fail') return
+    const timer = window.setTimeout(() => setBubble(null), AUTO_HIDE_MS)
+    return () => window.clearTimeout(timer)
+  }, [bubble])
 
   const askAgain = () => {
     const intro = hints.find((hint) => hint.trigger === 'initial')
@@ -123,22 +144,30 @@ export function BlocklyNpc({
   if (completed) return null
 
   return (
-    <div className="pointer-events-none fixed bottom-5 right-5 z-30 flex flex-col items-end gap-3">
+    <div className="pointer-events-none fixed bottom-2 right-2 z-30 flex flex-col items-end gap-2">
       {bubble ? (
         <div
-          className="matu-npc-bubble pointer-events-auto max-w-xs rounded-2xl rounded-br-md border border-line bg-white p-4 text-sm leading-relaxed text-ink shadow-pop"
+          className="matu-npc-bubble pointer-events-auto relative w-[236px] rounded-2xl rounded-br-md border border-line bg-white p-3 shadow-pop"
           role="status"
           aria-live="polite"
         >
-          <p>{bubble.text}</p>
-          <button type="button" className="mt-3 text-xs font-semibold text-brand-strong underline" onClick={close}>
-            知道啦
+          {/* 整块气泡都是一个按钮：点哪儿都能关，不用再找「知道啦」那个小字。 */}
+          <button
+            type="button"
+            className="block w-full pr-5 text-left"
+            aria-label="关掉小精灵的提示"
+            onClick={close}
+          >
+            <span className="text-sm leading-relaxed text-ink">{bubble.text}</span>
           </button>
+          <span className="pointer-events-none absolute right-2 top-1.5 text-xs text-ink-soft" aria-hidden="true">
+            ✕
+          </span>
         </div>
       ) : null}
       <button
         type="button"
-        className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-soft text-3xl shadow-card transition hover:scale-105"
+        className="matu-npc-ball pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-2xl shadow-card"
         aria-label="小精灵，再讲一遍这一关怎么做"
         onClick={askAgain}
       >

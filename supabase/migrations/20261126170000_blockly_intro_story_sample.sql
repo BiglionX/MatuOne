@@ -158,9 +158,9 @@ set
     },
     {
       "type": "image_text",
-      "image": "star",
+      "image": "robot_run",
       "speaker": "机器人",
-      "content": "我最喜欢长路了，路上还藏着小星星，走过去就能捡到。"
+      "content": "我最喜欢长路了，一口气跑完 5 格也不费劲。"
     },
     {
       "type": "image_text",

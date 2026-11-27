@@ -1,6 +1,6 @@
 export type GridHeading = 'N' | 'E' | 'S' | 'W'
 export type ModuleBlockKind = 'action' | 'sensor' | 'control'
-export type ModuleBlockArgType = 'number' | 'string' | 'boolean' | 'select'
+export type ModuleBlockArgType = 'number' | 'string' | 'boolean' | 'select' | 'variable'
 export type ModuleComparisonOperator = '==' | '!=' | '<' | '<=' | '>' | '>='
 export type ModuleScalar = string | number | boolean
 
@@ -23,6 +23,8 @@ const BLOCK_BRANCH_SHAPES: Record<string, ModuleBlockBranchShape> = {
   if_wall_ahead: 'then',
   if_path_ahead: 'then_else',
   if_else: 'then_else',
+  if_touching: 'then',
+  forever: 'then',
 }
 
 /** 取控制积木的分支形状；没登记过的类型按单分支处理。 */
@@ -162,6 +164,8 @@ export interface ModuleStageSprite {
   direction?: number
   size?: number
   visible?: boolean
+  /** 被 if_touching 命中后消失，适合苹果、金币等一次性收集物。 */
+  collectible?: boolean
   costumes?: string[]
 }
 
@@ -179,7 +183,7 @@ export interface ModuleStageVariable {
   scope?: 'global' | 'local'
 }
 
-/** 舞台场景。二年级上开始用，现在只落数据结构，不做渲染和运行。 */
+/** 舞台场景。二年级上开始用，由 Stage 组件渲染和解释器运行。 */
 export interface ModuleStageScene {
   type: 'stage'
   backdrop: string
@@ -202,6 +206,7 @@ export type ModuleSuccessCheck =
       value: ModuleScalar
     }
   | { type: 'sprite_at'; sprite_id: string; x: number; y: number }
+  | { type: 'sprite_hidden'; sprite_id: string }
   | { type: 'variable_value'; variable_id: string; op: ModuleComparisonOperator; value: ModuleScalar }
   | { type: 'all' | 'any'; conditions: ModuleSuccessCheck[] }
 
@@ -322,7 +327,7 @@ function samePosition(a: GridPosition, b: GridPosition): boolean {
 function parseArgDefinition(value: unknown, path: string): ModuleBlockArgDefinition {
   const row = record(value, path)
   const type = string(row.type, `${path}.type`)
-  if (!['number', 'string', 'boolean', 'select'].includes(type)) fail(`${path}.type`, '不是支持的参数类型')
+  if (!['number', 'string', 'boolean', 'select', 'variable'].includes(type)) fail(`${path}.type`, '不是支持的参数类型')
   const result: ModuleBlockArgDefinition = {
     name: string(row.name, `${path}.name`),
     label: string(row.label, `${path}.label`),
@@ -463,6 +468,7 @@ function parseStageScene(value: unknown, path: string): ModuleStageScene {
     if (spriteRow.direction !== undefined) sprite.direction = number(spriteRow.direction, `${itemPath}.direction`)
     if (spriteRow.size !== undefined) sprite.size = number(spriteRow.size, `${itemPath}.size`)
     if (spriteRow.visible !== undefined) sprite.visible = boolean(spriteRow.visible, `${itemPath}.visible`)
+    if (spriteRow.collectible !== undefined) sprite.collectible = boolean(spriteRow.collectible, `${itemPath}.collectible`)
     if (spriteRow.costumes !== undefined) {
       sprite.costumes = array(spriteRow.costumes, `${itemPath}.costumes`).map((costume, costumeIndex) =>
         string(costume, `${itemPath}.costumes[${costumeIndex}]`),
@@ -557,6 +563,12 @@ function parseSuccessCheck(value: unknown, scene: ModuleScene, path = 'success_c
     const spriteId = string(row.sprite_id, `${path}.sprite_id`)
     if (!scene.sprites.some((sprite) => sprite.id === spriteId)) fail(`${path}.sprite_id`, `精灵 ${spriteId} 不存在`)
     return { type, sprite_id: spriteId, x: number(row.x, `${path}.x`), y: number(row.y, `${path}.y`) }
+  }
+  if (type === 'sprite_hidden') {
+    if (scene.type !== 'stage') fail(`${path}.type`, '只有舞台场景才有精灵显隐判定')
+    const spriteId = string(row.sprite_id, `${path}.sprite_id`)
+    if (!scene.sprites.some((sprite) => sprite.id === spriteId)) fail(`${path}.sprite_id`, `精灵 ${spriteId} 不存在`)
+    return { type, sprite_id: spriteId }
   }
   if (type === 'variable_value') {
     if (scene.type !== 'stage') fail(`${path}.type`, '只有舞台场景才有变量判定')

@@ -9,6 +9,14 @@ export interface GridStageProps {
   animationDurationMs: number
   /** 画出机器人走过的格子。 */
   showTrail?: boolean
+  /**
+   * 要不要画收集物（金币、星星）。
+   *
+   * 收集物只有在这一关真的要教「吃金币」时才该出现，
+   * 否则对一年级学生就是纯干扰——他会一路想着去捡，而不是去拼积木。
+   * 页面会根据这一关的提示文案决定要不要传 false。
+   */
+  showCollectibles?: boolean
 }
 
 const HEADING_DEGREES: Record<GridHeading, number> = {
@@ -50,13 +58,15 @@ const CONFETTI = Array.from({ length: 28 }, (_, index) => ({
 }))
 
 /** 网格舞台；坐标换算和动画都在这里，不执行关卡逻辑。 */
-export function GridStage({ scene, actorState, animationDurationMs, showTrail = false }: GridStageProps) {
+export function GridStage({ scene, actorState, animationDurationMs, showTrail = false, showCollectibles = true }: GridStageProps) {
   const obstacleKeys = useMemo(() => new Set(scene.obstacles.map((item) => `${item.x},${item.y}`)), [scene.obstacles])
   const collected = useMemo(() => new Set(actorState.collectedEntityIds), [actorState.collectedEntityIds])
   const trailKeys = useMemo(() => new Set(actorState.trail.map((item) => `${item.x},${item.y}`)), [actorState.trail])
 
   const entitiesByCell = useMemo(() => {
     const map = new Map<string, ModuleLevelEntity[]>()
+    // 这一关不教收集的时候，收集物一个字都不画。
+    if (!showCollectibles) return map
     for (const entity of scene.entities) {
       if (!COLLECTIBLE_SHAPE[entity.type]) continue
       const key = `${entity.x},${entity.y}`
@@ -65,7 +75,7 @@ export function GridStage({ scene, actorState, animationDurationMs, showTrail = 
       else map.set(key, [entity])
     }
     return map
-  }, [scene.entities])
+  }, [scene.entities, showCollectibles])
 
   // 走到新格子时让角色弹一下；位置没变就不动。
   const [hopKey, setHopKey] = useState(0)
@@ -104,7 +114,7 @@ export function GridStage({ scene, actorState, animationDurationMs, showTrail = 
       <div
         key={key}
         className={`relative flex items-center justify-center border border-emerald-900/10 text-sm font-semibold ${
-          isGoal ? 'bg-emerald-100 text-emerald-700' : isObstacle ? 'bg-slate-200' : 'bg-white/80'
+          isGoal ? 'bg-emerald-100 text-emerald-700' : isObstacle ? 'bg-indigo-100 text-indigo-400' : 'bg-white/80'
         }`}
         aria-label={isGoal ? '终点' : isObstacle ? '障碍物' : isStart ? '起点' : `格子 ${x + 1},${y + 1}`}
       >

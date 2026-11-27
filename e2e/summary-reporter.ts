@@ -26,7 +26,7 @@ class SummaryReporter implements Reporter {
       console.log(`${row.name.padEnd(width + 2)}${row.status.padEnd(8)}${seconds}`)
     }
     console.log(`合计 ${this.rows.length} 项，整次 ${result.status}`)
-    if (result.status !== 'passed') console.log('失败截图在 e2e/screenshots/')
+    if (result.status !== 'passed') console.log('失败截图与错误上下文在 test-results/；认证用例另见 e2e/screenshots/')
   }
 }
 

@@ -25,6 +25,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { basename, join } from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 import { splitSql } from './split-sql.mjs'
@@ -221,12 +222,26 @@ async function cmdVerify() {
       select count(*) n from module_level
       where module_id='blockly' and term_id='blk-g1-fall'
         and body ? 'workspace' and body ? 'hints' and body ? 'available_blocks'`],
-    ['后面三个学期换号成功且号段不重叠', 45, `
+    ['后面三个学期号段共 45 关且互不重叠', 45, `
+      select count(*) n from module_level
+      where module_id='blockly'
+        and ((term_id='blk-g1-spring' and sort_order between 81 and 95)
+          or (term_id='blk-g2-fall' and sort_order between 161 and 175)
+          or (term_id='blk-g2-spring' and sort_order between 241 and 255))`],
+    ['后续学期只有 blk-161 转为真实正文', 44, `
       select count(*) n from module_level
       where module_id='blockly' and is_placeholder = true
         and ((term_id='blk-g1-spring' and sort_order between 81 and 95)
           or (term_id='blk-g2-fall' and sort_order between 161 and 175)
           or (term_id='blk-g2-spring' and sort_order between 241 and 255))`],
+    ['blk-161 是二上首关的 Stage 真实正文', 1, `
+      select count(*) n from module_level
+      where module_id='blockly' and level_id='blk-161' and term_id='blk-g2-fall'
+        and sort_order=161 and is_placeholder=false and scene_type='stage'`],
+    ['第一学期 blk-031 没有被 Stage 样板误改', 1, `
+      select count(*) n from module_level
+      where module_id='blockly' and level_id='blk-031' and term_id='blk-g1-fall'
+        and sort_order=31 and is_placeholder=false and scene_type='grid'`],
     ['学习记录不指向不存在的关卡', 0, `
       select count(*) n from learning_record lr
       where lr.module_id='blockly'
@@ -243,6 +258,21 @@ async function cmdVerify() {
     if (!ok) failed += 1
     console.log(`${ok ? '  PASS' : '  FAIL'} ${label}（期望 ${expected}，实际 ${actual}）`)
   }
+
+  const manifest = JSON.parse(readFileSync('scripts/generated/blockly-80.manifest.json', 'utf8'))
+  const rows = await db.query(
+    `select level_id, body from module_level
+     where module_id='blockly' and term_id='blk-g1-fall'
+     order by sort_order`,
+  )
+  const bodyById = new Map(rows.rows.map((row) => [row.level_id, row.body]))
+  const mismatches = manifest.levels
+    .filter((level) => !isDeepStrictEqual(bodyById.get(level.levelId), level.body))
+    .map((level) => level.levelId)
+  const aligned = rows.rows.length === 80 && mismatches.length === 0
+  if (!aligned) failed += 1
+  console.log(`${aligned ? '  PASS' : '  FAIL'} 本地第一学期 80 关正文与 manifest 完全一致（差异：${mismatches.join(', ') || '无'}）`)
+
   await db.close()
   console.log(failed === 0 ? '全部通过。' : `${failed} 项不通过。`)
   process.exitCode = failed === 0 ? 0 : 1

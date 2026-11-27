@@ -39,7 +39,7 @@ import {
   turnL,
   turnR,
 } from './blockly-level-recipes.mjs'
-import { buildStoryFor } from './blockly-story-recipes.mjs'
+import { analyzeLevel, buildHints, buildStoryFor } from './blockly-story-recipes.mjs'
 
 const ROOT = process.cwd()
 const SQL_PATH = path.join(ROOT, 'supabase/migrations/20261126160000_blockly_level_1_80_generated.sql')
@@ -128,22 +128,13 @@ function palette(types, program) {
   return availableBlocks(BLOCK_ORDER.filter((type) => merged.has(type)))
 }
 
-function hintPair({ intro, check, focusBlock, focusRun }) {
-  return [
-    {
-      trigger: 'initial',
-      text: intro,
-      focus: focusBlock ? { target: 'block', blockType: focusBlock } : { target: 'workspace' },
-    },
-    {
-      trigger: 'not_completed',
-      text: check,
-      focus: focusRun ? { target: 'run' } : { target: 'workspace' },
-    },
-  ]
-}
-
-function buildBody({ scene, blocks, maxBlocks, maxSteps, hints, visuals, activities, successText, successCheck }) {
+/**
+ * 关卡正文。
+ *
+ * hints 先留空：提示和绘本都由 blockly-story-recipes.mjs 从标准解反推后填进来，
+ * 填好之后 sealLevel 会用生产解析器再验一遍正文。
+ */
+function buildBody({ scene, blocks, maxBlocks, maxSteps, visuals, activities, successText, successCheck }) {
   const body = {
     schema_version: 2,
     scene_type: 'grid',
@@ -152,7 +143,7 @@ function buildBody({ scene, blocks, maxBlocks, maxSteps, hints, visuals, activit
     success_check: successCheck ?? { type: 'actor_at_goal', actor_id: 'player' },
     workspace: { initial_blocks: [], max_blocks: maxBlocks, require_connected: true },
     runtime: { out_of_bounds: 'blocked', max_steps: maxSteps, stop_on_success: true, move_duration_ms: 450 },
-    hints,
+    hints: [],
     completion: { stars: 3, success_text: successText },
   }
   if (visuals) body.visuals = visuals
@@ -257,7 +248,6 @@ function unit1Levels() {
       sortOrder: index + 1,
       unitId: UNIT_IDS.U1,
       title: U1_TITLES[index],
-      goal: `把 ${distance} 块「前进」积木连起来，让机器人一条直线走到终点`,
       levelType,
       knowledgeTags: ['sequence', 'move'],
       milestoneBadge: null,
@@ -275,12 +265,6 @@ function unit1Levels() {
         blocks: palette(['move_forward'], program),
         maxBlocks: distance,
         maxSteps: distance + 2,
-        hints: hintPair({
-          intro: `这条路一共 ${distance} 格，把「前进」拖到工作区，连上 ${distance} 块。`,
-          check: `机器人还没到终点，数一数还差几格，再补几块「前进」。`,
-          focusBlock: 'move_forward',
-          focusRun: true,
-        }),
         visuals: showTrail ? { show_trail: true } : undefined,
         activities: typing
           ? { typing: { targets: [TYPING_KEYS[index % TYPING_KEYS.length]], required: false } }
@@ -363,13 +347,11 @@ function unit2Levels() {
     const phase = index % 5
     const coins = phase === 1 || phase === 2 ? 1 : 0
     const levelType = phase === 3 ? 'practice' : phase === 4 ? 'typing' : 'new'
-    const turns = plan.segments.filter((segment) => segment.turn).length
     levels.push({
       levelId: `blk-${String(index + 17).padStart(3, '0')}`,
       sortOrder: index + 17,
       unitId: UNIT_IDS.U2,
       title: U2_TITLES[index],
-      goal: `走一条 ${plan.name} 形路线：${plan.segments.map((segment) => segment.steps).join(' 步 + ')} 步`,
       levelType,
       knowledgeTags: ['sequence', 'turn', 'path'],
       milestoneBadge: null,
@@ -388,12 +370,6 @@ function unit2Levels() {
         // 多给一块容错，但不给到能写一长串前进绕过转动的地步。
         maxBlocks: countBlocks(program) + 1,
         maxSteps: countActions(program) + 3,
-        hints: hintPair({
-          intro: `这条路要拐 ${turns} 个弯，先走一段「前进」，再放一块转弯积木。`,
-          check: '机器人走偏了？数一数每一段要走几格，转弯积木放在对的位置了吗？',
-          focusBlock: 'move_forward',
-          focusRun: true,
-        }),
         visuals: phase >= 2 ? { show_trail: true } : undefined,
         activities: phase === 4
           ? { typing: { targets: [TYPING_WORDS[index % TYPING_WORDS.length]], required: false } }
@@ -427,10 +403,6 @@ function unit3Levels() {
       program: [rep(distance, [fwd()])],
       blocks: ['move_forward', 'repeat'],
       maxBlocks: 2,
-      goal: `用「重复执行」一次走完 ${distance} 格`,
-      focusBlock: 'repeat',
-      intro: `这条直道有 ${distance} 格，把「前进」放进「重复执行」里，次数改成 ${distance}。`,
-      check: `次数还不对，这条路一共 ${distance} 格，再数一遍。`,
       tags: ['loop'],
     })
   }
@@ -444,10 +416,6 @@ function unit3Levels() {
       program: [rep(3, [rep(side, [fwd()]), turnR()]), rep(side, [fwd()]), fwd()],
       blocks: ['move_forward', 'turn_right', 'repeat'],
       maxBlocks: 7,
-      goal: `用两层循环绕出边长 ${side} 的正方形`,
-      focusBlock: 'repeat',
-      intro: `正方形有四条一样长的边：外层重复 3 次，每次先走 ${side} 格再右转。`,
-      check: '把「重复执行」放进另一个「重复执行」里面，就是两层循环了。',
       tags: ['loop', 'nested_loop'],
     })
   }
@@ -463,10 +431,6 @@ function unit3Levels() {
       ],
       blocks: ['move_forward', 'turn_right', 'repeat'],
       maxBlocks: 13,
-      goal: `用循环绕出 ${wide}×${tall} 的长方形`,
-      focusBlock: 'repeat',
-      intro: `长方形的两条长边和两条短边不一样长，要用两个不同的「重复执行」。`,
-      check: '先走宽的一边再走窄的一边，三条边走完还差最后一条。',
       tags: ['loop', 'nested_loop'],
     })
   }
@@ -478,10 +442,6 @@ function unit3Levels() {
       program: [rep(first, [fwd()]), turnR(), rep(second, [fwd()]), turnR(), rep(third, [fwd()])],
       blocks: ['move_forward', 'turn_right', 'repeat'],
       maxBlocks: 8,
-      goal: `用三段循环走出 U 型大路`,
-      focusBlock: 'repeat',
-      intro: '每一段都用「重复执行」，转弯用「右转」，三段拼起来就是一条大路。',
-      check: '每一段的次数不一样，数一数每段要走几格。',
       tags: ['loop', 'sequence'],
     })
   }
@@ -500,7 +460,6 @@ function unit3Levels() {
       sortOrder: index + 33,
       unitId: UNIT_IDS.U3,
       title: spec.title,
-      goal: spec.goal,
       levelType,
       knowledgeTags: spec.tags,
       milestoneBadge: null,
@@ -518,12 +477,6 @@ function unit3Levels() {
         blocks: palette(spec.blocks, program),
         maxBlocks: spec.maxBlocks,
         maxSteps: countActions(program) + 4,
-        hints: hintPair({
-          intro: spec.intro,
-          check: spec.check,
-          focusBlock: spec.focusBlock,
-          focusRun: true,
-        }),
         visuals: phase >= 2 ? { show_trail: true } : undefined,
         activities: phase === 4
           ? { typing: { targets: [TYPING_KEYS[(index + 2) % TYPING_KEYS.length]], required: false } }
@@ -623,40 +576,30 @@ const U4_TITLES = [
  *   [6, 5, 4, 3]   → 三个拐角的回环，四段之间都留出至少两格间距，
  *                     路线不会贴着自己走，拐角正前方因此必然是墙。
  *
- * moves 是走廊总步数，条件积木的循环次数就按它来；
- * 「如果前面有路」那组拐角要单独花一次循环，所以还要加上拐角数。
+ * 走廊总步数 moves 和拐角数 corners 由走廊形状算出：
+ * 「如果前面有墙」那组，循环次数就等于总步数；
+ * 「如果前面有路」和「如果…否则…」那组，拐角要单独花一次循环，
+ * 所以次数还要加上拐角数。提示里必须把这个算式讲给孩子听。
  */
 const U4_GROUPS = [
   {
     rule: 'wall',
     blocks: ['move_forward', 'turn_right', 'repeat', 'if_wall_ahead'],
-    focusBlock: 'if_wall_ahead',
-    intro: '把「如果前面有墙」放进「重复执行」里，撞到墙时它就自动右转。',
-    check: '重复次数要够多，机器人才能一直转到走廊尽头。',
     shapes: [[4, 3, 4], [5, 3, 5], [5, 4, 5], [6, 4, 6]],
   },
   {
     rule: 'wall',
     blocks: ['move_forward', 'turn_right', 'repeat', 'if_wall_ahead'],
-    focusBlock: 'if_wall_ahead',
-    intro: '这条走廊拐了三个弯，机器人要连着转三次才能到头。',
-    check: '拐角越多，重复次数要数得越准，差一点就到不了终点。',
     shapes: [[6, 5, 4, 3], [7, 5, 4, 3], [7, 5, 4, 2], [8, 5, 4, 2]],
   },
   {
     rule: 'path',
     blocks: ['move_forward', 'turn_right', 'repeat', 'if_path_ahead'],
-    focusBlock: 'if_path_ahead',
-    intro: '「如果前面有路」就直走，没路了就右转——这是另一种转弯的办法。',
-    check: '拐角处要多花一次循环，次数别忘了加上拐角的个数。',
     shapes: [[4, 3, 4], [5, 3, 5], [5, 4, 5], [6, 4, 6]],
   },
   {
     rule: 'else',
     blocks: ['move_forward', 'turn_right', 'repeat', 'if_else'],
-    focusBlock: 'if_else',
-    intro: '用「如果…否则…」：有墙就右转，没墙就往前迈一步。',
-    check: '条件的选项要选对，机器人才能分辨什么时候该转弯。',
     shapes: [[6, 5, 4, 3], [7, 5, 4, 3], [7, 5, 4, 2], [8, 5, 4, 2]],
   },
 ]
@@ -677,11 +620,12 @@ function unit4Levels() {
       sortOrder: index + 49,
       unitId: UNIT_IDS.U4,
       title: U4_TITLES[index],
-      goal: `沿着走廊走 ${built.moves} 格，拐 ${built.corners} 个弯`,
       levelType,
       knowledgeTags: ['condition', 'if', 'loop'],
       milestoneBadge: null,
       estimatedMinutes: 15,
+      // 走廊总步数和拐角数：提示里要把「次数 = 格数 (+ 拐角数)」这个算式讲出来。
+      facts: { moves: built.moves, corners: built.corners },
       solution: program,
       body: buildBody({
         scene: gridScene({
@@ -696,7 +640,6 @@ function unit4Levels() {
         // 只够放「重复 + 条件 + 右转 + 前进」四块，写不出显式的长走廊。
         maxBlocks: 4,
         maxSteps: countActions(program) + 4,
-        hints: hintPair({ intro: group.intro, check: group.check, focusBlock: group.focusBlock, focusRun: true }),
         visuals: phase >= 2 ? { show_trail: true } : undefined,
         activities: phase === 4
           ? { typing: { targets: [TYPING_WORDS[(index + 1) % TYPING_WORDS.length]], required: false } }
@@ -791,16 +734,12 @@ function unit5Levels() {
     let program
     let blocks
     let maxBlocks
-    let focusBlock
-    let intro
-    let check
-    let goal
+    let facts = null
     let tags
     let milestoneBadge = null
     let estimatedMinutes = 15
     let levelType = phase === 3 ? 'practice' : phase === 4 ? 'typing' : 'new'
     let room = null
-    let entities = []
 
     if (index < 8) {
       // 前 8 关：走廊里的多段路线，每段都用循环走，转弯用显式积木。
@@ -812,10 +751,6 @@ function unit5Levels() {
       blocks = ['move_forward', 'turn_left', 'turn_right', 'repeat']
       // 上限卡在循环解的块数上：一条条手写「前进」会超限，必须用重复执行。
       maxBlocks = countBlocks(program) + 1
-      focusBlock = 'repeat'
-      intro = '这一关有三四段路，每段都用「重复执行」，转弯用「左转」或「右转」。'
-      check = '一段一段拼起来：先走完一段，再转弯，再走下一段。'
-      goal = `走出 ${segments.length} 段的大路线`
       tags = ['project', 'sequence', 'turn', 'loop']
       const scene = corridorScene(picked.cells)
       room = {
@@ -835,10 +770,8 @@ function unit5Levels() {
       program = built.program
       blocks = ['move_forward', 'turn_right', 'repeat', 'if_wall_ahead']
       maxBlocks = countBlocks(program)
-      focusBlock = 'if_wall_ahead'
-      intro = '先自己走一段，再交给「如果前面有墙」去转角，两种本事一起用。'
-      check = '前半段自己走，后半段靠条件转弯，两段的次数都要数对。'
-      goal = `先直走 ${built.lead} 格，再自动拐 ${built.corners} 个弯`
+      // 走廊总步数和拐角数：提示里要讲清「自己走的那段 + 交给条件的那段」。
+      facts = { moves: built.moves, corners: built.corners }
       tags = ['project', 'sequence', 'loop', 'condition']
       estimatedMinutes = 20
       levelType = index === 15 ? 'project' : phase === 3 ? 'practice' : 'new'
@@ -861,11 +794,11 @@ function unit5Levels() {
       sortOrder: index + 65,
       unitId: UNIT_IDS.U5,
       title: U5_TITLES[index],
-      goal,
       levelType,
       knowledgeTags: tags,
       milestoneBadge,
       estimatedMinutes,
+      facts,
       // 后 8 关前半段是「自己走一段」，次数调大就会多出撞墙的步数，留点余量。
       maxStepsSlack: index >= 8 ? 8 : 0,
       solution: program,
@@ -874,7 +807,6 @@ function unit5Levels() {
         blocks: palette(blocks, program),
         maxBlocks,
         maxSteps: countActions(program) + 6,
-        hints: hintPair({ intro, check, focusBlock, focusRun: true }),
         visuals: { show_trail: true },
         activities:
           phase === 4
@@ -893,15 +825,23 @@ function unit5Levels() {
 
 function buildAllLevels() {
   const levels = [...unit1Levels(), ...unit2Levels(), ...unit3Levels(), ...unit4Levels(), ...unit5Levels()]
-  // 先给每一关配绘本和复习卡。复习卡要引用上一关的概念，所以按关卡顺序来，
+
+  // 先把目标文案定下来：目标里的每段格数、循环次数、拐角数都从最终标准解反推，
+  // 不能用造关卡前的原始 plan——镜像和反向会改变段序，原 plan 的数字会错位。
+  const withGoals = levels.map((level) => ({ ...level, goal: analyzeLevel(level).goal }))
+
+  // 提示和绘本也从同一份推导结果生成。复习卡要引用上一关，所以按关卡顺序来，
   // 而且必须在 sealLevel 之前装进正文——sealLevel 会用生产解析器校验正文，
-  // 绘本写错了这里就会炸，不会带着坏数据落库。
-  const withStory = levels.map((level, index) => {
-    const previous = index > 0 ? levels[index - 1] : null
-    const story = buildStoryFor(level, previous)
-    return { ...level, body: { ...level.body, ...story } }
+  // 文案或 schema 写错了这里就会炸，不会带着坏数据落库。
+  const withTeaching = withGoals.map((level, index) => {
+    const previous = index > 0 ? withGoals[index - 1] : null
+    return {
+      ...level,
+      body: { ...level.body, hints: buildHints(level), ...buildStoryFor(level, previous) },
+    }
   })
-  return withStory.map((level) => {
+
+  return withTeaching.map((level) => {
     const sealed = sealLevel(level)
     const parsed = parseModuleLevelBody(sealed.body)
     return {
@@ -1053,6 +993,11 @@ where module_id = 'blockly'
 --
 -- learning_record 的主键是 (student_id, level_id)，目标编号已经存在时跳过，
 -- 避免主键冲突把整条 update 打断。
+--
+-- 再加一道守卫：旧编号在 module_level 里已经查不到，才说明它是「被换号换走的
+-- 后面几个学期的关卡」。第一次跑迁移时旧编号已经被步骤 3 换掉，这条守卫放行；
+-- 以后再重跑这个文件时，第一学期已经占了 blk-016…blk-060，这些编号在
+-- module_level 里查得到，守卫会挡住，不会把学生刚做完的一上关卡记录改错号。
 with remap(old_id, new_id) as (
   values
 ${moved.map((row) => `    (${sqlString(row.oldId)}, ${sqlString(row.newId)})`).join(',\n')}
@@ -1066,6 +1011,11 @@ where lr.module_id = 'blockly'
     select 1 from public.learning_record t
     where t.student_id = lr.student_id
       and t.level_id = r.new_id
+  )
+  and not exists (
+    select 1 from public.module_level ml
+    where ml.module_id = 'blockly'
+      and ml.level_id = r.old_id
   );`)
 
   parts.push(`-- 5. 第一学期 80 关正文

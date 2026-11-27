@@ -159,7 +159,7 @@ test('舞台场景的判定可以引用精灵和变量', () => {
     scene: {
       backdrop: 'city',
       stage_size: { width: 480, height: 360 },
-      sprites: [{ id: 'hero', asset: 'hero', x: 10, y: 20 }],
+      sprites: [{ id: 'hero', asset: 'hero', x: 10, y: 20, collectible: true }],
       clones: [],
       variables: [{ id: 'score', name: 'score', initial: 3 }],
       broadcasts: [],
@@ -168,18 +168,21 @@ test('舞台场景的判定可以引用精灵和变量', () => {
       type: 'all',
       conditions: [
         { type: 'sprite_at', sprite_id: 'hero', x: 10, y: 20 },
+        { type: 'sprite_hidden', sprite_id: 'hero' },
         { type: 'variable_value', variable_id: 'score', op: '>=', value: 3 },
       ],
     },
   }
   const parsed = parseModuleLevelBody(raw)
   assert.equal(parsed.success_check.type, 'all')
+  assert.equal(parsed.scene.type === 'stage' && parsed.scene.sprites[0]?.collectible, true)
 
   const bad = {
     ...raw,
     success_check: { type: 'sprite_at', sprite_id: 'ghost', x: 0, y: 0 },
   }
   assert.throws(() => parseModuleLevelBody(bad), /精灵 ghost 不存在/)
+  assert.throws(() => parseModuleLevelBody({ ...raw, success_check: { type: 'sprite_hidden', sprite_id: 'ghost' } }), /精灵 ghost 不存在/)
 })
 
 test('v2 正文里的嵌套初始积木按 available_blocks 校验', () => {

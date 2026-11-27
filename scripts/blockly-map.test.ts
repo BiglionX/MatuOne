@@ -105,6 +105,37 @@ test('没有关卡时返回空数组', () => {
   assert.deepEqual(applyLinearUnlock([]), [])
 })
 
+test('服务端关卡查询只返回已发布的真实正文，不泄漏占位关', () => {
+  const source = readFileSync(path.join(process.cwd(), 'server/moduleLevels.ts'), 'utf8')
+  assert.match(
+    source,
+    /where module_id = \$1 and level_id = \$2 and published = true and is_placeholder = false/,
+    'findModuleLevel 没有过滤占位关',
+  )
+})
+
+test('学生地图和家长端进度都排除占位关，分母只算真实正文', () => {
+  const source = readFileSync(path.join(process.cwd(), 'server/blocklyMap.ts'), 'utf8')
+  assert.ok(source.includes('where module_id = $1 and published = true and is_placeholder = false'))
+  assert.ok(source.includes("where module_id = 'blockly' and published = true and is_placeholder = false"))
+})
+
+test('服务端深链接按学生进度校验线性解锁，占位关不参与前置关系', () => {
+  const levels = readFileSync(path.join(process.cwd(), 'server/moduleLevels.ts'), 'utf8')
+  assert.match(levels, /previous\.published = true/)
+  assert.match(levels, /previous\.is_placeholder = false/)
+  assert.match(levels, /previous\.sort_order < \$2/)
+  assert.match(levels, /progress\.student_id = \$3/)
+  assert.match(levels, /progress\.module_id = previous\.module_id/)
+  assert.match(levels, /progress\.level_id = previous\.level_id/)
+
+  const enter = readFileSync(path.join(process.cwd(), 'server/enter.ts'), 'utf8')
+  assert.match(enter, /findPreviousModuleLevelProgress\(moduleId, Number\(level\.sort_order\), studentId\)/)
+  assert.match(enter, /previous && !previous\.completed/)
+  assert.match(enter, /reason: 'sequence_locked'/)
+  assert.match(enter, /decideModuleStudentLevel\(student\.org_id, student\.id, statusRow\.status, moduleId, canonical\)/)
+})
+
 test('大纲迁移给出 4 个学期、20 个单元、60 个关卡', () => {
   const { terms, units, levels } = readOutline()
   assert.equal(terms.length, 4)

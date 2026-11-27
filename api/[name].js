@@ -20264,9 +20264,26 @@ async function findModuleLevel(moduleId, levelId) {
   return one(
     `select module_id, level_id, sort_order, title, goal, body
      from public.module_level
-     where module_id = $1 and level_id = $2 and published = true
+     where module_id = $1 and level_id = $2 and published = true and is_placeholder = false
      limit 1`,
     [moduleId, requested]
+  );
+}
+async function findPreviousModuleLevelProgress(moduleId, sortOrder, studentId) {
+  return one(
+    `select previous.level_id, coalesce(progress.completed, false) as completed
+     from public.module_level previous
+     left join public.learning_record progress
+       on progress.student_id = $3
+      and progress.module_id = previous.module_id
+      and progress.level_id = previous.level_id
+     where previous.module_id = $1
+       and previous.published = true
+       and previous.is_placeholder = false
+       and previous.sort_order < $2
+     order by previous.sort_order desc
+     limit 1`,
+    [moduleId, sortOrder, studentId]
   );
 }
 function lessonFromModuleLevel(row) {
@@ -20290,7 +20307,7 @@ function canonicalLevelId(levelId) {
 function isOrgStatus(value) {
   return value === "trial" || value === "active" || value === "expired" || value === "disabled";
 }
-async function decideModuleStudentLevel(orgId, status, moduleId, levelId) {
+async function decideModuleStudentLevel(orgId, studentId, status, moduleId, levelId) {
   if (status === "disabled") return { httpStatus: 200, levelId, result: { allowed: false, reason: "org_disabled" } };
   if (status !== "trial" && status !== "active") return { httpStatus: 200, levelId, result: { allowed: false, reason: "org_expired" } };
   const [level, moduleEntitlements] = await Promise.all([
@@ -20303,6 +20320,10 @@ async function decideModuleStudentLevel(orgId, status, moduleId, levelId) {
   if (!level) return { httpStatus: 200, levelId, result: { allowed: false, reason: "not_found" } };
   if (!enabledModuleIds(moduleEntitlements).includes(moduleId)) {
     return { httpStatus: 200, levelId, result: { allowed: false, reason: "module_not_entitled" } };
+  }
+  const previous = await findPreviousModuleLevelProgress(moduleId, Number(level.sort_order), studentId);
+  if (previous && !previous.completed) {
+    return { httpStatus: 200, levelId, result: { allowed: false, reason: "sequence_locked" } };
   }
   return { httpStatus: 200, levelId, result: { allowed: true, reason: "ok" } };
 }
@@ -20329,7 +20350,7 @@ async function decideStudentLevel(studentId, levelId, moduleId = "python") {
     return { httpStatus: 500, levelId: canonical, result: { allowed: false, reason: "not_found" } };
   }
   if (moduleId !== "python") {
-    return decideModuleStudentLevel(student.org_id, statusRow.status, moduleId, canonical);
+    return decideModuleStudentLevel(student.org_id, student.id, statusRow.status, moduleId, canonical);
   }
   const orderMatch = /^L(\d+)$/i.exec(canonical);
   const levelOrder = orderMatch ? Number(orderMatch[1]) : null;
@@ -50585,7 +50606,7 @@ async function buildBlocklyMap(studentId, moduleId = "blockly") {
     q(
       `select level_id, title, sort_order, term_id, unit_id, level_type, milestone_badge, is_placeholder
        from public.module_level
-       where module_id = $1 and published = true
+       where module_id = $1 and published = true and is_placeholder = false
        order by sort_order`,
       [moduleId]
     ),
@@ -50657,7 +50678,7 @@ async function readBlocklyProgressByStudent(studentIds) {
     q(
       `select level_id, sort_order, title
        from public.module_level
-       where module_id = 'blockly' and published = true
+       where module_id = 'blockly' and published = true and is_placeholder = false
        order by sort_order`
     ),
     q(

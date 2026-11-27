@@ -95,13 +95,15 @@ export function evaluateModuleSuccess(check: ModuleSuccessCheck, body: ModuleLev
     const sprite = body.scene.sprites.find((item) => item.id === check.sprite_id)
     return sprite ? sprite.x === check.x && sprite.y === check.y : false
   }
+  if (check.type === 'sprite_hidden') return false
   if (check.type === 'variable_value') {
     if (body.scene.type !== 'stage') return false
     const variable = body.scene.variables.find((item) => item.id === check.variable_id)
     return variable ? compare(variable.initial, check.op, check.value) : false
   }
   if (check.type === 'all') return check.conditions.every((condition) => evaluateModuleSuccess(condition, body, state))
-  return check.conditions.some((condition) => evaluateModuleSuccess(condition, body, state))
+  if (check.type === 'any') return check.conditions.some((condition) => evaluateModuleSuccess(condition, body, state))
+  return false
 }
 
 /** 可以被角色吃掉的实体类型；其余实体只是场景装饰。 */

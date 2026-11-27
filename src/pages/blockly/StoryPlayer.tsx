@@ -33,6 +33,9 @@ const IMAGE_EMOJI: Record<string, string> = {
   book: '📘',
   treasure: '💎',
   coin: '🪙',
+  apple: '🍎',
+  variable_box: '📦',
+  score: '⭐',
 }
 
 /** 默认说话人。正文没写 speaker 时用它。 */

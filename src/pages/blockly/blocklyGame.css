@@ -180,7 +180,7 @@
   }
 }
 
-/* 小精灵气泡 */
+/* 小精灵气泡：从底部往上弹出来 */
 .matu-npc-bubble {
   animation: matuNpcBubble 260ms ease-out;
 }
@@ -188,12 +188,39 @@
 @keyframes matuNpcBubble {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(16px) scale(0.94);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/*
+ * 小精灵球：外圈光环轻轻扩一下，告诉学生「我在这儿，点我有话说」。
+ *
+ * 不用 scale 做呼吸——那会让元素一直在变大变小，
+ * 自动化测试点它的时候会报「element is not stable」。
+ * 光环只改 box-shadow，不占布局，位置纹丝不动。
+ */
+.matu-npc-ball {
+  animation: matuNpcBall 2.4s ease-in-out infinite;
+}
+
+@keyframes matuNpcBall {
+  0%,
+  100% {
+    box-shadow: 0 4px 10px rgb(15 23 42 / 0.12), 0 0 0 0 rgb(var(--brand-rgb) / 0.35);
+  }
+  50% {
+    box-shadow: 0 4px 10px rgb(15 23 42 / 0.12), 0 0 0 10px rgb(var(--brand-rgb) / 0);
+  }
+}
+
+/* 鼠标移上去就停掉光环，改成提亮的反馈 */
+.matu-npc-ball:hover {
+  animation: none;
+  filter: brightness(1.06);
 }
 
 /* 积木高亮：小精灵点名要拖的那一块 */
@@ -268,14 +295,66 @@
   border-top: 10px solid rgb(var(--brand-soft-rgb));
 }
 
-/* 学生开了「减少动效」，就把所有循环动画关掉 */
+/* 自由舞台：逻辑坐标由解释器决定，组件只按百分比摆放。 */
+.matu-stage-sprite {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: clamp(14px, 3vw, 28px);
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px rgb(6 95 70 / 0.28));
+  transition: left 33ms linear, top 33ms linear;
+  will-change: left, top;
+}
+
+.matu-stage-variables {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  min-width: 132px;
+  padding: 10px 12px;
+  border: 1px solid rgb(255 255 255 / 0.72);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.88);
+  box-shadow: 0 6px 18px rgb(15 23 42 / 0.12);
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+.matu-stage-status {
+  position: absolute;
+  z-index: 2;
+  bottom: 10px;
+  left: 12px;
+  padding: 4px 9px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.86);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* 学生开了“减少动效”，就把所有循环动画关掉 */
 @media (prefers-reduced-motion: reduce) {
   .matu-actor-hop,
   .matu-npc-bubble,
+  .matu-npc-ball,
   .matu-block-highlight,
   .matu-focus-ring,
   .matu-story-page {
     animation: none;
+  }
+
+  .matu-stage-sprite {
+    transition: none;
   }
 
   .matu-collectible {

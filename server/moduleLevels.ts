@@ -23,9 +23,32 @@ export async function findModuleLevel(moduleId: string, levelId: string): Promis
   return one<ModuleLevelRow>(
     `select module_id, level_id, sort_order, title, goal, body
      from public.module_level
-     where module_id = $1 and level_id = $2 and published = true
+     where module_id = $1 and level_id = $2 and published = true and is_placeholder = false
      limit 1`,
     [moduleId, requested],
+  )
+}
+
+/** 找当前关卡之前最近的一关真实正文，并带上当前学生的通关状态。 */
+export async function findPreviousModuleLevelProgress(
+  moduleId: string,
+  sortOrder: number,
+  studentId: string,
+): Promise<{ level_id: string; completed: boolean } | null> {
+  return one<{ level_id: string; completed: boolean }>(
+    `select previous.level_id, coalesce(progress.completed, false) as completed
+     from public.module_level previous
+     left join public.learning_record progress
+       on progress.student_id = $3
+      and progress.module_id = previous.module_id
+      and progress.level_id = previous.level_id
+     where previous.module_id = $1
+       and previous.published = true
+       and previous.is_placeholder = false
+       and previous.sort_order < $2
+     order by previous.sort_order desc
+     limit 1`,
+    [moduleId, sortOrder, studentId],
   )
 }
 

@@ -33,8 +33,10 @@ loadTestEnv()
 
 // 默认打本机。远程环境用 E2E_BASE_URL 覆盖。
 const baseURL = process.env.E2E_BASE_URL || 'http://127.0.0.1:5173'
+const port = new URL(baseURL).port || '5173'
 process.env.E2E_BASE_URL = baseURL
 const local = /localhost|127\.0\.0\.1/.test(baseURL)
+const requireFreshServer = process.env.E2E_REQUIRE_FRESH_SERVER === '1'
 
 export default defineConfig({
   testDir: 'e2e',
@@ -47,16 +49,18 @@ export default defineConfig({
   reporter: [['list'], ['./e2e/summary-reporter.ts']],
   webServer: local
     ? {
-        command: 'npm run dev -- --host 127.0.0.1 --port 5173',
+        // 先构建再预览，避免 Blockly 首次加载被 Vite 依赖分析拖慢；同时走真实生产产物。
+        command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${port}`,
         url: baseURL,
-        reuseExistingServer: true,
-        timeout: 180_000,
+        reuseExistingServer: !requireFreshServer,
+        timeout: 300_000,
       }
     : undefined,
   use: {
     baseURL,
     actionTimeout: 120_000,
-    navigationTimeout: 60_000,
+    // 生产预览首次加载仍可能解析较大的 Blockly 依赖，保留充足的导航窗口。
+    navigationTimeout: 120_000,
     channel: 'msedge',
     viewport: { width: 1280, height: 800 },
     screenshot: 'only-on-failure',

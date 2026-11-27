@@ -11,6 +11,9 @@ export default defineConfig({
       configureServer(server) {
         attachApi(server.middlewares)
       },
+      configurePreviewServer(server) {
+        attachApi(server.middlewares)
+      },
     },
   ],
   worker: {
@@ -45,6 +48,17 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    // 预转换 Blockly 首屏链路，避免 E2E 冷启动时首次 page.goto 卡在 Vite 依赖分析。
+    warmup: {
+      clientFiles: [
+        './src/main.tsx',
+        './src/modules/blockly.tsx',
+        './src/pages/blockly/BlocklyMap.tsx',
+        './src/pages/blockly/BlocklyLesson.tsx',
+        './src/pages/blockly/BlocklyWorkspace.tsx',
+        './src/pages/blockly/StoryPlayer.tsx',
+      ],
+    },
     watch: { ignored: ['**/_brand/**', '**/tmp-ldraw/**'] },
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',

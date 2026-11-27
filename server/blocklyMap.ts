@@ -176,7 +176,7 @@ export async function buildBlocklyMap(studentId: string, moduleId = 'blockly'): 
     q<LevelRow>(
       `select level_id, title, sort_order, term_id, unit_id, level_type, milestone_badge, is_placeholder
        from public.module_level
-       where module_id = $1 and published = true
+       where module_id = $1 and published = true and is_placeholder = false
        order by sort_order`,
       [moduleId],
     ),
@@ -262,7 +262,7 @@ export async function readBlocklyProgressByStudent(
     q<{ level_id: string; sort_order: number; title: string }>(
       `select level_id, sort_order, title
        from public.module_level
-       where module_id = 'blockly' and published = true
+       where module_id = 'blockly' and published = true and is_placeholder = false
        order by sort_order`,
     ),
     q<{ student_id: string; level_id: string; completed: boolean }>(

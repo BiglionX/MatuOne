@@ -17,6 +17,7 @@ const ENTER_COPY: Record<EnterLevelReason, string> = {
   module_not_entitled: '该模块未开通，请联系机构',
   not_entitled: '老师还没有为你开通这一关',
   course_locked: '本机构尚未开通该阶段课程，请联系老师',
+  sequence_locked: '先完成上一关，再来挑战这一关吧',
   not_found: '没有找到这一关',
 }
 
