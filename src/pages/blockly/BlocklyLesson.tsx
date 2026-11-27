@@ -493,7 +493,7 @@ export function BlocklyLesson() {
                 ) : null}
               </div>
             </div>
-            <div className="flex h-[60vh] min-h-[420px] flex-col lg:h-auto lg:min-h-0 lg:flex-1">
+            <div className="flex h-[60vh] min-h-[420px] flex-col gap-3 lg:h-auto lg:min-h-0 lg:flex-1 lg:flex-row">
               <BlocklyWorkspace
                 ref={workspaceRef}
                 availableBlocks={body.available_blocks}

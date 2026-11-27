@@ -22,6 +22,7 @@ export type StageInstruction =
   | { kind: 'action'; type: 'move_steps'; steps: number }
   | { kind: 'action'; type: 'set_variable'; variableId: string; value: ModuleScalar }
   | { kind: 'action'; type: 'change_variable'; variableId: string; value: number }
+  | { kind: 'action'; type: 'clone'; cloneId: string; body: StageSequence }
   | { kind: 'if_touching'; targetSpriteId: string; body: StageSequence }
   | { kind: 'repeat'; times: number; body: StageSequence }
   | { kind: 'forever'; body: StageSequence }
@@ -45,6 +46,8 @@ export interface StageProgram {
   successCheck: ModuleSuccessCheck
   stopOnSuccess: boolean
   outOfBounds: 'blocked' | 'fail'
+  /** 最多跑多少个 Tick。超过就停下来，不让写错的学生一直空转。 */
+  maxSteps: number
 }
 
 export interface StageSpriteState {
@@ -56,6 +59,10 @@ export interface StageSpriteState {
   size: number
   visible: boolean
   collectible: boolean
+  /** 克隆体出生的那一帧；用来算它还能活多久。 */
+  bornFrame?: number
+  /** 活多久（Tick）；不写就是永久。 */
+  lifetimeSteps?: number
 }
 
 export interface StageSequenceFrame {
@@ -85,7 +92,7 @@ export interface StageThread {
 }
 
 export interface StageFailure {
-  type: 'out_of_bounds' | 'invalid_variable' | 'runtime'
+  type: 'out_of_bounds' | 'invalid_variable' | 'max_steps' | 'runtime'
   message: string
   threadId?: string
 }
@@ -96,6 +103,8 @@ export interface StageWorld {
   sprites: StageSpriteState[]
   variables: Record<string, ModuleScalar>
   threads: StageThread[]
+  /** 每个克隆模板已经造出几个了，用来生成不重名的克隆 id。 */
+  cloneCounters: Record<string, number>
   frame: number
   status: StageRunStatus
   completed: boolean
@@ -108,6 +117,7 @@ interface CompileContext {
   availableTypes: Set<string>
   variableIds: Set<string>
   spriteIds: Set<string>
+  cloneIds: Set<string>
   targetSpriteId: string | null
   /** null 表示课程隐藏脚本，不受学生工作区积木上限约束。 */
   maxBlocks: number | null
@@ -194,6 +204,12 @@ function compileNode(node: BlockExecutionNode, context: CompileContext, path: st
     if (!context.variableIds.has(variableId)) throw new Error(`关卡 body 校验失败：变量 ${variableId} 不存在`)
     return { kind: 'action', type: 'change_variable', variableId, value: finiteNumber(args.value, `${path}.args.value`) }
   }
+  if (node.type === 'clone') {
+    const cloneId = requiredString(args.clone_id, `${path}.args.clone_id`)
+    if (!context.cloneIds.has(cloneId)) throw new Error(`关卡 body 校验失败：克隆模板 ${cloneId} 不存在`)
+    const body: StageSequence = { kind: 'sequence', instructions: compileChildren(node, context, path, depth) }
+    return { kind: 'action', type: 'clone', cloneId, body }
+  }
   if (node.type === 'if_touching') {
     if (!context.targetSpriteId) throw new Error(`关卡 body 校验失败：${path} 需要至少一个可控制精灵`)
     const targetSpriteId = requiredString(args.target_sprite_id, `${path}.args.target_sprite_id`)
@@ -269,12 +285,14 @@ export function compileStageProgram(
   const availableTypes = new Set(body.available_blocks.map((definition) => definition.type))
   const variableIds = new Set(variables.map((variable) => variable.id))
   const spriteIds = new Set(scene.sprites.map((sprite) => sprite.id))
+  const cloneIds = new Set(scene.clones.map((clone) => clone.id))
   let totalBlockCount = 0
   const scripts: StageScript[] = blocks.map((block, index) => {
     const context: CompileContext = {
       availableTypes,
       variableIds,
       spriteIds,
+      cloneIds,
       targetSpriteId,
       maxBlocks: body.workspace.max_blocks,
       blockCount: totalBlockCount,
@@ -297,6 +315,7 @@ export function compileStageProgram(
       availableTypes,
       variableIds,
       spriteIds,
+      cloneIds,
       targetSpriteId: initialScript.target_sprite_id,
       maxBlocks: null,
       blockCount: 0,
@@ -319,6 +338,7 @@ export function compileStageProgram(
     successCheck: body.success_check,
     stopOnSuccess: body.runtime.stop_on_success,
     outOfBounds: body.runtime.out_of_bounds,
+    maxSteps: body.runtime.max_steps,
   }
 }
 
@@ -369,6 +389,7 @@ export function createStageWorld(program: StageProgram): StageWorld {
       frames: [sequenceFrame(script.root)],
       status: 'running',
     })),
+    cloneCounters: {},
     frame: 0,
     status: program.scripts.length ? 'running' : 'finished',
     completed: false,
@@ -390,6 +411,7 @@ function cloneWorld(world: StageWorld): StageWorld {
       ...thread,
       frames: thread.frames.map((frame) => ({ ...frame })),
     })),
+    cloneCounters: { ...world.cloneCounters },
     failure: world.failure ? { ...world.failure } : undefined,
   }
 }
@@ -444,6 +466,81 @@ function failWorld(world: StageWorld, thread: StageThread, failure: StageFailure
   }
 }
 
+/** 确定性的伪随机：同一个种子永远得到同一个数，关卡才能复现。 */
+function hashFraction(seed: string): number {
+  let hash = 0x811c9dc5
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return (hash >>> 0) / 0x1_0000_0000
+}
+
+/**
+ * 克隆体的出生位置。
+ * 'self' 跟着当前控制的角色（子弹从飞船位置飞出），
+ * 'random' 用确定性伪随机铺在舞台范围内（种子含克隆序号，重来一次还是同一个位置）。
+ */
+function resolveSpawnCoordinate(
+  value: number | 'random' | 'self',
+  world: StageWorld,
+  owner: StageSpriteState | undefined,
+  size: number,
+  seed: string,
+  axis: 'x' | 'y',
+): number {
+  if (typeof value === 'number') return value
+  if (value === 'self') {
+    if (!owner) return 0
+    return axis === 'x' ? owner.x : owner.y
+  }
+  const span = Math.max(
+    0,
+    (axis === 'x' ? world.program.scene.stage_size.width : world.program.scene.stage_size.height) - spriteSize({ size }),
+  )
+  return cleanCoordinate(hashFraction(`${seed}:${axis}`) * span)
+}
+
+/** 造出一个克隆体：多一个精灵，多一个跑自己嵌套体的线程。 */
+function spawnClone(
+  world: StageWorld,
+  thread: StageThread,
+  instruction: Extract<StageInstruction, { kind: 'action'; type: 'clone' }>,
+): void {
+  const template = world.program.scene.clones.find((item) => item.id === instruction.cloneId)
+  if (!template) {
+    failWorld(world, thread, { type: 'runtime', message: `克隆模板 ${instruction.cloneId} 不存在` })
+    return
+  }
+  const owner = thread.targetSpriteId ? world.sprites.find((item) => item.id === thread.targetSpriteId) : undefined
+  const counter = (world.cloneCounters[template.id] ?? 0) + 1
+  world.cloneCounters[template.id] = counter
+  const cloneId = `${template.id}#${counter}`
+  const size = template.size ?? 100
+  const x = resolveSpawnCoordinate(template.spawn.x, world, owner, size, cloneId, 'x')
+  const y = resolveSpawnCoordinate(template.spawn.y, world, owner, size, cloneId, 'y')
+  const maxX = Math.max(0, world.program.scene.stage_size.width - spriteSize({ size }))
+  const maxY = Math.max(0, world.program.scene.stage_size.height - spriteSize({ size }))
+  world.sprites.push({
+    id: cloneId,
+    asset: template.asset,
+    x: clamp(x, 0, maxX),
+    y: clamp(y, 0, maxY),
+    direction: normalizeDirection(template.direction ?? owner?.direction ?? 90),
+    size,
+    visible: true,
+    collectible: false,
+    bornFrame: world.frame,
+    lifetimeSteps: template.lifetime_steps,
+  })
+  world.threads.push({
+    id: `clone-${cloneId}`,
+    targetSpriteId: cloneId,
+    frames: [sequenceFrame(instruction.body)],
+    status: 'running',
+  })
+}
+
 function applyAction(world: StageWorld, thread: StageThread, instruction: Extract<StageInstruction, { kind: 'action' }>): void {
   if (instruction.type === 'set_variable') {
     world.variables[instruction.variableId] = instruction.value
@@ -461,6 +558,10 @@ function applyAction(world: StageWorld, thread: StageThread, instruction: Extrac
       return
     }
     world.variables[instruction.variableId] = next
+    return
+  }
+  if (instruction.type === 'clone') {
+    spawnClone(world, thread, instruction)
     return
   }
 
@@ -542,16 +643,33 @@ function advanceThread(world: StageWorld, thread: StageThread): void {
   }
 }
 
+/** 回收活到期的克隆体，同时停掉它的线程。 */
+function expireClones(world: StageWorld): void {
+  const expiredIds = new Set<string>()
+  for (const sprite of world.sprites) {
+    if (sprite.bornFrame === undefined || sprite.lifetimeSteps === undefined) continue
+    if (world.frame - sprite.bornFrame >= sprite.lifetimeSteps) expiredIds.add(sprite.id)
+  }
+  if (!expiredIds.size) return
+  world.sprites = world.sprites.filter((sprite) => !expiredIds.has(sprite.id))
+  for (const thread of world.threads) {
+    if (thread.targetSpriteId && expiredIds.has(thread.targetSpriteId)) thread.status = 'done'
+  }
+}
+
 /** 执行一个固定时间步：每个运行中的线程最多执行一个原子动作。 */
 export function tick(world: StageWorld): StageWorld {
   const next = cloneWorld(world)
   if (next.status !== 'running') return next
   next.frame += 1
 
-  for (const thread of next.threads) {
+  // 用快照遍历：克隆体同一 Tick 里新生，下一 Tick 才开工，嵌套克隆也不会把栈撑爆。
+  for (const thread of next.threads.slice()) {
     if (next.status !== 'running') break
     if (thread.status === 'running') advanceThread(next, thread)
   }
+
+  expireClones(next)
 
   const success = evaluateStageSuccess(next.program.successCheck, next)
   if (success && !next.completed) next.completed = true
@@ -560,8 +678,16 @@ export function tick(world: StageWorld): StageWorld {
     for (const thread of next.threads) {
       if (thread.status === 'running') thread.status = 'stopped'
     }
-  } else if (next.threads.length > 0 && next.threads.every((thread) => thread.status === 'done')) {
+  } else if (next.threads.length === 0) {
     next.status = 'finished'
+  } else if (next.threads.every((thread) => thread.status === 'done')) {
+    next.status = 'finished'
+  } else if (next.frame >= next.program.maxSteps) {
+    // 学生写错了也不能一直空转：跑满步数就停下来，并把原因告诉前端。
+    failWorld(next, next.threads[0], {
+      type: 'max_steps',
+      message: `程序运行了 ${next.program.maxSteps} 步还没有完成目标，请检查积木`,
+    })
   }
   return next
 }

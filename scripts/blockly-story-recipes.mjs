@@ -41,7 +41,7 @@ export const STORY_IMAGES = {
 }
 
 /**
- * 积木类型 → 学生看到的名字。
+ * 舞台积木类型 → 学生看到的名字。
  *
  * 绘本第三页要说「这一关真正要用的就是某某积木」，
  * 名字和插画必须对上：说了「右转」却画成前进积木，孩子会懵。
@@ -54,6 +54,28 @@ const BLOCK_NAME = {
   if_wall_ahead: '如果前面有墙',
   if_path_ahead: '如果前面有路',
   if_else: '如果…否则…',
+}
+
+/** 舞台积木类型 → 学生看到的名字。 */
+const STAGE_BLOCK_NAME = {
+  move_steps: '移动',
+  set_variable: '设置变量',
+  change_variable: '变量增加',
+  if_touching: '如果碰到',
+  forever: '无限循环',
+  repeat: '重复执行',
+  clone: '克隆',
+}
+
+/** 舞台积木类型 → 插画标识。 */
+const STAGE_BLOCK_IMAGE = {
+  move_steps: 'block_move',
+  set_variable: 'variable_box',
+  change_variable: 'variable_box',
+  if_touching: 'block_if',
+  forever: 'block_repeat',
+  repeat: 'block_repeat',
+  clone: 'block_clone',
 }
 
 /** 积木类型 → 插画标识。绘本里要画哪块积木，从推导结果里读出来。 */
@@ -617,6 +639,176 @@ export function buildStoryFor(level, previous) {
   // 做法用上一关推导出来的「不带积木名」的版本，免得孩子在本关的积木盘里
   // 找一块这一关根本没有的积木。
   const prev = previous ? analyzeLevel(previous) : null
+  const review = prev
+    ? {
+        question: `上一关我们学了「${prev.concept.name}」，还记得怎么用吗？`,
+        answer: prev.concept.detail,
+        hint: prev.plain,
+      }
+    : undefined
+
+  return { intro_story, review }
+}
+
+// ---------------------------------------------------------------------------
+// 自由舞台（Level 2 / Level 3）专用：绘本、提示、复习卡
+// ---------------------------------------------------------------------------
+
+/**
+ * 舞台关卡的分析层。
+ *
+ * 和网格关一样，文案里的每个数字都必须从标准解和场景里反推出来，
+ * 不能写「多接几个苹果」这种没法核对的句子。
+ * 生成器会把这些数字放进 level.facts，这里只管把它们讲成故事。
+ *
+ * facts 的字段（生成器负责填）：
+ *   kind          这一关属于哪一类玩法：collect / dodge / clone / nested
+ *   targetCount   要收集的目标个数
+ *   scoreTotal    满分是多少分
+ *   speed         角色每步走多少
+ *   goalX         终点的 x（没有终点就是 null）
+ *   hazardCount   路上有几个障碍
+ *   hazardHits    标准解会被撞到几个
+ *   lives         生命值（没有就是 null）
+ *   cloneCount    有几个克隆模板
+ *   enemyCount    有几个敌人
+ */
+export function analyzeStageLevel(level) {
+  const facts = level.facts ?? {}
+  const kind = facts.kind ?? 'collect'
+  if (kind === 'collect') return analyzeStageCollect(level, facts)
+  if (kind === 'dodge') return analyzeStageDodge(level, facts)
+  if (kind === 'clone') return analyzeStageClone(level, facts)
+  return analyzeStageNested(level, facts)
+}
+
+/** 接东西：角色一路扫过去，碰到就加分。 */
+function analyzeStageCollect(level, facts) {
+  const count = Number(facts.targetCount ?? 0)
+  const total = Number(facts.scoreTotal ?? count)
+  const speed = Number(facts.speed ?? 0)
+  const name = facts.targetName ?? '目标'
+  const bonus = Number(facts.bonusTargets ?? 0)
+  const bonusText = bonus > 0 ? `，其中 ${bonus} 个要加 2 分` : ''
+  return {
+    shape: 'stageCollect',
+    focusBlock: 'if_touching',
+    concept: { name: '边走边接', detail: '角色一直往前走，用「如果碰到」检查每个目标，碰到就加分。', image: 'block_if' },
+    how: `先用「设置变量」把 score 清成 0，再放一块「无限循环」：里面先放「移动」${speed} 步，再给 ${count} 个${name}各配一个「如果碰到」，体里放「变量增加」1 分${bonusText}。`,
+    plain: `上一关接住了 ${count} 个${name}，score 记成了 ${total} 分。`,
+    check: `score 要正好等于 ${total}：每个「如果碰到」都要选对${name}，而且每次只加 1 分。`,
+    goal: `接住 ${count} 个${name}，把 score 加到 ${total}`,
+    numbers: [count, total, speed],
+  }
+}
+
+/** 躲障碍：碰到要扣命，走得快就能躲开。 */
+function analyzeStageDodge(level, facts) {
+  const bombs = Number(facts.hazardCount ?? 0)
+  const hits = Number(facts.hazardHits ?? 0)
+  const coins = Number(facts.targetCount ?? 0)
+  const lives = Number(facts.lives ?? 0)
+  const speed = Number(facts.speed ?? 0)
+  return {
+    shape: 'stageDodge',
+    focusBlock: 'if_touching',
+    concept: { name: '躲开危险', detail: '碰到危险要扣分，看准时机走过去就能毫发无损。', image: 'idea' },
+    how: `先用「设置变量」把 lives 设成 ${lives}，再放「无限循环」：里面先放「移动」${speed} 步，再给 ${bombs} 个障碍各配一个「如果碰到」，体里放「变量增加」-1。`,
+    plain: `上一关路上有 ${bombs} 个障碍，撞到 ${hits} 次，剩下 ${lives - hits} 条命。`,
+    check: `lives 要正好剩 ${lives - hits} 条：每个障碍都要配一个「如果碰到」，体里是「变量增加」-1，别写成 +1。`,
+    goal: `在 ${bombs} 个障碍里只撞到 ${hits} 个，同时接住 ${coins} 个目标`,
+    numbers: [bombs, hits, lives, speed],
+  }
+}
+
+/** 克隆：造出新角色，让新角色自己行动。 */
+function analyzeStageClone(level, facts) {
+  const enemies = Number(facts.enemyCount ?? 0)
+  const clones = Number(facts.cloneCount ?? 1)
+  const speed = Number(facts.speed ?? 0)
+  return {
+    shape: 'stageClone',
+    focusBlock: 'clone',
+    // 概念名和讲解里不写「克隆」三个字：
+    // 复习卡会拿上一关的概念来做答，而下一单元的积木盘上没有这块积木，
+    // 孩子在本关里找不到「克隆」会以为是自己学错了。
+    // 真正要用的积木由第四页点名，那里这一关的积木盘一定有。
+    concept: { name: '造出新角色', detail: '复制出一个一模一样的角色，让它自己跑你写在里面的积木。', image: 'block_clone' },
+    how: `放一块「无限循环」让角色每步走 ${speed}，再放一块「克隆」：克隆出来的角色里面也放「无限循环」，先「移动」往上飞，再放一个「如果碰到」，碰到敌人就「变量增加」1 分。`,
+    plain: `上一关复制出了 ${enemies} 个新角色，打掉了 ${enemies} 个敌人，score 记成了 ${enemies} 分。`,
+    check: `score 要正好等于 ${enemies}：克隆体要一直往上飞，「如果碰到」要选对敌人，每中一次只加 1 分。`,
+    goal: `用克隆发射，消灭 ${enemies} 个敌人`,
+    numbers: [enemies, clones, speed],
+  }
+}
+
+/** 复杂逻辑：条件里再套条件，一次判断好几件事。 */
+function analyzeStageNested(level, facts) {
+  const count = Number(facts.targetCount ?? 0)
+  const total = Number(facts.scoreTotal ?? count)
+  const bonus = Number(facts.bonusTargets ?? 0)
+  const lives = Number(facts.lives ?? 0)
+  const speed = Number(facts.speed ?? 0)
+  const nested = facts.nestedRule ?? '碰到特殊目标的时候，条件里面还要再放一层积木'
+  return {
+    shape: 'stageNested',
+    focusBlock: 'if_touching',
+    concept: { name: '条件套条件', detail: '条件积木里面还能再放积木，判断可以一层一层叠起来。', image: 'block_if' },
+    how: `先用「设置变量」把 score 清成 0，再放「无限循环」：里面先放「移动」${speed} 步，再放「如果碰到」；${nested}${bonus > 0 ? `，${bonus} 个特殊目标一次加 2 分` : ''}。`,
+    plain: `上一关用了条件套条件，一共拿到 ${total} 分。`,
+    check: `score 要正好等于 ${total}：先检查外层条件，再照着里面的写法做，别把两层积木放反了。`,
+    goal: `用套起来的条件拿到 ${total} 分`,
+    numbers: [count, total, speed],
+  }
+}
+
+/** 舞台关卡的两条提示。 */
+export function buildStageHints(level) {
+  const desc = analyzeStageLevel(level)
+  return [
+    {
+      trigger: 'initial',
+      text: desc.how,
+      focus: { target: 'block', blockType: desc.focusBlock },
+    },
+    {
+      trigger: 'not_completed',
+      text: desc.check,
+      focus: { target: 'block', blockType: desc.focusBlock },
+    },
+  ]
+}
+
+/**
+ * 舞台关卡的绘本和复习卡。
+ *
+ * 和网格关一样的规矩：绘本里提到的每一块积木、每一个数字，
+ * 都必须能从这一关的标准解推出来。
+ */
+export function buildStageStoryFor(level, previous) {
+  const desc = analyzeStageLevel(level)
+  const opening = OPENINGS[level.sortOrder % OPENINGS.length]
+  const focusName = STAGE_BLOCK_NAME[desc.focusBlock]
+
+  const intro_story = [
+    { type: 'text', speaker: '小精灵', content: `${opening}这一关的目标是：${level.goal}。` },
+    { type: 'image_text', image: 'stage', speaker: '小精灵', content: `欢迎来到自由舞台！舞台上的角色会一直往一个方向走，不会撞墙转弯，所以我们要算好时间。` },
+    {
+      type: 'image_text',
+      image: desc.concept.image,
+      speaker: '小精灵',
+      content: `今天请「${desc.concept.name}」来帮忙：${desc.concept.detail}`,
+    },
+    {
+      type: 'image_text',
+      image: STAGE_BLOCK_IMAGE[desc.focusBlock],
+      speaker: '机器人',
+      content: `这一关真正要用的就是「${focusName}」。${desc.how}`,
+    },
+    { type: 'text', speaker: '小精灵', content: '把积木拖到工作区，连好，再点「运行」，我就能走完啦！' },
+  ]
+
+  const prev = previous ? analyzeStageLevel(previous) : null
   const review = prev
     ? {
         question: `上一关我们学了「${prev.concept.name}」，还记得怎么用吗？`,

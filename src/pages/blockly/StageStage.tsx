@@ -22,6 +22,18 @@ const SPRITE_GLYPHS: Record<string, string> = {
   ball: '⚽',
   star: '★',
   bomb: '◆',
+  // 二年级新增的舞台角色；克隆体用同一套字形，克隆出来的子弹也认得出来。
+  ship: '🚀',
+  bullet: '✦',
+  enemy: '👾',
+  mole: '🐹',
+  coin: '🪙',
+  gem: '💎',
+  rock: '🪨',
+  ghost: '👻',
+  pacman: '🟡',
+  goal: '🚩',
+  bee: '🐝',
 }
 
 function glyphOf(asset: string): string {
@@ -37,6 +49,8 @@ function displayValue(value: string | number | boolean): string {
 function variableBadgeLabel(variable: ModuleStageScene['variables'][number]): string {
   if (variable.id === 'score' || variable.name === 'score') return '⭐ 得分'
   if (variable.id === 'apple_count' || variable.name === 'apple_count') return '🍎 苹果'
+  if (variable.id === 'lives' || variable.name === 'lives') return '❤️ 生命'
+  if (variable.id === 'hits' || variable.name === 'hits') return '💥 碰撞'
   return `🏷️ ${variable.name}`
 }
 

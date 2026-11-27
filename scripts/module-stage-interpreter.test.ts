@@ -20,6 +20,7 @@ function body(options: {
   stopOnSuccess?: boolean
   outOfBounds?: 'blocked' | 'fail'
   maxBlocks?: number
+  maxSteps?: number
   appleCollectible?: boolean
   variables?: ModuleStageVariable[]
   initialScripts?: ModuleStageInitialScript[]
@@ -79,7 +80,10 @@ function body(options: {
     ],
     success_check: { type: 'variable_value', variable_id: 'score', op: '>=', value: options.scoreTarget ?? 3 },
     workspace: { initial_blocks: [], max_blocks: options.maxBlocks ?? 20, require_connected: true },
-    runtime: { out_of_bounds: options.outOfBounds ?? 'blocked', max_steps: 2, stop_on_success: options.stopOnSuccess ?? true, move_duration_ms: 0 },
+    // 舞台关卡的 runtime.max_steps 是「最多跑多少个 Tick」。
+    // 默认给一个够大的数，让每个测试都能把程序跑完；
+    // 想测步数上限的用例自己传小数字。
+    runtime: { out_of_bounds: options.outOfBounds ?? 'blocked', max_steps: options.maxSteps ?? 5000, stop_on_success: options.stopOnSuccess ?? true, move_duration_ms: 0 },
     hints: [{ trigger: 'initial', text: '运行程序' }],
     completion: { stars: 3, success_text: '完成' },
   })
@@ -287,7 +291,7 @@ test('空 forever 连续运行 1000 Tick 不阻塞且正常返回', () => {
   assert.equal(world.threads[0]?.status, 'running')
 })
 
-test('forever 不受 Grid max_steps 限制，直到主动停止或通关', () => {
+test('forever 会一直跑，直到主动停止或通关', () => {
   const program = compileStageProgram(body({ scoreTarget: 100 }), [forever([move(1)])])
   let world = createStageWorld(program)
   for (let index = 0; index < 20; index += 1) world = tick(world)
@@ -295,6 +299,19 @@ test('forever 不受 Grid max_steps 限制，直到主动停止或通关', () =>
   assert.equal(world.frame, 20)
   assert.equal(world.sprites.find((sprite) => sprite.id === 'player')?.x, 120)
   assert.equal(world.status, 'running')
+})
+
+test('跑满步数上限就停下来，并把原因告诉前端', () => {
+  // 学生写错了也不能一直空转：跑满 max_steps 就要停。
+  const program = compileStageProgram(body({ scoreTarget: 100, maxSteps: 5 }), [forever([move(1)])])
+  let world = createStageWorld(program)
+  for (let index = 0; index < 5; index += 1) world = tick(world)
+
+  assert.equal(world.frame, 5)
+  assert.equal(world.status, 'error')
+  assert.equal(world.failure?.type, 'max_steps')
+  assert.match(world.failure?.message ?? '', /5 步/)
+  assert.equal(world.completed, false)
 })
 
 test('repeat 保持有限循环语义', () => {

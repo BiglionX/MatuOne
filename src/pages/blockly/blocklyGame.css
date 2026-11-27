@@ -359,13 +359,10 @@
   background: #f8fafc;
 }
 
-/* 用独立 scale 属性缩小 SVG 控件，保留 Blockly 写在 transform 上的定位。 */
-.blockly-workspace .blocklyZoom,
-.blockly-workspace .blocklyTrash {
-  transform-box: fill-box;
-  transform-origin: center;
-  scale: 0.6;
-}
+/*
+ * Blockly 原生的缩放控件和垃圾桶已经关掉了（见 BlocklyWorkspace 的 inject 配置），
+ * 缩放、清空改用工作区右侧工具条上的按钮，画布整块都留给积木。
+ */
 
 /* 自由舞台：逻辑坐标由解释器决定，组件只按百分比摆放。 */
 .matu-stage-sprite {

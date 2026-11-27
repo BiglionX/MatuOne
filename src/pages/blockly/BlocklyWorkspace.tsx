@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import type { Block, Field, FieldDropdown, Flyout, MenuOption, Workspace, WorkspaceSvg } from 'blockly'
 import type {
   ModuleAvailableBlock,
@@ -54,6 +54,48 @@ const BLOCKLY_CURSOR_CSS = `
   }
 `
 
+/** 工具条按钮的统一样式：只留图标，热区做大一点方便小朋友点，悬停时才浮出淡底。 */
+const TOOL_BUTTON_CLASS =
+  'flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-brand-soft/40 hover:text-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-40'
+
+/** 工具条上的线条图标统一走 currentColor，跟着按钮状态变颜色。 */
+const TOOL_ICON_CLASS = 'h-5 w-5'
+
+function ZoomInIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className={TOOL_ICON_CLASS} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3.5" y="3.5" width="13" height="13" rx="3" />
+      <path d="M10 6.5v7M6.5 10h7" />
+    </svg>
+  )
+}
+
+function ZoomOutIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className={TOOL_ICON_CLASS} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3.5" y="3.5" width="13" height="13" rx="3" />
+      <path d="M6.5 10h7" />
+    </svg>
+  )
+}
+
+/** 摆正：四角收拢，表示把内容缩放摆进视野。 */
+function FitIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className={TOOL_ICON_CLASS} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 8V4h4M16 8V4h-4M4 12v4h4M16 12v4h-4" />
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className={TOOL_ICON_CLASS} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 6h12M8.5 6V4h3v2M6.2 6l.8 10h6l.8-10M9 9v4M11 9v4" />
+    </svg>
+  )
+}
+
 const KIND_COLORS: Record<ModuleBlockKind, string> = {
   action: '#34D399',
   sensor: '#38BDF8',
@@ -72,6 +114,8 @@ const CATEGORY_ICONS: Record<string, string> = {
 function variableBadgeLabel(variable: ModuleStageVariable): string {
   if (variable.id === 'score' || variable.name === 'score') return '⭐ 得分'
   if (variable.id === 'apple_count' || variable.name === 'apple_count') return '🍎 苹果'
+  if (variable.id === 'lives' || variable.name === 'lives') return '❤️ 生命'
+  if (variable.id === 'hits' || variable.name === 'hits') return '💥 碰撞'
   return variable.name
 }
 
@@ -360,6 +404,8 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
   const suppressRef = useRef(false)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
+  /** 「清空」要点两下，避免孩子手一抖把刚搭好的程序全删了。 */
+  const [confirmClear, setConfirmClear] = useState(false)
   const variablesRef = useRef<readonly ModuleStageVariable[]>(initialVariables ?? [])
 
   useEffect(() => {
@@ -368,6 +414,49 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
     const workspace = workspaceRef.current
     if (workspace) workspaceVariableDefinitions.set(workspace, next)
   }, [initialVariables])
+
+  /** 清空工作区并重新铺初始积木；handle.reset 和工具条上的「清空」共用同一段逻辑。 */
+  const resetWorkspace = useCallback(() => {
+    const workspace = workspaceRef.current
+    if (!workspace) return
+    suppressRef.current = true
+    workspace.clear()
+    loadInitialBlocks(workspace, initialBlocks, definitionsRef.current)
+    suppressRef.current = false
+    onBlocksChange?.(workspace.getAllBlocks(false).length, false)
+  }, [initialBlocks, onBlocksChange])
+
+  /** 以画布中心为锚点缩放；amount 为正放大、为负缩小。 */
+  const zoomBy = useCallback((amount: number) => {
+    const workspace = workspaceRef.current
+    if (!workspace) return
+    const rect = hostRef.current?.getBoundingClientRect()
+    workspace.zoom((rect?.width ?? 0) / 2, (rect?.height ?? 0) / 2, amount)
+  }, [])
+
+  /** 把所有积木缩放摆进视野；空工作区不动，免得缩成一个看不见的点。 */
+  const fitToScreen = useCallback(() => {
+    const workspace = workspaceRef.current
+    if (!workspace) return
+    if (!workspace.getTopBlocks(true).length) return
+    workspace.zoomToFit()
+  }, [])
+
+  const handleClear = useCallback(() => {
+    if (!confirmClear) {
+      setConfirmClear(true)
+      return
+    }
+    setConfirmClear(false)
+    resetWorkspace()
+  }, [confirmClear, resetWorkspace])
+
+  // 确认态过几秒自动撤回，忘了点第二下也不会一直亮着。
+  useEffect(() => {
+    if (!confirmClear) return undefined
+    const timer = window.setTimeout(() => setConfirmClear(false), 4000)
+    return () => window.clearTimeout(timer)
+  }, [confirmClear])
 
   useImperativeHandle(ref, () => ({
     getExecutionTree() {
@@ -379,15 +468,9 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
       return workspaceRef.current?.getAllBlocks(false).length ?? 0
     },
     reset() {
-      const workspace = workspaceRef.current
-      if (!workspace) return
-      suppressRef.current = true
-      workspace.clear()
-      loadInitialBlocks(workspace, initialBlocks, definitionsRef.current)
-      suppressRef.current = false
-      onBlocksChange?.(workspace.getAllBlocks(false).length, false)
+      resetWorkspace()
     },
-  }), [initialBlocks, onBlocksChange])
+  }), [resetWorkspace])
 
   // 学生动了积木就通知外面一声，小精灵靠它判断「有人操作」还是「干等着」。
   useEffect(() => {
@@ -431,16 +514,23 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
         }))
         workspace = blockly.inject(host, {
           toolbox: { kind: 'categoryToolbox', contents: categories },
-          trashcan: true,
+          // 原生的缩放控件和垃圾桶都挂在画布右侧，直接压在小猫和苹果上，
+          // 孩子根本没法把程序摆满整块屏。改成右侧工具条上的按钮，画布整块都留给积木。
+          trashcan: false,
           sounds: false,
           // 全站 COEP require-corp 会拦截 Blockly 默认的远程 media，精灵图必须同源。
           media: '/blockly/',
           maxBlocks,
           renderer: 'geras',
-          zoom: { controls: true, startScale: 0.9, wheel: true },
+          zoom: { controls: false, startScale: 0.9, wheel: true },
           move: { scrollbars: true, drag: true, wheel: true },
         })
         workspaceRef.current = workspace
+        // 端到端验收脚本需要精确的连接点坐标和积木树结构，开发环境下挂一个只读探针。
+        // 生产构建里 import.meta.env.DEV 为 false，这段会被整段摇掉，不对外暴露。
+        if (import.meta.env.DEV) {
+          ;(window as unknown as { __matuBlocklyWorkspace?: WorkspaceSvg }).__matuBlocklyWorkspace = workspace
+        }
         workspaceVariableDefinitions.set(workspace, variablesRef.current)
         // 图标写进 Blockly 原生的分类图标节点，不改分类名和键盘可访问名称。
         for (const item of workspace.getToolbox()?.getToolboxItems() ?? []) {
@@ -480,33 +570,60 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
   }, [availableBlocks, initialBlocks, maxBlocks, onBlocksChange, onReadyChange])
 
   return (
-    <div
-      className={`blockly-workspace relative flex min-h-[360px] flex-1 flex-col overflow-hidden rounded-xl border bg-white ${
-        focusWorkspace ? 'matu-focus-ring border-amber-400' : 'border-slate-200'
-      }`}
-    >
-      <style>{BLOCKLY_CURSOR_CSS}</style>
-      {initialVariables !== undefined ? (
-        <div className="flex flex-wrap items-center gap-2 border-b border-emerald-100 bg-emerald-50/70 px-3 py-2" aria-label="本关变量">
-          <span className="text-xs font-semibold text-emerald-800">🏷️ 本关记录</span>
-          {initialVariables.map((variable) => (
-            <span
-              key={variable.id}
-              className="matu-variable-badge inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-xs font-bold text-emerald-700 shadow-sm"
-            >
-              <span>{variableBadgeLabel(variable)}</span>
-              <span className="tabular-nums">：{displayVariableValue(variableValues?.[variable.id] ?? variable.initial)}</span>
-            </span>
-          ))}
-        </div>
-      ) : null}
-      <div ref={hostRef} data-blockly-host className="min-h-0 w-full flex-1" />
-      {!ready && !error ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-sm text-slate-500" role="status">
-          正在准备积木工作区…
-        </div>
-      ) : null}
-      {error ? <p className="absolute inset-x-4 bottom-4 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p> : null}
-    </div>
+    <>
+      <div
+        className={`blockly-workspace relative flex min-h-[360px] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-white ${
+          focusWorkspace ? 'matu-focus-ring border-amber-400' : 'border-slate-200'
+        }`}
+      >
+        <style>{BLOCKLY_CURSOR_CSS}</style>
+        {initialVariables !== undefined ? (
+          <div className="flex flex-wrap items-center gap-2 border-b border-emerald-100 bg-emerald-50/70 px-3 py-2" aria-label="本关变量">
+            <span className="text-xs font-semibold text-emerald-800">🏷️ 本关记录</span>
+            {initialVariables.map((variable) => (
+              <span
+                key={variable.id}
+                className="matu-variable-badge inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-xs font-bold text-emerald-700 shadow-sm"
+              >
+                <span>{variableBadgeLabel(variable)}</span>
+                <span className="tabular-nums">：{displayVariableValue(variableValues?.[variable.id] ?? variable.initial)}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div ref={hostRef} data-blockly-host className="min-h-0 w-full flex-1" />
+        {!ready && !error ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-sm text-slate-500" role="status">
+            正在准备积木工作区…
+          </div>
+        ) : null}
+        {error ? <p className="absolute inset-x-4 bottom-4 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p> : null}
+      </div>
+
+      {/* 工具条放在工作区窗体右侧外面，只留一列图标，不占画布也不加多余容器。 */}
+      <div
+        className="flex w-full shrink-0 items-center justify-center gap-1 lg:w-11 lg:flex-col lg:gap-0.5"
+        aria-label="工作区工具"
+      >
+        <button type="button" className={TOOL_BUTTON_CLASS} onClick={() => zoomBy(1)} aria-label="放大积木" title="放大">
+          <ZoomInIcon />
+        </button>
+        <button type="button" className={TOOL_BUTTON_CLASS} onClick={() => zoomBy(-1)} aria-label="缩小积木" title="缩小">
+          <ZoomOutIcon />
+        </button>
+        <button type="button" className={TOOL_BUTTON_CLASS} onClick={fitToScreen} aria-label="把积木摆进视野" title="摆正">
+          <FitIcon />
+        </button>
+        <button
+          type="button"
+          className={`${TOOL_BUTTON_CLASS} ${confirmClear ? 'bg-danger/10 text-danger' : ''}`}
+          onClick={handleClear}
+          aria-label={confirmClear ? '再点一次就清空积木' : '清空积木'}
+          title={confirmClear ? '再点一次就清空' : '清空积木'}
+        >
+          <TrashIcon />
+        </button>
+      </div>
+    </>
   )
 })

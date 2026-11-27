@@ -25,6 +25,8 @@ const BLOCK_BRANCH_SHAPES: Record<string, ModuleBlockBranchShape> = {
   if_else: 'then_else',
   if_touching: 'then',
   forever: 'then',
+  // 「克隆」自带一个嵌套体：克隆出来的新角色要做的事写在里面。
+  clone: 'then',
 }
 
 /** 取控制积木的分支形状；没登记过的类型按单分支处理。 */
@@ -169,11 +171,26 @@ export interface ModuleStageSprite {
   costumes?: string[]
 }
 
+/**
+ * 克隆模板。
+ *
+ * 「克隆」积木按 id 引用这里的模板：模板决定新角色的样子、出生位置和能活多久。
+ * 模板本身不规定新角色做什么——做什么写在「克隆」积木的嵌套体里，由学生自己拼。
+ */
 export interface ModuleStageClone {
   id: string
   asset: string
-  spawn: { x: number | 'random'; y: number | 'random' }
+  /**
+   * 出生位置。
+   *
+   * 数字是固定坐标；'random' 是伪随机（同一个关卡跑出来的结果一样，保证可复现）；
+   * 'self' 表示「跟着当前控制的那个角色走」，也就是子弹从飞船身上飞出去。
+   */
+  spawn: { x: number | 'random' | 'self'; y: number | 'random' | 'self' }
+  /** 活多久（单位是运行步）。不写就一直在舞台上。 */
   lifetime_steps?: number
+  size?: number
+  direction?: number
 }
 
 export interface ModuleStageVariable {
@@ -448,8 +465,9 @@ function parseGridScene(value: unknown, path: string): ModuleGridScene {
   return { type: 'grid', width, height, start, goal, actor, obstacles, entities }
 }
 
-function parseStageCoordinate(value: unknown, path: string): number | 'random' {
+function parseStageCoordinate(value: unknown, path: string): number | 'random' | 'self' {
   if (value === 'random') return 'random'
+  if (value === 'self') return 'self'
   return number(value, path)
 }
 
@@ -503,6 +521,8 @@ function parseStageScene(value: unknown, path: string, availableBlocks: ModuleAv
     if (cloneRow.lifetime_steps !== undefined) {
       clone.lifetime_steps = integer(cloneRow.lifetime_steps, `${itemPath}.lifetime_steps`, 0)
     }
+    if (cloneRow.size !== undefined) clone.size = number(cloneRow.size, `${itemPath}.size`)
+    if (cloneRow.direction !== undefined) clone.direction = number(cloneRow.direction, `${itemPath}.direction`)
     return clone
   })
   const variableIds = new Set<string>()

@@ -36,6 +36,14 @@ const IMAGE_EMOJI: Record<string, string> = {
   apple: '🍎',
   variable_box: '📦',
   score: '⭐',
+  // 二年级自由舞台用到的插画。
+  stage: '🎭',
+  block_clone: '📋',
+  enemy: '👾',
+  life: '❤️',
+  bomb: '💣',
+  mole: '🐹',
+  bullet: '✦',
 }
 
 /** 默认说话人。正文没写 speaker 时用它。 */

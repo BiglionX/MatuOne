@@ -1,0 +1,44 @@
+{
+  "termIds": [
+    "blk-g2-fall",
+    "blk-g2-spring"
+  ],
+  "ready": {
+    "move_steps": {
+      "ready": true,
+      "note": "沿角色朝向移动，负数往回走，走到边缘会停住。"
+    },
+    "set_variable": {
+      "ready": true,
+      "note": "把全局变量设成新值，开局清零用。"
+    },
+    "change_variable": {
+      "ready": true,
+      "note": "全局变量加减，计分和扣命用。"
+    },
+    "if_touching": {
+      "ready": true,
+      "note": "碰到目标就执行体里的积木；目标是一次性收集物时，碰到后自动消失。"
+    },
+    "forever": {
+      "ready": true,
+      "note": "一直重复体里的积木。"
+    },
+    "repeat": {
+      "ready": true,
+      "note": "重复固定次数。"
+    },
+    "clone": {
+      "ready": true,
+      "note": "造出一个新角色，体里的积木由新角色自己跑；活够 lifetime_steps 就自动回收。"
+    }
+  },
+  "pending": {
+    "when_key_pressed": "按空格发射子弹这类「按键事件」积木还没有，克隆只能靠循环一直造。",
+    "random": "随机数积木还没有，随机出生点用的是关卡内部写死的伪随机，换一次运行结果都一样。",
+    "broadcast": "广播积木还没有，多角色之间只能靠各自的时间和位置配合。",
+    "say": "说话积木还没有，角色不会在舞台上冒字。",
+    "switch_costume": "换造型积木还没有。",
+    "wait": "等待积木还没有，节奏全靠「移动」的步数控制。"
+  }
+}
