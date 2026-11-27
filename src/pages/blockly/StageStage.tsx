@@ -5,6 +5,7 @@ import './blocklyGame.css'
 export interface StageStageProps {
   scene: ModuleStageScene
   snapshot: StageSnapshot
+  isRunning: boolean
 }
 
 const BACKDROPS: Record<string, string> = {
@@ -33,25 +34,36 @@ function displayValue(value: string | number | boolean): string {
   return String(value)
 }
 
+function variableBadgeLabel(variable: ModuleStageScene['variables'][number]): string {
+  if (variable.id === 'score' || variable.name === 'score') return '⭐ 得分'
+  if (variable.id === 'apple_count' || variable.name === 'apple_count') return '🍎 苹果'
+  return `🏷️ ${variable.name}`
+}
+
 /** 自由舞台纯展示组件；坐标和碰撞语义由 Stage 解释器决定。 */
-export function StageStage({ scene, snapshot }: StageStageProps) {
+export function StageStage({ scene, snapshot, isRunning }: StageStageProps) {
   const { width, height } = scene.stage_size
   const backdrop = BACKDROPS[scene.backdrop] ?? BACKDROPS.sky
 
   return (
     <div
-      className="matu-stage relative isolate overflow-hidden rounded-3xl border border-emerald-900/10 shadow-card"
+      className="matu-stage relative isolate overflow-hidden rounded-xl border border-emerald-900/10 shadow-card"
       style={{ aspectRatio: `${width} / ${height}`, background: backdrop }}
       data-stage-status={snapshot.status}
       aria-label="自由舞台"
     >
-      <div className="matu-stage-variables" aria-label="舞台变量">
-        {snapshot.program.variables.map((variable) => (
-          <div key={variable.id} className="flex items-center justify-between gap-4">
-            <span className="font-semibold">{variable.name}</span>
-            <span className="font-mono tabular-nums">{displayValue(snapshot.variables[variable.id])}</span>
-          </div>
-        ))}
+      <div className="matu-stage-variables" aria-label="舞台计分板">
+        {snapshot.program.variables.map((variable) => {
+          const isScore = variable.id === 'score' || variable.name === 'score'
+          return (
+            <span
+              key={variable.id}
+              className={`matu-stage-variable-badge ${isScore ? 'matu-stage-score' : ''}`}
+            >
+              {variableBadgeLabel(variable)}：{displayValue(snapshot.variables[variable.id])}
+            </span>
+          )
+        })}
       </div>
 
       {snapshot.sprites.map((sprite) => {
@@ -76,7 +88,7 @@ export function StageStage({ scene, snapshot }: StageStageProps) {
       })}
 
       <span className="matu-stage-status">
-        {snapshot.status === 'running' ? '运行中' : snapshot.status === 'completed' ? '已完成' : snapshot.status === 'error' ? '运行出错' : '已停止'}
+        {snapshot.status === 'running' ? (isRunning ? '运行中' : '准备好了') : snapshot.status === 'completed' ? '已完成' : snapshot.status === 'error' ? '运行出错' : '已停止'}
       </span>
     </div>
   )

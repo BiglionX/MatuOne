@@ -31,9 +31,13 @@ test('blk-031 样板是带 score、player 和 3 个可收集苹果的 Stage 正�
   const player = body.scene.sprites.find((sprite) => sprite.id === 'player')
   const apples = body.scene.sprites.filter((sprite) => sprite.asset === 'apple')
   assert.ok(player, '舞台上要有 player')
+  assert.equal(player.direction, 90, '小猫默认向右，步数改成负数即可向左')
   assert.equal(apples.length, 3)
   assert.ok(apples.every((apple) => apple.collectible), '每个苹果都只能收集一次')
+  assert.ok(apples.every((apple) => apple.direction === 180), '苹果默认朝下')
   assert.ok(apples.every((apple) => player.y > apple.y), 'player 要在底部，苹果在上面')
+  assert.deepEqual(body.scene.initial_scripts?.map((script) => script.target_sprite_id), ['apple', 'apple-2', 'apple-3'])
+  assert.ok(body.scene.initial_scripts?.every((script) => script.block.type === 'forever' && script.block.children?.[0]?.type === 'move_steps'))
   assert.deepEqual(body.success_check, {
     type: 'all',
     conditions: [
@@ -95,6 +99,29 @@ test('接苹果标准解在 forever 中分别碰撞 3 个苹果，score 到 3 �
   assert.ok(world.frame < 200, '标准解应该在 200 Tick 内完成')
 })
 
+test('苹果自动向下落，没接住时停在底部且不会重复计分', () => {
+  const program = compileStageProgram(body, [{
+    type: 'forever',
+    args: {},
+    children: [{ type: 'move_steps', args: { steps: -10 } }],
+  }])
+  const initial = createStageWorld(program)
+  const first = tick(initial)
+  assert.equal(first.sprites.find((sprite) => sprite.id === 'player')?.x, 150)
+  assert.deepEqual(
+    first.sprites.filter((sprite) => sprite.asset === 'apple').map((sprite) => sprite.y),
+    [254, 234, 214],
+  )
+
+  let world = first
+  for (let index = 0; index < 34; index += 1) world = tick(world)
+  assert.equal(world.sprites.find((sprite) => sprite.id === 'player')?.x, 0)
+  assert.ok(world.sprites.filter((sprite) => sprite.asset === 'apple').every((sprite) => sprite.y === 328 && sprite.visible))
+  assert.equal(world.variables.score, 0)
+  assert.ok(world.threads.filter((thread) => thread.id.startsWith('initial-')).every((thread) => thread.status === 'running'))
+  assert.equal(world.status, 'running')
+})
+
 test('直接改 score 不能绕过接苹果目标', () => {
   const program = compileStageProgram(body, [
     { type: 'change_variable', args: { variable_id: 'score', value: 3 } },
@@ -104,6 +131,7 @@ test('直接改 score 不能绕过接苹果目标', () => {
 
   assert.equal(world.variables.score, 3)
   assert.equal(world.completed, false)
-  assert.equal(world.status, 'finished')
+  assert.equal(world.status, 'running')
+  assert.equal(world.threads.find((thread) => thread.id === 'script-1')?.status, 'done')
   assert.ok(world.sprites.filter((sprite) => sprite.asset === 'apple').every((sprite) => sprite.visible))
 })

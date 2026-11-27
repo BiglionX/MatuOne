@@ -31,6 +31,36 @@ const manifest = JSON.parse(
 ) as { levels: ManifestLevel[] }
 const levelById = new Map(manifest.levels.map((level) => [level.levelId, level]))
 
+const APPLE_SAMPLE_FILE = 'supabase/migrations/20261126180000_blockly_stage_blk_031_apple_sample.sql'
+
+/** 直接用正式接苹果正文，避免浏览器测试依赖数据库迁移是否已经执行。 */
+function appleSampleBodyWithoutStory(): Record<string, unknown> {
+  const sql = readFileSync(APPLE_SAMPLE_FILE, 'utf8')
+  const matched = sql.match(/\$body\$([\s\S]*?)\$body\$::jsonb/)
+  if (!matched?.[1]) throw new Error('接苹果迁移缺少正文')
+  const body = JSON.parse(matched[1]) as Record<string, unknown>
+  delete body.intro_story
+  delete body.review
+  return body
+}
+
+const APPLE_SOLUTION: ManifestSolution[] = [{
+  type: 'forever',
+  args: {},
+  children: [
+    { type: 'move_steps', args: { steps: 10 } },
+    { type: 'if_touching', args: { target_sprite_id: 'apple' }, children: [{ type: 'change_variable', args: { variable_id: 'score', value: 1 } }] },
+    { type: 'if_touching', args: { target_sprite_id: 'apple-2' }, children: [{ type: 'change_variable', args: { variable_id: 'score', value: 1 } }] },
+    { type: 'if_touching', args: { target_sprite_id: 'apple-3' }, children: [{ type: 'change_variable', args: { variable_id: 'score', value: 1 } }] },
+  ],
+}]
+
+const APPLE_MISS_SOLUTION: ManifestSolution[] = [{
+  type: 'forever',
+  args: {},
+  children: [{ type: 'move_steps', args: { steps: -10 } }],
+}]
+
 /** 标准解转成初始积木时保留嵌套结构，避免把控制块的子块悄悄丢掉。 */
 function toInitialBlock(step: ManifestSolution, id: string): unknown {
   return {
@@ -92,20 +122,35 @@ async function stubLevel(
     review?: { question: string; answer: string; hint?: string }
     /** 保留 manifest 里生成器产出的绘本和复习卡。 */
     keepManifestStory?: boolean
+    /** 用指定正文替换 manifest 正文，例如接苹果 Stage 样板。 */
+    bodyOverride?: Record<string, unknown>
+    /** bodyOverride 场景下使用的标准解。 */
+    solution?: ManifestSolution[]
   } = {},
 ): Promise<void> {
-  const level = levelById.get(levelId)
+  const fallbackLevel: ManifestLevel = {
+    levelId,
+    title: '接苹果',
+    goal: '左右移动小猫，接住 3 个下落的苹果',
+    solution: [],
+    body: { workspace: { initial_blocks: [] } },
+    sortOrder: 161,
+  }
+  const level = levelById.get(levelId) ?? (options.bodyOverride ? fallbackLevel : undefined)
   if (!level) throw new Error(`manifest 里没有 ${levelId}`)
   // 标准解转成工作区初始积木，省得在浏览器里一块块拖。
+  const sourceBody = (options.bodyOverride ?? level.body) as Record<string, unknown>
+  const sourceSolution = options.solution ?? level.solution
+  const sourceWorkspace = (sourceBody.workspace ?? {}) as Record<string, unknown>
   const withSolution = options.withSolution
     ? {
-        ...level.body,
+        ...sourceBody,
         workspace: {
-          ...level.body.workspace,
-          initial_blocks: level.solution.map((step, index) => toInitialBlock(step, `sol-${index + 1}`)),
+          ...sourceWorkspace,
+          initial_blocks: sourceSolution.map((step, index) => toInitialBlock(step, `sol-${index + 1}`)),
         },
       }
-    : level.body
+    : sourceBody
   // stripFocus 模拟「正文没写 focus」的旧关卡，用来单独验证兜底推断；
   // 否则这组断言会随迁移执行与否来回变，迁移一跑就红。
   // initialHintText 覆盖第一条提示的文案，和 stripFocus 相互独立：
@@ -587,6 +632,122 @@ test.describe('低龄化界面', () => {
     await expect(page.locator('svg.blocklySvg g.blocklyDraggable')).toHaveCount(2)
     await page.getByRole('button', { name: '运行', exact: true }).click()
     await expect(page.locator('#completion-title')).toBeVisible({ timeout: 30_000 })
+  })
+
+  test('工作区随视口撑满，分类、变量和控件低龄化', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-161', { bodyOverride: appleSampleBodyWithoutStory() })
+    await openLesson(page, 'blk-161')
+
+    await expect(page.locator('.blocklyToolboxCategoryIcon')).toHaveText(['🏃', '🏷️', '🔁'])
+    await expect(page.locator('.blocklyToolboxCategoryIcon').nth(0)).toBeVisible()
+    await expect(page.locator('.blocklyToolboxCategoryIcon').nth(1)).toBeVisible()
+    await expect(page.locator('.blocklyToolboxCategoryIcon').nth(2)).toBeVisible()
+    await expect(page.getByLabel('本关变量')).toContainText('⭐ 得分：0')
+    await expect(page.getByLabel('舞台计分板')).toContainText('⭐ 得分：0')
+    await expect(page.getByLabel('新变量名')).toHaveCount(0)
+    await expect(page.getByPlaceholder('输入变量名')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '创建变量' })).toHaveCount(0)
+
+    const measure = () => page.evaluate(() => {
+      const root = document.querySelector<HTMLElement>('.blockly-workspace')
+      const host = document.querySelector<HTMLElement>('[data-blockly-host]')
+      const injection = host?.querySelector<HTMLElement>('.injectionDiv')
+      const toolbox = document.querySelector<HTMLElement>('.blocklyToolbox')
+      const stage = document.querySelector<HTMLElement>('.matu-stage')
+      const labels = Array.from(document.querySelectorAll<HTMLElement>('.blocklyToolboxCategoryLabel'))
+      const controls = Array.from(document.querySelectorAll<SVGElement>('.blocklyZoom, .blocklyTrash'))
+      return {
+        workspaceHeight: root?.getBoundingClientRect().height ?? 0,
+        hostHeight: host?.getBoundingClientRect().height ?? 0,
+        injectionHeight: injection?.getBoundingClientRect().height ?? 0,
+        stageRadius: stage ? getComputedStyle(stage).borderRadius : '',
+        toolboxBackground: toolbox ? getComputedStyle(toolbox).backgroundColor : '',
+        writingModes: labels.map((label) => getComputedStyle(label).writingMode),
+        controlScales: controls.map((control) => getComputedStyle(control).scale),
+        controlTransforms: controls.map((control) => getComputedStyle(control).transform),
+      }
+    })
+
+    const first = await measure()
+    console.log('layout-probe', JSON.stringify(first))
+    console.log('icon-probe', JSON.stringify(await page.locator('.blocklyToolboxCategoryIcon').evaluateAll((icons) => icons.map((icon) => ({
+      text: icon.textContent,
+      color: getComputedStyle(icon).color,
+      display: getComputedStyle(icon).display,
+      fontSize: getComputedStyle(icon).fontSize,
+      backgroundImage: getComputedStyle(icon).backgroundImage,
+      rect: icon.getBoundingClientRect().toJSON(),
+    })))))
+    expect(first.workspaceHeight).toBeGreaterThan(500)
+    expect(first.hostHeight).toBeGreaterThan(450)
+    expect(first.injectionHeight).toBeGreaterThan(450)
+    expect(first.stageRadius).toBe('12px')
+    expect(first.toolboxBackground).toBe('rgb(241, 245, 249)')
+    expect(first.writingModes.every((mode) => mode === 'horizontal-tb')).toBe(true)
+    // 三个缩放按钮加一个垃圾桶，一共四个 SVG 控件；首个按钮位于原点，transform 可以为 none。
+    expect(first.controlScales).toEqual(['0.6', '0.6', '0.6', '0.6'])
+    expect(first.controlTransforms.some((transform) => transform !== 'none')).toBe(true)
+
+    await page.setViewportSize({ width: 1440, height: 1080 })
+    await expect.poll(async () => (await measure()).workspaceHeight).toBeGreaterThan(first.workspaceHeight + 100)
+  })
+
+  test('苹果自动落到底部，小猫能向左移动且不会误加分', async ({ page }) => {
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-161', {
+      bodyOverride: appleSampleBodyWithoutStory(),
+      withSolution: true,
+      solution: APPLE_MISS_SOLUTION,
+    })
+    await openLesson(page, 'blk-161')
+
+    const positions = () => page.evaluate(() => ({
+      playerLeft: parseFloat((document.querySelector<HTMLElement>('.matu-stage-sprite[title="player"]')?.style.left ?? '0')),
+      appleTop: parseFloat((document.querySelector<HTMLElement>('.matu-stage-sprite[title="apple-3"]')?.style.top ?? '0')),
+    }))
+    const initial = await positions()
+    expect(initial.playerLeft).toBeGreaterThan(30)
+    expect(initial.appleTop).toBeLessThan(70)
+
+    await page.getByRole('button', { name: '运行', exact: true }).click()
+    await expect.poll(async () => (await positions()).playerLeft).toBeLessThan(initial.playerLeft - 10)
+    await expect.poll(async () => (await positions()).appleTop).toBeGreaterThan(90)
+    await expect(page.getByLabel('本关变量')).toContainText('⭐ 得分：0')
+    await expect(page.getByLabel('舞台计分板')).toContainText('⭐ 得分：0')
+    await expect(page.locator('.matu-stage-sprite[title="apple-3"]')).toBeVisible()
+    await expect(page.locator('#completion-title')).toHaveCount(0)
+
+    await page.getByRole('button', { name: '停止', exact: true }).click()
+    await expect(page.locator('.matu-stage-status')).toHaveText('已停止')
+  })
+
+  test('小猫向右接住 3 个苹果，变量徽章和舞台计分板同步加分', async ({ page }) => {
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-161', {
+      bodyOverride: appleSampleBodyWithoutStory(),
+      withSolution: true,
+      solution: APPLE_SOLUTION,
+    })
+    await openLesson(page, 'blk-161')
+
+    // Blockly 会把三个选项的公共前缀「苹果」拆成独立文本节点，比较时去掉布局空白。
+    const workspaceText = (await page.locator('[data-blockly-host]').evaluate((element) => element.textContent ?? '')).replace(/\s+/g, '')
+    expect(workspaceText).toContain('苹果1')
+    expect(workspaceText).toContain('苹果2')
+    expect(workspaceText).toContain('苹果3')
+    const initialLeft = await page.locator('.matu-stage-sprite[title="player"]').evaluate((element) => parseFloat((element as HTMLElement).style.left))
+
+    await page.getByRole('button', { name: '运行', exact: true }).click()
+    await expect(page.getByLabel('舞台计分板')).toContainText('⭐ 得分：3', { timeout: 30_000 })
+    await expect(page.getByLabel('本关变量')).toContainText('⭐ 得分：3')
+    await expect(page.locator('#completion-title')).toBeVisible()
+    const finalLeft = await page.locator('.matu-stage-sprite[title="player"]').evaluate((element) => parseFloat((element as HTMLElement).style.left))
+    expect(finalLeft).toBeGreaterThan(initialLeft)
+    await expect(page.locator('.matu-stage-sprite[title="apple"]')).toHaveCount(0)
+    await expect(page.locator('.matu-stage-sprite[title="apple-2"]')).toHaveCount(0)
+    await expect(page.locator('.matu-stage-sprite[title="apple-3"]')).toHaveCount(0)
   })
 
   test('移动端视口不横向溢出，计数和运行按钮仍可见', async ({ page }) => {

@@ -15,8 +15,6 @@ export interface BlocklyWorkspaceHandle {
   getExecutionTree(): BlockExecutionNode[]
   /** 工作区积木总数（含嵌套子块），和 body.workspace.max_blocks 是同一个口径。 */
   getBlockCount(): number
-  /** Stage 工作区当前变量定义；新建变量只保存在本次工作区。 */
-  getVariables(): ModuleStageVariable[]
   reset(): void
 }
 
@@ -24,9 +22,10 @@ interface BlocklyWorkspaceProps {
   availableBlocks: ModuleAvailableBlock[]
   initialBlocks: ModuleBlockInstance[]
   maxBlocks: number
-  /** Stage 关卡传入场景变量；Grid 不传，因此不会显示创建变量 UI。 */
+  /** Stage 关卡传入课程固定的场景变量；Grid 不传，因此不显示变量徽章。 */
   initialVariables?: readonly ModuleStageVariable[]
-  onVariablesChange?: (variables: ModuleStageVariable[]) => void
+  /** Stage 运行时的实时变量值；缺省时显示课程初始值。 */
+  variableValues?: Readonly<Record<string, ModuleScalar>>
   onReadyChange?: (ready: boolean) => void
   /** 积木数量变化时回调；studentChanged 为 false 表示只同步初始/重置后的数量。 */
   onBlocksChange?: (blockCount: number, studentChanged?: boolean) => void
@@ -59,6 +58,26 @@ const KIND_COLORS: Record<ModuleBlockKind, string> = {
   action: '#34D399',
   sensor: '#38BDF8',
   control: '#FBBF24',
+}
+
+/** 分类栏使用孩子认识的图标，未知分类退回一块积木。 */
+const CATEGORY_ICONS: Record<string, string> = {
+  动作: '🏃',
+  变量: '🏷️',
+  控制: '🔁',
+  传感器: '👀',
+  事件: '⚡',
+}
+
+function variableBadgeLabel(variable: ModuleStageVariable): string {
+  if (variable.id === 'score' || variable.name === 'score') return '⭐ 得分'
+  if (variable.id === 'apple_count' || variable.name === 'apple_count') return '🍎 苹果'
+  return variable.name
+}
+
+function displayVariableValue(value: string | number | boolean): string {
+  if (typeof value === 'boolean') return value ? '真' : '假'
+  return String(value)
 }
 
 /**
@@ -331,7 +350,7 @@ function applyBlockHighlight(workspace: WorkspaceSvg, type: string | null) {
 
 /** Blockly 只在组件挂载后动态导入；类型导入会在构建时擦除。 */
 export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorkspaceProps>(function BlocklyWorkspace(
-  { availableBlocks, initialBlocks, maxBlocks, initialVariables, onVariablesChange, onReadyChange, onBlocksChange, highlightBlockType, focusWorkspace },
+  { availableBlocks, initialBlocks, maxBlocks, initialVariables, variableValues, onReadyChange, onBlocksChange, highlightBlockType, focusWorkspace },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -341,39 +360,14 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
   const suppressRef = useRef(false)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
-  const [variables, setVariables] = useState<ModuleStageVariable[]>(() => [...(initialVariables ?? [])])
-  const variablesRef = useRef(variables)
-  const [variableName, setVariableName] = useState('')
-  const [variableError, setVariableError] = useState('')
+  const variablesRef = useRef<readonly ModuleStageVariable[]>(initialVariables ?? [])
 
   useEffect(() => {
-    const next = [...(initialVariables ?? [])]
+    const next = initialVariables ?? []
     variablesRef.current = next
-    setVariables(next)
-    setVariableName('')
-    setVariableError('')
     const workspace = workspaceRef.current
     if (workspace) workspaceVariableDefinitions.set(workspace, next)
   }, [initialVariables])
-
-  const createVariable = () => {
-    const name = variableName.trim()
-    if (!name) return
-    if (variablesRef.current.some((variable) => variable.name === name)) {
-      setVariableError('已经有同名变量了，换一个名字吧。')
-      return
-    }
-    const suffix = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${variablesRef.current.length + 1}`
-    const variable: ModuleStageVariable = { id: `var-${suffix}`, name, initial: 0, scope: 'global' }
-    const next = [...variablesRef.current, variable]
-    variablesRef.current = next
-    setVariables(next)
-    setVariableName('')
-    setVariableError('')
-    const workspace = workspaceRef.current
-    if (workspace) workspaceVariableDefinitions.set(workspace, next)
-    onVariablesChange?.(next)
-  }
 
   useImperativeHandle(ref, () => ({
     getExecutionTree() {
@@ -383,9 +377,6 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
     },
     getBlockCount() {
       return workspaceRef.current?.getAllBlocks(false).length ?? 0
-    },
-    getVariables() {
-      return variablesRef.current.map((variable) => ({ ...variable }))
     },
     reset() {
       const workspace = workspaceRef.current
@@ -451,6 +442,15 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
         })
         workspaceRef.current = workspace
         workspaceVariableDefinitions.set(workspace, variablesRef.current)
+        // 图标写进 Blockly 原生的分类图标节点，不改分类名和键盘可访问名称。
+        for (const item of workspace.getToolbox()?.getToolboxItems() ?? []) {
+          const category = item.getDiv()
+          const label = category?.querySelector('.blocklyToolboxCategoryLabel')
+          const icon = category?.querySelector('.blocklyToolboxCategoryIcon')
+          if (!icon) continue
+          icon.textContent = CATEGORY_ICONS[label?.textContent ?? ''] ?? '🧩'
+          icon.setAttribute('aria-hidden', 'true')
+        }
         // Blockly 13 的焦点管理在拖拽开始时会把焦点移到拖拽层，toolbox 随之失焦，
         // Blockly 就把 flyout 自动收起来。结果是孩子拖走一块积木后工具箱空了，
         // 必须再点一次分类才能接着拖——托辅班的孩子多半直接放弃。
@@ -481,48 +481,26 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
 
   return (
     <div
-      className={`blockly-workspace relative min-h-[360px] overflow-hidden rounded-3xl border bg-white ${
+      className={`blockly-workspace relative flex min-h-[360px] flex-1 flex-col overflow-hidden rounded-xl border bg-white ${
         focusWorkspace ? 'matu-focus-ring border-amber-400' : 'border-slate-200'
       }`}
     >
       <style>{BLOCKLY_CURSOR_CSS}</style>
       {initialVariables !== undefined ? (
-        <div className="space-y-2 border-b border-emerald-100 bg-emerald-50/70 px-3 py-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-emerald-800">全局变量</span>
-            {variables.map((variable) => (
-              <span key={variable.id} className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-sm">
-                {variable.name} = {String(variable.initial)}
-              </span>
-            ))}
-            <form
-              className="ml-auto flex items-center gap-2"
-              onSubmit={(event) => {
-                event.preventDefault()
-                createVariable()
-              }}
+        <div className="flex flex-wrap items-center gap-2 border-b border-emerald-100 bg-emerald-50/70 px-3 py-2" aria-label="本关变量">
+          <span className="text-xs font-semibold text-emerald-800">🏷️ 本关记录</span>
+          {initialVariables.map((variable) => (
+            <span
+              key={variable.id}
+              className="matu-variable-badge inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-xs font-bold text-emerald-700 shadow-sm"
             >
-              <input
-                aria-label="新变量名"
-                className="w-28 rounded-field border border-emerald-200 bg-white px-2.5 py-1.5 text-sm text-ink outline-none focus:border-emerald-500"
-                value={variableName}
-                onChange={(event) => setVariableName(event.target.value)}
-                placeholder="输入变量名"
-                maxLength={12}
-              />
-              <button
-                type="submit"
-                className="btn-secondary px-3 py-1.5 text-sm"
-                disabled={!ready || !variableName.trim()}
-              >
-                创建变量
-              </button>
-            </form>
-          </div>
-          {variableError ? <p className="text-xs text-red-700" role="alert">{variableError}</p> : null}
+              <span>{variableBadgeLabel(variable)}</span>
+              <span className="tabular-nums">：{displayVariableValue(variableValues?.[variable.id] ?? variable.initial)}</span>
+            </span>
+          ))}
         </div>
       ) : null}
-      <div ref={hostRef} className="h-[360px] w-full" />
+      <div ref={hostRef} data-blockly-host className="min-h-0 w-full flex-1" />
       {!ready && !error ? (
         <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-sm text-slate-500" role="status">
           正在准备积木工作区…

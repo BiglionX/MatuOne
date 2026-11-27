@@ -146,12 +146,12 @@ export function GridStage({ scene, actorState, animationDurationMs, showTrail = 
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-3xl border border-emerald-900/10 bg-emerald-50 p-3"
+      className="relative w-full overflow-hidden rounded-xl border border-emerald-900/10 bg-emerald-50 p-3"
       role="img"
       aria-label={`${scene.width} 列 ${scene.height} 行网格，角色位于第 ${actorState.x + 1} 列第 ${actorState.y + 1} 行`}
     >
       <div
-        className="grid w-full overflow-hidden rounded-2xl"
+        className="grid w-full overflow-hidden rounded-lg"
         style={{
           gridTemplateColumns: `repeat(${scene.width}, minmax(0, 1fr))`,
           gridTemplateRows: `repeat(${scene.height}, minmax(0, 1fr))`,

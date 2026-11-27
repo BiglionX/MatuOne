@@ -295,6 +295,78 @@
   border-top: 10px solid rgb(var(--brand-soft-rgb));
 }
 
+/* 低龄化工具箱：浅色分类栏、横排文字和原生分类图标节点。 */
+.blockly-workspace .injectionDiv {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.blockly-workspace .blocklyToolbox {
+  width: 88px !important;
+  min-width: 88px !important;
+  border-right: 1px solid #e2e8f0;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+}
+
+.blockly-workspace .blocklyToolboxCategoryGroup {
+  min-width: 88px;
+}
+
+.blockly-workspace .blocklyToolboxCategory {
+  height: auto !important;
+  min-height: 44px;
+  padding: 4px 6px 4px 8px !important;
+  box-sizing: border-box;
+}
+
+.blockly-workspace .blocklyTreeRowContentContainer {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 6px;
+}
+
+.blockly-workspace .blocklyToolboxCategoryIcon {
+  display: inline-flex !important;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+  visibility: visible !important;
+  /* Blockly 默认给分类图标铺了精灵图，必须去掉，否则会盖住 Emoji。 */
+  background-image: none !important;
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.blockly-workspace .blocklyToolboxCategoryLabel {
+  writing-mode: horizontal-tb !important;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 24px;
+}
+
+.blockly-workspace .blocklyToolboxSelected {
+  background: #e0f2fe !important;
+  color: #0f4c5c !important;
+}
+
+.blockly-workspace .blocklyFlyout {
+  background: #f8fafc;
+}
+
+/* 用独立 scale 属性缩小 SVG 控件，保留 Blockly 写在 transform 上的定位。 */
+.blockly-workspace .blocklyZoom,
+.blockly-workspace .blocklyTrash {
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0.6;
+}
+
 /* 自由舞台：逻辑坐标由解释器决定，组件只按百分比摆放。 */
 .matu-stage-sprite {
   position: absolute;
@@ -313,12 +385,16 @@
 .matu-stage-variables {
   position: absolute;
   z-index: 2;
-  top: 12px;
-  right: 12px;
-  min-width: 132px;
-  padding: 10px 12px;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  max-width: calc(100% - 20px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px;
   border: 1px solid rgb(255 255 255 / 0.72);
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgb(255 255 255 / 0.88);
   box-shadow: 0 6px 18px rgb(15 23 42 / 0.12);
   color: #334155;
@@ -326,6 +402,29 @@
   line-height: 1.5;
   pointer-events: none;
   backdrop-filter: blur(6px);
+}
+
+.matu-stage-variable-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid #d1fae5;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.matu-stage-score {
+  min-height: 36px;
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 15px;
 }
 
 .matu-stage-status {

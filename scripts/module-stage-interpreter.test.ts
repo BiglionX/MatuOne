@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { parseModuleLevelBody, type ModuleStageVariable } from '../src/modules/curriculum/moduleLevelBody.ts'
+import { parseModuleLevelBody, type ModuleStageInitialScript, type ModuleStageVariable } from '../src/modules/curriculum/moduleLevelBody.ts'
 import type { BlockExecutionNode } from '../src/modules/curriculum/moduleLevelInterpreter.ts'
 import {
   compileStageProgram,
@@ -14,6 +14,7 @@ function body(options: {
   playerY?: number
   appleX?: number
   appleY?: number
+  appleDirection?: number
   direction?: number
   scoreTarget?: number
   stopOnSuccess?: boolean
@@ -21,6 +22,7 @@ function body(options: {
   maxBlocks?: number
   appleCollectible?: boolean
   variables?: ModuleStageVariable[]
+  initialScripts?: ModuleStageInitialScript[]
 } = {}) {
   return parseModuleLevelBody({
     schema_version: 2,
@@ -30,11 +32,12 @@ function body(options: {
       stage_size: { width: 480, height: 360 },
       sprites: [
         { id: 'player', asset: 'player', x: options.playerX ?? 100, y: options.playerY ?? 300, direction: options.direction ?? 90, size: 100 },
-        { id: 'apple', asset: 'apple', x: options.appleX ?? 200, y: options.appleY ?? 300, size: 100, ...(options.appleCollectible ? { collectible: true } : {}) },
+        { id: 'apple', asset: 'apple', x: options.appleX ?? 200, y: options.appleY ?? 300, direction: options.appleDirection ?? 90, size: 100, ...(options.appleCollectible ? { collectible: true } : {}) },
       ],
       clones: [],
       variables: options.variables ?? [{ id: 'score', name: 'score', initial: 0, scope: 'global' }],
       broadcasts: [],
+      ...(options.initialScripts ? { initial_scripts: options.initialScripts } : {}),
     },
     available_blocks: [
       { type: 'move_steps', label: '移动', category: '动作', kind: 'action', args: [{ name: 'steps', label: '步数', type: 'number', default: 10 }] },
@@ -217,6 +220,61 @@ test('两个顶层脚本每 Tick 并发推进，且顺序稳定', () => {
   assert.equal(second.variables.a, 2)
   assert.equal(second.variables.b, 2)
   assert.equal(second.threads.length, 2)
+})
+
+test('场景初始脚本可控制不同精灵，且不占学生积木上限', () => {
+  const lesson = body({
+    maxBlocks: 1,
+    appleY: 100,
+    appleDirection: 180,
+    initialScripts: [{
+      id: 'apple-fall',
+      target_sprite_id: 'apple',
+      block: {
+        id: 'initial-forever',
+        type: 'forever',
+        args: {},
+        children: [{ id: 'initial-move', type: 'move_steps', args: { steps: 10 } }],
+      },
+    }],
+  })
+  const program = compileStageProgram(lesson, [move(10)])
+  assert.deepEqual(program.scripts.map((script) => script.targetSpriteId), ['player', 'apple'])
+
+  let world = createStageWorld(program)
+  world = tick(world)
+  assert.equal(world.sprites.find((sprite) => sprite.id === 'player')?.x, 110)
+  assert.equal(world.sprites.find((sprite) => sprite.id === 'apple')?.y, 110)
+
+  world = tick(world)
+  assert.equal(world.sprites.find((sprite) => sprite.id === 'player')?.x, 110)
+  assert.equal(world.sprites.find((sprite) => sprite.id === 'apple')?.y, 120)
+  assert.equal(world.status, 'running')
+})
+
+test('苹果初始脚本向下移动，掉到底部后被边界挡住并正常结束', () => {
+  const lesson = body({
+    appleY: 300,
+    appleDirection: 180,
+    initialScripts: [{
+      id: 'apple-fall',
+      target_sprite_id: 'apple',
+      block: {
+        id: 'initial-repeat',
+        type: 'repeat',
+        args: { times: 20 },
+        children: [{ id: 'initial-move', type: 'move_steps', args: { steps: 10 } }],
+      },
+    }],
+  })
+  const program = compileStageProgram(lesson, [])
+  let world = createStageWorld(program)
+  for (let index = 0; index < 3; index += 1) world = tick(world)
+  assert.equal(world.sprites.find((sprite) => sprite.id === 'apple')?.y, 328)
+
+  for (let index = 0; index < 18; index += 1) world = tick(world)
+  assert.equal(world.status, 'finished')
+  assert.ok(world.threads.every((thread) => thread.status === 'done'))
 })
 
 test('空 forever 连续运行 1000 Tick 不阻塞且正常返回', () => {

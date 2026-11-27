@@ -279,7 +279,7 @@ export function BlocklyLesson() {
       }
 
       if (isStage) {
-        const program = compileStageProgram(body, tree, workspaceRef.current?.getVariables() ?? [])
+        const program = compileStageProgram(body, tree)
         stageRunActiveRef.current = true
         stageSaveStartedRef.current = false
         startStage(program)
@@ -389,8 +389,8 @@ export function BlocklyLesson() {
     return (
       <div className="student-shell flex min-h-screen items-center justify-center bg-canvas" role="status" aria-label="正在打开这一关">
         <div className="grid w-full max-w-7xl gap-6 px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:px-8">
-          <Skeleton className="h-80 rounded-3xl" />
-          <Skeleton className="h-80 rounded-3xl" />
+          <Skeleton className="h-80 rounded-xl" />
+          <Skeleton className="h-80 rounded-xl" />
         </div>
       </div>
     )
@@ -411,7 +411,7 @@ export function BlocklyLesson() {
   }
 
   return (
-    <div className="student-shell flex min-h-screen flex-col bg-canvas">
+    <div className="student-shell flex min-h-screen flex-col bg-canvas lg:h-dvh lg:overflow-hidden">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex w-full max-w-7xl items-center gap-4 p-6 lg:px-8">
           <Link to={MAP_HREF} className="btn-ghost px-2" aria-label="返回课程地图">←</Link>
@@ -433,10 +433,10 @@ export function BlocklyLesson() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 p-6 pb-28 lg:px-8">
-        {/* 左边地图窄一点，右边工作区宽一点——积木区被挤窄了就没法拖了。 */}
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-          <section className="card p-5 sm:p-6" aria-labelledby="stage-title">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col p-4 pb-24 sm:p-6 lg:min-h-0 lg:overflow-hidden lg:px-8 lg:pb-24">
+        {/* 左边舞台窄一点，右边工作区宽一点；桌面端用 Flex 撑满视口剩余高度。 */}
+        <div className="flex min-h-0 flex-1 flex-col gap-6 lg:h-full lg:min-h-0 lg:flex-row lg:items-stretch">
+          <section className="card min-w-0 rounded-xl p-5 sm:p-6 lg:min-h-0 lg:w-5/12 lg:overflow-y-auto" aria-labelledby="stage-title">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-brand-strong">{isStage ? '看角色动起来' : '看角色走一走'}</p>
@@ -444,7 +444,7 @@ export function BlocklyLesson() {
               </div>
             </div>
             {body.scene.type === 'stage' ? (
-              stageSnapshot ? <StageStage scene={body.scene} snapshot={stageSnapshot} /> : null
+              stageSnapshot ? <StageStage scene={body.scene} snapshot={stageSnapshot} isRunning={stageIsRunning} /> : null
             ) : actorState ? (
               <GridStage
                 scene={gridSceneOf(body)}
@@ -478,7 +478,7 @@ export function BlocklyLesson() {
             )}
           </section>
 
-          <section className="space-y-4" aria-labelledby="workspace-title">
+          <section className="flex min-w-0 flex-1 flex-col gap-3 lg:min-h-0 lg:w-7/12" aria-labelledby="workspace-title">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-brand-strong">动手试一试</p>
@@ -493,18 +493,21 @@ export function BlocklyLesson() {
                 ) : null}
               </div>
             </div>
-            <BlocklyWorkspace
-              ref={workspaceRef}
-              availableBlocks={body.available_blocks}
-              initialBlocks={body.workspace.initial_blocks}
-              maxBlocks={body.workspace.max_blocks}
-              initialVariables={body.scene.type === 'stage' ? body.scene.variables : undefined}
-              onReadyChange={handleWorkspaceReady}
-              onBlocksChange={handleBlocksChange}
-              highlightBlockType={focus?.target === 'block' ? focus.blockType ?? null : null}
-              focusWorkspace={focus?.target === 'workspace'}
-            />
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex h-[60vh] min-h-[420px] flex-col lg:h-auto lg:min-h-0 lg:flex-1">
+              <BlocklyWorkspace
+                ref={workspaceRef}
+                availableBlocks={body.available_blocks}
+                initialBlocks={body.workspace.initial_blocks}
+                maxBlocks={body.workspace.max_blocks}
+                initialVariables={body.scene.type === 'stage' ? body.scene.variables : undefined}
+                variableValues={isStage && stageSnapshot ? stageSnapshot.variables : undefined}
+                onReadyChange={handleWorkspaceReady}
+                onBlocksChange={handleBlocksChange}
+                highlightBlockType={focus?.target === 'block' ? focus.blockType ?? null : null}
+                focusWorkspace={focus?.target === 'workspace'}
+              />
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-3">
               <button
                 type="button"
                 className={`btn-primary px-8 text-lg disabled:cursor-not-allowed disabled:opacity-50 ${

@@ -183,6 +183,13 @@ export interface ModuleStageVariable {
   scope?: 'global' | 'local'
 }
 
+/** 课程自带的隐藏脚本；运行时不占学生工作区的积木名额。 */
+export interface ModuleStageInitialScript {
+  id: string
+  target_sprite_id: string
+  block: ModuleBlockInstance
+}
+
 /** 舞台场景。二年级上开始用，由 Stage 组件渲染和解释器运行。 */
 export interface ModuleStageScene {
   type: 'stage'
@@ -192,6 +199,7 @@ export interface ModuleStageScene {
   clones: ModuleStageClone[]
   variables: ModuleStageVariable[]
   broadcasts: string[]
+  initial_scripts?: ModuleStageInitialScript[]
 }
 
 export type ModuleScene = ModuleGridScene | ModuleStageScene
@@ -445,7 +453,7 @@ function parseStageCoordinate(value: unknown, path: string): number | 'random' {
   return number(value, path)
 }
 
-function parseStageScene(value: unknown, path: string): ModuleStageScene {
+function parseStageScene(value: unknown, path: string, availableBlocks: ModuleAvailableBlock[]): ModuleStageScene {
   const row = record(value, path)
   const sizeRow = record(row.stage_size, `${path}.stage_size`)
   const stageSize = {
@@ -519,6 +527,23 @@ function parseStageScene(value: unknown, path: string): ModuleStageScene {
   const broadcasts = array(row.broadcasts, `${path}.broadcasts`).map((item, index) =>
     string(item, `${path}.broadcasts[${index}]`),
   )
+  const initialScriptIds = new Set<string>()
+  const initialScripts = row.initial_scripts === undefined
+    ? undefined
+    : array(row.initial_scripts, `${path}.initial_scripts`).map((item, index) => {
+        const itemPath = `${path}.initial_scripts[${index}]`
+        const scriptRow = record(item, itemPath)
+        const id = string(scriptRow.id, `${itemPath}.id`)
+        if (initialScriptIds.has(id)) fail(`${itemPath}.id`, `初始脚本 ID ${id} 重复`)
+        initialScriptIds.add(id)
+        const targetSpriteId = string(scriptRow.target_sprite_id, `${itemPath}.target_sprite_id`)
+        if (!spriteIds.has(targetSpriteId)) fail(`${itemPath}.target_sprite_id`, `精灵 ${targetSpriteId} 不存在`)
+        return {
+          id,
+          target_sprite_id: targetSpriteId,
+          block: parseBlockInstance(scriptRow.block, `${itemPath}.block`, availableBlocks),
+        }
+      })
   return {
     type: 'stage',
     backdrop: string(row.backdrop, `${path}.backdrop`),
@@ -527,12 +552,18 @@ function parseStageScene(value: unknown, path: string): ModuleStageScene {
     clones,
     variables,
     broadcasts,
+    ...(initialScripts ? { initial_scripts: initialScripts } : {}),
   }
 }
 
-function parseScene(value: unknown, sceneType: ModuleSceneType, path = 'scene'): ModuleScene {
+function parseScene(
+  value: unknown,
+  sceneType: ModuleSceneType,
+  availableBlocks: ModuleAvailableBlock[],
+  path = 'scene',
+): ModuleScene {
   if (sceneType === 'grid') return parseGridScene(value, path)
-  return parseStageScene(value, path)
+  return parseStageScene(value, path, availableBlocks)
 }
 
 function parseSuccessCheck(value: unknown, scene: ModuleScene, path = 'success_check'): ModuleSuccessCheck {
@@ -750,7 +781,7 @@ export function parseModuleLevelBody(raw: unknown): ModuleLevelBody {
   } else {
     sceneType = string(row.scene_type, 'scene_type') as ModuleSceneType
     if (sceneType !== 'grid' && sceneType !== 'stage') fail('scene_type', '必须是 grid 或 stage')
-    scene = parseScene(row.scene, sceneType)
+    scene = parseScene(row.scene, sceneType, availableBlocks)
   }
 
   const body: ModuleLevelBody = {

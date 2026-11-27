@@ -11,7 +11,7 @@
 update public.module_level
 set
   title = '接苹果',
-  goal = '用“无限循环”和“如果碰到”让角色接苹果，并把 score 增加到 3',
+  goal = '用“无限循环”和“如果碰到”让小猫左右移动，接住 3 个下落的苹果，并把 score 增加到 3',
   term_id = 'blk-g2-fall',
   unit_id = 'blk-g2-fall-u1',
   scene_type = 'stage',
@@ -27,16 +27,48 @@ set
       "backdrop": "sky",
       "stage_size": { "width": 480, "height": 360 },
       "sprites": [
-        { "id": "player", "asset": "player", "x": 224, "y": 300, "direction": 0, "size": 100 },
-        { "id": "apple", "asset": "apple", "x": 224, "y": 250, "direction": 90, "size": 100, "collectible": true },
-        { "id": "apple-2", "asset": "apple", "x": 224, "y": 170, "direction": 90, "size": 100, "collectible": true },
-        { "id": "apple-3", "asset": "apple", "x": 224, "y": 90, "direction": 90, "size": 100, "collectible": true }
+        { "id": "player", "asset": "player", "x": 160, "y": 300, "direction": 90, "size": 100 },
+        { "id": "apple", "asset": "apple", "x": 210, "y": 250, "direction": 180, "size": 100, "collectible": true },
+        { "id": "apple-2", "asset": "apple", "x": 250, "y": 230, "direction": 180, "size": 100, "collectible": true },
+        { "id": "apple-3", "asset": "apple", "x": 290, "y": 210, "direction": 180, "size": 100, "collectible": true }
       ],
       "clones": [],
       "variables": [
         { "id": "score", "name": "score", "initial": 0, "scope": "global" }
       ],
-      "broadcasts": []
+      "broadcasts": [],
+      "initial_scripts": [
+        {
+          "id": "apple-fall",
+          "target_sprite_id": "apple",
+          "block": {
+            "id": "apple-fall-forever",
+            "type": "forever",
+            "args": {},
+            "children": [{ "id": "apple-fall-move", "type": "move_steps", "args": { "steps": 4 } }]
+          }
+        },
+        {
+          "id": "apple-2-fall",
+          "target_sprite_id": "apple-2",
+          "block": {
+            "id": "apple-2-fall-forever",
+            "type": "forever",
+            "args": {},
+            "children": [{ "id": "apple-2-fall-move", "type": "move_steps", "args": { "steps": 4 } }]
+          }
+        },
+        {
+          "id": "apple-3-fall",
+          "target_sprite_id": "apple-3",
+          "block": {
+            "id": "apple-3-fall-forever",
+            "type": "forever",
+            "args": {},
+            "children": [{ "id": "apple-3-fall-move", "type": "move_steps", "args": { "steps": 4 } }]
+          }
+        }
+      ]
     },
     "available_blocks": [
       {
@@ -93,12 +125,12 @@ set
     "hints": [
       {
         "trigger": "initial",
-        "text": "把“无限循环”放到工作区，里面先放“移动”，再分别为 3 个苹果放“如果碰到”和“变量增加”。",
+        "text": "把“无限循环”放到工作区，里面先放“移动”，再分别为 3 个苹果放“如果碰到”和“变量增加”。苹果会自己下落，移动步数改成 -10，小猫就会向左走。",
         "focus": { "target": "block", "blockType": "forever" }
       },
       {
         "trigger": "not_completed",
-        "text": "3 个苹果都要碰到，score 才会正好等于 3。检查每个“如果碰到”是否选了不同苹果，并让 score 每次增加 1。",
+        "text": "3 个苹果都要碰到，score 才会正好等于 3。检查每个“如果碰到”是否选了不同苹果，并让 score 每次增加 1。苹果落到底部后不会重新出现，可以点“重新开始”再试。",
         "focus": { "target": "block", "blockType": "if_touching" }
       },
       { "trigger": "idle", "text": "变量像一个小盒子，score 会记住接到的苹果数量。", "focus": { "target": "workspace" } }
@@ -108,7 +140,7 @@ set
         "type": "image_text",
         "image": "apple",
         "speaker": "小精灵",
-        "content": "欢迎来到自由舞台！舞台上有 3 个苹果，小猫咪在下面。今天我们要接住 3 个苹果。"
+        "content": "欢迎来到自由舞台！舞台上有 3 个苹果，小猫咪在下面。苹果会自己往下掉，今天我们要左右移动小猫，接住 3 个苹果。"
       },
       {
         "type": "image_text",
@@ -120,7 +152,7 @@ set
         "type": "image_text",
         "image": "block_if",
         "speaker": "小精灵",
-        "content": "每次移动后，用“如果碰到”分别检查 3 个苹果。真的碰到时，执行里面的“变量增加”，让 score 加 1，苹果也会消失。"
+        "content": "每次移动后，用“如果碰到”分别检查 3 个苹果。真的碰到时，执行里面的“变量增加”，让 score 加 1，苹果也会消失。移动步数是正数就向右，改成负数就向左。"
       },
       {
         "type": "image_text",

@@ -33,7 +33,7 @@ export interface StageSequence {
 
 export interface StageScript {
   id: string
-  /** 本轮所有顶层脚本默认控制场景里的第一个精灵。 */
+  /** 学生脚本默认控制第一个精灵；场景初始脚本可指定任意精灵。 */
   targetSpriteId: string | null
   root: StageSequence
 }
@@ -109,7 +109,8 @@ interface CompileContext {
   variableIds: Set<string>
   spriteIds: Set<string>
   targetSpriteId: string | null
-  maxBlocks: number
+  /** null 表示课程隐藏脚本，不受学生工作区积木上限约束。 */
+  maxBlocks: number | null
   blockCount: number
   visiting: Set<BlockExecutionNode>
 }
@@ -230,7 +231,7 @@ function compileChain(
     chainNodes.add(node)
     context.visiting.add(node)
     context.blockCount += 1
-    if (context.blockCount > context.maxBlocks) {
+    if (context.maxBlocks !== null && context.blockCount > context.maxBlocks) {
       throw new Error(`积木数量超过本关上限 ${context.maxBlocks}`)
     }
     if (!context.availableTypes.has(node.type)) {
@@ -265,12 +266,15 @@ export function compileStageProgram(
     }
   }
 
+  const availableTypes = new Set(body.available_blocks.map((definition) => definition.type))
+  const variableIds = new Set(variables.map((variable) => variable.id))
+  const spriteIds = new Set(scene.sprites.map((sprite) => sprite.id))
   let totalBlockCount = 0
   const scripts: StageScript[] = blocks.map((block, index) => {
     const context: CompileContext = {
-      availableTypes: new Set(body.available_blocks.map((definition) => definition.type)),
-      variableIds: new Set(variables.map((variable) => variable.id)),
-      spriteIds: new Set(scene.sprites.map((sprite) => sprite.id)),
+      availableTypes,
+      variableIds,
+      spriteIds,
       targetSpriteId,
       maxBlocks: body.workspace.max_blocks,
       blockCount: totalBlockCount,
@@ -284,6 +288,29 @@ export function compileStageProgram(
     totalBlockCount = context.blockCount
     return script
   })
+
+  for (const [index, initialScript] of (scene.initial_scripts ?? []).entries()) {
+    if (!spriteIds.has(initialScript.target_sprite_id)) {
+      throw new Error(`关卡 body 校验失败：初始脚本 ${initialScript.id} 的精灵 ${initialScript.target_sprite_id} 不存在`)
+    }
+    const context: CompileContext = {
+      availableTypes,
+      variableIds,
+      spriteIds,
+      targetSpriteId: initialScript.target_sprite_id,
+      maxBlocks: null,
+      blockCount: 0,
+      visiting: new Set(),
+    }
+    scripts.push({
+      id: `initial-${initialScript.id}`,
+      targetSpriteId: initialScript.target_sprite_id,
+      root: {
+        kind: 'sequence',
+        instructions: compileChain(initialScript.block, context, `scene.initial_scripts[${index}].block`, 0),
+      },
+    })
+  }
 
   return {
     scene,
