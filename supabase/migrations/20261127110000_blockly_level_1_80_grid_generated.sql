@@ -3678,7 +3678,39 @@ values
     "question": "上一关我们学了「数格子」，还记得怎么用吗？",
     "answer": "一格一步，数清楚格数就能一次走对。",
     "hint": "上一关是一条直路，走 16 格就到终点。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 2 块「前进」，再放 1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 2,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 2 块「前进」和1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 2 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 4
+        }
+      },
+      "fail_text": "前进积木应该是 4 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -3878,7 +3910,39 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 1 个弯，每段分别走 2、2 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 3 块「前进」，再放 1 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 3,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 3 块「前进」和1 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 2 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 5
+        }
+      },
+      "fail_text": "前进积木应该是 5 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -4089,7 +4153,39 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 1 个弯，每段分别走 3、2 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 3 块「前进」，再放 1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 3,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 3 块「前进」和1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 3 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 6
+        }
+      },
+      "fail_text": "前进积木应该是 6 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -4301,7 +4397,39 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 1 个弯，每段分别走 3、3 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 4 块「前进」，再放 1 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 4,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 4 块「前进」和1 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 3 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 7
+        }
+      },
+      "fail_text": "前进积木应该是 7 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'practice',
@@ -4525,7 +4653,61 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 1 个弯，每段分别走 4、3 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 3 块「前进」，再放 1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 3,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 3 块「前进」和1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 5 块「前进」，再放 1 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 5,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 5 块「前进」和1 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 3 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 8
+        }
+      },
+      "fail_text": "前进积木应该是 8 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'typing',
@@ -4754,7 +4936,61 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 2 个弯，每段分别走 3、2、3 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 4 块「前进」，再放 1 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 4,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 4 块「前进」和1 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 6 块「前进」，再放 1 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 6,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 6 块「前进」和1 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 4 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 10
+        }
+      },
+      "fail_text": "前进积木应该是 10 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -4998,7 +5234,61 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 2 个弯，每段分别走 4、2、4 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 4 块「前进」，再放 1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 4,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 4 块「前进」和1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 7 块「前进」，再放 1 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 7,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 7 块「前进」和1 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 4 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 11
+        }
+      },
+      "fail_text": "前进积木应该是 11 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -5261,7 +5551,61 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 2 个弯，每段分别走 4、3、4 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 5 块「前进」，再放 1 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 5,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 5 块「前进」和1 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 8 块「前进」，再放 1 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 8,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 8 块「前进」和1 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 5 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 13
+        }
+      },
+      "fail_text": "前进积木应该是 13 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -5485,7 +5829,62 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 2 个弯，每段分别走 5、3、5 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 3 块「前进」，再放 1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 3,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 3 块「前进」和1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 6 块「前进」，再放 2 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 6,
+              "atLeast": true
+            }
+          },
+          {
+            "count": {
+              "type": "turn_right",
+              "value": 2,
+              "atLeast": true
+            }
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 6 块「前进」和2 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 3 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 9
+        }
+      },
+      "fail_text": "前进积木应该是 9 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'practice',
@@ -5733,7 +6132,62 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 2 个弯，每段分别走 3、3、3 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 4 块「前进」，再放 1 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 4,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 4 块「前进」和1 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 7 块「前进」，再放 2 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 7,
+              "atLeast": true
+            }
+          },
+          {
+            "count": {
+              "type": "turn_left",
+              "value": 2,
+              "atLeast": true
+            }
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 7 块「前进」和2 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 4 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 11
+        }
+      },
+      "fail_text": "前进积木应该是 11 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'typing',
@@ -5978,7 +6432,62 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 2 个弯，每段分别走 4、3、4 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 4 块「前进」，再放 1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 4,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 4 块「前进」和1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 8 块「前进」，再放 2 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 8,
+              "atLeast": true
+            }
+          },
+          {
+            "count": {
+              "type": "turn_right",
+              "value": 2,
+              "atLeast": true
+            }
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 8 块「前进」和2 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 4 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 12
+        }
+      },
+      "fail_text": "前进积木应该是 12 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -6246,7 +6755,62 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 2 个弯，每段分别走 4、4、4 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 5 块「前进」，再放 1 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 5,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 5 块「前进」和1 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 9 块「前进」，再放 2 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 9,
+              "atLeast": true
+            }
+          },
+          {
+            "count": {
+              "type": "turn_left",
+              "value": 2,
+              "atLeast": true
+            }
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 9 块「前进」和2 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 5 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 14
+        }
+      },
+      "fail_text": "前进积木应该是 14 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -6489,7 +7053,87 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 2 个弯，每段分别走 5、4、5 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 4 块「前进」，再放 1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 4,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 4 块「前进」和1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 6 块「前进」，再放 1 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 6,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 6 块「前进」和1 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 3 段：放 9 块「前进」，再放 1 块「左转」、2 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 9,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "count": {
+              "type": "turn_right",
+              "value": 2,
+              "atLeast": true
+            }
+          }
+        ]
+      },
+      "fail_text": "第 3 段还不对：工作区要有 9 块「前进」和1 块「左转」、2 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 2 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 11
+        }
+      },
+      "fail_text": "前进积木应该是 11 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -6757,7 +7401,87 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 3 个弯，每段分别走 4、2、3、2 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 5 块「前进」，再放 1 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 5,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 5 块「前进」和1 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 8 块「前进」，再放 1 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 8,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 8 块「前进」和1 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 3 段：放 12 块「前进」，再放 2 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 12,
+              "atLeast": true
+            }
+          },
+          {
+            "count": {
+              "type": "turn_left",
+              "value": 2,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 3 段还不对：工作区要有 12 块「前进」和2 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 3 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 15
+        }
+      },
+      "fail_text": "前进积木应该是 15 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'practice',
@@ -7041,7 +7765,87 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 3 个弯，每段分别走 5、3、4、3 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 5 块「前进」，再放 1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 5,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 5 块「前进」和1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 8 块「前进」，再放 1 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 8,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 8 块「前进」和1 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 3 段：放 13 块「前进」，再放 1 块「左转」、2 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 13,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "count": {
+              "type": "turn_right",
+              "value": 2,
+              "atLeast": true
+            }
+          }
+        ]
+      },
+      "fail_text": "第 3 段还不对：工作区要有 13 块「前进」和1 块「左转」、2 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 3 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 16
+        }
+      },
+      "fail_text": "前进积木应该是 16 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'typing',
@@ -7338,7 +8142,87 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 3 个弯，每段分别走 5、3、5、3 格。"
-  }
+  },
+  "teaching_steps": [
+    {
+      "text": "第 1 段：放 6 块「前进」，再放 1 块「左转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 6,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          }
+        ]
+      },
+      "fail_text": "第 1 段还不对：工作区要有 6 块「前进」和1 块「左转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 2 段：放 10 块「前进」，再放 1 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 10,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_left"
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 2 段还不对：工作区要有 10 块「前进」和1 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "第 3 段：放 15 块「前进」，再放 2 块「左转」、1 块「右转」。",
+      "check": {
+        "all": [
+          {
+            "count": {
+              "type": "move_forward",
+              "value": 15,
+              "atLeast": true
+            }
+          },
+          {
+            "count": {
+              "type": "turn_left",
+              "value": 2,
+              "atLeast": true
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 3 段还不对：工作区要有 15 块「前进」和2 块「左转」、1 块「右转」。",
+      "done_text": "转弯接上了！"
+    },
+    {
+      "text": "最后再放 4 块「前进」，一直走到终点。",
+      "check": {
+        "count": {
+          "type": "move_forward",
+          "value": 19
+        }
+      },
+      "fail_text": "前进积木应该是 19 块，再数一遍。",
+      "done_text": "路线排好啦！"
+    }
+  ]
 }
   $body$::jsonb, true, now(), now(),
    'blk-g1-spring', 'blk-g1-spring-u2', 'grid', 'new',
@@ -7491,7 +8375,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -7562,6 +8446,37 @@ values
     "question": "上一关我们学了「转弯」，还记得怎么用吗？",
     "answer": "转弯会让机器人换一个方向，几段路就要几段走法。",
     "hint": "上一关的路要拐 3 个弯，每段分别走 6、4、5、4 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 8，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 8
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 8，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 8 改成 7，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 8,
+      "suggested": 7,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 8 改成 7，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 8 改成 7，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -7744,7 +8659,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -7815,6 +8730,37 @@ values
     "question": "上一关我们学了「循环」，还记得怎么用吗？",
     "answer": "把同一件事交给循环，重复做好多次。",
     "hint": "上一关用循环一次走完 8 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 10，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 10
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 10，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 10 改成 9，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 10,
+      "suggested": 9,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 10 改成 9，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 10 改成 9，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -8013,7 +8959,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -8087,6 +9033,37 @@ values
     "question": "上一关我们学了「循环」，还记得怎么用吗？",
     "answer": "把同一件事交给循环，重复做好多次。",
     "hint": "上一关用循环一次走完 10 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 12，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 12
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 12，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 12 改成 11，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 12,
+      "suggested": 11,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 12 改成 11，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 12 改成 11，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -8288,7 +9265,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -8362,6 +9339,37 @@ values
     "question": "上一关我们学了「循环」，还记得怎么用吗？",
     "answer": "把同一件事交给循环，重复做好多次。",
     "hint": "上一关用循环一次走完 12 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 14，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 14
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 14，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 14 改成 13，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 14,
+      "suggested": 13,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 14 改成 13，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 14 改成 13，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -8498,7 +9506,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -8580,6 +9588,59 @@ values
     "question": "上一关我们学了「循环」，还记得怎么用吗？",
     "answer": "把同一件事交给循环，重复做好多次。",
     "hint": "上一关用循环一次走完 14 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 3，里面放：重复执行、右转。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "repeat",
+            "args": {
+              "times": 2
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 3，里面要有重复执行、右转。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 2，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 2
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 2，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 3 改成 2，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 3,
+      "suggested": 2,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 3 改成 2，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 3 改成 2，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -8751,7 +9812,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -8822,6 +9883,59 @@ values
     "question": "上一关我们学了「两层循环」，还记得怎么用吗？",
     "answer": "循环套循环，就能绕出四条一样长的边。",
     "hint": "上一关用两层循环绕出四条一样长的边，每条 2 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 3，里面放：重复执行、右转。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "repeat",
+            "args": {
+              "times": 3
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 3，里面要有重复执行、右转。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 3，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 3，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 3 改成 2，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 3,
+      "suggested": 2,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 3 改成 2，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 3 改成 2，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -9038,7 +10152,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -9109,6 +10223,59 @@ values
     "question": "上一关我们学了「两层循环」，还记得怎么用吗？",
     "answer": "循环套循环，就能绕出四条一样长的边。",
     "hint": "上一关用两层循环绕出四条一样长的边，每条 3 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 3，里面放：重复执行、右转。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "repeat",
+            "args": {
+              "times": 4
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 3，里面要有重复执行、右转。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 3 改成 2，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 3,
+      "suggested": 2,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 3 改成 2，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 3 改成 2，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -9350,7 +10517,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -9424,6 +10591,59 @@ values
     "question": "上一关我们学了「两层循环」，还记得怎么用吗？",
     "answer": "循环套循环，就能绕出四条一样长的边。",
     "hint": "上一关用两层循环绕出四条一样长的边，每条 4 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 3，里面放：重复执行、右转。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "repeat",
+            "args": {
+              "times": 5
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 3，里面要有重复执行、右转。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 3 改成 2，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 3,
+      "suggested": 2,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 3 改成 2，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 3 改成 2，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -9584,7 +10804,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -9658,6 +10878,77 @@ values
     "question": "上一关我们学了「两层循环」，还记得怎么用吗？",
     "answer": "循环套循环，就能绕出四条一样长的边。",
     "hint": "上一关用两层循环绕出四条一样长的边，每条 5 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 1，里面放：重复执行、右转。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 1
+        },
+        "contains": [
+          {
+            "type": "repeat",
+            "args": {
+              "times": 4
+            }
+          },
+          {
+            "type": "turn_right"
+          },
+          {
+            "type": "repeat",
+            "args": {
+              "times": 2
+            }
+          },
+          {
+            "type": "turn_right"
+          },
+          {
+            "type": "repeat",
+            "args": {
+              "times": 4
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 1，里面要有重复执行、右转。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 2，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 2
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 2，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 2 块「重复执行」的次数从 4 改成 3，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 4,
+      "suggested": 3,
+      "nth": 2
+    },
+    "try_text": "找到第 2 块「重复执行」，把次数 4 改成 3，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 2 块「重复执行」的 4 改成 3，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -9837,7 +11128,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -9919,6 +11210,77 @@ values
     "question": "上一关我们学了「长方形循环」，还记得怎么用吗？",
     "answer": "长边和短边不一样长，要用不同的次数。",
     "hint": "上一关用循环绕出 4×2 的长方形。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 1，里面放：重复执行、右转。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 1
+        },
+        "contains": [
+          {
+            "type": "repeat",
+            "args": {
+              "times": 5
+            }
+          },
+          {
+            "type": "turn_right"
+          },
+          {
+            "type": "repeat",
+            "args": {
+              "times": 2
+            }
+          },
+          {
+            "type": "turn_right"
+          },
+          {
+            "type": "repeat",
+            "args": {
+              "times": 5
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 1，里面要有重复执行、右转。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 2，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 2
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 2，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 2 块「重复执行」的次数从 5 改成 4，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 5,
+      "suggested": 4,
+      "nth": 2
+    },
+    "try_text": "找到第 2 块「重复执行」，把次数 5 改成 4，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 2 块「重复执行」的 5 改成 4，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -10106,7 +11468,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -10177,6 +11539,77 @@ values
     "question": "上一关我们学了「长方形循环」，还记得怎么用吗？",
     "answer": "长边和短边不一样长，要用不同的次数。",
     "hint": "上一关用循环绕出 5×2 的长方形。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 1，里面放：重复执行、右转。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 1
+        },
+        "contains": [
+          {
+            "type": "repeat",
+            "args": {
+              "times": 4
+            }
+          },
+          {
+            "type": "turn_right"
+          },
+          {
+            "type": "repeat",
+            "args": {
+              "times": 3
+            }
+          },
+          {
+            "type": "turn_right"
+          },
+          {
+            "type": "repeat",
+            "args": {
+              "times": 4
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 1，里面要有重复执行、右转。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 3，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 3，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 2 块「重复执行」的次数从 4 改成 3，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 4,
+      "suggested": 3,
+      "nth": 2
+    },
+    "try_text": "找到第 2 块「重复执行」，把次数 4 改成 3，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 2 块「重复执行」的 4 改成 3，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -10402,7 +11835,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -10473,6 +11906,77 @@ values
     "question": "上一关我们学了「长方形循环」，还记得怎么用吗？",
     "answer": "长边和短边不一样长，要用不同的次数。",
     "hint": "上一关用循环绕出 4×3 的长方形。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 1，里面放：重复执行、右转。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 1
+        },
+        "contains": [
+          {
+            "type": "repeat",
+            "args": {
+              "times": 6
+            }
+          },
+          {
+            "type": "turn_right"
+          },
+          {
+            "type": "repeat",
+            "args": {
+              "times": 3
+            }
+          },
+          {
+            "type": "turn_right"
+          },
+          {
+            "type": "repeat",
+            "args": {
+              "times": 6
+            }
+          },
+          {
+            "type": "turn_right"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 1，里面要有重复执行、右转。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 3，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 3，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 2 块「重复执行」的次数从 6 改成 5，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 6,
+      "suggested": 5,
+      "nth": 2
+    },
+    "try_text": "找到第 2 块「重复执行」，把次数 6 改成 5，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 2 块「重复执行」的 6 改成 5，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -10646,7 +12150,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -10720,6 +12224,69 @@ values
     "question": "上一关我们学了「长方形循环」，还记得怎么用吗？",
     "answer": "长边和短边不一样长，要用不同的次数。",
     "hint": "上一关用循环绕出 6×3 的长方形。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 3，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 3，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 2，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 2
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 2，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 4 改成 3，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 4,
+      "suggested": 3,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 4 改成 3，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 4 改成 3，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -10895,7 +12462,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -10969,6 +12536,69 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 3 段，分别走 4、3、2 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 3，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 3，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 2，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 2
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 2，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 5 改成 4，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 5,
+      "suggested": 4,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 5 改成 4，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 5 改成 4，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -11152,7 +12782,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -11234,6 +12864,69 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 3 段，分别走 5、3、2 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 2，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 2
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 2，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 5 改成 4，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 5,
+      "suggested": 4,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 5 改成 4，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 5 改成 4，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -11426,7 +13119,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -11497,6 +13190,69 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 3 段，分别走 5、4、2 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 6，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 6
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 6，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 3，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 3，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 6 改成 5，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 6,
+      "suggested": 5,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 6 改成 5，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 6 改成 5，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -11673,7 +13429,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -11751,6 +13507,45 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 3 段，分别走 6、4、3 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 11，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 11
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 11，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 11 改成 10，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 11,
+      "suggested": 10,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 11 改成 10，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 11 改成 10，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -11956,7 +13751,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -12034,6 +13829,45 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 11 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 13，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 13
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 13，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 13 改成 12，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 13,
+      "suggested": 12,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 13 改成 12，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 13 改成 12，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -12247,7 +14081,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -12328,6 +14162,45 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 13 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 14，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 14
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 14，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 14 改成 13，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 14,
+      "suggested": 13,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 14 改成 13，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 14 改成 13，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -12544,7 +14417,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -12625,6 +14498,45 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 14 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 16，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 16
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 16，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 16 改成 15，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 16,
+      "suggested": 15,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 16 改成 15，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 16 改成 15，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -12849,7 +14761,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -12938,6 +14850,45 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 16 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 18，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 18
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 18，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 18 改成 17，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 18,
+      "suggested": 17,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 18 改成 17，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 18 改成 17，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -13170,7 +15121,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -13248,6 +15199,45 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 18 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 19，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 19
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 19，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 19 改成 18，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 19,
+      "suggested": 18,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 19 改成 18，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 19 改成 18，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -13489,7 +15479,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -13567,6 +15557,45 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 19 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 18，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 18
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 18，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 18 改成 17，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 18,
+      "suggested": 17,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 18 改成 17，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 18 改成 17，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -13816,7 +15845,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -13897,6 +15926,45 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 18 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 19，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 19
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 19，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 19 改成 18，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 19,
+      "suggested": 18,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 19 改成 18，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 19 改成 18，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -14073,7 +16141,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -14154,6 +16222,42 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 19 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 13，里面放：如果判断。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 13
+        },
+        "contains": [
+          {
+            "type": "if_path_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 13，里面要有如果判断。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 13 改成 12，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 13,
+      "suggested": 12,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 13 改成 12，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 13 改成 12，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -14346,7 +16450,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -14435,6 +16539,42 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 13 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 15，里面放：如果判断。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 15
+        },
+        "contains": [
+          {
+            "type": "if_path_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 15，里面要有如果判断。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 15 改成 14，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 15,
+      "suggested": 14,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 15 改成 14，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 15 改成 14，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -14635,7 +16775,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -14713,6 +16853,42 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 15 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 16，里面放：如果判断。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 16
+        },
+        "contains": [
+          {
+            "type": "if_path_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 16，里面要有如果判断。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 16 改成 15，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 16,
+      "suggested": 15,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 16 改成 15，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 16 改成 15，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -14942,7 +17118,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -15020,6 +17196,42 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 16 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 18，里面放：如果判断。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 18
+        },
+        "contains": [
+          {
+            "type": "if_path_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 18，里面要有如果判断。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 18 改成 17，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 18,
+      "suggested": 17,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 18 改成 17，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 18 改成 17，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -15257,7 +17469,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -15355,6 +17567,42 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 18 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 21，里面放：如果判断。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 21
+        },
+        "contains": [
+          {
+            "type": "if_else",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 21，里面要有如果判断。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 21 改成 20，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 21,
+      "suggested": 20,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 21 改成 20，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 21 改成 20，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -15587,7 +17835,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -15685,6 +17933,42 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 21 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 22，里面放：如果判断。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 22
+        },
+        "contains": [
+          {
+            "type": "if_else",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 22，里面要有如果判断。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 22 改成 21，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 22,
+      "suggested": 21,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 22 改成 21，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 22 改成 21，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -15913,7 +18197,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -16019,6 +18303,42 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 22 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 21，里面放：如果判断。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 21
+        },
+        "contains": [
+          {
+            "type": "if_else",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 21，里面要有如果判断。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 21 改成 20，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 21,
+      "suggested": 20,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 21 改成 20，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 21 改成 20，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -16255,7 +18575,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -16350,6 +18670,42 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 21 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 22，里面放：如果判断。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 22
+        },
+        "contains": [
+          {
+            "type": "if_else",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 22，里面要有如果判断。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 22 改成 21，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 22,
+      "suggested": 21,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 22 改成 21，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 22 改成 21，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -16533,7 +18889,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -16607,6 +18963,69 @@ values
     "question": "上一关我们学了「条件判断」，还记得怎么用吗？",
     "answer": "让电脑先看情况再决定，机器人就能自己转弯。",
     "hint": "上一关用条件判断让机器人自己转弯，循环要做 22 次。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 3，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 3，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 4 改成 3，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 4,
+      "suggested": 3,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 4 改成 3，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 4 改成 3，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -16819,7 +19238,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -16893,6 +19312,69 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 3 段，分别走 4、3、4 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 3，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 3，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 5 改成 4，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 5,
+      "suggested": 4,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 5 改成 4，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 5 改成 4，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -17113,7 +19595,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -17187,6 +19669,69 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 3 段，分别走 5、3、5 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 5 改成 4，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 5,
+      "suggested": 4,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 5 改成 4，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 5 改成 4，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -17410,7 +19955,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -17484,6 +20029,69 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 3 段，分别走 5、4、5 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 6，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 6
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 6，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 6，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 6
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 6，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 6 改成 5，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 6,
+      "suggested": 5,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 6 改成 5，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 6 改成 5，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -17711,7 +20319,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -17794,6 +20402,85 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 3 段，分别走 6、4、6 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 4 块「重复执行」，次数填 3，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 3
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 4 块「重复执行」还没搭好：次数要是 3，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 5 改成 4，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 5,
+      "suggested": 4,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 5 改成 4，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 5 改成 4，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -18045,7 +20732,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -18119,6 +20806,85 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 4 段，分别走 5、4、5、3 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 6，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 6
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 6，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 6，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 6
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 6，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 4 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 4 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 6 改成 5，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 6,
+      "suggested": 5,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 6 改成 5，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 6 改成 5，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -18399,7 +21165,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -18473,6 +21239,85 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 4 段，分别走 6、4、6、4 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 6，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 6
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 6，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 7，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 7
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 7，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 4 块「重复执行」，次数填 4，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 4
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 4 块「重复执行」还没搭好：次数要是 4，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 6 改成 5，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 6,
+      "suggested": 5,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 6 改成 5，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 6 改成 5，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -18769,7 +21614,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -18843,6 +21688,85 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 4 段，分别走 6、5、7、4 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 7，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 7
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 7，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 3 块「重复执行」，次数填 7，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 7
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 3 块「重复执行」还没搭好：次数要是 7，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 4 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 4 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 7 改成 6，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 7,
+      "suggested": 6,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 7 改成 6，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 7 改成 6，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -19054,7 +21978,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -19135,6 +22059,61 @@ values
     "question": "上一关我们学了「分段循环」，还记得怎么用吗？",
     "answer": "把长路分成几段，每段交给循环走。",
     "hint": "上一关把路分成 4 段，分别走 7、5、7、5 格。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 5，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 5
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 5，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 9，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 9
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 9，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 5 改成 4，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 5,
+      "suggested": 4,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 5 改成 4，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 5 改成 4，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -19354,7 +22333,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -19444,6 +22423,61 @@ values
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
     "answer": "自己先走一段，剩下的交给条件判断。",
     "hint": "上一关先自己走 5 格，剩下的路交给条件自动转弯。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 6，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 6
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 6，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 9，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 9
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 9，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 6 改成 5，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 6,
+      "suggested": 5,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 6 改成 5，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 6 改成 5，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -19675,7 +22709,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -19756,6 +22790,61 @@ values
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
     "answer": "自己先走一段，剩下的交给条件判断。",
     "hint": "上一关先自己走 6 格，剩下的路交给条件自动转弯。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 6，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 6
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 6，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 10，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 10
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 10，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 6 改成 5，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 6,
+      "suggested": 5,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 6 改成 5，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 6 改成 5，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -20003,7 +23092,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -20084,6 +23173,61 @@ values
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
     "answer": "自己先走一段，剩下的交给条件判断。",
     "hint": "上一关先自己走 6 格，剩下的路交给条件自动转弯。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 7，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 7
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 7，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 11，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 11
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 11，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 7 改成 6，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 7,
+      "suggested": 6,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 7 改成 6，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 7 改成 6，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -20335,7 +23479,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -20416,6 +23560,61 @@ values
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
     "answer": "自己先走一段，剩下的交给条件判断。",
     "hint": "上一关先自己走 7 格，剩下的路交给条件自动转弯。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 7，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 7
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 7，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 12，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 12
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 12，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 7 改成 6，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 7,
+      "suggested": 6,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 7 改成 6，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 7 改成 6，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -20675,7 +23874,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -20756,6 +23955,61 @@ values
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
     "answer": "自己先走一段，剩下的交给条件判断。",
     "hint": "上一关先自己走 7 格，剩下的路交给条件自动转弯。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 8，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 8
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 8，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 12，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 12
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 12，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 8 改成 7，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 8,
+      "suggested": 7,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 8 改成 7，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 8 改成 7，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -21027,7 +24281,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -21117,6 +24371,61 @@ values
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
     "answer": "自己先走一段，剩下的交给条件判断。",
     "hint": "上一关先自己走 8 格，剩下的路交给条件自动转弯。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 8，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 8
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 8，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 13，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 13
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 13，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 8 改成 7，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 8,
+      "suggested": 7,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 8 改成 7，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 8 改成 7，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),
@@ -21396,7 +24705,7 @@ values
           "type": "number",
           "default": 2,
           "min": 1,
-          "max": 20,
+          "max": 30,
           "step": 1
         }
       ]
@@ -21477,6 +24786,61 @@ values
     "question": "上一关我们学了「组合运用」，还记得怎么用吗？",
     "answer": "自己先走一段，剩下的交给条件判断。",
     "hint": "上一关先自己走 8 格，剩下的路交给条件自动转弯。"
+  },
+  "teaching_steps": [
+    {
+      "text": "放第 1 块「重复执行」，次数填 8，里面放：前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 8
+        },
+        "contains": [
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 1 块「重复执行」还没搭好：次数要是 8，里面要有前进。",
+      "done_text": "这一段路线搭好啦！"
+    },
+    {
+      "text": "放第 2 块「重复执行」，次数填 14，里面放：如果判断、前进。",
+      "check": {
+        "type": "repeat",
+        "args": {
+          "times": 14
+        },
+        "contains": [
+          {
+            "type": "if_wall_ahead",
+            "contains": [
+              {
+                "type": "turn_right"
+              }
+            ]
+          },
+          {
+            "type": "move_forward"
+          }
+        ]
+      },
+      "fail_text": "第 2 块「重复执行」还没搭好：次数要是 14，里面要有如果判断、前进。",
+      "done_text": "这一段路线搭好啦！"
+    }
+  ],
+  "reflection": {
+    "question": "路线走通啦！想一想：把第 1 块「重复执行」的次数从 8 改成 7，机器人还能走到终点吗？你来试试。",
+    "target": {
+      "type": "repeat",
+      "arg": "times",
+      "current": 8,
+      "suggested": 7,
+      "nth": 1
+    },
+    "try_text": "找到第 1 块「重复执行」，把次数 8 改成 7，再点「运行」，看看发生什么。",
+    "ran_text": "看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。",
+    "fail_text": "还没改到次数：把第 1 块「重复执行」的 8 改成 7，再点一次「运行」。"
   }
 }
   $body$::jsonb, true, now(), now(),

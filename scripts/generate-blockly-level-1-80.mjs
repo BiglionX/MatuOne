@@ -18,7 +18,13 @@ import {
   placeCollectibles,
   transformPath,
 } from './blockly-level-recipes.mjs'
-import { analyzeLevel, buildHints, buildStoryFor } from './blockly-story-recipes.mjs'
+import {
+  analyzeLevel,
+  buildHints,
+  buildStoryFor,
+  buildGridTeachingSteps,
+  buildGridReflection,
+} from './blockly-story-recipes.mjs'
 
 const ROOT = process.cwd()
 const SOURCE_MANIFEST = path.join(ROOT, 'scripts/generated/blockly-80.manifest.json')
@@ -155,14 +161,20 @@ function buildAllLevels() {
   if (source.termId !== 'blk-g1-fall' || source.levels.length !== 80) throw new Error('Level 0 源清单无效')
   const transformed = source.levels.map(transformedLevel)
   const withGoals = transformed.map((level) => ({ ...level, goal: analyzeLevel(level).goal }))
-  const withTeaching = withGoals.map((level, index) => ({
-    ...level,
-    body: {
-      ...level.body,
-      hints: buildHints(level),
-      ...buildStoryFor(level, index ? withGoals[index - 1] : null),
-    },
-  }))
+  const withTeaching = withGoals.map((level, index) => {
+    const teaching = buildGridTeachingSteps(level)
+    const reflection = buildGridReflection(level)
+    return {
+      ...level,
+      body: {
+        ...level.body,
+        hints: buildHints(level),
+        ...buildStoryFor(level, index ? withGoals[index - 1] : null),
+        ...(teaching ? { teaching_steps: teaching } : {}),
+        ...(reflection ? { reflection } : {}),
+      },
+    }
+  })
   return withTeaching.map(sealLevel)
 }
 

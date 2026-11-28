@@ -179,6 +179,14 @@ test('manifest 里是 160 关，编号 blk-161 … blk-320 连号', () => {
   assert.equal(manifest.levels.filter((level) => level.sortOrder >= 241).length, 80)
 })
 
+test('关卡标题完整，每十个变体的收官关都叫“完整作品”', () => {
+  for (const level of manifest.levels) {
+    assert.ok(level.title.trim().length > 0, `${level.levelId} 缺少标题`)
+    assert.doesNotMatch(level.title, /undefined/i, `${level.levelId} 的标题包含 undefined`)
+    if (level.sortOrder % 10 === 0) assert.match(level.title, /·完整作品$/, `${level.levelId} 的收官标题不完整`)
+  }
+})
+
 test('四个单元各 40 关，编号区间和学期都对得上', () => {
   assert.equal(new Set(manifest.levels.map((level) => level.unitId)).size, 4)
   for (const plan of UNIT_PLAN) {

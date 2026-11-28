@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { MODULE_IDS } from '../../../supabase/functions/_shared/moduleRegistry'
 import { completeLevel, loadModuleLevel } from '@/api/learning'
@@ -8,28 +9,179 @@ import { BrandMark } from '@/components/BrandMark'
 import { Skeleton } from '@/components/Skeleton'
 import { ApiError } from '@/lib/apiError'
 import { isGameSoundEnabled, playGameSound, toggleGameSound } from '@/lib/gameSounds'
-import { parseModuleLevelBody, gridSceneOf, hasIntroMaterial, type ModuleHintFocus, type ModuleLevelBody } from '@/modules/curriculum/moduleLevelBody'
+import {
+  parseModuleLevelBody,
+  gridSceneOf,
+  hasIntroMaterial,
+  type ModuleHintFocus,
+  type ModuleLevelBody,
+  type ModuleSuccessCheck,
+} from '@/modules/curriculum/moduleLevelBody'
 import {
   createInitialActorState,
   interpretModuleLevel,
   type ActorState,
+  type BlockExecutionNode,
   type ModuleExecutionResult,
 } from '@/modules/curriculum/moduleLevelInterpreter'
-import { compileStageProgram } from '@/modules/curriculum/moduleStageInterpreter'
+import { compileStageProgram, type StageSnapshot } from '@/modules/curriculum/moduleStageInterpreter'
+import { checkTeachingStep, hasDifferentParam } from '@/modules/curriculum/teachingSteps'
+import type { PythonCodeSnapshot } from './blocklyPython'
 import { BlocklyNpc } from './BlocklyNpc'
 import { BlocklyWorkspace, type BlocklyWorkspaceHandle } from './BlocklyWorkspace'
 import { GridStage } from './GridStage'
+import { PythonCodeView } from './PythonCodeView'
 import { StageStage } from './StageStage'
 import { StoryPlayer } from './StoryPlayer'
 import { useStageRuntime } from './useStageRuntime'
 
 const DEFAULT_LEVEL_ID = 'blk-001'
 const MAP_HREF = '/blockly'
+const WORKSPACE_MIN_HEIGHT = 420
+const WORKSPACE_MAX_HEIGHT = 1600
+const WORKSPACE_HEIGHT_STEP = 24
+
+type ProgramView = 'blocks' | 'code'
+
+function clampWorkspaceHeight(value: number): number {
+  return Math.min(WORKSPACE_MAX_HEIGHT, Math.max(WORKSPACE_MIN_HEIGHT, value))
+}
 
 /** blk-001 这类关卡号；取最后一段数字当关卡序号。 */
 function levelNumber(levelId: string): number {
   const matched = /(\d+)\s*$/.exec(levelId)
   return matched ? Number(matched[1]) : 1
+}
+
+function collectChecks(check: ModuleSuccessCheck): ModuleSuccessCheck[] {
+  return check.type === 'all' || check.type === 'any' ? check.conditions.flatMap(collectChecks) : [check]
+}
+
+interface FailureProgress {
+  label: string
+  current: string | number | boolean
+  target: string | number | boolean
+}
+
+interface TouchTargetInfo {
+  id: string
+  nested: boolean
+  node: BlockExecutionNode
+}
+
+function variableLabel(variableId: string): string {
+  if (variableId === 'score') return '得分'
+  if (variableId === 'apple_count') return '苹果数'
+  return variableId
+}
+
+function spriteLabel(body: ModuleLevelBody, spriteId: string): string {
+  if (body.scene.type !== 'stage') return spriteId
+  const sprite = body.scene.sprites.find((item) => item.id === spriteId)
+  if (!sprite) return spriteId
+  if (sprite.asset === 'apple') {
+    const matched = /(\d+)\s*$/.exec(spriteId)
+    return matched ? `苹果 ${Number(matched[1])}` : '苹果'
+  }
+  return sprite.asset || spriteId
+}
+
+/** 折叠时也给出可量化的目标进度，不直接把答案说破。 */
+function buildFailureProgress(body: ModuleLevelBody, snapshot: StageSnapshot | null): FailureProgress[] {
+  if (!snapshot) return []
+  const checks = collectChecks(body.success_check)
+  const progress: FailureProgress[] = []
+  const valueCheck = checks.find((check) => check.type === 'variable_value')
+  if (valueCheck?.type === 'variable_value' && Object.prototype.hasOwnProperty.call(snapshot.variables, valueCheck.variable_id)) {
+    progress.push({
+      label: variableLabel(valueCheck.variable_id),
+      current: snapshot.variables[valueCheck.variable_id],
+      target: valueCheck.value,
+    })
+  }
+  const hiddenChecks = checks.filter((check) => check.type === 'sprite_hidden')
+  if (hiddenChecks.length) {
+    const caught = hiddenChecks.filter((check) => {
+      const sprite = snapshot.sprites.find((item) => item.id === check.sprite_id)
+      return Boolean(sprite && !sprite.visible)
+    }).length
+    const assets = hiddenChecks.map((check) => body.scene.type === 'stage'
+      ? body.scene.sprites.find((sprite) => sprite.id === check.sprite_id)?.asset
+      : undefined)
+    progress.push({
+      label: assets.every((asset) => asset === 'apple') ? '接住苹果' : '完成目标',
+      current: caught,
+      target: hiddenChecks.length,
+    })
+  }
+  return progress
+}
+
+function collectTouchTargets(nodes: readonly BlockExecutionNode[]): TouchTargetInfo[] {
+  const targets: TouchTargetInfo[] = []
+  const visit = (node: BlockExecutionNode | null | undefined, nested: boolean) => {
+    let current = node
+    while (current) {
+      if (current.type === 'if_touching') {
+        targets.push({ id: String(current.args?.target_sprite_id ?? ''), nested, node: current })
+        for (const child of current.children ?? []) visit(child, true)
+      } else {
+        for (const child of current.children ?? []) visit(child, nested)
+      }
+      current = current.next
+    }
+  }
+  for (const node of nodes) visit(node, false)
+  return targets
+}
+
+function chainHasBlock(node: BlockExecutionNode | null | undefined, type: string): boolean {
+  let current = node
+  while (current) {
+    if (current.type === type) return true
+    current = current.next
+  }
+  return false
+}
+
+/** 失败后先让学生自己想；点「查看错误信息」才展示这份具体诊断。 */
+function buildFailureDetail(
+  body: ModuleLevelBody,
+  snapshot: StageSnapshot | null,
+  tree: readonly BlockExecutionNode[],
+): string {
+  const fallback = body.hints.find((hint) => hint.trigger === 'not_completed')?.text ?? '程序结束了，可是还没有完成目标。'
+  if (!snapshot) return fallback
+  const checks = collectChecks(body.success_check)
+  const valueCheck = checks.find((check) => check.type === 'variable_value')
+  const parts: string[] = []
+  if (valueCheck?.type === 'variable_value') {
+    parts.push(`现在${variableLabel(valueCheck.variable_id)}是 ${snapshot.variables[valueCheck.variable_id]}，目标要正好是 ${valueCheck.value}`)
+  }
+  const missing = checks
+    .filter((check) => check.type === 'sprite_hidden' && snapshot.sprites.find((sprite) => sprite.id === check.sprite_id)?.visible)
+    .map((check) => (check.type === 'sprite_hidden' ? check.sprite_id : ''))
+    .filter(Boolean)
+  if (missing.length) parts.push(`${missing.map((id) => spriteLabel(body, id)).join('、')} 还没接住`)
+
+  const touchTargets = collectTouchTargets(tree)
+  for (const spriteId of missing) {
+    const label = spriteLabel(body, spriteId)
+    const target = touchTargets.find((item) => item.id === spriteId)
+    if (!target) {
+      parts.push(`工作区里还没有「如果碰到 ${label}」`)
+      continue
+    }
+    if (target.nested) {
+      parts.push(`「如果碰到 ${label}」放在了另一个判断里面，把它移到同一个循环里、和其他判断并列`)
+      continue
+    }
+    if (valueCheck?.type === 'variable_value' && !(target.node.children ?? []).some((child) => chainHasBlock(child, 'change_variable'))) {
+      parts.push(`「如果碰到 ${label}」里面还没有让${variableLabel(valueCheck.variable_id)}增加的积木`)
+    }
+  }
+  if (!parts.length) return fallback
+  return `${parts.join('；')}。再看看判断和加分积木的连接方式。`
 }
 
 const ENTER_COPY: Record<EnterLevelReason, string> = {
@@ -85,11 +237,17 @@ export function BlocklyLesson() {
   const [searchParams] = useSearchParams()
   const levelId = routeLevelId?.trim() || searchParams.get('level')?.trim() || DEFAULT_LEVEL_ID
   const workspaceRef = useRef<BlocklyWorkspaceHandle>(null)
+  const workspaceAreaRef = useRef<HTMLDivElement>(null)
+  const resizeGestureRef = useRef<{ startY: number; startHeight: number } | null>(null)
+  const executionTreeRef = useRef<BlockExecutionNode[]>([])
   const runTokenRef = useRef(0)
   const [lesson, setLesson] = useState<ModuleLevelLesson | null>(null)
   const [body, setBody] = useState<ModuleLevelBody | null>(null)
   const [gate, setGate] = useState<Awaited<ReturnType<typeof enterLevel>> | null>(null)
   const [workspaceReady, setWorkspaceReady] = useState(false)
+  const [programView, setProgramView] = useState<ProgramView>('blocks')
+  const [pythonSnapshot, setPythonSnapshot] = useState<PythonCodeSnapshot>({ code: '', error: null })
+  const [workspaceHeight, setWorkspaceHeight] = useState<number | null>(null)
   const [blockCount, setBlockCount] = useState(0)
   const [actorState, setActorState] = useState<ActorState | null>(null)
   const [isRunning, setIsRunning] = useState(false)
@@ -97,6 +255,9 @@ export function BlocklyLesson() {
   const [completed, setCompleted] = useState(false)
   const [errorTaps, setErrorTaps] = useState(0)
   const [message, setMessage] = useState('')
+  // 运行失败时先不直接给答案：左窗只说「先想想」，点按钮才展开具体诊断。
+  const [errorDetail, setErrorDetail] = useState('')
+  const [showErrorDetail, setShowErrorDetail] = useState(false)
   const [loadError, setLoadError] = useState('')
   // 关卡音效默认关着，学生自己在顶栏打开。
   const [soundOn, setSoundOn] = useState(isGameSoundEnabled())
@@ -108,6 +269,13 @@ export function BlocklyLesson() {
   // 绘本看完了没有。关卡配了 intro_story / review 时，先全屏播绘本再进工作区；
   // 「重新开始」不碰这个状态，所以重试不会重新弹绘本。
   const [storyDone, setStoryDone] = useState(false)
+  // 「再试一次」时让小精灵的分步引导从头开始。
+  const [stepResetToken, setStepResetToken] = useState(0)
+  // 通关后先别急着弹完成层：小精灵先问一个参数问题，学生改过再跑才真正完成。
+  const [passed, setPassed] = useState(false)
+  const [reflectionPhase, setReflectionPhase] = useState<'question' | 'try' | 'observed' | null>(null)
+  const [reflectionChanged, setReflectionChanged] = useState(false)
+  const reflectionChangedRef = useRef(false)
   const {
     snapshot: stageSnapshot,
     isRunning: stageIsRunning,
@@ -128,6 +296,9 @@ export function BlocklyLesson() {
     setBody(null)
     setGate(null)
     setWorkspaceReady(false)
+    setProgramView('blocks')
+    setPythonSnapshot({ code: '', error: null })
+    executionTreeRef.current = []
     setBlockCount(0)
     setLoadError('')
     setActorState(null)
@@ -135,6 +306,8 @@ export function BlocklyLesson() {
     setIsSaving(false)
     setCompleted(false)
     setMessage('')
+    setErrorDetail('')
+    setShowErrorDetail(false)
     setErrorTaps(0)
     setRunFailed(false)
     setFocus(null)
@@ -187,7 +360,10 @@ export function BlocklyLesson() {
       setErrorTaps((count) => count + 1)
       setRunFailed(true)
       playGameSound('fail')
-      setMessage(runtimeError)
+      setMessage('')
+      const detail = buildFailureDetail(body, snapshot, executionTreeRef.current)
+      setErrorDetail(`${runtimeError} ${detail}`)
+      setShowErrorDetail(false)
       return
     }
     if (!snapshot) return
@@ -196,19 +372,31 @@ export function BlocklyLesson() {
       setErrorTaps((count) => count + 1)
       setRunFailed(true)
       playGameSound('fail')
-      setMessage(body.hints.find((hint) => hint.trigger === 'not_completed')?.text ?? '程序结束了，可是还没有完成目标。')
+      setMessage('')
+      setErrorDetail(buildFailureDetail(body, snapshot, executionTreeRef.current))
+      setShowErrorDetail(false)
       return
     }
-    if (!snapshot.completed || stageSaveStartedRef.current) return
-
+    if (!snapshot.completed) return
     stageRunActiveRef.current = false
+    if (passed || stageSaveStartedRef.current) {
+      // 反思阶段再跑一次：不重复保存、不弹完成层；改了参数就进入追问。
+      setIsSaving(false)
+      if (reflectionChangedRef.current) setReflectionPhase('observed')
+      return
+    }
     stageSaveStartedRef.current = true
     const token = runTokenRef.current
     setIsSaving(true)
     void completeLevel(levelId, body.completion.stars, errorTaps, MODULE_IDS.blockly)
       .then(() => {
         if (runTokenRef.current !== token) return
-        setCompleted(true)
+        if (body.reflection) {
+          setPassed(true)
+          setReflectionPhase('question')
+        } else {
+          setCompleted(true)
+        }
         setIsSaving(false)
         playGameSound('win')
       })
@@ -219,9 +407,12 @@ export function BlocklyLesson() {
         setErrorTaps((count) => count + 1)
         setRunFailed(true)
         playGameSound('fail')
-        setMessage(error instanceof Error ? error.message : '这一关没有记下来，请再试一次')
+        const detail = error instanceof Error ? error.message : '这一关没有记下来，请再试一次'
+        setMessage(detail)
+        setErrorDetail(detail)
+        setShowErrorDetail(false)
       })
-  }, [body, errorTaps, isStage, levelId, stageError, stageSnapshot])
+  }, [body, errorTaps, isStage, levelId, passed, stageError, stageSnapshot])
 
   const handleWorkspaceReady = useCallback((ready: boolean) => {
     setWorkspaceReady(ready)
@@ -230,6 +421,10 @@ export function BlocklyLesson() {
   const handleBlocksChange = useCallback((count: number, studentChanged = true) => {
     setBlockCount(count)
     if (studentChanged) setActivityToken((token) => token + 1)
+  }, [])
+
+  const handlePythonChange = useCallback((snapshot: PythonCodeSnapshot) => {
+    setPythonSnapshot(snapshot)
   }, [])
 
   const handleFocusChange = useCallback((next: ModuleHintFocus | null) => {
@@ -248,12 +443,7 @@ export function BlocklyLesson() {
     return levelMentionsCollectibles([lesson?.goal ?? '', ...body.hints.map((hint) => hint.text)])
   }, [body, lesson?.goal])
 
-  /**
-   * 地图下面那行字。
-   *
-   * 平时不重复小精灵的开场提示（那才是讲「这一关要干什么」的地方），
-   * 只在运行之后换成运行反馈；没反馈时就给三步操作指引。
-   */
+  /** 地图下面只显示运行反馈；操作引导统一交给右下角小精灵。 */
   const stageMessage = message
 
   const run = async () => {
@@ -262,6 +452,8 @@ export function BlocklyLesson() {
     runTokenRef.current = token
     setCompleted(false)
     setMessage('')
+    setErrorDetail('')
+    setShowErrorDetail(false)
     setRunFailed(false)
     setActivityToken((value) => value + 1)
     if (!isStage) {
@@ -271,17 +463,25 @@ export function BlocklyLesson() {
 
     try {
       const tree = workspaceRef.current?.getExecutionTree() ?? []
+      executionTreeRef.current = tree
+      const reflection = passed ? body.reflection : undefined
+      const changed = reflection
+        ? hasDifferentParam(tree, reflection.target.type, reflection.target.arg, reflection.target.current, reflection.target.within, reflection.target.ancestorArgs, reflection.target.nth)
+        : false
+      reflectionChangedRef.current = changed
+      setReflectionChanged(changed)
       if (!tree.length) {
         setErrorTaps((count) => count + 1)
         setRunFailed(true)
-        setMessage(body.hints.find((hint) => hint.trigger === 'initial')?.text ?? '先把积木拖到工作区，再点运行。')
+        setMessage('')
+        setErrorDetail(body.hints.find((hint) => hint.trigger === 'initial')?.text ?? '先把积木拖到工作区，再点运行。')
+        setShowErrorDetail(false)
         return
       }
 
       if (isStage) {
         const program = compileStageProgram(body, tree)
         stageRunActiveRef.current = true
-        stageSaveStartedRef.current = false
         startStage(program)
         return
       }
@@ -312,14 +512,26 @@ export function BlocklyLesson() {
         setErrorTaps((count) => count + 1)
         setRunFailed(true)
         playGameSound('fail')
-        setMessage(body.hints.find((hint) => hint.trigger === 'not_completed')?.text ?? resultMessage(result))
+        setMessage('')
+        setErrorDetail(body.hints.find((hint) => hint.trigger === 'not_completed')?.text ?? resultMessage(result))
+        setShowErrorDetail(false)
+        if (passed && reflectionChangedRef.current) setReflectionPhase('observed')
         return
       }
 
+      if (passed) {
+        if (reflectionChangedRef.current) setReflectionPhase('observed')
+        return
+      }
       setIsSaving(true)
       await completeLevel(levelId, body.completion.stars, errorTaps, MODULE_IDS.blockly)
       if (runTokenRef.current !== token) return
-      setCompleted(true)
+      if (body.reflection) {
+        setPassed(true)
+        setReflectionPhase('question')
+      } else {
+        setCompleted(true)
+      }
       playGameSound('win')
     } catch (error: unknown) {
       if (runTokenRef.current !== token) return
@@ -327,7 +539,10 @@ export function BlocklyLesson() {
       setErrorTaps((count) => count + 1)
       setRunFailed(true)
       playGameSound('fail')
-      setMessage(error instanceof Error ? error.message : '程序没有运行成功，请再试一次')
+      const detail = error instanceof Error ? error.message : '程序没有运行成功，请再试一次'
+      setMessage(detail)
+      setErrorDetail(detail)
+      setShowErrorDetail(false)
     } finally {
       if (runTokenRef.current === token) {
         if (!isStage) setIsRunning(false)
@@ -340,14 +555,22 @@ export function BlocklyLesson() {
     runTokenRef.current += 1
     stageRunActiveRef.current = false
     stageSaveStartedRef.current = false
+    executionTreeRef.current = []
     workspaceRef.current?.reset()
     if (isStage) resetStage()
     setIsRunning(false)
     setIsSaving(false)
     setCompleted(false)
+    setPassed(false)
+    setReflectionPhase(null)
+    setReflectionChanged(false)
+    reflectionChangedRef.current = false
     setMessage('')
+    setErrorDetail('')
+    setShowErrorDetail(false)
     setErrorTaps(0)
     setRunFailed(false)
+    setStepResetToken((value) => value + 1)
     setActivityToken((value) => value + 1)
     if (body?.scene.type === 'grid') setActorState(createInitialActorState(body))
   }
@@ -363,7 +586,66 @@ export function BlocklyLesson() {
     setMessage('程序已停止，可以调整积木后再运行。')
   }
 
+  const selectProgramView = (next: ProgramView) => {
+    if (next === 'code' && !workspaceReady) return
+    if (next === 'code') {
+      try {
+        setPythonSnapshot({ code: workspaceRef.current?.getPythonCode() ?? '', error: null })
+      } catch (error: unknown) {
+        setPythonSnapshot({ code: '', error: error instanceof Error ? error.message : 'Python 代码预览生成失败' })
+      }
+    }
+    setProgramView(next)
+  }
+
+  const handleProgramViewKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Home' && event.key !== 'End') return
+    event.preventDefault()
+    const next: ProgramView = event.key === 'Home'
+      ? 'blocks'
+      : event.key === 'End'
+        ? 'code'
+        : programView === 'blocks' ? 'code' : 'blocks'
+    selectProgramView(next)
+    event.currentTarget.querySelector<HTMLButtonElement>(`[data-program-view="${next}"]`)?.focus()
+  }
+
+  const handleWorkspaceResizeStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return
+    const height = workspaceAreaRef.current?.getBoundingClientRect().height ?? WORKSPACE_MIN_HEIGHT
+    resizeGestureRef.current = { startY: event.clientY, startHeight: height }
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setWorkspaceHeight(height)
+    event.preventDefault()
+  }
+
+  const handleWorkspaceResizeMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const gesture = resizeGestureRef.current
+    if (!gesture) return
+    setWorkspaceHeight(clampWorkspaceHeight(gesture.startHeight + event.clientY - gesture.startY))
+  }
+
+  const handleWorkspaceResizeEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    resizeGestureRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+
+  const handleWorkspaceResizeKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const currentHeight = workspaceHeight ?? workspaceAreaRef.current?.getBoundingClientRect().height ?? WORKSPACE_MIN_HEIGHT
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      const delta = event.key === 'ArrowDown' ? WORKSPACE_HEIGHT_STEP : -WORKSPACE_HEIGHT_STEP
+      setWorkspaceHeight(clampWorkspaceHeight(currentHeight + delta))
+      return
+    }
+    if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault()
+      setWorkspaceHeight(event.key === 'Home' ? WORKSPACE_MIN_HEIGHT : WORKSPACE_MAX_HEIGHT)
+    }
+  }
+
   const running = isStage ? stageIsRunning : isRunning
+  const failureProgress = runFailed && stageSnapshot && body ? buildFailureProgress(body, stageSnapshot) : []
 
   if (!student) return <Navigate to="/student/login" replace />
 
@@ -410,8 +692,29 @@ export function BlocklyLesson() {
     )
   }
 
+  // 通关后的思考题由页面接管小精灵气泡；学生改参数跑过一次才进入总结。
+  const reflection = body.reflection
+  const npcPrompt = passed && reflection && reflectionPhase
+    ? {
+        text: reflectionPhase === 'question'
+          ? reflection.question
+          : reflectionPhase === 'try'
+            ? reflectionChanged ? reflection.try_text : reflection.fail_text
+            : reflection.ran_text,
+        buttonLabel: reflectionPhase === 'question'
+          ? '我来试试'
+          : reflectionPhase === 'observed'
+            ? '我明白了，完成'
+            : '',
+        onAction: () => {
+          if (reflectionPhase === 'question') setReflectionPhase('try')
+          else if (reflectionPhase === 'observed') setCompleted(true)
+        },
+      }
+    : undefined
+
   return (
-    <div className="student-shell flex min-h-screen flex-col bg-canvas lg:h-dvh lg:overflow-hidden">
+    <div className="student-shell flex min-h-screen flex-col bg-canvas lg:min-h-dvh">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex w-full max-w-7xl items-center gap-4 p-6 lg:px-8">
           <Link to={MAP_HREF} className="btn-ghost px-2" aria-label="返回课程地图">←</Link>
@@ -433,9 +736,9 @@ export function BlocklyLesson() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col p-4 pb-24 sm:p-6 lg:min-h-0 lg:overflow-hidden lg:px-8 lg:pb-24">
-        {/* 左边舞台窄一点，右边工作区宽一点；桌面端用 Flex 撑满视口剩余高度。 */}
-        <div className="flex min-h-0 flex-1 flex-col gap-6 lg:h-full lg:min-h-0 lg:flex-row lg:items-stretch">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col p-4 pb-24 sm:p-6 lg:min-h-0 lg:px-8 lg:pb-24">
+        {/* 左边舞台窄一点，右边工作区宽一点；桌面端工作区默认接近视口高度，可由下沿继续拉高。 */}
+        <div className="flex min-h-0 flex-1 flex-col gap-6 lg:min-h-0 lg:flex-row lg:items-stretch">
           <section className="card min-w-0 rounded-xl p-5 sm:p-6 lg:min-h-0 lg:w-5/12 lg:overflow-y-auto" aria-labelledby="stage-title">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
@@ -454,59 +757,167 @@ export function BlocklyLesson() {
                 showCollectibles={showCollectibles}
               />
             ) : null}
-            {stageMessage ? (
+            {runFailed && errorDetail ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4" aria-live="polite">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M9 18h6M10 21h4M8.2 14.5A6 6 0 1 1 15.8 14.5c-.9.7-1.3 1.4-1.3 2.5h-5c0-1.1-.4-1.8-1.3-2.5Z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-semibold text-amber-900">{showErrorDetail ? '错误线索' : '再找找线索'}</p>
+                      {!showErrorDetail && failureProgress.length ? (
+                        <span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-semibold text-amber-700">目标还没完成</span>
+                      ) : null}
+                    </div>
+                    <p className={`mt-1 text-sm leading-relaxed ${showErrorDetail ? 'text-ink' : 'text-ink-soft'}`}>
+                      {showErrorDetail ? errorDetail : '先想想错误在哪里。'}
+                    </p>
+                    {failureProgress.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {failureProgress.map((item) => (
+                          <span
+                            key={item.label}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-white/85 px-2.5 py-1.5 text-xs font-semibold text-amber-800"
+                            aria-label={`${item.label}：${String(item.current)} / ${String(item.target)}`}
+                          >
+                            <span>{item.label}</span>
+                            <span className="tabular-nums">{String(item.current)} / {String(item.target)}</span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="btn-ghost mt-2 px-3 py-1 text-sm"
+                      aria-expanded={showErrorDetail}
+                      onClick={() => setShowErrorDetail((shown) => !shown)}
+                    >
+                      {showErrorDetail ? '收起错误信息' : '查看错误信息'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : stageMessage ? (
               <p className="mt-4 text-sm text-ink-soft" aria-live="polite">
                 {stageMessage}
               </p>
-            ) : (
-              <ol className="mt-4 flex flex-wrap items-center gap-2" aria-label="怎么玩">
-                <li className="rounded-full bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-strong">
-                  ① 从左边拖积木
-                </li>
-                <li className="rounded-full bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-strong">
-                  ② {isStage ? '可以搭多条链' : '连成一条'}
-                </li>
-                <li className="rounded-full bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-strong">
-                  ③ 点「运行」
-                </li>
-                {showCollectibles ? (
-                  <li className="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-700">
-                    吃到金币可以加分哦
-                  </li>
-                ) : null}
-              </ol>
-            )}
+            ) : showCollectibles ? (
+              <p className="mt-4 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-700">
+                吃到金币可以加分哦
+              </p>
+            ) : null}
           </section>
 
           <section className="flex min-w-0 flex-1 flex-col gap-3 lg:min-h-0 lg:w-7/12" aria-labelledby="workspace-title">
-            <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-brand-strong">动手试一试</p>
-                <h2 id="workspace-title" className="mt-1 text-xl font-bold text-ink">搭建你的程序</h2>
+                <p className="text-sm font-semibold text-brand-strong">{programView === 'code' ? '从积木到代码' : '动手试一试'}</p>
+                <h2 id="workspace-title" className="mt-1 text-xl font-bold text-ink">{programView === 'code' ? '查看 Python 代码' : '搭建你的程序'}</h2>
               </div>
-              <div className="text-right">
-                <p role="status" aria-live="polite" aria-label="工作区积木数量" className="text-sm font-semibold text-ink-soft">
-                  已用 {blockCount} / 最多 {body.workspace.max_blocks}
-                </p>
-                {blockCount >= body.workspace.max_blocks ? (
-                  <p className="mt-1 text-xs text-amber-700">已达上限，删除一块后再加新的</p>
-                ) : null}
+              <div className="flex flex-wrap items-center gap-3">
+                <div
+                  role="tablist"
+                  aria-label="切换编程视图"
+                  className="inline-flex rounded-lg bg-slate-100 p-1"
+                  onKeyDown={handleProgramViewKeyDown}
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    id="blocks-view-tab"
+                    aria-controls="program-view"
+                    aria-selected={programView === 'blocks'}
+                    tabIndex={programView === 'blocks' ? 0 : -1}
+                    data-program-view="blocks"
+                    className={`rounded-md px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${
+                      programView === 'blocks' ? 'bg-white text-brand-strong shadow-sm' : 'text-ink-soft hover:text-ink'
+                    }`}
+                    onClick={() => selectProgramView('blocks')}
+                  >
+                    积木视图
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    id="code-view-tab"
+                    aria-controls="program-view"
+                    aria-selected={programView === 'code'}
+                    tabIndex={programView === 'code' ? 0 : -1}
+                    data-program-view="code"
+                    disabled={!workspaceReady}
+                    className={`rounded-md px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      programView === 'code' ? 'bg-white text-brand-strong shadow-sm' : 'text-ink-soft hover:text-ink'
+                    }`}
+                    onClick={() => selectProgramView('code')}
+                  >
+                    Python 代码
+                  </button>
+                </div>
+                <div className="text-right">
+                  <p role="status" aria-live="polite" aria-label="工作区积木数量" className="text-sm font-semibold text-ink-soft">
+                    已用 {blockCount} / 最多 {body.workspace.max_blocks}
+                  </p>
+                  {blockCount >= body.workspace.max_blocks ? (
+                    <p className="mt-1 text-xs text-amber-700">已达上限，删除一块后再加新的</p>
+                  ) : null}
+                </div>
               </div>
             </div>
-            <div className="flex h-[60vh] min-h-[420px] flex-col gap-3 lg:h-auto lg:min-h-0 lg:flex-1 lg:flex-row">
-              <BlocklyWorkspace
-                ref={workspaceRef}
-                availableBlocks={body.available_blocks}
-                initialBlocks={body.workspace.initial_blocks}
-                maxBlocks={body.workspace.max_blocks}
-                initialVariables={body.scene.type === 'stage' ? body.scene.variables : undefined}
-                variableValues={isStage && stageSnapshot ? stageSnapshot.variables : undefined}
-                onReadyChange={handleWorkspaceReady}
-                onBlocksChange={handleBlocksChange}
-                highlightBlockType={focus?.target === 'block' ? focus.blockType ?? null : null}
-                focusWorkspace={focus?.target === 'workspace'}
-              />
+            <div
+              ref={workspaceAreaRef}
+              id="program-view"
+              role="tabpanel"
+              aria-labelledby={programView === 'blocks' ? 'blocks-view-tab' : 'code-view-tab'}
+              data-testid="blockly-workspace-area"
+              className="flex h-[60vh] min-h-[420px] shrink-0 flex-col gap-3 lg:h-[calc(100dvh-16rem)] lg:min-h-[520px] lg:flex-row"
+              style={workspaceHeight !== null ? { height: workspaceHeight } : undefined}
+            >
+              <div className={`min-h-0 w-full flex-1 flex-col gap-3 ${programView === 'blocks' ? 'flex lg:flex-row' : 'hidden'}`}>
+                <BlocklyWorkspace
+                  ref={workspaceRef}
+                  availableBlocks={body.available_blocks}
+                  initialBlocks={body.workspace.initial_blocks}
+                  maxBlocks={body.workspace.max_blocks}
+                  parallelScripts={body.scene.type === 'stage'}
+                  initialVariables={body.scene.type === 'stage' ? body.scene.variables : undefined}
+                  variableValues={isStage && stageSnapshot ? stageSnapshot.variables : undefined}
+                  onReadyChange={handleWorkspaceReady}
+                  onBlocksChange={handleBlocksChange}
+                  onPythonChange={handlePythonChange}
+                  highlightBlockType={focus?.target === 'block' ? focus.blockType ?? null : null}
+                  focusWorkspace={focus?.target === 'workspace'}
+                  active={programView === 'blocks'}
+                />
+              </div>
+              {programView === 'code' ? <PythonCodeView code={pythonSnapshot.code} error={pythonSnapshot.error} /> : null}
             </div>
+            {programView === 'blocks' ? (
+              <div
+                role="separator"
+                aria-label="调整积木工作区高度"
+                aria-orientation="horizontal"
+                aria-valuemin={WORKSPACE_MIN_HEIGHT}
+                aria-valuemax={WORKSPACE_MAX_HEIGHT}
+                aria-valuenow={workspaceHeight ?? WORKSPACE_MIN_HEIGHT}
+                aria-valuetext={workspaceHeight === null ? '默认高度' : `${workspaceHeight} 像素`}
+                tabIndex={0}
+                data-testid="workspace-resize-handle"
+                title="上下拖动调整工作区高度，双击恢复"
+                className="group -my-1 flex h-5 shrink-0 cursor-row-resize touch-none select-none items-center justify-center rounded-md text-slate-400 transition hover:bg-brand-soft/30 hover:text-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                onPointerDown={handleWorkspaceResizeStart}
+                onPointerMove={handleWorkspaceResizeMove}
+                onPointerUp={handleWorkspaceResizeEnd}
+                onPointerCancel={handleWorkspaceResizeEnd}
+                onLostPointerCapture={() => { resizeGestureRef.current = null }}
+                onKeyDown={handleWorkspaceResizeKeyDown}
+                onDoubleClick={() => setWorkspaceHeight(null)}
+              >
+                <span className="h-1 w-12 rounded-full bg-current opacity-60 transition group-hover:w-16" aria-hidden="true" />
+              </div>
+            ) : null}
             <div className="flex shrink-0 flex-wrap items-center gap-3">
               <button
                 type="button"
@@ -528,11 +939,20 @@ export function BlocklyLesson() {
       </main>
 
       <BlocklyNpc
+        key={`${levelId}-${stepResetToken}`}
         hints={body.hints}
         availableBlocks={body.available_blocks}
         activityToken={activityToken}
         runFailed={runFailed}
         completed={completed}
+        teachingSteps={body.teaching_steps}
+        onCheckStep={(index) => {
+          const step = body.teaching_steps?.[index]
+          if (!step) return { ok: false }
+          return checkTeachingStep(step, workspaceRef.current?.getExecutionTree() ?? [])
+        }}
+        onRun={() => void run()}
+        prompt={npcPrompt}
         onFocusChange={handleFocusChange}
       />
 

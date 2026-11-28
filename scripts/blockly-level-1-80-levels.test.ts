@@ -65,6 +65,40 @@ test('Level 1 每关标准解都能通过生产解析器和解释器', () => {
   }
 })
 
+test('两个 Grid 学期的标准解参数都落在积木字段范围内', () => {
+  const files = [
+    'scripts/generated/blockly-80.manifest.json',
+    'scripts/generated/blockly-level-1-80.manifest.json',
+  ]
+  for (const file of files) {
+    const gridManifest = JSON.parse(readFileSync(path.join(process.cwd(), file), 'utf8')) as { levels: ManifestLevel[] }
+    for (const level of gridManifest.levels) {
+      const body = parseModuleLevelBody(level.body)
+      const definitions = new Map(body.available_blocks.map((block) => [block.type, block]))
+      const visit = (node: BlockExecutionNode) => {
+        const definition = definitions.get(node.type)
+        assert.ok(definition, `${level.levelId} 使用了未提供的积木 ${node.type}`)
+        for (const [name, value] of Object.entries(node.args)) {
+          const arg = definition.args.find((item) => item.name === name)
+          assert.ok(arg, `${level.levelId} 的 ${node.type} 没有字段 ${name}`)
+          if (arg.type === 'number') {
+            assert.equal(typeof value, 'number', `${level.levelId} 的 ${name} 必须是数字`)
+            const numericValue = value as number
+            if (arg.min !== undefined) assert.ok(numericValue >= arg.min, `${level.levelId} 的 ${name} 小于下限 ${arg.min}`)
+            if (arg.max !== undefined) assert.ok(numericValue <= arg.max, `${level.levelId} 的 ${name} 超过上限 ${arg.max}`)
+          }
+          if (arg.type === 'select') {
+            assert.ok(arg.options?.some((option) => String(option.value) === String(value)), `${level.levelId} 的 ${name} 不在选项内`)
+          }
+        }
+        for (const child of node.children ?? []) if (child) visit(child)
+        if (node.next) visit(node.next)
+      }
+      for (const node of level.solution) visit(node)
+    }
+  }
+})
+
 test('Level 1 迁移与清单同源，并且只做增量 upsert', () => {
   const bodies = migrationBodies()
   assert.equal(bodies.size, 80)

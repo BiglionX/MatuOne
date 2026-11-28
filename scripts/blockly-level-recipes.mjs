@@ -38,7 +38,7 @@ export const BLOCK_DEFS = {
     label: '重复执行',
     category: '控制',
     kind: 'control',
-    args: [{ name: 'times', label: '次数', type: 'number', default: 2, min: 1, max: 20, step: 1 }],
+    args: [{ name: 'times', label: '次数', type: 'number', default: 2, min: 1, max: 30, step: 1 }],
   },
   if_wall_ahead: { type: 'if_wall_ahead', label: '如果前面有墙', category: '控制', kind: 'control', args: [] },
   if_path_ahead: { type: 'if_path_ahead', label: '如果前面有路', category: '控制', kind: 'control', args: [] },

@@ -898,3 +898,299 @@ export function buildStageStoryFor(level, previous) {
 
   return { intro_story, review }
 }
+
+/**
+ * 标准解的 children 既按顺序列出节点、节点之间又带 next 链，
+ * 直接摊平会把同一块数好几遍；这里按节点引用去重。
+ */
+function uniqueNodesOf(solution) {
+  const seen = new Set()
+  const nodes = []
+  const visit = (list) => {
+    for (const node of list ?? []) {
+      if (!node || seen.has(node)) continue
+      seen.add(node)
+      nodes.push(node)
+      if (node.children) visit(node.children)
+      if (node.next) visit([node.next])
+    }
+  }
+  visit(solution ?? [])
+  return nodes
+}
+
+/** 一个「如果碰到」的检查条件、要学生照着搭的说法、和没搭对时的提醒。 */
+function touchTeaching(node, within) {
+  const target = String(node.args.target_sprite_id)
+  const gain = flatOf(node.children).find((child) => child.type === 'change_variable')
+  const value = gain?.args?.value ?? 1
+  const varId = gain ? String(gain.args.variable_id) : 'score'
+  return {
+    check: {
+      type: 'if_touching',
+      args: { target_sprite_id: target },
+      ...(within ? { within } : {}),
+      contains: [{ type: 'change_variable', args: { variable_id: varId, value } }],
+    },
+    text: `「如果碰到」选 ${target}，里面放「变量 ${varId} 增加 ${value}」`,
+    fail: `「如果碰到 ${target}」要选对精灵，里面还要有「变量 ${varId} 增加 ${value}」`,
+  }
+}
+
+/**
+ * 分步引导：把标准解拆成学生能一步一步照着搭的检查点。
+ *
+ * 四类玩法（接物、躲障碍、克隆发射、塔防）都按同一套结构拆：
+ * 设变量 → 主循环 → 移动 → 主循环里的判断 → 发射循环 → 克隆 → 克隆里的循环与判断。
+ * 每步的条件和文案里的数字、精灵名都从这一关的标准解反推，
+ * 不写死「苹果」或「加 1」，免得和关卡数据对不上。
+ */
+export function buildStageTeachingSteps(level) {
+  const top = flatOf(level.solution ?? [])
+  const loops = top.filter((node) => node.type === 'forever')
+  const setVars = top.filter((node) => node.type === 'set_variable')
+  if (!setVars.length || !loops.length) return undefined
+
+  const playerLoop = loops[0]
+  const fireLoop = loops[1]
+  const playerBody = uniqueNodesOf(playerLoop.children)
+  const playerMove = playerBody.find((node) => node.type === 'move_steps')
+  const playerTouches = playerBody.filter((node) => node.type === 'if_touching')
+  const clone = fireLoop ? fireLoop.children && flatOf(fireLoop.children).find((node) => node.type === 'clone') : null
+  const innerLoop = clone ? flatOf(clone.children).find((node) => node.type === 'forever') : null
+  const innerBody = innerLoop ? uniqueNodesOf(innerLoop.children) : []
+  const innerMove = innerBody.find((node) => node.type === 'move_steps')
+  const innerTouches = innerBody.filter((node) => node.type === 'if_touching')
+  const steps = []
+
+  const setTexts = setVars.map((node) => `「设置变量」选 ${node.args.variable_id}，填 ${node.args.value}`)
+  const setChecks = setVars.map((node) => ({
+    type: 'set_variable',
+    args: { variable_id: String(node.args.variable_id), value: node.args.value },
+  }))
+  steps.push({
+    text: `先把变量设好：${setTexts.join('；')}。`,
+    check: setChecks.length === 1 ? setChecks[0] : { all: setChecks },
+    fail_text: `还没把变量设好：${setTexts.join('；')}。`,
+    done_text: '变量设好啦！',
+  })
+  steps.push({
+    text: '放一块「无限循环」，让角色一直重复同一件事。',
+    check: { type: 'forever' },
+    fail_text: '还没有「无限循环」。先拖一块放到工作区。',
+    done_text: '循环搭好了！',
+  })
+
+  if (playerMove) {
+    steps.push({
+      text: `在循环里放「移动」，步数填 ${playerMove.args.steps}。`,
+      check: { type: 'move_steps', args: { steps: playerMove.args.steps }, within: ['forever'] },
+      fail_text: `循环里还没有「移动 ${playerMove.args.steps} 步」。`,
+      done_text: '走得对！',
+    })
+  }
+  if (playerTouches.length) {
+    const items = playerTouches.map((node) => touchTeaching(node, ['forever']))
+    steps.push({
+      text: `在循环里依次放好判断：${items.map((item) => item.text).join('；')}。`,
+      check: items.length === 1 ? items[0].check : { all: items.map((item) => item.check) },
+      fail_text: `还差这些判断：${items.map((item) => item.fail).join('；')}。`,
+      done_text: '角色会自己判断啦！',
+    })
+  }
+
+  if (clone) {
+    steps.push({
+      text: `再放一块「无限循环」，里面放「克隆」，编号选 ${clone.args.clone_id}。`,
+      check: { type: 'clone', args: { clone_id: String(clone.args.clone_id) }, within: ['forever'] },
+      fail_text: `还没有「克隆 ${clone.args.clone_id}」。把它放进第二块「无限循环」里。`,
+      done_text: '发射器搭好啦！',
+    })
+  }
+  if (innerLoop) {
+    steps.push({
+      text: '在「克隆」里面也放一块「无限循环」。',
+      check: { type: 'forever', within: ['clone'] },
+      fail_text: '「克隆」里面还没有「无限循环」，把克隆体里的动作包起来。',
+      done_text: '克隆体也动起来啦！',
+    })
+  }
+  if (innerMove) {
+    steps.push({
+      text: `在克隆的循环里放「移动」，步数填 ${innerMove.args.steps}。`,
+      check: { type: 'move_steps', args: { steps: innerMove.args.steps }, within: ['clone', 'forever'] },
+      fail_text: `克隆里还没有「移动 ${innerMove.args.steps} 步」。`,
+      done_text: '子弹飞出去啦！',
+    })
+  }
+  if (innerTouches.length) {
+    const items = innerTouches.map((node) => touchTeaching(node, ['clone', 'forever']))
+    steps.push({
+      text: `在克隆里放好判断：${items.map((item) => item.text).join('；')}。`,
+      check: items.length === 1 ? items[0].check : { all: items.map((item) => item.check) },
+      fail_text: `还差这些判断：${items.map((item) => item.fail).join('；')}。`,
+      done_text: '能打中目标啦！',
+    })
+  }
+
+  return steps
+}
+
+/**
+ * 通关后的思考题：挑标准解里的一个「移动步数」改小，让学生先猜、再改、再看结果。
+ * 接物、躲障碍、克隆、塔防四类玩法都适用，只是问的角色和结果不同。
+ */
+export function buildStageReflection(level) {
+  const seen = new Set()
+  const moves = []
+  const visit = (list, ancestors) => {
+    for (const node of list ?? []) {
+      if (!node || seen.has(node)) continue
+      seen.add(node)
+      if (node.type === 'move_steps') moves.push({ node, ancestors })
+      if (node.children) visit(node.children, [...ancestors, node])
+      if (node.next) visit([node.next], ancestors)
+    }
+  }
+  visit(level.solution ?? [], [])
+  if (!moves.length) return undefined
+  const last = moves[moves.length - 1]
+  const move = last.node
+  const cloneAncestor = [...last.ancestors].reverse().find((parent) => parent.type === 'clone')
+  const within = cloneAncestor ? ['clone'] : last.ancestors.some((parent) => parent.type === 'forever') ? ['forever'] : undefined
+  const ancestorArgs = cloneAncestor
+    ? [{ type: 'clone', arg: 'clone_id', value: cloneAncestor.args.clone_id }]
+    : undefined
+  const current = Number(move.args.steps)
+  if (!Number.isFinite(current) || current < 2) return undefined
+  const suggested = Math.max(1, Math.floor(current / 2))
+  const kind = level.facts?.kind ?? 'collect'
+  const shooting = kind === 'clone' || kind === 'tower'
+  const subject = shooting ? '子弹' : '机器人'
+  const goal = shooting ? '打中敌人' : '接到目标'
+
+  return {
+    question: `这一关过啦！想一想：把「移动」的 ${current} 步改成 ${suggested} 步，${subject}还能${goal}吗？你来试试。`,
+    target: {
+      type: 'move_steps',
+      arg: 'steps',
+      current,
+      suggested,
+      ...(within ? { within } : {}),
+      ...(ancestorArgs ? { ancestorArgs } : {}),
+    },
+    try_text: `找到「移动」，把 ${current} 改成 ${suggested}，再点「运行」，看看发生什么。`,
+    ran_text: `看到区别了吗？步数从 ${current} 变成 ${suggested}，${subject}走慢了，就没那么容易${goal}了。点这里完成。`,
+    fail_text: `还没改到「移动」的步数呢：把 ${current} 改成 ${suggested}，再点一次「运行」。`,
+  }
+}
+
+/**
+ * 网格关的分步引导。
+ *
+ * 纯直线关（标准解只有「前进」）跳过：那只是数格子，没有概念也没有可改参数，
+ * 硬拆成一步一块反而干扰学生。其余关卡按顶层结构拆：
+ * 有「重复执行」的按每块循环讲一次，折线按段用累计块数检查。
+ */
+export function buildGridTeachingSteps(level) {
+  const top = flatOf(level.solution ?? [])
+  if (!top.length || top.every((node) => node.type === 'move_forward')) return undefined
+  const steps = []
+  const repeats = top.filter((node) => node.type === 'repeat')
+  const turns = top.filter((node) => node.type === 'turn_left' || node.type === 'turn_right')
+
+  repeats.forEach((node, index) => {
+    const times = Number(node.args.times)
+    const children = flatOf(node.children)
+    const childChecks = children.map((child) => {
+      if (child.type.startsWith('if_')) {
+        const turn = flatOf(child.children).find((item) => item.type === 'turn_left' || item.type === 'turn_right')
+        return turn ? { type: child.type, contains: [{ type: turn.type }] } : { type: child.type }
+      }
+      if (child.type === 'repeat') return { type: 'repeat', args: { times: child.args.times } }
+      return { type: child.type }
+    })
+    const names = {
+      move_forward: '前进',
+      turn_left: '左转',
+      turn_right: '右转',
+      repeat: '重复执行',
+    }
+    const inside = [...new Set(children.map((child) => names[child.type] ?? (child.type.startsWith('if_') ? '如果判断' : child.type)))].join('、')
+    steps.push({
+      text: `放第 ${index + 1} 块「重复执行」，次数填 ${times}，里面放：${inside}。`,
+      check: { type: 'repeat', args: { times }, contains: childChecks },
+      fail_text: `第 ${index + 1} 块「重复执行」还没搭好：次数要是 ${times}，里面要有${inside}。`,
+      done_text: '这一段路线搭好啦！',
+    })
+  })
+
+  if (!repeats.length && turns.length) {
+    let moves = 0
+    const turnCounts = { turn_left: 0, turn_right: 0 }
+    const marks = []
+    for (const node of top) {
+      if (node.type === 'move_forward') moves += 1
+      else if (node.type === 'turn_left' || node.type === 'turn_right') {
+        turnCounts[node.type] += 1
+        marks.push({ moves, turns: { ...turnCounts } })
+      }
+    }
+    marks.forEach((mark, index) => {
+      // 左转、右转要分别数：标准解是完整程序，早期段落只要求「已经放了这么多」。
+      const parts = Object.entries(mark.turns)
+        .filter(([, count]) => count > 0)
+        .map(([type, count]) => `${count} 块「${type === 'turn_left' ? '左转' : '右转'}」`)
+      const turnChecks = Object.entries(mark.turns)
+        .filter(([, count]) => count > 0)
+        .map(([type, count]) => count > 1 ? { count: { type, value: count, atLeast: true } } : { type })
+      steps.push({
+        text: `第 ${index + 1} 段：放 ${mark.moves} 块「前进」，再放 ${parts.join('、')}。`,
+        check: { all: [{ count: { type: 'move_forward', value: mark.moves, atLeast: true } }, ...turnChecks] },
+        fail_text: `第 ${index + 1} 段还不对：工作区要有 ${mark.moves} 块「前进」和${parts.join('、')}。`,
+        done_text: '转弯接上了！',
+      })
+    })
+    const last = marks.length ? marks[marks.length - 1].moves : 0
+    if (moves > last) {
+      steps.push({
+        text: `最后再放 ${moves - last} 块「前进」，一直走到终点。`,
+        check: { count: { type: 'move_forward', value: moves } },
+        fail_text: `前进积木应该是 ${moves} 块，再数一遍。`,
+        done_text: '路线排好啦！',
+      })
+    }
+  }
+
+  return steps.length ? steps : undefined
+}
+
+/** 网格关的思考题：把第一块「重复执行」的次数减一次，看机器人会不会走不到终点。 */
+export function buildGridReflection(level) {
+  const seen = new Set()
+  const repeats = []
+  const visit = (list) => {
+    for (const node of list ?? []) {
+      if (!node || seen.has(node)) continue
+      seen.add(node)
+      if (node.type === 'repeat') repeats.push(node)
+      if (node.children) visit(node.children)
+      if (node.next) visit([node.next])
+    }
+  }
+  visit(level.solution ?? [])
+  // 长方形关的外层循环只做 1 次，跳过它，挑第一块真正能改的循环。
+  const index = repeats.findIndex((node) => Number(node.args.times) >= 2)
+  if (index < 0) return undefined
+  const current = Number(repeats[index].args.times)
+  const suggested = Math.max(1, current - 1)
+  const label = `第 ${index + 1} 块「重复执行」`
+
+  return {
+    question: `路线走通啦！想一想：把${label}的次数从 ${current} 改成 ${suggested}，机器人还能走到终点吗？你来试试。`,
+    target: { type: 'repeat', arg: 'times', current, suggested, nth: index + 1 },
+    try_text: `找到${label}，把次数 ${current} 改成 ${suggested}，再点「运行」，看看发生什么。`,
+    ran_text: `看到区别了吗？少重复一次，机器人就走不到终点了。点这里完成。`,
+    fail_text: `还没改到次数：把${label}的 ${current} 改成 ${suggested}，再点一次「运行」。`,
+  }
+}

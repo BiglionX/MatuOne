@@ -53,7 +53,12 @@ import {
   sweepWindow,
   variable,
 } from './blockly-stage-recipes.mjs'
-import { buildStageHints, buildStageStoryFor } from './blockly-story-recipes.mjs'
+import {
+  buildStageHints,
+  buildStageStoryFor,
+  buildStageTeachingSteps,
+  buildStageReflection,
+} from './blockly-story-recipes.mjs'
 
 const ROOT = process.cwd()
 const SQL_PATH = path.join(ROOT, 'supabase/migrations/20261127100000_blockly_level_2_3_80_stage_generated.sql')
@@ -418,7 +423,7 @@ function sealLevel(level) {
 // 参数矩阵：每个单元 4 个梯度 × 10 关，编号和绘本顺延生成
 // ---------------------------------------------------------------------------
 
-const VARIANT_NAMES = ['初试', '再来', '加速', '瞄准', '连击', '密集', '灵巧', '挑战', '冲刺']
+const VARIANT_NAMES = ['初试', '再来', '加速', '瞄准', '连击', '密集', '灵巧', '挑战', '冲刺', '完整作品']
 
 function milestoneFor(start) {
   if (start === 161) return 'term3_project'
@@ -1325,9 +1330,17 @@ function buildAllLevels() {
     const previous = index > 0 ? withGoals[index - 1] : null
     const story = buildStageStoryFor(level, previous)
     if (index === 0 && !story.review) story.review = FIRST_REVIEW
+    const teaching = buildStageTeachingSteps(level)
+    const reflection = buildStageReflection(level)
     return {
       ...level,
-      body: { ...level.body, hints: buildStageHints(level), ...story },
+      body: {
+        ...level.body,
+        hints: buildStageHints(level),
+        ...story,
+        ...(teaching ? { teaching_steps: teaching } : {}),
+        ...(reflection ? { reflection } : {}),
+      },
     }
   })
 

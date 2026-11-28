@@ -13,6 +13,7 @@ interface ManifestSolution {
   type: string
   args: Record<string, unknown>
   children?: ManifestSolution[]
+  next?: ManifestSolution
 }
 
 interface ManifestLevel {
@@ -30,6 +31,10 @@ const manifest = JSON.parse(
   readFileSync('scripts/generated/blockly-80.manifest.json', 'utf8'),
 ) as { levels: ManifestLevel[] }
 const levelById = new Map(manifest.levels.map((level) => [level.levelId, level]))
+const stageManifest = JSON.parse(
+  readFileSync('scripts/generated/blockly-stage-80.manifest.json', 'utf8'),
+) as { levels: ManifestLevel[] }
+const stageLevelById = new Map(stageManifest.levels.map((level) => [level.levelId, level]))
 
 const APPLE_SAMPLE_FILE = 'supabase/migrations/20261126180000_blockly_stage_blk_031_apple_sample.sql'
 
@@ -61,6 +66,29 @@ const APPLE_MISS_SOLUTION: ManifestSolution[] = [{
   children: [{ type: 'move_steps', args: { steps: -10 } }],
 }]
 
+const APPLE_ONE_SOLUTION: ManifestSolution[] = [{
+  type: 'forever',
+  args: {},
+  children: [
+    { type: 'move_steps', args: { steps: 10 } },
+    { type: 'if_touching', args: { target_sprite_id: 'apple' }, children: [{ type: 'change_variable', args: { variable_id: 'score', value: 1 } }] },
+  ],
+}]
+
+/** blk-161 的分步验收标准解；顶层初始化与循环分别成链。 */
+const APPLE_STAGE_SOLUTION: ManifestSolution[] = [
+  { type: 'set_variable', args: { variable_id: 'score', value: 0 } },
+  {
+    type: 'forever',
+    args: {},
+    children: [
+      { type: 'move_steps', args: { steps: 6 } },
+      { type: 'if_touching', args: { target_sprite_id: 'apple-1' }, children: [{ type: 'change_variable', args: { variable_id: 'score', value: 1 } }] },
+      { type: 'if_touching', args: { target_sprite_id: 'apple-2' }, children: [{ type: 'change_variable', args: { variable_id: 'score', value: 1 } }] },
+    ],
+  },
+]
+
 /** 标准解转成初始积木时保留嵌套结构，避免把控制块的子块悄悄丢掉。 */
 function toInitialBlock(step: ManifestSolution, id: string): unknown {
   return {
@@ -68,6 +96,7 @@ function toInitialBlock(step: ManifestSolution, id: string): unknown {
     type: step.type,
     args: step.args,
     ...(step.children ? { children: step.children.map((child, index) => toInitialBlock(child, `${id}-${index + 1}`)) } : {}),
+    ...(step.next ? { next: toInitialBlock(step.next, `${id}-next`) } : {}),
   }
 }
 
@@ -339,6 +368,46 @@ test.describe('小精灵引导（正文没写 focus 时的兜底推断）', () =
     await expect(page.locator('.matu-block-highlight').or(page.locator('.matu-focus-ring')).first()).toBeVisible()
   })
 
+  test('最后一步验收通过后显示运行按钮，点击即可运行', async ({ page }, testInfo) => {
+    await prepareBlocklyStudent(page)
+    const stageLevel = stageLevelById.get('blk-161')
+    if (!stageLevel) throw new Error('舞台 manifest 里没有 blk-161')
+    await stubLevel(page, 'blk-161', {
+      bodyOverride: stageLevel.body,
+      withSolution: true,
+      solution: APPLE_STAGE_SOLUTION,
+    })
+    await openLesson(page, 'blk-161')
+
+    const next = page.getByRole('button', { name: '我已完成，下一步' })
+    const runAccepted = page.getByRole('button', { name: '已完成，可以运行看看效果了' })
+    await expect(next).toBeVisible()
+    await expect(runAccepted).toHaveCount(0)
+    for (let index = 0; index < 4; index += 1) await next.click()
+
+    await expect(page.locator('.matu-npc-bubble')).toContainText('角色会自己判断啦！')
+    await expect(runAccepted).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath('blockly-final-step-accepted.png'), fullPage: true })
+    await runAccepted.click()
+    await expect(page.getByLabel('舞台计分板')).toContainText('⭐ 得分：2', { timeout: 30_000 })
+    await expect(page.locator('.matu-npc-bubble')).toContainText('这一关过啦！')
+  })
+
+  test('舞台多个顶层循环保持并行，不串成顺序链', async ({ page }) => {
+    await prepareBlocklyStudent(page)
+    const stageLevel = stageLevelById.get('blk-241')
+    if (!stageLevel) throw new Error('舞台 manifest 里没有 blk-241')
+    await stubLevel(page, 'blk-241', {
+      bodyOverride: stageLevel.body,
+      withSolution: true,
+      solution: stageLevel.solution,
+    })
+    await openLesson(page, 'blk-241')
+
+    await page.getByRole('button', { name: '运行', exact: true }).click()
+    await expect(page.locator('[data-stage-status]')).toHaveAttribute('data-stage-status', 'completed', { timeout: 30_000 })
+  })
+
   test('音效开关默认关着，学生能自己打开', async ({ page }) => {
     await prepareBlocklyStudent(page)
     // 走 stub：不带绘本，直接进工作区，结果不受库里是否已迁移绘本数据的影响。
@@ -445,6 +514,55 @@ test.describe('迁移后的新正文', () => {
       return scope.__audioCount?.() ?? 0
     })
     expect(audioCount).toBeGreaterThan(0)
+  })
+})
+
+test.describe('积木转 Python 代码', () => {
+  test('核心积木生成高亮代码，切换视图不丢工作区且字段修改实时同步', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await prepareBlocklyStudent(page)
+    const stageLevel = stageLevelById.get('blk-161')
+    if (!stageLevel) throw new Error('舞台 manifest 里没有 blk-161')
+    await stubLevel(page, 'blk-161', {
+      bodyOverride: stageLevel.body,
+      withSolution: true,
+      solution: APPLE_STAGE_SOLUTION,
+    })
+    await openLesson(page, 'blk-161')
+
+    const codeTab = page.getByRole('tab', { name: 'Python 代码' })
+    await expect(codeTab).toBeEnabled()
+    await codeTab.click()
+    const code = page.getByTestId('python-code')
+    await expect(code).toContainText('import robot')
+    await expect(code).toContainText('score = 0')
+    await expect(code).toContainText('while True:')
+    await expect(code).toContainText('move_steps(6)')
+    await expect(code).toContainText("if is_touching('apple-1'):")
+    await expect(code).toContainText('score += 1')
+    await expect(page.locator('.blockly-workspace')).toBeHidden()
+    await expect(page.getByRole('separator', { name: '调整积木工作区高度' })).toHaveCount(0)
+
+    const bubble = page.locator('.matu-npc-bubble')
+    if (await bubble.isVisible()) await bubble.click()
+    await page.screenshot({ path: testInfo.outputPath('blockly-python-code-view.png'), fullPage: true })
+
+    await page.getByRole('tab', { name: '积木视图' }).click()
+    await expect(page.locator('.blockly-workspace')).toBeVisible()
+    await expect(page.getByLabel('工作区积木数量')).toContainText('已用 7 /')
+    await expect(page.locator('svg.blocklySvg')).toBeVisible()
+
+    // 真鼠标编辑 Blockly 数字字段，验证 change 事件也会刷新 Python，而不只是增删积木。
+    await page.getByRole('button', { name: 'Edit number: 6', exact: true }).click()
+    await page.keyboard.press('Control+A')
+    await page.keyboard.type('12')
+    await page.keyboard.press('Enter')
+
+    await codeTab.click()
+    await expect(code).toContainText('move_steps(12)')
+    await expect(code).not.toContainText('move_steps(6)')
+    await page.getByRole('tab', { name: '积木视图' }).click()
+    await expect(page.getByLabel('工作区积木数量')).toContainText('已用 7 /')
   })
 })
 
@@ -631,7 +749,7 @@ test.describe('低龄化界面', () => {
     await expect(page.getByLabel('工作区积木数量')).toHaveText('已用 2 / 最多 2')
     await expect(page.locator('svg.blocklySvg g.blocklyDraggable')).toHaveCount(2)
     await page.getByRole('button', { name: '运行', exact: true }).click()
-    await expect(page.locator('#completion-title')).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByRole('button', { name: '我来试试', exact: true })).toBeVisible({ timeout: 30_000 })
   })
 
   test('工作区随视口撑满，分类、变量和控件低龄化', async ({ page }) => {
@@ -649,6 +767,10 @@ test.describe('低龄化界面', () => {
     await expect(page.getByLabel('新变量名')).toHaveCount(0)
     await expect(page.getByPlaceholder('输入变量名')).toHaveCount(0)
     await expect(page.getByRole('button', { name: '创建变量' })).toHaveCount(0)
+    await expect(page.getByLabel('怎么玩')).toHaveCount(0)
+    await expect(page.getByText('① 从左边拖积木')).toHaveCount(0)
+    await expect(page.getByText('② 可以搭多条链')).toHaveCount(0)
+    await expect(page.getByText('③ 点「运行」')).toHaveCount(0)
 
     const measure = () => page.evaluate(() => {
       const root = document.querySelector<HTMLElement>('.blockly-workspace')
@@ -657,7 +779,7 @@ test.describe('低龄化界面', () => {
       const toolbox = document.querySelector<HTMLElement>('.blocklyToolbox')
       const stage = document.querySelector<HTMLElement>('.matu-stage')
       const labels = Array.from(document.querySelectorAll<HTMLElement>('.blocklyToolboxCategoryLabel'))
-      const controls = Array.from(document.querySelectorAll<SVGElement>('.blocklyZoom, .blocklyTrash'))
+      const nativeControls = document.querySelectorAll('.blocklyZoom, .blocklyTrash').length
       return {
         workspaceHeight: root?.getBoundingClientRect().height ?? 0,
         hostHeight: host?.getBoundingClientRect().height ?? 0,
@@ -665,8 +787,7 @@ test.describe('低龄化界面', () => {
         stageRadius: stage ? getComputedStyle(stage).borderRadius : '',
         toolboxBackground: toolbox ? getComputedStyle(toolbox).backgroundColor : '',
         writingModes: labels.map((label) => getComputedStyle(label).writingMode),
-        controlScales: controls.map((control) => getComputedStyle(control).scale),
-        controlTransforms: controls.map((control) => getComputedStyle(control).transform),
+        nativeControls,
       }
     })
 
@@ -686,12 +807,55 @@ test.describe('低龄化界面', () => {
     expect(first.stageRadius).toBe('12px')
     expect(first.toolboxBackground).toBe('rgb(241, 245, 249)')
     expect(first.writingModes.every((mode) => mode === 'horizontal-tb')).toBe(true)
-    // 三个缩放按钮加一个垃圾桶，一共四个 SVG 控件；首个按钮位于原点，transform 可以为 none。
-    expect(first.controlScales).toEqual(['0.6', '0.6', '0.6', '0.6'])
-    expect(first.controlTransforms.some((transform) => transform !== 'none')).toBe(true)
+    expect(first.nativeControls).toBe(0)
+    await expect(page.getByLabel('工作区工具').getByRole('button')).toHaveCount(4)
+    await expect(page.getByRole('button', { name: '放大积木' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '缩小积木' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '把积木摆进视野' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '清空积木' })).toBeVisible()
 
     await page.setViewportSize({ width: 1440, height: 1080 })
     await expect.poll(async () => (await measure()).workspaceHeight).toBeGreaterThan(first.workspaceHeight + 100)
+  })
+
+  test('工作区下沿可拖高，双击恢复默认高度', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-002')
+    await openLesson(page, 'blk-002')
+
+    const area = page.getByTestId('blockly-workspace-area')
+    const handle = page.getByRole('separator', { name: '调整积木工作区高度' })
+    const before = await area.evaluate((element) => element.getBoundingClientRect().height)
+    const rect = await handle.evaluate((element) => element.getBoundingClientRect().toJSON())
+    await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2 + 180, { steps: 8 })
+    await page.mouse.up()
+
+    await expect.poll(async () => area.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(before + 150)
+    await page.screenshot({ path: testInfo.outputPath('blockly-workspace-resized.png'), fullPage: true })
+    await handle.dblclick()
+    await expect.poll(async () => area.evaluate((element) => element.getBoundingClientRect().height)).toBeCloseTo(before, 0)
+  })
+
+  test('失败反馈显示目标进度并指出缺失的碰撞判断', async ({ page }, testInfo) => {
+    await prepareBlocklyStudent(page)
+    await stubLevel(page, 'blk-161', {
+      bodyOverride: appleSampleBodyWithoutStory(),
+      withSolution: true,
+      solution: APPLE_ONE_SOLUTION,
+    })
+    await openLesson(page, 'blk-161')
+    await page.getByRole('button', { name: '运行', exact: true }).click()
+
+    await expect(page.getByText('再找找线索')).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByLabel('得分：1 / 3')).toBeVisible()
+    await expect(page.getByLabel('接住苹果：1 / 3')).toBeVisible()
+    await page.getByRole('button', { name: '查看错误信息' }).click()
+    await expect(page.getByText(/苹果 2、苹果 3 还没接住/)).toBeVisible()
+    await expect(page.getByText(/工作区里还没有「如果碰到 苹果 2」/)).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath('blockly-error-feedback.png'), fullPage: true })
   })
 
   test('苹果自动落到底部，小猫能向左移动且不会误加分', async ({ page }) => {

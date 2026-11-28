@@ -39,7 +39,13 @@ import {
   turnL,
   turnR,
 } from './blockly-level-recipes.mjs'
-import { analyzeLevel, buildHints, buildStoryFor } from './blockly-story-recipes.mjs'
+import {
+  analyzeLevel,
+  buildHints,
+  buildStoryFor,
+  buildGridTeachingSteps,
+  buildGridReflection,
+} from './blockly-story-recipes.mjs'
 
 const ROOT = process.cwd()
 const SQL_PATH = path.join(ROOT, 'supabase/migrations/20261126160000_blockly_level_1_80_generated.sql')
@@ -835,9 +841,17 @@ function buildAllLevels() {
   // 文案或 schema 写错了这里就会炸，不会带着坏数据落库。
   const withTeaching = withGoals.map((level, index) => {
     const previous = index > 0 ? withGoals[index - 1] : null
+    const teaching = buildGridTeachingSteps(level)
+    const reflection = buildGridReflection(level)
     return {
       ...level,
-      body: { ...level.body, hints: buildHints(level), ...buildStoryFor(level, previous) },
+      body: {
+        ...level.body,
+        hints: buildHints(level),
+        ...buildStoryFor(level, previous),
+        ...(teaching ? { teaching_steps: teaching } : {}),
+        ...(reflection ? { reflection } : {}),
+      },
     }
   })
 

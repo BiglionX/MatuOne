@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
   parseModuleLevelBody,
   gridSceneOf,
   hasIntroMaterial,
 } from '../src/modules/curriculum/moduleLevelBody.ts'
+import { checkTeachingStep, hasDifferentParam } from '../src/modules/curriculum/teachingSteps.ts'
+import type { BlockExecutionNode } from '../src/modules/curriculum/moduleLevelInterpreter.ts'
 
 function validBody() {
   return {
@@ -298,4 +301,115 @@ test('复习卡缺答案时拒绝解析', () => {
 test('复习卡必须是对象', () => {
   const raw = { ...validV2Body(), review: '上一关学了什么？' }
   assert.throws(() => parseModuleLevelBody(raw), /review 必须是对象/)
+})
+
+const stageManifest = JSON.parse(
+  readFileSync(new URL('./generated/blockly-stage-80.manifest.json', import.meta.url), 'utf8'),
+) as { levels: { levelId: string; body: unknown; solution: BlockExecutionNode[] }[] }
+const level161 = stageManifest.levels.find((level) => level.levelId === 'blk-161')!
+const steps161 = parseModuleLevelBody(level161.body).teaching_steps!
+
+function allNodes(nodes: readonly (BlockExecutionNode | null)[]): BlockExecutionNode[] {
+  const out: BlockExecutionNode[] = []
+  for (const node of nodes) {
+    if (!node) continue
+    out.push(node)
+    if (node.children) out.push(...allNodes(node.children))
+    if (node.next) out.push(...allNodes([node.next]))
+  }
+  return out
+}
+
+test('161 关的分步引导条件都能被标准解满足', () => {
+  assert.ok(steps161.length >= 4)
+  for (const step of steps161) {
+    assert.equal(checkTeachingStep(step, level161.solution).ok, true, step.text)
+  }
+})
+
+test('漏掉 apple-2 的如果碰到时，最后一步不通过并点名 apple-2', () => {
+  const tree = structuredClone(level161.solution)
+  const forever = allNodes(tree).find((node) => node.type === 'forever')!
+  const inner = allNodes(forever.children ?? [])
+  const touch = inner.find((node) => node.args.target_sprite_id === 'apple-2')!
+  const move = inner.find((node) => node.type === 'move_steps')!
+  let cursor = move
+  while (cursor.next && cursor.next !== touch) cursor = cursor.next
+  assert.equal(cursor.next, touch)
+  cursor.next = touch.next ?? null
+
+  const last = steps161[steps161.length - 1]
+  assert.match(last.text, /apple-2/)
+  const result = checkTeachingStep(last, tree)
+  assert.equal(result.ok, false)
+  assert.match(result.message, /apple-2/)
+})
+
+test('苹果加分不对时最后一步也不通过', () => {
+  const tree = structuredClone(level161.solution)
+  const touch = allNodes(tree).find((node) => node.args.target_sprite_id === 'apple-2')!
+  const change = allNodes(touch.children ?? []).find((node) => node.type === 'change_variable')!
+  change.args.value = 2
+  assert.equal(checkTeachingStep(steps161[steps161.length - 1], tree).ok, false)
+})
+
+test('通关后问的是改移动步数，只有真改了参数才算试过', () => {
+  const reflection = parseModuleLevelBody(level161.body).reflection!
+  assert.equal(reflection.target.type, 'move_steps')
+  assert.equal(reflection.target.arg, 'steps')
+  assert.equal(reflection.target.current, 6)
+  assert.equal(reflection.target.suggested, 3)
+  assert.match(reflection.question, /6 步改成 3 步/)
+
+  assert.equal(hasDifferentParam(level161.solution, 'move_steps', 'steps', 6), false)
+  const changed = structuredClone(level161.solution)
+  allNodes(changed).find((node) => node.type === 'move_steps')!.args.steps = 3
+  assert.equal(hasDifferentParam(changed, 'move_steps', 'steps', 6), true)
+})
+
+const gridManifests = [
+  { name: 'Level 0', data: JSON.parse(readFileSync(new URL('./generated/blockly-80.manifest.json', import.meta.url), 'utf8')) },
+  { name: 'Level 1', data: JSON.parse(readFileSync(new URL('./generated/blockly-level-1-80.manifest.json', import.meta.url), 'utf8')) },
+] as { name: string; data: { levels: { levelId: string; body: unknown; solution: BlockExecutionNode[] }[] } }[]
+
+test('网格关：纯直线保持原样，其余关卡的引导与思考题都被标准解通过', () => {
+  for (const { name, data } of gridManifests) {
+    assert.equal(data.levels.length, 80, `${name} 关数`)
+    for (const level of data.levels) {
+      const body = parseModuleLevelBody(level.body)
+      const nodes = allNodes(level.solution)
+      const pureStraight = nodes.every((node) => node.type === 'move_forward')
+      const hasRepeat = nodes.some((node) => node.type === 'repeat')
+      if (pureStraight) {
+        assert.equal(body.teaching_steps, undefined, `${level.levelId} 纯直线不该拆步骤`)
+        assert.equal(body.reflection, undefined, `${level.levelId} 纯直线没有可改参数`)
+        continue
+      }
+      assert.ok(body.teaching_steps?.length, `${level.levelId} 缺分步引导`)
+      for (const step of body.teaching_steps) {
+        assert.equal(checkTeachingStep(step, level.solution).ok, true, `${level.levelId}: ${step.text}`)
+      }
+      if (hasRepeat) {
+        assert.ok(body.reflection, `${level.levelId} 缺通关思考题`)
+        const { type, arg, current, within, ancestorArgs, nth } = body.reflection.target
+        assert.equal(hasDifferentParam(level.solution, type, arg, current, within, ancestorArgs, nth), false, `${level.levelId} 标准解不该触发思考题`)
+      } else {
+        assert.equal(body.reflection, undefined, `${level.levelId} 没有可改参数`)
+      }
+    }
+  }
+})
+
+test('全部 160 关都有分步引导和通关思考题，且标准解通过每一步', () => {
+  assert.equal(stageManifest.levels.length, 160)
+  for (const level of stageManifest.levels) {
+    const body = parseModuleLevelBody(level.body)
+    assert.ok(body.teaching_steps?.length, `${level.levelId} 缺分步引导`)
+    assert.ok(body.reflection, `${level.levelId} 缺通关思考题`)
+    for (const step of body.teaching_steps) {
+      assert.equal(checkTeachingStep(step, level.solution).ok, true, `${level.levelId}: ${step.text}`)
+    }
+    const { type, arg, current, within, ancestorArgs } = body.reflection.target
+    assert.equal(hasDifferentParam(level.solution, type, arg, current, within, ancestorArgs), false, `${level.levelId} 标准解不该触发思考题`)
+  }
 })

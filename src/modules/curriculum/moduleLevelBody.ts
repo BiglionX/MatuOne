@@ -84,6 +84,68 @@ export interface ModuleHintFocus {
   blockType?: string
 }
 
+/**
+ * 分步引导的检查条件。
+ *
+ * type/args 描述要找的积木；within 限定它必须嵌在哪类积木里面；
+ * contains 要求它的子树里还得有另一块积木。
+ * 数据来自关卡 body，所以这里用声明式条件，不下发可执行代码。
+ */
+export interface ModuleTeachingCheck {
+  /** 单块积木条件；和 all 二选一。 */
+  type?: string
+  /** 多个条件同时满足，用于「这一步要把两三个目标都配好」。 */
+  all?: ModuleTeachingCheck[]
+  args?: Record<string, ModuleScalar>
+  within?: string[]
+  contains?: ModuleTeachingCheck[]
+  /** 按数量判定，例如折线关「一共 3 块前进、2 次转弯」。 */
+  count?: { type: string; value: number; atLeast?: boolean }
+}
+
+/**
+ * 通关后的拓展提问。
+ *
+ * 过关只说明学生照着搭对了，不代表他理解参数的作用。
+ * 这里让小精灵指着一个参数问「改成 X 会怎样」，学生改完再跑一次，
+ * 看到结果差异之后才算真正完成这一关。
+ */
+export interface ModuleReflection {
+  /** 精灵问学生的问题。 */
+  question: string
+  /** 要学生改哪一块的哪个参数；current 是标准解里的值。 */
+  target: {
+    type: string
+    arg: string
+    current: ModuleScalar
+    suggested: ModuleScalar
+    /** 积木所在的祖先类型；克隆关要用它区分玩家移动和子弹移动。 */
+    within?: string[]
+    /** 再按祖先的参数定位，例如克隆编号；多子弹关卡靠它认准同一颗子弹。 */
+    ancestorArgs?: { type: string; arg: string; value: ModuleScalar }[]
+    /** 同类积木的第几块（从 1 开始）；网格关有多个循环时用它认准目标。 */
+    nth?: number
+  }
+  /** 点「我来试试」后，提醒去哪一块改。 */
+  try_text: string
+  /** 学生改完并运行过一次后的追问与总结。 */
+  ran_text: string
+  /** 学生没改参数就运行时的提醒。 */
+  fail_text: string
+}
+
+/** 小精灵的一次「我已完成，下一步」引导。 */
+export interface ModuleTeachingStep {
+  /** 这一步要学生做什么，直接显示在气泡里。 */
+  text: string
+  /** 点按钮时按这个条件检查工作区。 */
+  check: ModuleTeachingCheck
+  /** 检查没过时的提醒，明确告诉学生差哪一块。 */
+  fail_text: string
+  /** 检查通过后的夸奖；缺省时用「做得好！」。 */
+  done_text?: string
+}
+
 /** 关卡视觉开关。 */
 export interface ModuleLevelVisuals {
   /** 画出机器人走过的轨迹，用来做「画直线」这类任务。 */
@@ -283,6 +345,13 @@ export interface ModuleLevelBody {
    * 进关前的课前复习卡，内容是上一关的核心知识点；旧关卡没有这一项时直接进工作区。
    */
   review?: ModuleLevelReview
+  /**
+   * 可选的分步引导：小精灵一步一步提示，学生点「我已完成，下一步」时
+   * 检查工作区，通过了才讲下一步。旧关卡没有这一项时沿用原来的 hints。
+   */
+  teaching_steps?: ModuleTeachingStep[]
+  /** 可选：通关后的拓展提问，让学生改参数再跑一次，把过关变成思考。 */
+  reflection?: ModuleReflection
   completion: {
     stars: 0 | 1 | 2 | 3
     success_text: string
@@ -744,6 +813,93 @@ function parseCompletion(value: unknown): ModuleLevelBody['completion'] {
   return { stars: stars as 0 | 1 | 2 | 3, success_text: string(row.success_text, 'completion.success_text') }
 }
 
+function parseTeachingCheck(value: unknown, path: string): ModuleTeachingCheck {
+  const row = record(value, path)
+  const check: ModuleTeachingCheck = {}
+  if (row.type !== undefined) check.type = string(row.type, `${path}.type`)
+  if (row.all !== undefined) {
+    check.all = array(row.all, `${path}.all`).map((item, index) => parseTeachingCheck(item, `${path}.all[${index}]`))
+  }
+  if (row.args !== undefined) {
+    const args: Record<string, ModuleScalar> = {}
+    for (const [key, item] of Object.entries(record(row.args, `${path}.args`))) {
+      args[key] = scalar(item, `${path}.args.${key}`)
+    }
+    check.args = args
+  }
+  if (row.within !== undefined) {
+    check.within = array(row.within, `${path}.within`).map((item, index) => string(item, `${path}.within[${index}]`))
+  }
+  if (row.contains !== undefined) {
+    check.contains = array(row.contains, `${path}.contains`).map((item, index) =>
+      parseTeachingCheck(item, `${path}.contains[${index}]`))
+  }
+  if (row.count !== undefined) {
+    const countRow = record(row.count, `${path}.count`)
+    check.count = {
+      type: string(countRow.type, `${path}.count.type`),
+      value: integer(countRow.value, `${path}.count.value`, 0),
+      ...(countRow.atLeast === undefined ? {} : { atLeast: boolean(countRow.atLeast, `${path}.count.atLeast`) }),
+    }
+  }
+  if (!check.type && !check.all?.length && !check.count) fail(path, '必须有 type、非空 all 或 count')
+  return check
+}
+
+/** 通关后的拓展提问。缺省时返回 undefined，表示过关即结束。 */
+function parseReflection(value: unknown): ModuleReflection | undefined {
+  if (value === undefined || value === null) return undefined
+  const path = 'reflection'
+  const row = record(value, path)
+  const target = record(row.target, `${path}.target`)
+  return {
+    question: string(row.question, `${path}.question`),
+    target: {
+      type: string(target.type, `${path}.target.type`),
+      arg: string(target.arg, `${path}.target.arg`),
+      current: scalar(target.current, `${path}.target.current`),
+      suggested: scalar(target.suggested, `${path}.target.suggested`),
+      ...(target.within === undefined
+        ? {}
+        : { within: array(target.within, `${path}.target.within`).map((item, index) => string(item, `${path}.target.within[${index}]`)) }),
+      ...(target.ancestorArgs === undefined
+        ? {}
+        : {
+            ancestorArgs: array(target.ancestorArgs, `${path}.target.ancestorArgs`).map((item, index) => {
+              const rule = record(item, `${path}.target.ancestorArgs[${index}]`)
+              return {
+                type: string(rule.type, `${path}.target.ancestorArgs[${index}].type`),
+                arg: string(rule.arg, `${path}.target.ancestorArgs[${index}].arg`),
+                value: scalar(rule.value, `${path}.target.ancestorArgs[${index}].value`),
+              }
+            }),
+          }),
+      ...(target.nth === undefined ? {} : { nth: integer(target.nth, `${path}.target.nth`, 1) }),
+    },
+    try_text: string(row.try_text, `${path}.try_text`),
+    ran_text: string(row.ran_text, `${path}.ran_text`),
+    fail_text: string(row.fail_text, `${path}.fail_text`),
+  }
+}
+
+/** 分步引导步骤。缺省时返回 undefined，表示这一关不用逐步检查。 */
+function parseTeachingSteps(value: unknown): ModuleTeachingStep[] | undefined {
+  if (value === undefined || value === null) return undefined
+  const rows = array(value, 'teaching_steps')
+  if (!rows.length) return undefined
+  return rows.map((item, index) => {
+    const path = `teaching_steps[${index}]`
+    const row = record(item, path)
+    const step: ModuleTeachingStep = {
+      text: string(row.text, `${path}.text`),
+      check: parseTeachingCheck(row.check, `${path}.check`),
+      fail_text: string(row.fail_text, `${path}.fail_text`),
+    }
+    if (row.done_text !== undefined) step.done_text = string(row.done_text, `${path}.done_text`)
+    return step
+  })
+}
+
 /**
  * 绘本页列表。缺省时返回 undefined，表示这一关没有绘本，进关直接进工作区。
  */
@@ -824,6 +980,10 @@ export function parseModuleLevelBody(raw: unknown): ModuleLevelBody {
   if (introStory) body.intro_story = introStory
   const review = parseReview(row.review)
   if (review) body.review = review
+  const steps = parseTeachingSteps(row.teaching_steps)
+  if (steps) body.teaching_steps = steps
+  const reflection = parseReflection(row.reflection)
+  if (reflection) body.reflection = reflection
   return body
 }
 

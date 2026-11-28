@@ -1,5 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import type { Block, Field, FieldDropdown, Flyout, MenuOption, Workspace, WorkspaceSvg } from 'blockly'
+import * as python from 'blockly/python'
+import { definePythonGenerators, generatePythonCode, type PythonCodeSnapshot } from './blocklyPython'
 import type {
   ModuleAvailableBlock,
   ModuleBlockArgDefinition,
@@ -15,6 +17,8 @@ export interface BlocklyWorkspaceHandle {
   getExecutionTree(): BlockExecutionNode[]
   /** 工作区积木总数（含嵌套子块），和 body.workspace.max_blocks 是同一个口径。 */
   getBlockCount(): number
+  /** 工作区当前积木对应的 Python 只读预览。 */
+  getPythonCode(): string
   reset(): void
 }
 
@@ -22,6 +26,8 @@ interface BlocklyWorkspaceProps {
   availableBlocks: ModuleAvailableBlock[]
   initialBlocks: ModuleBlockInstance[]
   maxBlocks: number
+  /** Stage 的多个顶层积木是并行脚本，加载时不能自动串成一条链。 */
+  parallelScripts?: boolean
   /** Stage 关卡传入课程固定的场景变量；Grid 不传，因此不显示变量徽章。 */
   initialVariables?: readonly ModuleStageVariable[]
   /** Stage 运行时的实时变量值；缺省时显示课程初始值。 */
@@ -29,10 +35,14 @@ interface BlocklyWorkspaceProps {
   onReadyChange?: (ready: boolean) => void
   /** 积木数量变化时回调；studentChanged 为 false 表示只同步初始/重置后的数量。 */
   onBlocksChange?: (blockCount: number, studentChanged?: boolean) => void
+  /** 积木增删、移动或字段修改后刷新 Python 预览；初始化与重置也会同步。 */
+  onPythonChange?: (snapshot: PythonCodeSnapshot) => void
   /** 要闪一下的积木类型；小精灵点名要拖哪一块时用。 */
   highlightBlockType?: string | null
   /** 工作区整体要闪烁时为 true。 */
   focusWorkspace?: boolean
+  /** 代码视图切换时工作区仍保持挂载；恢复显示后需要主动重算画布尺寸。 */
+  active?: boolean
 }
 
 type BlocklyRuntime = typeof import('blockly')
@@ -339,10 +349,26 @@ function buildChain(
 }
 
 /** 按 body.workspace.initial_blocks 把初始积木铺进工作区。 */
-export function loadInitialBlocks(workspace: WorkspaceSvg, initialBlocks: ModuleBlockInstance[], availableBlocks: ModuleAvailableBlock[]) {
-  const head = buildChain(workspace, initialBlocks, availableBlocks)
-  // 新建的积木都堆在原点，挪开一点，别一上来就盖在一起。
-  head?.moveBy(40, 40)
+export function loadInitialBlocks(
+  workspace: WorkspaceSvg,
+  initialBlocks: ModuleBlockInstance[],
+  availableBlocks: ModuleAvailableBlock[],
+  parallelScripts = false,
+) {
+  if (parallelScripts) {
+    let nextY = 40
+    for (const instance of initialBlocks) {
+      const block = createBlock(workspace, instance, availableBlocks)
+      const sizedBlock = block as Block & { getHeightWidth?: () => { height: number } }
+      const height = sizedBlock.getHeightWidth?.().height ?? 0
+      block.moveBy(40, nextY)
+      nextY += (height || 80) + 24
+    }
+  } else {
+    const head = buildChain(workspace, initialBlocks, availableBlocks)
+    // 新建的积木都堆在原点，挪开一点，别一上来就盖在一起。
+    head?.moveBy(40, 40)
+  }
   workspace.scrollCenter()
 }
 
@@ -392,13 +418,14 @@ function applyBlockHighlight(workspace: WorkspaceSvg, type: string | null) {
   }
 }
 
-/** Blockly 只在组件挂载后动态导入；类型导入会在构建时擦除。 */
+/** 工作区在组件挂载后动态导入；Python 生成器随模块加载，切换视图不会重建工作区。 */
 export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorkspaceProps>(function BlocklyWorkspace(
-  { availableBlocks, initialBlocks, maxBlocks, initialVariables, variableValues, onReadyChange, onBlocksChange, highlightBlockType, focusWorkspace },
+  { availableBlocks, initialBlocks, maxBlocks, parallelScripts = false, initialVariables, variableValues, onReadyChange, onBlocksChange, onPythonChange, highlightBlockType, focusWorkspace, active = true },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null)
   const workspaceRef = useRef<WorkspaceSvg | null>(null)
+  const blocklyRuntimeRef = useRef<BlocklyRuntime | null>(null)
   const definitionsRef = useRef(availableBlocks)
   /** 铺初始积木和「重新开始」时不算学生操作，不往外抛变化通知。 */
   const suppressRef = useRef(false)
@@ -408,12 +435,41 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
   const [confirmClear, setConfirmClear] = useState(false)
   const variablesRef = useRef<readonly ModuleStageVariable[]>(initialVariables ?? [])
 
+  const readPythonSnapshot = useCallback((): PythonCodeSnapshot => {
+    const workspace = workspaceRef.current
+    if (!workspace) return { code: '', error: '积木工作区还在加载，请稍候' }
+    try {
+      return {
+        code: generatePythonCode(python.pythonGenerator, workspace, definitionsRef.current, variablesRef.current),
+        error: null,
+      }
+    } catch (reason: unknown) {
+      return { code: '', error: reason instanceof Error ? reason.message : 'Python 代码预览生成失败' }
+    }
+  }, [])
+
+  const emitPythonChange = useCallback(() => {
+    if (onPythonChange) onPythonChange(readPythonSnapshot())
+  }, [onPythonChange, readPythonSnapshot])
+
+  /** svgResize 负责画布尺寸，workspace.resize 负责工具箱、滚动条等内部布局。 */
+  const resizeWorkspace = useCallback(() => {
+    const workspace = workspaceRef.current
+    const blockly = blocklyRuntimeRef.current
+    if (!workspace || !blockly) return
+    blockly.svgResize(workspace)
+    workspace.resize()
+  }, [])
+
   useEffect(() => {
     const next = initialVariables ?? []
     variablesRef.current = next
     const workspace = workspaceRef.current
-    if (workspace) workspaceVariableDefinitions.set(workspace, next)
-  }, [initialVariables])
+    if (workspace) {
+      workspaceVariableDefinitions.set(workspace, next)
+      emitPythonChange()
+    }
+  }, [emitPythonChange, initialVariables])
 
   /** 清空工作区并重新铺初始积木；handle.reset 和工具条上的「清空」共用同一段逻辑。 */
   const resetWorkspace = useCallback(() => {
@@ -421,10 +477,11 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
     if (!workspace) return
     suppressRef.current = true
     workspace.clear()
-    loadInitialBlocks(workspace, initialBlocks, definitionsRef.current)
+    loadInitialBlocks(workspace, initialBlocks, definitionsRef.current, parallelScripts)
     suppressRef.current = false
     onBlocksChange?.(workspace.getAllBlocks(false).length, false)
-  }, [initialBlocks, onBlocksChange])
+    emitPythonChange()
+  }, [emitPythonChange, initialBlocks, onBlocksChange, parallelScripts])
 
   /** 以画布中心为锚点缩放；amount 为正放大、为负缩小。 */
   const zoomBy = useCallback((amount: number) => {
@@ -467,24 +524,34 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
     getBlockCount() {
       return workspaceRef.current?.getAllBlocks(false).length ?? 0
     },
+    getPythonCode() {
+      const snapshot = readPythonSnapshot()
+      if (snapshot.error) throw new Error(snapshot.error)
+      return snapshot.code
+    },
     reset() {
       resetWorkspace()
     },
-  }), [resetWorkspace])
+  }), [readPythonSnapshot, resetWorkspace])
 
   // 学生动了积木就通知外面一声，小精灵靠它判断「有人操作」还是「干等着」。
   useEffect(() => {
     const workspace = workspaceRef.current
-    if (!workspace || !onBlocksChange) return
+    if (!workspace || (!onBlocksChange && !onPythonChange)) return
     const handleChange = (event: { type: string; isUiEvent?: boolean }) => {
-      if (event.isUiEvent || suppressRef.current) return
-      // Blockly 13 的事件类型值就是 create / delete / move 这三个短名。
-      if (event.type !== 'create' && event.type !== 'delete' && event.type !== 'move') return
-      onBlocksChange(workspace.getAllBlocks(false).length, true)
+      if (suppressRef.current) return
+      // Blockly 13 的事件类型值就是 create / delete / move / change 这些短名。
+      if (!event.isUiEvent && (event.type === 'create' || event.type === 'delete' || event.type === 'move')) {
+        onBlocksChange?.(workspace.getAllBlocks(false).length, true)
+      }
+      // 字段编辑会发 change；即使事件标记为 UI 操作，也要刷新代码预览。
+      if (event.type === 'create' || event.type === 'delete' || event.type === 'move' || event.type === 'change') {
+        emitPythonChange()
+      }
     }
     workspace.addChangeListener(handleChange)
     return () => workspace.removeChangeListener(handleChange)
-  }, [onBlocksChange, ready])
+  }, [emitPythonChange, onBlocksChange, ready])
 
   // 小精灵点名某一块积木时，让它在工具箱里闪起来。
   useEffect(() => {
@@ -492,6 +559,40 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
     if (!workspace || !ready) return
     applyBlockHighlight(workspace, highlightBlockType ?? null)
   }, [highlightBlockType, ready])
+
+  // 工作区下沿被学生拉高或缩小时，同步重算 Blockly 的画布、工具箱和滚动条。
+  useEffect(() => {
+    const host = hostRef.current
+    const workspace = workspaceRef.current
+    if (!host || !workspace || !ready) return
+    let frame: number | null = null
+    const scheduleResize = () => {
+      if (frame !== null) window.cancelAnimationFrame(frame)
+      frame = window.requestAnimationFrame(() => {
+        frame = null
+        resizeWorkspace()
+      })
+    }
+    const observer = new ResizeObserver(scheduleResize)
+    observer.observe(host)
+    scheduleResize()
+    return () => {
+      observer.disconnect()
+      if (frame !== null) window.cancelAnimationFrame(frame)
+    }
+  }, [ready, resizeWorkspace])
+
+  // display:none 会让 Blockly 的内部 SVG 缩成 0×0；代码视图切回后显式恢复尺寸和视野。
+  useEffect(() => {
+    if (!active) return
+    const workspace = workspaceRef.current
+    if (!workspace || !ready) return
+    const frame = window.requestAnimationFrame(() => {
+      resizeWorkspace()
+      workspace.scrollCenter()
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [active, ready, resizeWorkspace])
 
   useEffect(() => {
     const host = hostRef.current
@@ -505,8 +606,10 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
     void import('blockly')
       .then((blockly) => {
         if (cancelled) return
+        blocklyRuntimeRef.current = blockly
         definitionsRef.current = availableBlocks
         defineAvailableBlocks(blockly, availableBlocks)
+        definePythonGenerators(python.pythonGenerator)
         const categories = Array.from(new Set(availableBlocks.map((block) => block.category))).map((category) => ({
           kind: 'category',
           name: category,
@@ -550,9 +653,10 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
         flyout?.setAutoClose(false)
         // 铺初始积木不是学生操作，别把闲置计时白重置一次。
         suppressRef.current = true
-        loadInitialBlocks(workspace, initialBlocks, availableBlocks)
+        loadInitialBlocks(workspace, initialBlocks, availableBlocks, parallelScripts)
         suppressRef.current = false
         onBlocksChange?.(workspace.getAllBlocks(false).length, false)
+        emitPythonChange()
         setReady(true)
         onReadyChange?.(true)
       })
@@ -566,8 +670,9 @@ export const BlocklyWorkspace = forwardRef<BlocklyWorkspaceHandle, BlocklyWorksp
       cancelled = true
       workspace?.dispose()
       if (workspaceRef.current === workspace) workspaceRef.current = null
+      blocklyRuntimeRef.current = null
     }
-  }, [availableBlocks, initialBlocks, maxBlocks, onBlocksChange, onReadyChange])
+  }, [availableBlocks, emitPythonChange, initialBlocks, maxBlocks, onBlocksChange, onReadyChange, parallelScripts])
 
   return (
     <>
